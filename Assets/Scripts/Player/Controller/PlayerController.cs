@@ -97,7 +97,7 @@ public class PlayerController
 
     public void ArtificialUpdate()
     {
-        Debug.Log(_isClimbing);
+        //Debug.Log(_isClimbing);
         if (_boostTimeRemaining > 0f)
         {
             _boostTimeRemaining -= Time.deltaTime;
