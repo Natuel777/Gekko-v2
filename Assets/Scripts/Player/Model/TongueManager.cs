@@ -128,6 +128,7 @@ public class TongueManager : MonoBehaviour
                         _object.position = holdPos;
                         _currentPos = holdPos;
                         _attached = true;
+                        _pjController.ManteinRot();
                         //_pjController.CanRotate = false;
                         _pjController.HeadLocate();
                         return;
@@ -224,6 +225,7 @@ public class TongueManager : MonoBehaviour
         _stopDist = 0.05f;
         _startPos = transform.position;
         _pjController.HeadLocate();
+        _pjController.CanRotate = true;
         _retracting = true;
         _pjViewer.Mouth(false);
     }
@@ -243,6 +245,7 @@ public class TongueManager : MonoBehaviour
             _object = null;
         }
         _startPos = transform.position;
+        _pjController.CanRotate = true;
         _pjController.HeadLocate();
     }
     private void MoveGrabbedObject()

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
 using Unity.Cinemachine;
 using UnityEngine;
 
@@ -46,6 +47,7 @@ public class PlayerController
     private Vector2 _rawInput = new(), _smoothedInput = new(), _smoothedVelocity = new();
     private float _smoothInputSpeed = 0.2f;
     private float _tongueSlowness = 0.05f;
+    private Quaternion _prevRotation;
     
     private bool _usingLastDir = false;
     private Vector3 _lastValidDir = Vector3.zero;
@@ -239,8 +241,12 @@ public class PlayerController
         }
 
         //if (_target != null)  MoveLocked();
+        if (_tongueM.IsAttached)
+        {
+            _pjTransform.rotation = _prevRotation;
+            return;
+        }
 
-       
 
     }
 
@@ -260,38 +266,37 @@ public class PlayerController
 
         Vector3 dir = (camForward * input.y + camRight * input.x).normalized;
         dir = Vector3.ProjectOnPlane(dir, _currentUp).normalized;
+            //Vector3 surfaceUp, surfaceRight;
+            //
+            //if (_isClimbing)
+            //{
+            //    // En superficie: usamos ejes fijos de la superficie
+            //    // up = dirección en la que está mirando el personaje sobre la superficie
+            //    // right = perpendicular a eso sobre la superficie
+            //    surfaceUp = Vector3.ProjectOnPlane(_pjTransform.forward, _currentUp).normalized;
+            //    surfaceRight = Vector3.Cross(_currentUp, surfaceUp).normalized;
+            //
+            //    // Fallback
+            //    if (surfaceUp.sqrMagnitude < 0.01f)
+            //        surfaceUp = Vector3.ProjectOnPlane(Vector3.forward, _currentUp).normalized;
+            //    if (surfaceRight.sqrMagnitude < 0.01f)
+            //        surfaceRight = Vector3.Cross(_currentUp, surfaceUp).normalized;
+            //}
+            //else
+            //{
+            //    // En el suelo: relativo a la cámara como antes
+            //    surfaceUp = Vector3.ProjectOnPlane(_camTransform.up, _currentUp).normalized;
+            //    surfaceRight = Vector3.ProjectOnPlane(_camTransform.right, _currentUp).normalized;
+            //
+            //    if (surfaceUp.sqrMagnitude < 0.01f)
+            //        surfaceUp = Vector3.ProjectOnPlane(_pjTransform.forward, _currentUp).normalized;
+            //    if (surfaceRight.sqrMagnitude < 0.01f)
+            //        surfaceRight = Vector3.Cross(_currentUp, surfaceUp).normalized;
+            //}
+            //
+            //Vector3 dir = (surfaceUp * input.y + surfaceRight * input.x);
 
-        //Vector3 surfaceUp, surfaceRight;
-        //
-        //if (_isClimbing)
-        //{
-        //    // En superficie: usamos ejes fijos de la superficie
-        //    // up = dirección en la que está mirando el personaje sobre la superficie
-        //    // right = perpendicular a eso sobre la superficie
-        //    surfaceUp = Vector3.ProjectOnPlane(_pjTransform.forward, _currentUp).normalized;
-        //    surfaceRight = Vector3.Cross(_currentUp, surfaceUp).normalized;
-        //
-        //    // Fallback
-        //    if (surfaceUp.sqrMagnitude < 0.01f)
-        //        surfaceUp = Vector3.ProjectOnPlane(Vector3.forward, _currentUp).normalized;
-        //    if (surfaceRight.sqrMagnitude < 0.01f)
-        //        surfaceRight = Vector3.Cross(_currentUp, surfaceUp).normalized;
-        //}
-        //else
-        //{
-        //    // En el suelo: relativo a la cámara como antes
-        //    surfaceUp = Vector3.ProjectOnPlane(_camTransform.up, _currentUp).normalized;
-        //    surfaceRight = Vector3.ProjectOnPlane(_camTransform.right, _currentUp).normalized;
-        //
-        //    if (surfaceUp.sqrMagnitude < 0.01f)
-        //        surfaceUp = Vector3.ProjectOnPlane(_pjTransform.forward, _currentUp).normalized;
-        //    if (surfaceRight.sqrMagnitude < 0.01f)
-        //        surfaceRight = Vector3.Cross(_currentUp, surfaceUp).normalized;
-        //}
-        //
-        //Vector3 dir = (surfaceUp * input.y + surfaceRight * input.x);
-
-        if (dir.sqrMagnitude > 0.0001f)
+            if (dir.sqrMagnitude > 0.0001f)
         {
             dir.Normalize();
             _lastValidDir = dir;
@@ -420,7 +425,7 @@ public class PlayerController
 
             Quaternion rot = Quaternion.LookRotation(projectedDir, _currentUp);
             float rotSpeed = _rotationSpeed * Time.deltaTime;
-            if (_tongueOut && !_tongueM.IsAttached) rotSpeed *= _tongueSlowness;
+            if (_tongueOut ) rotSpeed *= _tongueSlowness;
 
             // Calculá la rotación futura SIN aplicarla todavía
             Quaternion newRot = Quaternion.Slerp(_pjTransform.rotation, rot, rotSpeed);
@@ -444,7 +449,7 @@ public class PlayerController
                 }
             }
 
-            _pjTransform.rotation = newRot; // recién acá aplicás
+             _pjTransform.rotation = newRot; // recién acá aplicás
         }
     }
 
@@ -461,9 +466,6 @@ public class PlayerController
 
         _rb.linearVelocity += _currentUp * _jumpForce;
         _canJump = false;
-        Debug.Log($"CurrentUp: {_currentUp}");
-        Debug.Log($"LastDirJump: {_lastDirJump}");
-        Debug.Log($"Velocity Y: {_rb.linearVelocity.y}");
     }
 
     private bool IsGrounded()
@@ -488,7 +490,7 @@ public class PlayerController
 
     private void DetectSurface()
     {
-        if (_tongueM != null && _tongueM.IsAttached) return;
+        //if (_tongueM != null && _tongueM.IsAttached) return;
             Vector3[] directions =
         {
             -_currentUp,
@@ -646,6 +648,11 @@ public class PlayerController
     public void HeadLocate()
     {
         _head.localRotation = Quaternion.identity;
+    }
+    public void ManteinRot()
+    {
+        _prevRotation = _pjTransform.rotation;
+        _canRotate = false;
     }
     public void ChangeValues(float speed, float jump, float rotSpeed, float fallMulti, float lowmulti)
     {
