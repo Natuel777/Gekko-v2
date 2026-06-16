@@ -17,6 +17,14 @@ public class PuzzleBeaver : MonoBehaviour, IInteractable, IDialogueable
     private int _currentDialogue;
     [SerializeField] private NotificationSO _notificationData;
 
+    [Header("Rotación hacia el jugador")]
+    [SerializeField] private float _detectionRange = 6f;
+    [SerializeField] private float _rotationSpeed = 5f;
+
+    private Transform _playerTransform;
+    private BugDetection _playerDetection;
+    private LookAtTarget _lookAtPlayer;
+    private bool _playerInRotationRange;
 
     public Dialogue Dialogue => _dialogues[_currentDialogue];
 
@@ -31,11 +39,35 @@ public class PuzzleBeaver : MonoBehaviour, IInteractable, IDialogueable
         _anim = GetComponentInChildren<Animator>();
         _cam = CameraStateManager.Instance.CurrentCamera.transform;
         LevelOneManager.Instance.OnBridgeConstructed += BridgeFinished;
+
+        _playerTransform = GameManager.Instance.Pj.transform;
+        _playerDetection = new BugDetection(this, _playerTransform, _detectionRange);
+        _lookAtPlayer = new LookAtTarget(_rotationSpeed, transform, lockYAxis: true);
     }
     private void Update()
     {
         if (_exclamation.enabled) FollowPlayer();
         else if (_EIndicator.enabled) FollowPlayer();
+
+        UpdatePlayerRotation();
+    }
+
+    private void UpdatePlayerRotation()
+    {
+        bool inRange = _playerDetection.IsTargetInRange();
+
+        if(inRange && !_playerInRotationRange)
+        {
+            _playerInRotationRange = true;
+            _lookAtPlayer.StartLooking(_playerTransform);
+        }
+        else if(!inRange && _playerInRotationRange)
+        {
+            _playerInRotationRange = false;
+            _lookAtPlayer.StopLooking();
+        }
+
+        _lookAtPlayer.ArtificialUpdate();
     }
     public void StartAnim()
     {
@@ -102,5 +134,10 @@ public class PuzzleBeaver : MonoBehaviour, IInteractable, IDialogueable
     private void OnDisable()
     {
         LevelOneManager.Instance.OnBridgeConstructed -= BridgeFinished;
+    }
+    private void OnDrawGizmosSelected()
+    {
+        Gizmos.color = Color.cyan;
+        Gizmos.DrawWireSphere(transform.position, _detectionRange);
     }
 }
