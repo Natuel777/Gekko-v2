@@ -47,7 +47,6 @@ public class PlayerController
     private Vector2 _rawInput = new(), _smoothedInput = new(), _smoothedVelocity = new();
     private float _smoothInputSpeed = 0.2f;
     private float _tongueSlowness = 0.05f;
-    private Quaternion _prevRotation;
     
     private bool _usingLastDir = false;
     private Vector3 _lastValidDir = Vector3.zero;
@@ -75,7 +74,7 @@ public class PlayerController
     public PlayerController(Rigidbody rb, Transform pjTransform, CapsuleCollider col, Transform camTransform, PlayerViewer pjV, Transform head,InteractionManager interact, ParticleSystem trail)
     {
         _rb = rb;
-        _rb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
+        _rb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationY| RigidbodyConstraints.FreezeRotationZ;
         _pjTransform = pjTransform;
         _camTransform = camTransform;
         _orbitalFollow = camTransform.GetComponent<CinemachineOrbitalFollow>();
@@ -99,7 +98,6 @@ public class PlayerController
 
     public void ArtificialUpdate()
     {
-        //Debug.Log(_isClimbing);
         if (_boostTimeRemaining > 0f)
         {
             _boostTimeRemaining -= Time.deltaTime;
@@ -204,17 +202,17 @@ public class PlayerController
 
             if (_jumpGraceTime <= 0f)
             {
-                Vector3 projectedForward = Vector3.ProjectOnPlane(_pjTransform.forward, Vector3.up).normalized;
+                Vector3 projectedForward = Vector3.ProjectOnPlane(_pjTransform.forward, _currentUp).normalized;
                 if (projectedForward.sqrMagnitude > 0.01f)
                 {
-                    Quaternion targetRot = Quaternion.LookRotation(projectedForward, Vector3.up);
+                    Quaternion targetRot = Quaternion.LookRotation(projectedForward, _currentUp);
                     Quaternion newRot = Quaternion.Slerp(_pjTransform.rotation, targetRot, 5f * Time.deltaTime);
 
                     // Mismo chequeo
                     if (_tongueM != null && _tongueM.IsAttached)
                     {
                         Vector3 newForward = newRot * Vector3.forward;
-                        Vector3 desiredObjPos = _tongueM.MouthPos.position + newForward * (_tongueM.ObjectRadius + 0.5f);
+                        Vector3 desiredObjPos = _tongueM.MouthPos + newForward * (_tongueM.ObjectRadius + 0.5f);
                         LayerMask blockMask = ~(1 << _pjTransform.gameObject.layer) & ~(1 << _tongueM.ObjectLayer);
                         Vector3 halfExtents = _tongueM.ObjectExtents * 0.9f;
                         Vector3 moveDir = desiredObjPos - _tongueM.ObjectPosition;
@@ -241,13 +239,6 @@ public class PlayerController
         }
 
         //if (_target != null)  MoveLocked();
-        if (_tongueM.IsAttached)
-        {
-            _pjTransform.rotation = _prevRotation;
-            return;
-        }
-
-
     }
 
     //private void MoveLocked()
@@ -403,15 +394,25 @@ public class PlayerController
         }
         else
         {
-            float currentY = _wasClimbing && _jumpGraceTime<=0 ? 0f : _rb.linearVelocity.y;
-            moveVel.y = currentY;
-            Vector3 horizontalVel = new Vector3(moveVel.x, 0, moveVel.z);
-            float effectiveSpeed = _speed * _speedMultiplier;
-            if (horizontalVel.magnitude > effectiveSpeed)
-                horizontalVel = horizontalVel.normalized * effectiveSpeed;
-            moveVel.x = horizontalVel.x;
-            moveVel.z = horizontalVel.z;
-            _rb.linearVelocity = moveVel;
+            if (_isGrounded && !_isClimbing && _jumpGraceTime <= 0)
+            {
+                // Mantenemos la Y del moveVel para poder subir rampas
+                Vector3 horizontalVel = new Vector3(moveVel.x, moveVel.y, moveVel.z);
+                if (horizontalVel.magnitude > _speed * _speedMultiplier)
+                    horizontalVel = horizontalVel.normalized * _speed * _speedMultiplier;
+                _rb.linearVelocity = horizontalVel;
+            }
+            else
+            {
+                float currentY = _wasClimbing && _jumpGraceTime <= 0 ? 0f : _rb.linearVelocity.y;
+                moveVel.y = currentY;
+                Vector3 horizontalVel = new Vector3(moveVel.x, 0, moveVel.z);
+                if (horizontalVel.magnitude > _speed * _speedMultiplier)
+                    horizontalVel = horizontalVel.normalized * _speed * _speedMultiplier;
+                moveVel.x = horizontalVel.x;
+                moveVel.z = horizontalVel.z;
+                _rb.linearVelocity = moveVel;
+            }
         }
     }
     private void Rotate(Vector3 dir)
@@ -425,7 +426,7 @@ public class PlayerController
 
             Quaternion rot = Quaternion.LookRotation(projectedDir, _currentUp);
             float rotSpeed = _rotationSpeed * Time.deltaTime;
-            if (_tongueOut ) rotSpeed *= _tongueSlowness;
+            if (_tongueOut && !_tongueM.IsAttached) rotSpeed *= _tongueSlowness;
 
             // Calculá la rotación futura SIN aplicarla todavía
             Quaternion newRot = Quaternion.Slerp(_pjTransform.rotation, rot, rotSpeed);
@@ -434,7 +435,7 @@ public class PlayerController
             {
                 Vector3 newForward = newRot * Vector3.forward;
                 Vector3 currentObjPos = _tongueM.ObjectPosition;
-                Vector3 desiredObjPos = _tongueM.MouthPos.position + newForward * (_tongueM.ObjectRadius + 0.5f);
+                Vector3 desiredObjPos = _tongueM.MouthPos + newForward * (_tongueM.ObjectRadius + 0.5f);
                 Vector3 moveDir = desiredObjPos - currentObjPos;
                 float moveDist = moveDir.magnitude;
                 LayerMask blockMask = ~(1 << _pjTransform.gameObject.layer) & ~(1 << _tongueM.ObjectLayer);
@@ -648,11 +649,6 @@ public class PlayerController
     public void HeadLocate()
     {
         _head.localRotation = Quaternion.identity;
-    }
-    public void ManteinRot()
-    {
-        _prevRotation = _pjTransform.rotation;
-        _canRotate = false;
     }
     public void ChangeValues(float speed, float jump, float rotSpeed, float fallMulti, float lowmulti)
     {

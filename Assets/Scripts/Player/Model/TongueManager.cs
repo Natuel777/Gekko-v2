@@ -27,7 +27,7 @@ public class TongueManager : MonoBehaviour
 
     private bool _canUseTongue = true;
     public bool IsAttached => _attached;
-    public Transform MouthPos => transform;
+    public Vector3 MouthPos => transform.position + new Vector3(0,1,0);
     public Vector3 ObjectExtents => _object != null
     ? _object.GetComponent<Collider>().bounds.extents
     : Vector3.one * 0.5f;
@@ -60,10 +60,9 @@ public class TongueManager : MonoBehaviour
     {
         if (_attached && _object != null)
         {
-            BringgableObject bringgable = _object.GetComponent<BringgableObject>();
-
-            _object.position = transform.position + _pj.forward * (_objectRadius + 0.5f);
-            _currentPos = transform.position;
+            _object.position = transform.position + new Vector3(0, 1, 0) + _pj.forward * (_objectRadius + 0.5f);
+            transform.LookAt(_object.position);
+            _currentPos = _object.position;
             _startPos = transform.position;
         }
     }
@@ -124,11 +123,10 @@ public class TongueManager : MonoBehaviour
                     else if (_object.TryGetComponent(out BringgableObject bringgable))
                     {
                         bringgable.StartMoving();
-                        Vector3 holdPos = transform.position + _pj.forward * (_objectRadius + 0.5f);
+                        Vector3 holdPos = transform.position + new Vector3(0,1,0) + _pj.forward * (_objectRadius + 0.5f);
                         _object.position = holdPos;
                         _currentPos = holdPos;
                         _attached = true;
-                        _pjController.ManteinRot();
                         //_pjController.CanRotate = false;
                         _pjController.HeadLocate();
                         return;
