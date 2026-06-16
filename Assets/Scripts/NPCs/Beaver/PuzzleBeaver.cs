@@ -1,6 +1,7 @@
 using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UI;
+using Unity.Cinemachine;
 
 public class PuzzleBeaver : MonoBehaviour, IInteractable, IDialogueable
 {
@@ -31,6 +32,10 @@ public class PuzzleBeaver : MonoBehaviour, IInteractable, IDialogueable
     public Transform Transform => transform;
 
     public Sprite Image => _imagedialogue;
+
+    [Header("Cameras")]
+    [SerializeField] private CinemachineCamera _gekkoCam;
+    [SerializeField] private CinemachineCamera _beaverCam;
 
     private void Start()
     {
@@ -92,12 +97,14 @@ public class PuzzleBeaver : MonoBehaviour, IInteractable, IDialogueable
     }  
     public void OnDialogueStart()
     {
-       //anim
+        //anim
+        _beaverCam.Priority = 30;
     }
 
     public void OnDialogueEnd()
     {
-        if(_started)
+        _beaverCam.Priority = 0;
+        if (_started)
         {
             _started = false;
             LevelOneManager.Instance.BeaverMissionTaken();

@@ -34,8 +34,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 0.39}
-  m_SizeDelta: {x: 0.48860002, y: 1.3671}
+  m_AnchoredPosition: {x: -0.15, y: 1.55}
+  m_SizeDelta: {x: 1.5011, y: 2.881}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &3664585034600519379
 CanvasRenderer:
@@ -67,7 +67,7 @@ MonoBehaviour:
       m_Calls: []
   m_Sprite: {fileID: 21300000, guid: bc53c381cc488b745a32c5da1522401f, type: 3}
   m_Type: 0
-  m_PreserveAspect: 0
+  m_PreserveAspect: 1
   m_FillCenter: 1
   m_FillMethod: 4
   m_FillAmount: 1
@@ -102,7 +102,7 @@ Transform:
   m_GameObject: {fileID: 5272537782696599738}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: -0.03, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -129,10 +129,10 @@ CapsuleCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 2
-  m_Radius: 1.3
-  m_Height: 5.39
+  m_Radius: 1.6109382
+  m_Height: 5.3849173
   m_Direction: 1
-  m_Center: {x: 0, y: 2, z: 0}
+  m_Center: {x: 0, y: 1.9321953, z: -0.84853303}
 --- !u!114 &6943863091885114677
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -161,6 +161,10 @@ MonoBehaviour:
   _exclamation: {fileID: 637285499425316330}
   _EIndicator: {fileID: 6815021580414274738}
   _notificationData: {fileID: 11400000, guid: 9c7ccc1837183d043bad6f610aa15911, type: 2}
+  _detectionRange: 6
+  _rotationSpeed: 2
+  _gekkoCam: {fileID: 0}
+  _beaverCam: {fileID: 0}
 --- !u!1 &5290451310675941513
 GameObject:
   m_ObjectHideFlags: 0
@@ -198,7 +202,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 0, y: 5.77}
+  m_AnchoredPosition: {x: 0, y: 5.71}
   m_SizeDelta: {x: 1, y: 2.3263}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!223 &8908772595967740948
@@ -298,8 +302,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: -0.6794}
-  m_SizeDelta: {x: 0, y: -1.3589}
+  m_AnchoredPosition: {x: -0.02, y: -0.54}
+  m_SizeDelta: {x: 0.4928, y: -0.7805}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &8005835476748185666
 CanvasRenderer:
@@ -331,7 +335,7 @@ MonoBehaviour:
       m_Calls: []
   m_Sprite: {fileID: 21300000, guid: fe6a7607160e6d047ad3b3bc92b810b7, type: 3}
   m_Type: 0
-  m_PreserveAspect: 0
+  m_PreserveAspect: 1
   m_FillCenter: 1
   m_FillMethod: 4
   m_FillAmount: 1
@@ -398,6 +402,10 @@ PrefabInstance:
     - target: {fileID: -8679921383154817045, guid: 3f78995712c25594cb42a2dafe0e9937, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 3f78995712c25594cb42a2dafe0e9937, type: 3}
+      propertyPath: m_ConstrainProportionsScale
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: 3f78995712c25594cb42a2dafe0e9937, type: 3}
       propertyPath: m_Name
