@@ -8,12 +8,12 @@ public class CollectiblesFactory : Factory<Collectible>
     private Dictionary<string, Collectible> _collectibleDictionary = new Dictionary<string, Collectible>();
     private Dictionary<string, ObjectPool<Collectible>> _pools = new Dictionary<string, ObjectPool<Collectible>>();
 
-    private void Awake()
+    private void Start()
     {
         GameManager.Instance.factory = this;
         foreach (Collectible c in _collectibles)
-            if (!_collectibleDictionary.ContainsKey(c.collectibleName))
-                _collectibleDictionary.Add(c.collectibleName, c);
+            if (!_collectibleDictionary.ContainsKey(c.CollectibleName))
+                _collectibleDictionary.Add(c.CollectibleName, c);
     }
 
     public override Collectible Create(string name, Vector3 position, Quaternion rotation)
@@ -38,7 +38,7 @@ public class CollectiblesFactory : Factory<Collectible>
 
     public void ReturnToPool(Collectible collectible)
     {
-        if (_pools.TryGetValue(collectible.collectibleName, out var pool))
+        if (_pools.TryGetValue(collectible.CollectibleName, out var pool))
             pool.Return(collectible);
     }
 

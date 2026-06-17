@@ -10,12 +10,14 @@ public class PuzzleBeaver : MonoBehaviour, IInteractable, IDialogueable
     private bool _started;
     private bool _missionAccepted;
     private bool _finish;
+    [Header("Canvas")]
     [SerializeField] Dialogue[] _dialogues;
     [SerializeField] Sprite _imagedialogue;
     [SerializeField] Canvas _canvas;
     [SerializeField] Image _exclamation;
     [SerializeField] Image _EIndicator;
     private int _currentDialogue;
+    [Header("Recompensa")]
     [SerializeField] private NotificationSO _notificationData;
 
     [Header("Rotación hacia el jugador")]
@@ -27,15 +29,14 @@ public class PuzzleBeaver : MonoBehaviour, IInteractable, IDialogueable
     private LookAtTarget _lookAtPlayer;
     private bool _playerInRotationRange;
 
+    [Header("Cameras")]
+    [SerializeField] private CinemachineCamera _beaverCam;
     public Dialogue Dialogue => _dialogues[_currentDialogue];
 
     public Transform Transform => transform;
 
     public Sprite Image => _imagedialogue;
 
-    [Header("Cameras")]
-    [SerializeField] private CinemachineCamera _gekkoCam;
-    [SerializeField] private CinemachineCamera _beaverCam;
 
     private void Start()
     {
@@ -113,13 +114,13 @@ public class PuzzleBeaver : MonoBehaviour, IInteractable, IDialogueable
         }
         if(_finish)
         {
-            CollectiblesRegister.RegisterCollectible("PF_CollectableBlueberry");
-            int count = CollectiblesRegister.GetCollectibleCount("PF_CollectableBlueberry");
+            CollectiblesRegister.RegisterCollectible(_notificationData.Name);
+            int count = CollectiblesRegister.GetCollectibleCount(_notificationData.Name);
             UIManager.Instance.notifications.ShowRaspberryCollectible(_notificationData, count);
 
             var pj = GameManager.Instance.Pj;
             pj.health.SetHealth(pj.health.MaxHealth);
-            pj.PjController.ApplySpeedBoost(1.3f, 10f);
+            pj.PjController.ApplySpeedBoost(_notificationData.SpeedBoostMultiplier, _notificationData.SpeedBoostTimer);
             _finish = false;
         }
     }

@@ -39,6 +39,7 @@ public class Player : MonoBehaviour
 
     private DebugController _debugController;
     private BlueberryComboTracker _blueberryCombo;
+    [SerializeField] private NotificationSO _blueberry;
 
     private void Awake()
     {
@@ -90,7 +91,7 @@ public class Player : MonoBehaviour
 
 
         _pjInputs = new PlayerInputs(_pjController, _pjTongue, _aimM,cam, _interactM, this);
-        _blueberryCombo = new BlueberryComboTracker(_pjController, health);
+        _blueberryCombo = new BlueberryComboTracker(_pjController, health, _blueberry);
         UIManager.Instance.notifications.OnBlueberryWindowClosed += _blueberryCombo.ResetCombo;
         // Raycast desde el Gekko hacia adelante (no desde la cámara orbital).
         _interactor = new DialogueInteractor(transform, _interactReach, _interactOriginY, _dialogueLayer);

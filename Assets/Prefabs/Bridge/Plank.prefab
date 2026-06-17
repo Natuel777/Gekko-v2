@@ -52,7 +52,7 @@ MeshCollider:
   m_LayerOverridePriority: 0
   m_IsTrigger: 0
   m_ProvidesContacts: 0
-  m_Enabled: 1
+  m_Enabled: 0
   serializedVersion: 5
   m_Convex: 1
   m_CookingOptions: 30
@@ -97,8 +97,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   CanMove: 1
-  _respawnPoint: {x: 0, y: 0, z: 0}
-  _respawnRot: {x: 0, y: 0, z: 0, w: 0}
 --- !u!1001 &1734439152052863991
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -145,6 +143,10 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: bdb1f9e0d09276a47a6f53be60aa5a24, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -7511558181221131132, guid: bdb1f9e0d09276a47a6f53be60aa5a24, type: 3}
+      propertyPath: m_Enabled
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -7511558181221131132, guid: bdb1f9e0d09276a47a6f53be60aa5a24, type: 3}

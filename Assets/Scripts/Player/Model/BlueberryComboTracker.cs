@@ -6,9 +6,8 @@ public class BlueberryComboTracker
     private bool  _boostActive;
 
     private const int   ComboTarget         = 5;
-    private const float BoostBaseDuration   = 5f;
     private const float BoostExtendPerBerry = 2f;
-    private const float BoostMultiplier     = 1.3f;
+    private readonly NotificationSO _blueberry;
 
     private readonly PlayerController _controller;
     private readonly GekkoHealth      _health;
@@ -16,10 +15,11 @@ public class BlueberryComboTracker
     public int  ComboCount  => _comboCount;
     public bool BoostActive => _boostActive;
 
-    public BlueberryComboTracker(PlayerController controller, GekkoHealth health)
+    public BlueberryComboTracker(PlayerController controller, GekkoHealth health, NotificationSO blueberr)
     {
         _controller = controller;
         _health     = health;
+        _blueberry = blueberr;
     }
 
     public void ArtificialUpdate()
@@ -57,7 +57,7 @@ public class BlueberryComboTracker
 
     private void ActivateBoost()
     {
-        _controller.ApplySpeedBoost(BoostMultiplier, BoostBaseDuration);
+        _controller.ApplySpeedBoost(_blueberry.SpeedBoostMultiplier, _blueberry.SpeedBoostTimer);
         _boostActive = true;
         _comboCount  = 0;
     }

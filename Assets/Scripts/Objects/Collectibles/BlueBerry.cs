@@ -2,11 +2,9 @@ using UnityEngine;
 
 public class Blueberry : Collectible
 {
-    [SerializeField] private NotificationSO _notificationData;
-
     public override Collectible CreateCollectibleType()
     {
-        return GameManager.Instance.factory.Create(collectibleName, transform.position, transform.rotation);
+        return GameManager.Instance.factory.Create(_notificationData.Name, transform.position, transform.rotation);
     }
 
     public override void Grab()
@@ -18,8 +16,8 @@ public class Blueberry : Collectible
 
     public override void ReturnToFactory()
     {
-        CollectiblesRegister.RegisterCollectible(collectibleName);
-        string msg = $"{CollectiblesRegister.GetCollectibleCount(collectibleName)}";
+        CollectiblesRegister.RegisterCollectible(_notificationData.Name);
+        string msg = $"{CollectiblesRegister.GetCollectibleCount(_notificationData.Name)}";
         UIManager.Instance.notifications.ShowOrUpdate(_notificationData, msg);
         //GameManager.Instance.factory.ReturnToPool(this);
         Destroy(gameObject); // Requiere rápida optimización
