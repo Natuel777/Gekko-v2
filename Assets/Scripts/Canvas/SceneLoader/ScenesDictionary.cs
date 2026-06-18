@@ -9,7 +9,7 @@ public static class ScenesDictionary
         {ScenesNames.Menu, "Menu" },
         {ScenesNames.Level1, "LvlParcialBlocking 2" },
     };
-    public static Dictionary<int, ScenesNames> levelIndex = new Dictionary<int, ScenesNames>
+    public static Dictionary<int, ScenesNames> LevelIndex = new Dictionary<int, ScenesNames>
     {
         {1, ScenesNames.Level1},
     };
