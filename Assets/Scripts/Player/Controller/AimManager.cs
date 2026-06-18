@@ -6,7 +6,7 @@ using UnityEngine.Animations.Rigging;
 public class AimManager : MonoBehaviour
 {
     [SerializeField] private LayerMask _aimableMask;
-    [SerializeField] private Transform _camTransform;
+    private Transform _camTransform;
     private PlayerController _pjController;
     private float _switchTimer;
     private float _switchCooldown = 0.2f;
@@ -43,9 +43,10 @@ public class AimManager : MonoBehaviour
         }
 
     }
-    public void SetPjController(PlayerController pjC)
+    public void SetControllerAndCamera(PlayerController pjC, Transform camera)
     {
         _pjController = pjC;
+        _camTransform = camera;
     }
     public bool InFOV(Transform startPos, Vector3 endPos, float viewRange, float viewAngle)
     {

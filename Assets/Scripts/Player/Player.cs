@@ -78,7 +78,7 @@ public class Player : MonoBehaviour
                         _trail);
 
         _aimM = GetComponent<AimManager>();
-        _aimM.SetPjController(_pjController);
+        _aimM.SetControllerAndCamera(_pjController, camTransform);
 
         _pjTongue = GetComponentInChildren<TongueManager>();
         _pjTongue.GetPlayerController(_pjController);
