@@ -1,10 +1,12 @@
 
+using UnityEngine.SceneManagement;
+
 public class ScreenReafirm : Screens
 {
     public void BTN_Menu()
     {
         ScreenManager.Instance.ButtonSound.Play();
         GameManager.Instance.IsPause = false;
-        GameManager.Instance.RestartLvl();
+        SceneManager.LoadScene(ScenesDictionary.SceneName[ScenesNames.Menu]);
     }
 }
