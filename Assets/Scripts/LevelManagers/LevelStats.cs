@@ -23,10 +23,10 @@ public class LevelStats : MonoBehaviour
 
     private void Start()
     {
-        foreach (var c in FindObjectsOfType<Collectible>())
+        foreach (var c in FindObjectsByType<Collectible>(FindObjectsInactive.Exclude, FindObjectsSortMode.None))
         {
-            if (!_totals.ContainsKey(c.collectibleName)) _totals[c.collectibleName] = 0;
-            _totals[c.collectibleName]++;
+            if (!_totals.ContainsKey(c.CollectibleName)) _totals[c.CollectibleName] = 0;
+            _totals[c.CollectibleName]++;
         }
     }
 

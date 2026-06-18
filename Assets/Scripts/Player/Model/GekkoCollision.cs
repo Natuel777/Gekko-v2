@@ -24,7 +24,7 @@ public class GekkoCollision
         if(other.CompareTag("Nexus"))
         {
             Debug.Log("nexussss");
-            _owner.PjController.SetSlipperySurface(true);
+            _owner.PjController.SetIcySurface(true);
             return;
         }
 
@@ -39,7 +39,7 @@ public class GekkoCollision
     {
         if(other.CompareTag("Nexus"))
         {
-            _owner.PjController.SetSlipperySurface(false);
+            _owner.PjController.SetIcySurface(false);
         }
     }
 

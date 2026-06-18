@@ -40,8 +40,10 @@ public class PlayerController
     private bool _canJump;
     private bool _tongueOut;
     private bool _talking;
+    private bool _isIcySurface = false;
+    private float _icyDriftForce = 200f;
     private bool _isSlipperySurface = false;
-    private float _slipperyDriftForce = 200f;
+    private float _slipperyForce = 0.25f;
     
     private Vector3 _currentUp;
     private Vector2 _rawInput = new(), _smoothedInput = new(), _smoothedVelocity = new();
@@ -60,6 +62,7 @@ public class PlayerController
     private Vector3 _lastDirJump;
     [SerializeField] private CinemachineOrbitalFollow _orbitalFollow;
     private ParticleSystem _trail;
+
     public bool JumpPressed { set { _jumpPressed = value; } }
     public bool IsMoving { get { return _isMoving; } }
     public bool TongueOut { get { return _tongueOut; } set { _tongueOut = value; } }
@@ -187,7 +190,7 @@ public class PlayerController
             if (!_nearGround && _jumpGraceTime <= 0f)
             {
                 float stickyForce = 20f + _speed * 2f;
-                if (_isSlipperySurface)
+                if (_isIcySurface)
                     stickyForce *= 0.05f;
                 _rb.AddForce(-_currentUp * stickyForce * 2, ForceMode.Acceleration);
             }
@@ -296,7 +299,7 @@ public class PlayerController
         }
         else if(_lastValidDir.sqrMagnitude > 0.0001f)
         {
-            float drift = _isSlipperySurface ? 0.1f : 0.3f;
+            float drift = _isIcySurface ? 0.1f : 0.3f;
             dir = Vector3.Slerp(_lastValidDir, dir.normalized, drift).normalized;
             _usingLastDir = true;
             Rotate(dir);
@@ -369,16 +372,16 @@ public class PlayerController
         //_rb.MovePosition(targetPos);
         Vector3 moveVel = (targetPos - _rb.position) / Time.fixedDeltaTime;
 
-        if (_isSlipperySurface && input.magnitude > 0.01f)
+        if (_isIcySurface && input.magnitude > 0.01f)
         {
             // Derrape en la dirección del movimiento
-            _rb.AddForce(dir.normalized * _slipperyDriftForce, ForceMode.Acceleration);
+            _rb.AddForce(dir.normalized * _icyDriftForce, ForceMode.Acceleration);
 
             // Derrape lateral al girar
             if (Mathf.Abs(input.x) > 0.01f)
             {
                 Vector3 lateralDir = Vector3.Cross(_currentUp, dir.normalized).normalized;
-                float lateralForce = _slipperyDriftForce * Mathf.Abs(input.x) * 0.5f;
+                float lateralForce = _icyDriftForce * Mathf.Abs(input.x) * 0.5f;
                 _rb.AddForce(lateralDir * lateralForce * Mathf.Sign(input.x), ForceMode.Acceleration);
             }
         }
@@ -404,11 +407,13 @@ public class PlayerController
             }
             else
             {
+                float speed = _speed;
+                if (_isSlipperySurface) speed *= _slipperyForce;
                 float currentY = _wasClimbing && _jumpGraceTime <= 0 ? 0f : _rb.linearVelocity.y;
                 moveVel.y = currentY;
                 Vector3 horizontalVel = new Vector3(moveVel.x, 0, moveVel.z);
-                if (horizontalVel.magnitude > _speed * _speedMultiplier)
-                    horizontalVel = horizontalVel.normalized * _speed * _speedMultiplier;
+                if (horizontalVel.magnitude > speed * _speedMultiplier)
+                    horizontalVel = horizontalVel.normalized * speed * _speedMultiplier;
                 moveVel.x = horizontalVel.x;
                 moveVel.z = horizontalVel.z;
                 _rb.linearVelocity = moveVel;
@@ -632,6 +637,10 @@ public class PlayerController
             out RaycastHit hit, moveDist, ~(1 << _pjTransform.gameObject.layer), QueryTriggerInteraction.Ignore);
     }
 
+    public void SetIcySurface(bool slippery)
+    {
+        _isIcySurface = slippery;
+    }
     public void SetSlipperySurface(bool slippery)
     {
         _isSlipperySurface = slippery;
@@ -661,7 +670,7 @@ public class PlayerController
     public void CancelJump() { _pjViewer.Jump(false); }
     public void CancelMovement() 
     {
-        if (!_isSlipperySurface)
+        if (!_isIcySurface || !_isSlipperySurface)
         {
             _rb.linearVelocity = Vector3.zero;
         }
