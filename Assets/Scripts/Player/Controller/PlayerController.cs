@@ -166,7 +166,7 @@ public class PlayerController
             if (_jumpDelayCount <= 0)
             {
                 _jumpDelayCount = 0;
-                Jump();
+                Jump(_jumpForce);
                 _pjTransform.GetComponent<Player>().JumpSound();
             }
         }
@@ -455,7 +455,7 @@ public class PlayerController
     }
 
 
-    public void Jump()
+    public void Jump(float force)
     {
         if(!_canJump) return;
         if (_tongueOut) return;
@@ -465,7 +465,7 @@ public class PlayerController
         _lastDirJump = _currentUp;
         _pjViewer.Jump(true);
 
-        _rb.linearVelocity += _currentUp * _jumpForce;
+        _rb.linearVelocity += _currentUp * force;
         _canJump = false;
     }
 
