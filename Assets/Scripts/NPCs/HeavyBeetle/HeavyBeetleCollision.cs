@@ -17,7 +17,6 @@ public class HeavyBeetleCollision
         {
             player.GetComponent<Rigidbody>().AddForce(_owner.chargeMovement.ChargeDirection * _owner.data.knockbackForce, ForceMode.Impulse);
             EventManager.Trigger<float>("OnPlayerDamaged", _owner.data.attackDamage);
-            EventManager.Trigger<float>("OnCameraShake", _owner.data.shakeForce);
             _owner.SendEvent(CreatureEvent.ChargeHitPlayer);
             return;
         }
