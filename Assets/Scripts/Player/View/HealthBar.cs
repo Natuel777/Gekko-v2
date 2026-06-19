@@ -5,6 +5,7 @@ using UnityEngine.UI;
 public class HealthBar
 {
     [SerializeField] private Slider _healthBar;
+    [SerializeField] private Image _fillImage;
     [SerializeField] private CanvasGroup _canvasGroup;
     [SerializeField, Range(0f, 1f)] private float _idleOpacity = 0.5f;
     [SerializeField] private float _lerpSpeed = 5f;
@@ -12,6 +13,8 @@ public class HealthBar
     [SerializeField] private float _opacityLerpSpeed = 3f;
     [SerializeField] private float _pulsePeriod = 1f;
     [SerializeField] private float _pulseScale = 0.1f;
+    [SerializeField] private Color _damageColor = Color.red;
+    [SerializeField] private Color _healColor = Color.green;
 
     private const float _criticalThreshold = 0.25f;
     private float _targetValue = 1f;
@@ -20,13 +23,17 @@ public class HealthBar
     private float _damageTimer = 0f;
     private float _pulseTime = 0f;
     private Vector3 _baseScale;
+    private Color _fillBaseColor;
     private bool _isPulsing = false;
     private float _pulseTimer = 0f;
+    private bool _isHealPulsing = false;
+    private float _healPulseTimer = 0f;
 
     public void Initialize()
     {
         if (_healthBar == null) return;
         _baseScale = _healthBar.transform.localScale;
+        if (_fillImage != null) _fillBaseColor = _fillImage.color;
         _targetValue = 1f;
         _currentDisplayValue = 1f;
         _healthBar.value = 1f;
@@ -81,6 +88,22 @@ public class HealthBar
             {
                 _isPulsing = false;
                 _pulseTimer = 0f;
+                if (_fillImage != null) _fillImage.color = _fillBaseColor;
+                if (!isCritical) _healthBar.transform.localScale = _baseScale;
+            }
+        }
+        else if (_isHealPulsing)
+        {
+            _healPulseTimer += Time.deltaTime;
+            float t = Mathf.PingPong(_healPulseTimer * 2f / _pulsePeriod, 1f);
+            float smoothT = Mathf.SmoothStep(0f, 1f, t);
+            _healthBar.transform.localScale = _baseScale + Vector3.one * (smoothT * _pulseScale);
+
+            if (_healPulseTimer >= _pulsePeriod)
+            {
+                _isHealPulsing = false;
+                _healPulseTimer = 0f;
+                if (_fillImage != null) _fillImage.color = _fillBaseColor;
                 if (!isCritical) _healthBar.transform.localScale = _baseScale;
             }
         }
@@ -102,5 +125,13 @@ public class HealthBar
     {
         _isPulsing = true;
         _pulseTimer = 0f;
+        if (_fillImage != null) _fillImage.color = _damageColor;
+    }
+
+    public void TriggerHealPulse()
+    {
+        _isHealPulsing = true;
+        _healPulseTimer = 0f;
+        if (_fillImage != null) _fillImage.color = _healColor;
     }
 }

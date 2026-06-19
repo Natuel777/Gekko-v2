@@ -46,7 +46,9 @@ public class GekkoHealth : IDamageable
 
     public void SetHealth(float value)
     {
-        _currentHealth = Mathf.Clamp(value, 0f, _maxHealth);
+        float clamped = Mathf.Clamp(value, 0f, _maxHealth);
+        if (clamped > _currentHealth) _healthBar.TriggerHealPulse();
+        _currentHealth = clamped;
         _healthBar.UpdateHealthBar(_currentHealth, _maxHealth);
     }
 
