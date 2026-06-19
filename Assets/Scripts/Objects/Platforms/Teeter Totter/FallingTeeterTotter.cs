@@ -16,6 +16,7 @@ public class FallingTeeterTotter : TeeterTotterPlatform
     {
         base.Start();
         _rb = _platformMesh.GetComponent<Rigidbody>();
+        _rb.useGravity = false;
         _rb.constraints = RigidbodyConstraints.FreezeAll;
         _timeStillCounter = _maxStillTimer;
     }
