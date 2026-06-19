@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Spline Terrain Tool — Guide / Guía</title>
+<style>
+  :root{
+    --bg:#0f1117; --panel:#171a22; --panel2:#1d212b; --border:#2a2f3a;
+    --text:#e6e9ef; --muted:#9aa3b2; --accent:#5db0ff; --accent2:#7ee0a8;
+    --warn:#ffcf6b; --chip:#222838; --radius:14px;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0; background:linear-gradient(180deg,#0c0e14,#0f1117 240px);
+    color:var(--text); font:16px/1.6 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+  }
+  a{color:var(--accent);text-decoration:none}
+  a:hover{text-decoration:underline}
+  header{
+    position:sticky; top:0; z-index:10; backdrop-filter:blur(8px);
+    background:rgba(15,17,23,.82); border-bottom:1px solid var(--border);
+  }
+  .bar{max-width:980px;margin:0 auto;padding:14px 22px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  .logo{font-weight:800;font-size:18px;letter-spacing:.2px}
+  .logo span{color:var(--accent)}
+  .bar .grow{flex:1}
+  .toggle{display:inline-flex;border:1px solid var(--border);border-radius:999px;overflow:hidden}
+  .toggle button{
+    background:transparent;color:var(--muted);border:0;padding:7px 16px;cursor:pointer;font-weight:600;font-size:14px
+  }
+  .toggle button.active{background:var(--accent);color:#06223b}
+  main{max-width:980px;margin:0 auto;padding:30px 22px 80px}
+  .hero{
+    background:radial-gradient(1200px 300px at 10% -20%,rgba(93,176,255,.16),transparent),
+               var(--panel);
+    border:1px solid var(--border);border-radius:var(--radius);padding:30px;margin-bottom:28px
+  }
+  .hero h1{margin:0 0 8px;font-size:30px}
+  .hero p{margin:0;color:var(--muted);max-width:70ch}
+  h2{margin:42px 0 14px;font-size:22px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+  h3{margin:22px 0 8px;font-size:17px}
+  section{scroll-margin-top:80px}
+  .grid{display:grid;gap:16px}
+  .cols-3{grid-template-columns:repeat(3,1fr)}
+  .cols-2{grid-template-columns:repeat(2,1fr)}
+  @media(max-width:760px){.cols-3,.cols-2{grid-template-columns:1fr}}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:18px}
+  .card h3{margin-top:0;display:flex;align-items:center;gap:8px}
+  .card .tag{font-size:12px;color:var(--accent2);font-weight:700;text-transform:uppercase;letter-spacing:.6px}
+  .chips{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 0}
+  .chip{background:var(--chip);border:1px solid var(--border);border-radius:999px;padding:4px 12px;font-size:13px;color:var(--muted)}
+  table{width:100%;border-collapse:collapse;background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+  th,td{text-align:left;padding:11px 14px;border-bottom:1px solid var(--border);vertical-align:top}
+  th{background:var(--panel2);font-size:13px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)}
+  tr:last-child td{border-bottom:0}
+  td code,p code,li code{background:#0c0e14;border:1px solid var(--border);border-radius:6px;padding:1px 6px;font-size:13px}
+  .steps{counter-reset:s;list-style:none;padding:0;margin:0}
+  .steps li{counter-increment:s;position:relative;padding:10px 0 10px 46px;border-bottom:1px dashed var(--border)}
+  .steps li:last-child{border-bottom:0}
+  .steps li::before{
+    content:counter(s);position:absolute;left:0;top:8px;width:30px;height:30px;border-radius:50%;
+    background:var(--accent);color:#06223b;font-weight:800;display:grid;place-items:center
+  }
+  .note{background:linear-gradient(180deg,rgba(255,207,107,.10),transparent);border:1px solid #4a401f;border-left:4px solid var(--warn);border-radius:10px;padding:14px 16px;margin:16px 0}
+  .note b{color:var(--warn)}
+  .key{display:inline-block;min-width:24px;text-align:center;background:#0c0e14;border:1px solid var(--border);border-bottom-width:3px;border-radius:7px;padding:2px 8px;font-weight:700;font-size:13px}
+  pre{background:#0a0c11;border:1px solid var(--border);border-radius:var(--radius);padding:16px;overflow:auto;font-size:13px;line-height:1.5}
+  .toc{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+  .toc a{background:var(--chip);border:1px solid var(--border);border-radius:999px;padding:5px 12px;font-size:13px;color:var(--text)}
+  .muted{color:var(--muted)}
+  .hidden{display:none}
+  footer{max-width:980px;margin:0 auto;padding:24px 22px;color:var(--muted);border-top:1px solid var(--border);font-size:14px}
+</style>
+</head>
+<body>
+<header>
+  <div class="bar">
+    <div class="logo">Spline&nbsp;<span>Terrain</span>&nbsp;Tool</div>
+    <div class="grow"></div>
+    <div class="toggle" role="group" aria-label="Language">
+      <button id="btn-en" class="active" onclick="setLang('en')">EN</button>
+      <button id="btn-es" onclick="setLang('es')">ES</button>
+    </div>
+  </div>
+</header>
+
+<main>
+<!-- ============================ ENGLISH ============================ -->
+<div id="en">
+  <div class="hero">
+    <h1>Spline Terrain Tool</h1>
+    <p>A Unity editor tool that turns splines into solid terrain meshes — floor, walls and edges,
+    updating live as you edit. Three modes, tileable per-surface materials, a curved bevel, a
+    dense paintable floor grid (Polybrush), separable floor/wall pieces, split colliders, and baking
+    to assets.</p>
+    <div class="toc">
+      <a href="#en-req">Requirements</a>
+      <a href="#en-start">Quick start</a>
+      <a href="#en-modes">Modes</a>
+      <a href="#en-floor">Dense floor</a>
+      <a href="#en-collider">Split colliders</a>
+      <a href="#en-bake">Baking</a>
+      <a href="#en-arch">Architecture</a>
+    </div>
+  </div>
+
+  <section id="en-req">
+    <h2>Requirements</h2>
+    <div class="chips">
+      <span class="chip">Unity 6 (6000.0.62f1)</span>
+      <span class="chip">URP</span>
+      <span class="chip">com.unity.splines</span>
+      <span class="chip">Polybrush (optional)</span>
+    </div>
+    <p class="muted">Everything lives under <code>Assets/Spline Terrain/</code> — <code>Runtime/</code>,
+    <code>Editor/</code> (each with its own asmdef) and <code>Documentation/</code>.</p>
+  </section>
+
+  <section id="en-start">
+    <h2>Quick start</h2>
+    <ol class="steps">
+      <li>Open <b>Tools ▸ Spline Terrain ▸ Manager</b>.</li>
+      <li>In the <b>Create</b> tab pick a <b>Mode</b> and a <b>Start shape</b> (Circle / Square / Line), set <b>Size / Radius</b>, then <b>Create new terrain</b>.</li>
+      <li>A GameObject is created with a <code>SplineContainer</code>, the <code>SplineTerrain</code> component, a child <code>TopTransform</code> and default materials. The mesh appears instantly.</li>
+      <li>Edit the <b>spline knots</b> in the Scene view — the mesh regenerates live.</li>
+      <li>Use <span class="key">W</span><span class="key">E</span><span class="key">R</span> on the terrain to move / rotate / scale the floor.</li>
+    </ol>
+  </section>
+
+  <section id="en-modes">
+    <h2>The three modes</h2>
+    <div class="grid cols-3">
+      <div class="card"><h3><span class="tag">Internal</span></h3><b>Plateau / mesa.</b> Fills the inside of the spline: a top floor + sloped walls down to the base outline. The floor is driven by the Top transform. Works with open splines (auto-closed).</div>
+      <div class="card"><h3><span class="tag">Road</span></h3><b>Raised path.</b> An elevated floor of configurable <b>width</b> following the spline, side walls to y=0, end caps when open (a ring when closed). Top transform = height / offset / width.</div>
+      <div class="card"><h3><span class="tag">External</span></h3><b>Island with a hole.</b> The interior becomes a hole; a ring grows outward by <b>Outward distance</b> + <b>noise</b>. Inner &amp; outer walls; the hole rim wall is optional.</div>
+    </div>
+  </section>
+
+  <section id="en-edit">
+    <h2>Editing — the Top transform</h2>
+    <p>Each terrain has a child <code>TopTransform</code>; selecting the terrain shows a handle that follows the active Unity tool:</p>
+    <table>
+      <tr><th>Tool</th><th>Effect</th></tr>
+      <tr><td><span class="key">W</span> Move</td><td>Floor offset (Y = height, XZ = lateral offset).</td></tr>
+      <tr><td><span class="key">E</span> Rotate</td><td>Tilts the floor; walls curve smoothly to follow.</td></tr>
+      <tr><td><span class="key">R</span> Scale</td><td>Uniform XZ floor scale (in Road mode this is the width).</td></tr>
+    </table>
+    <p class="muted">Everything is also editable numerically in the Inspector / window's Edit tab, kept in sync with the gizmo.</p>
+  </section>
+
+  <section id="en-params">
+    <h2>Key parameters</h2>
+    <table>
+      <tr><th>Parameter</th><th>What it does</th></tr>
+      <tr><td>Resolution (segments)</td><td>Points sampled along the spline (3–400). Higher = smoother &amp; heavier.</td></tr>
+      <tr><td>Collider = visual shape</td><td>On = collider identical to visual. Off = optimized collider, same shape/bevel, redundant rows collapsed.</td></tr>
+      <tr><td>Collider extra simplify</td><td>Decimates the perimeter for a lighter collider, at the cost of shape fidelity (0 = full).</td></tr>
+      <tr><td>Collider split</td><td>Splits the collider into separate pieces — see below. Never touches the visual.</td></tr>
+      <tr><td>Walls / Smoothing</td><td>Vertical subdivisions, curvature (bulge), smooth/faceted shading, and the wall–floor bevel (size / subdivisions / curvature).</td></tr>
+      <tr><td>UVs / Tiling</td><td>Floor UV scale (planar XZ) &amp; Wall UV scale (arc-length × height). Re-tiles without touching materials.</td></tr>
+    </table>
+  </section>
+
+  <section id="en-floor">
+    <h2>Dense floor &amp; separated meshes <span class="muted">(Polybrush-ready)</span></h2>
+    <p>Under <b>Visual mesh layout</b>. These change only the <b>visual</b> mesh and keep everything parented under the terrain GameObject.</p>
+    <div class="grid cols-2">
+      <div class="card">
+        <h3>Dense floor grid</h3>
+        <p>Replaces the floor's minimal triangulation with a dense grid so it has enough polygons to vertex-paint.</p>
+        <p><b>Grid cell size</b> — approximate world size of each cell; smaller = denser. Drives every mode (internally capped).</p>
+      </div>
+      <div class="card">
+        <h3>Grid style <span class="muted">(Internal only)</span></h3>
+        <p><b>Clipped Grid</b> — regular row/column grid clipped to the outline. Even quads inside, but boundary cells split into small irregular polys.</p>
+        <p><b>Subdivided Contour</b> — ear-clip + uniform triangle subdivision. Boundary follows the outline exactly (cleaner edges), interior is triangle-based.</p>
+        <p class="muted">Road &amp; External floors are quad strips/rings — they always subdivide their quads.</p>
+      </div>
+    </div>
+    <div class="card" style="margin-top:16px">
+      <h3>Separate floor / walls meshes</h3>
+      <p>Splits the visual into child GameObjects under the terrain: <code>STT_Visual_Floor</code> (floor material) and <code>STT_Visual_Walls</code> (wall + bevel). Paint the dense floor without touching the walls. Off = single combined mesh on the terrain.</p>
+    </div>
+  </section>
+
+  <section id="en-collider">
+    <h2>Split colliders</h2>
+    <p><b>Collider split</b> breaks the collider into separate <code>MeshCollider</code> child pieces (<code>STT_Collider…</code>) using the submesh groups <b>floor</b> / <b>wall</b> / <b>bevel</b>. It never changes the visual mesh; empty groups are skipped.</p>
+    <div class="grid cols-2">
+      <div class="card"><h3><span class="tag">All together</span></h3>One collider: floor + wall + bevel.</div>
+      <div class="card"><h3><span class="tag">All separate</span></h3>Three colliders: floor, wall, bevel.</div>
+      <div class="card"><h3><span class="tag">Floor+Bevel / Wall</span></h3>Two colliders: floor+bevel together, wall on its own.</div>
+      <div class="card"><h3><span class="tag">Wall+Bevel / Floor</span></h3>Two colliders: wall+bevel together, floor on its own.</div>
+    </div>
+    <div class="note"><b>Live preview:</b> the <b>Rebuild colliders (preview)</b> button builds the same hierarchy with temporary meshes so you can see/use the split colliders without a full bake. Colliders aren't rebuilt on every spline edit (cooking MeshColliders is expensive).</div>
+  </section>
+
+  <section id="en-mat">
+    <h2>Materials &amp; Profiles</h2>
+    <p>The mesh has <b>3 submeshes</b>: <b>0 Floor</b> (planar XZ UVs), <b>1 Wall</b> (arc-length × height), <b>2 Edge/Bevel</b>. Defaults <code>M_Floor</code> / <code>M_Wall</code> / <code>M_Edge</code> (URP Lit).</p>
+    <p>A <b>Profile</b> is a ScriptableObject storing a full parameter set (and optional materials): <b>Export new</b>, assign a <b>Profile</b>, <b>Apply profile</b>, <b>Save into profile</b>. Profiles include the new floor-grid and collider-split settings.</p>
+  </section>
+
+  <section id="en-bake">
+    <h2>Baking</h2>
+    <p>Bake freezes the terrain into assets, organized under the terrain GameObject (the parent):</p>
+    <table>
+      <tr><th>Case</th><th>Output</th></tr>
+      <tr><td>Combined visual</td><td><code>&lt;Name&gt;_Visual.asset</code> on the terrain's MeshFilter.</td></tr>
+      <tr><td>Separated visual</td><td><code>&lt;Name&gt;_Floor.asset</code> + <code>&lt;Name&gt;_Walls.asset</code> on the <code>STT_Visual_*</code> children.</td></tr>
+      <tr><td>Colliders</td><td>One <code>&lt;Name&gt;_Collider….asset</code> per split group, on <code>STT_Collider…</code> children.</td></tr>
+      <tr><td>Data</td><td><code>&lt;Name&gt;_Data.asset</code> (all parameters + spline knot snapshot). <b>Load from SO</b> restores it.</td></tr>
+    </table>
+    <div class="note"><b>Note:</b> the optimized collider keeps the visual shape &amp; bevel, collapses redundant vertical rows (lossless), and always uses the minimal floor triangulation — the dense paint grid is for the visual floor only.</div>
+  </section>
+
+  <section id="en-arch">
+    <h2>Architecture (for developers)</h2>
+<pre>Runtime/
+  SplineTerrain.cs          [ExecuteAlways]: live regen, gizmo sync, visual/collider pieces, bake builders
+  SplineTerrainSettings.cs  Params + enums (SplineTerrainMode, ColliderSplitMode, FloorGridStyle)
+  SplineTerrainData.cs      Bake ScriptableObject (settings + knots + mesh refs)
+  Generation/               MeshBuildResult (+ ToMeshSubset), GeneratorUtils, Internal/Road/External
+  Util/                     SplineSampler, PolygonOffset, EarClippingTriangulator,
+                            GridCapTriangulator, TerrainNoise
+Editor/
+  SplineTerrainInspector / Window / GUI / Baker / ProfileIO / SplineShapeFactory
+Documentation/              READMEs (EN/ES) + this index.html</pre>
+    <p class="muted">Floor caps: <code>AddFlatCap</code> (ear clip), <code>AddGridCap</code> (clipped grid via Sutherland–Hodgman), <code>AddSubdividedCap</code> (ear clip + uniform subdivision); Road/External use <code>AddFloorQuadGrid</code>. <code>ToMeshSubset</code> extracts submesh groups for the separated pieces &amp; split colliders. Child pieces (<code>STT_Visual_*</code> / <code>STT_Collider*</code>) stay parented under the terrain.</p>
+  </section>
+</div>
+
+<!-- ============================ ESPAÑOL ============================ -->
+<div id="es" class="hidden">
+  <div class="hero">
+    <h1>Spline Terrain Tool</h1>
+    <p>Herramienta de editor de Unity que convierte splines en terrenos sólidos — piso, paredes y
+    bordes, actualizándose en vivo mientras editás. Tres modos, materiales tileables por superficie,
+    bevel curvo, grilla densa de piso pintable (Polybrush), piezas piso/pared separables, colliders
+    separables y bake a assets.</p>
+    <div class="toc">
+      <a href="#es-req">Requisitos</a>
+      <a href="#es-start">Inicio rápido</a>
+      <a href="#es-modes">Modos</a>
+      <a href="#es-floor">Piso denso</a>
+      <a href="#es-collider">Colliders</a>
+      <a href="#es-bake">Bake</a>
+      <a href="#es-arch">Arquitectura</a>
+    </div>
+  </div>
+
+  <section id="es-req">
+    <h2>Requisitos</h2>
+    <div class="chips">
+      <span class="chip">Unity 6 (6000.0.62f1)</span>
+      <span class="chip">URP</span>
+      <span class="chip">com.unity.splines</span>
+      <span class="chip">Polybrush (opcional)</span>
+    </div>
+    <p class="muted">Todo vive en <code>Assets/Spline Terrain/</code> — <code>Runtime/</code>,
+    <code>Editor/</code> (cada uno con su asmdef) y <code>Documentation/</code>.</p>
+  </section>
+
+  <section id="es-start">
+    <h2>Inicio rápido</h2>
+    <ol class="steps">
+      <li>Abrí <b>Tools ▸ Spline Terrain ▸ Manager</b>.</li>
+      <li>En la pestaña <b>Create</b> elegí un <b>Mode</b> y una <b>Start shape</b> (Circle / Square / Line), poné <b>Size / Radius</b> y tocá <b>Create new terrain</b>.</li>
+      <li>Se crea un GameObject con <code>SplineContainer</code>, el componente <code>SplineTerrain</code>, un hijo <code>TopTransform</code> y materiales por defecto. El mesh aparece al instante.</li>
+      <li>Editá los <b>knots del spline</b> en la escena — el mesh se regenera en vivo.</li>
+      <li>Usá <span class="key">W</span><span class="key">E</span><span class="key">R</span> sobre el terreno para mover / rotar / escalar el piso.</li>
+    </ol>
+  </section>
+
+  <section id="es-modes">
+    <h2>Los tres modos</h2>
+    <div class="grid cols-3">
+      <div class="card"><h3><span class="tag">Internal</span></h3><b>Meseta.</b> Rellena el interior del spline: piso superior + paredes inclinadas hasta el contorno base. El piso lo maneja el Top transform. Funciona con splines abiertas (se cierran solas).</div>
+      <div class="card"><h3><span class="tag">Road</span></h3><b>Camino elevado.</b> Piso elevado con <b>ancho</b> configurable que sigue el spline, paredes hasta y=0, tapas si es abierto (anillo si es cerrado). Top transform = altura / offset / ancho.</div>
+      <div class="card"><h3><span class="tag">External</span></h3><b>Isla con agujero.</b> El interior queda hueco; un anillo crece hacia afuera por <b>Outward distance</b> + <b>ruido</b>. Paredes interna y externa; la pared del rim es opcional.</div>
+    </div>
+  </section>
+
+  <section id="es-edit">
+    <h2>Edición — el Top transform</h2>
+    <p>Cada terreno tiene un hijo <code>TopTransform</code>; al seleccionar el terreno aparece un handle que sigue la herramienta activa de Unity:</p>
+    <table>
+      <tr><th>Herramienta</th><th>Efecto</th></tr>
+      <tr><td><span class="key">W</span> Mover</td><td>Offset del piso (Y = altura, XZ = offset lateral).</td></tr>
+      <tr><td><span class="key">E</span> Rotar</td><td>Inclina el piso; las paredes acompañan con una curva.</td></tr>
+      <tr><td><span class="key">R</span> Escalar</td><td>Escala XZ uniforme del piso (en Road es el ancho).</td></tr>
+    </table>
+    <p class="muted">También se edita todo numéricamente en el Inspector / pestaña Edit, sincronizado con el gizmo.</p>
+  </section>
+
+  <section id="es-params">
+    <h2>Parámetros clave</h2>
+    <table>
+      <tr><th>Parámetro</th><th>Qué hace</th></tr>
+      <tr><td>Resolution (segments)</td><td>Puntos muestreados del spline (3–400). Más = más suave y más pesado.</td></tr>
+      <tr><td>Collider = visual shape</td><td>Activo = collider idéntico al visual. Apagado = collider optimizado, misma forma/bevel, filas redundantes colapsadas.</td></tr>
+      <tr><td>Collider extra simplify</td><td>Decima el perímetro para un collider más liviano, a costa de fidelidad de forma (0 = completo).</td></tr>
+      <tr><td>Collider split</td><td>Separa el collider en piezas distintas — ver abajo. Nunca toca el visual.</td></tr>
+      <tr><td>Walls / Smoothing</td><td>Subdivisiones verticales, curvatura (abombado), shading smooth/facetado y el bevel pared–piso (size / subdivisiones / curvatura).</td></tr>
+      <tr><td>UVs / Tiling</td><td>Floor UV scale (planar XZ) y Wall UV scale (longitud de arco × altura). Re-tilea sin tocar materiales.</td></tr>
+    </table>
+  </section>
+
+  <section id="es-floor">
+    <h2>Piso denso y meshes separados <span class="muted">(listo para Polybrush)</span></h2>
+    <p>Bajo <b>Visual mesh layout</b>. Solo cambian el mesh <b>visual</b> y mantienen todo parentado bajo el GameObject del terreno.</p>
+    <div class="grid cols-2">
+      <div class="card">
+        <h3>Grilla densa de piso</h3>
+        <p>Reemplaza la triangulación mínima del piso por una grilla densa para que tenga suficientes polígonos para pintar por vértices.</p>
+        <p><b>Grid cell size</b> — tamaño aproximado en mundo de cada celda; más chico = más denso. Maneja todos los modos (topeado internamente).</p>
+      </div>
+      <div class="card">
+        <h3>Estilo de grilla <span class="muted">(solo Internal)</span></h3>
+        <p><b>Clipped Grid</b> — grilla regular de filas/columnas recortada al contorno. Quads parejos adentro, pero las celdas del borde se parten en polígonos chicos irregulares.</p>
+        <p><b>Subdivided Contour</b> — ear-clip + subdivisión uniforme de triángulos. El borde sigue exactamente el outline (bordes más limpios), interior a base de triángulos.</p>
+        <p class="muted">Los pisos de Road y External son tiras/anillos de quads — siempre subdividen sus quads.</p>
+      </div>
+    </div>
+    <div class="card" style="margin-top:16px">
+      <h3>Separar meshes de piso / paredes</h3>
+      <p>Separa el visual en GameObjects hijos bajo el terreno: <code>STT_Visual_Floor</code> (material de piso) y <code>STT_Visual_Walls</code> (pared + bevel). Pintás el piso denso sin tocar las paredes. Apagado = un único mesh combinado en el terreno.</p>
+    </div>
+  </section>
+
+  <section id="es-collider">
+    <h2>Colliders separables</h2>
+    <p><b>Collider split</b> parte el collider en piezas <code>MeshCollider</code> hijas (<code>STT_Collider…</code>) usando los grupos de submeshes <b>piso</b> / <b>pared</b> / <b>bevel</b>. Nunca cambia el mesh visual; los grupos vacíos se omiten.</p>
+    <div class="grid cols-2">
+      <div class="card"><h3><span class="tag">Todo junto</span></h3>Un collider: piso + pared + bevel.</div>
+      <div class="card"><h3><span class="tag">Todo separado</span></h3>Tres colliders: piso, pared, bevel.</div>
+      <div class="card"><h3><span class="tag">Piso+Bevel / Pared</span></h3>Dos colliders: piso+bevel juntos, pared aparte.</div>
+      <div class="card"><h3><span class="tag">Pared+Bevel / Piso</span></h3>Dos colliders: pared+bevel juntos, piso aparte.</div>
+    </div>
+    <div class="note"><b>Preview en vivo:</b> el botón <b>Rebuild colliders (preview)</b> arma la misma jerarquía con meshes temporales para ver/usar los colliders separados sin un bake completo. No se reconstruyen en cada edición del spline (cocinar MeshColliders es costoso).</div>
+  </section>
+
+  <section id="es-mat">
+    <h2>Materiales y Perfiles</h2>
+    <p>El mesh tiene <b>3 submeshes</b>: <b>0 Floor</b> (UVs planares XZ), <b>1 Wall</b> (longitud de arco × altura), <b>2 Edge/Bevel</b>. Por defecto <code>M_Floor</code> / <code>M_Wall</code> / <code>M_Edge</code> (URP Lit).</p>
+    <p>Un <b>Perfil</b> es un ScriptableObject que guarda un set completo de parámetros (y materiales opcionales): <b>Export new</b>, asignar <b>Profile</b>, <b>Apply profile</b>, <b>Save into profile</b>. Los perfiles incluyen los nuevos ajustes de grilla de piso y de separación de colliders.</p>
+  </section>
+
+  <section id="es-bake">
+    <h2>Bake</h2>
+    <p>El bake congela el terreno en assets, organizados bajo el GameObject del terreno (el padre):</p>
+    <table>
+      <tr><th>Caso</th><th>Salida</th></tr>
+      <tr><td>Visual combinado</td><td><code>&lt;Nombre&gt;_Visual.asset</code> en el MeshFilter del terreno.</td></tr>
+      <tr><td>Visual separado</td><td><code>&lt;Nombre&gt;_Floor.asset</code> + <code>&lt;Nombre&gt;_Walls.asset</code> en los hijos <code>STT_Visual_*</code>.</td></tr>
+      <tr><td>Colliders</td><td>Un <code>&lt;Nombre&gt;_Collider….asset</code> por grupo, en los hijos <code>STT_Collider…</code>.</td></tr>
+      <tr><td>Datos</td><td><code>&lt;Nombre&gt;_Data.asset</code> (todos los parámetros + snapshot de knots). <b>Load from SO</b> lo restaura.</td></tr>
+    </table>
+    <div class="note"><b>Nota:</b> el collider optimizado mantiene forma y bevel del visual, colapsa las filas verticales redundantes (sin pérdida) y siempre usa la triangulación mínima del piso — la grilla densa de pintura es solo para el piso visual.</div>
+  </section>
+
+  <section id="es-arch">
+    <h2>Arquitectura (para desarrolladores)</h2>
+<pre>Runtime/
+  SplineTerrain.cs          [ExecuteAlways]: regen en vivo, sync gizmo, piezas visual/collider, builders de bake
+  SplineTerrainSettings.cs  Parámetros + enums (SplineTerrainMode, ColliderSplitMode, FloorGridStyle)
+  SplineTerrainData.cs      ScriptableObject de bake (settings + knots + refs a meshes)
+  Generation/               MeshBuildResult (+ ToMeshSubset), GeneratorUtils, Internal/Road/External
+  Util/                     SplineSampler, PolygonOffset, EarClippingTriangulator,
+                            GridCapTriangulator, TerrainNoise
+Editor/
+  SplineTerrainInspector / Window / GUI / Baker / ProfileIO / SplineShapeFactory
+Documentation/              READMEs (EN/ES) + este index.html</pre>
+    <p class="muted">Caps de piso: <code>AddFlatCap</code> (ear clip), <code>AddGridCap</code> (grilla recortada vía Sutherland–Hodgman), <code>AddSubdividedCap</code> (ear clip + subdivisión uniforme); Road/External usan <code>AddFloorQuadGrid</code>. <code>ToMeshSubset</code> extrae grupos de submeshes para las piezas separadas y los colliders separados. Las piezas hijas (<code>STT_Visual_*</code> / <code>STT_Collider*</code>) quedan parentadas bajo el terreno.</p>
+  </section>
+</div>
+</main>
+
+<footer>
+  <span id="foot-en">Spline Terrain Tool — visual guide. Switch language with EN / ES above. See also <code>README_EN.md</code> / <code>README_ES.md</code>.</span>
+  <span id="foot-es" class="hidden">Spline Terrain Tool — guía visual. Cambiá el idioma con EN / ES arriba. Ver también <code>README_EN.md</code> / <code>README_ES.md</code>.</span>
+</footer>
+
+<script>
+  function setLang(l){
+    var en = l === 'en';
+    document.getElementById('en').classList.toggle('hidden', !en);
+    document.getElementById('es').classList.toggle('hidden', en);
+    document.getElementById('foot-en').classList.toggle('hidden', !en);
+    document.getElementById('foot-es').classList.toggle('hidden', en);
+    document.getElementById('btn-en').classList.toggle('active', en);
+    document.getElementById('btn-es').classList.toggle('active', !en);
+    document.documentElement.lang = l;
+    try{ localStorage.setItem('stt-lang', l); }catch(e){}
+  }
+  (function(){
+    var saved = 'en';
+    try{ saved = localStorage.getItem('stt-lang') || (navigator.language||'en').slice(0,2); }catch(e){}
+    setLang(saved === 'es' ? 'es' : 'en');
+  })();
+</script>
+</body>
+</html>

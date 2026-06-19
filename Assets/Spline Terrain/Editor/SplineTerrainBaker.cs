@@ -1,7 +1,9 @@
+using System.Collections.Generic;
 using System.IO;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Splines;
+using SplineTerrainTool.Generation;
 
 namespace SplineTerrainTool.EditorTools
 {
@@ -30,23 +32,50 @@ namespace SplineTerrainTool.EditorTools
             string dataFolder = EnsureFolder(terrain.dataSaveFolder);
             string safeName = MakeSafeName(terrain.gameObject.name);
 
-            // 1) Build independent meshes. The collider is optional.
-            Mesh visual = terrain.BuildVisualMesh();
-            if (visual == null)
+            var settings = terrain.Settings;
+
+            // 1) Build the visual result and turn it into one or more saved meshes.
+            MeshBuildResult visualBuild = terrain.BuildVisualResult(-1);
+            if (visualBuild == null || visualBuild.IsEmpty)
             {
                 Debug.LogWarning("[SplineTerrain] The visual mesh came out empty; not baking.");
                 return null;
             }
-            Mesh collider = terrain.bakeCollider ? terrain.BuildColliderMesh() : null;
 
-            string visualPath = AssetDatabase.GenerateUniqueAssetPath($"{meshFolder}/{safeName}_Visual.asset");
-            string colliderPath = AssetDatabase.GenerateUniqueAssetPath($"{meshFolder}/{safeName}_Collider.asset");
             string dataPath = AssetDatabase.GenerateUniqueAssetPath($"{dataFolder}/{safeName}_Data.asset");
 
-            AssetDatabase.CreateAsset(visual, visualPath);
-            if (collider != null) AssetDatabase.CreateAsset(collider, colliderPath);
+            Undo.RegisterFullObjectHierarchyUndo(terrain.gameObject, "Bake Spline Terrain");
 
-            // 2) Create the SO with settings + spline snapshot + mesh refs.
+            Mesh primaryVisual;            // referenced by the SO for back-compat
+            if (settings.separateVisualMeshes)
+            {
+                primaryVisual = BakeSeparatedVisual(terrain, visualBuild, meshFolder, safeName);
+            }
+            else
+            {
+                primaryVisual = visualBuild.ToMesh(new Mesh { name = $"{safeName}_Visual" });
+                string visualPath = AssetDatabase.GenerateUniqueAssetPath($"{meshFolder}/{safeName}_Visual.asset");
+                AssetDatabase.CreateAsset(primaryVisual, visualPath);
+
+                // Single combined mesh stays on the terrain GameObject; drop any split pieces.
+                terrain.DestroyVisualPieces();
+                var mf = terrain.GetComponent<MeshFilter>();
+                if (mf != null) mf.sharedMesh = primaryVisual;
+            }
+
+            // 2) Colliders: split into child pieces under the terrain according to the split mode.
+            Mesh primaryCollider = terrain.bakeCollider
+                ? BakeColliders(terrain, meshFolder, safeName)
+                : null;
+            if (!terrain.bakeCollider)
+                terrain.ClearColliderPieces();
+
+            // Remove the legacy single MeshCollider that used to live on the terrain GameObject:
+            // colliders are now organized as child pieces.
+            var legacyMc = terrain.GetComponent<MeshCollider>();
+            if (legacyMc != null) Undo.DestroyObjectImmediate(legacyMc);
+
+            // 3) Create the SO with settings + spline snapshot + mesh refs.
             var data = ScriptableObject.CreateInstance<SplineTerrainData>();
             data.CaptureFrom(new SplineTerrainComponentSnapshot
             {
@@ -56,23 +85,11 @@ namespace SplineTerrainTool.EditorTools
                 Wall = terrain.WallMaterial,
                 Edge = terrain.EdgeMaterial
             });
-            data.visualMesh = visual;
-            data.colliderMesh = collider;
+            data.visualMesh = primaryVisual;
+            data.colliderMesh = primaryCollider;
 
             AssetDatabase.CreateAsset(data, dataPath);
             AssetDatabase.SaveAssets();
-
-            // 3) Apply the baked mesh and the low-poly collider to the object in the scene.
-            Undo.RecordObject(terrain, "Bake Spline Terrain");
-            var mf = terrain.GetComponent<MeshFilter>();
-            if (mf != null) mf.sharedMesh = visual;
-
-            var mc = terrain.GetComponent<MeshCollider>();
-            if (collider != null)
-            {
-                if (mc == null) mc = Undo.AddComponent<MeshCollider>(terrain.gameObject);
-                mc.sharedMesh = collider;
-            }
 
             terrain.bakedData = data;
             EditorUtility.SetDirty(terrain);
@@ -81,6 +98,71 @@ namespace SplineTerrainTool.EditorTools
             EditorGUIUtility.PingObject(data);
             Debug.Log($"[SplineTerrain] Bake complete: {dataPath}");
             return data;
+        }
+
+        /// <summary>
+        /// Saves the floor and walls as separate mesh assets and assigns them to the child renderer
+        /// pieces (under the terrain). Clears the parent MeshFilter. Returns the floor mesh (or walls
+        /// if there is no floor) as the SO's primary reference.
+        /// </summary>
+        private static Mesh BakeSeparatedVisual(SplineTerrain terrain, MeshBuildResult build, string meshFolder, string safeName)
+        {
+            var parentMf = terrain.GetComponent<MeshFilter>();
+            if (parentMf != null) parentMf.sharedMesh = null;
+
+            Mesh primary = null;
+
+            Mesh floor = build.ToMeshSubset(null, includeFloor: true, includeWall: false, includeEdge: false);
+            if (floor != null)
+            {
+                floor.name = $"{safeName}_Floor";
+                AssetDatabase.CreateAsset(floor, AssetDatabase.GenerateUniqueAssetPath($"{meshFolder}/{safeName}_Floor.asset"));
+                MeshFilter mf = terrain.EnsureRendererPiece(SplineTerrain.FloorPieceName, out MeshRenderer mr);
+                mf.sharedMesh = floor;
+                mr.sharedMaterials = new[] { terrain.FloorMaterial };
+                primary = floor;
+            }
+            else terrain.DestroyPieceIfExists(SplineTerrain.FloorPieceName);
+
+            Mesh walls = build.ToMeshSubset(null, includeFloor: false, includeWall: true, includeEdge: true);
+            if (walls != null)
+            {
+                walls.name = $"{safeName}_Walls";
+                AssetDatabase.CreateAsset(walls, AssetDatabase.GenerateUniqueAssetPath($"{meshFolder}/{safeName}_Walls.asset"));
+                MeshFilter mf = terrain.EnsureRendererPiece(SplineTerrain.WallsPieceName, out MeshRenderer mr);
+                mf.sharedMesh = walls;
+                mr.sharedMaterials = build.HasEdge
+                    ? new[] { terrain.WallMaterial, terrain.EdgeMaterial }
+                    : new[] { terrain.WallMaterial };
+                if (primary == null) primary = walls;
+            }
+            else terrain.DestroyPieceIfExists(SplineTerrain.WallsPieceName);
+
+            return primary;
+        }
+
+        /// <summary>
+        /// Builds the collider geometry, splits it per the chosen mode, saves each piece as an asset
+        /// and assigns it to a child MeshCollider GameObject. Returns the first piece (SO reference).
+        /// </summary>
+        private static Mesh BakeColliders(SplineTerrain terrain, string meshFolder, string safeName)
+        {
+            MeshBuildResult build = terrain.BuildColliderResult();
+            terrain.ClearColliderPieces();
+            if (build == null) return null;
+
+            Mesh primary = null;
+            foreach (SplineTerrain.ColliderGroup g in SplineTerrain.GetColliderGroups(terrain.Settings.colliderSplit))
+            {
+                Mesh m = build.ToMeshSubset(null, g.floor, g.wall, g.edge);
+                if (m == null) continue; // group with no geometry (e.g. bevel piece without bevel)
+                m.name = $"{safeName}_Collider{g.suffix}";
+                AssetDatabase.CreateAsset(m, AssetDatabase.GenerateUniqueAssetPath($"{meshFolder}/{safeName}_Collider{g.suffix}.asset"));
+                MeshCollider mc = terrain.EnsureColliderPiece(SplineTerrain.ColliderPiecePrefix + g.suffix);
+                mc.sharedMesh = m;
+                if (primary == null) primary = m;
+            }
+            return primary;
         }
 
         /// <summary>Reloads settings + spline shape from an SO onto the terrain.</summary>

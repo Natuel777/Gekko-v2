@@ -158,6 +158,11 @@ MonoBehaviour:
     segmentsPerSpline: 30
     colliderMatchesVisual: 0
     colliderSimplify: 0
+    colliderSplit: 0
+    separateVisualMeshes: 0
+    floorGrid: 0
+    floorGridStyle: 0
+    floorCellSize: 1
     splineSmoothing: 0.1
     splineSmoothingIterations: 0
     topOffset: {x: 0, y: 2.6, z: 0}
@@ -576,6 +581,11 @@ MonoBehaviour:
     segmentsPerSpline: 30
     colliderMatchesVisual: 0
     colliderSimplify: 0
+    colliderSplit: 0
+    separateVisualMeshes: 0
+    floorGrid: 0
+    floorGridStyle: 0
+    floorCellSize: 1
     splineSmoothing: 0.1
     splineSmoothingIterations: 0
     topOffset: {x: 0, y: 15.7, z: 0}
@@ -1174,6 +1184,11 @@ MonoBehaviour:
     segmentsPerSpline: 30
     colliderMatchesVisual: 0
     colliderSimplify: 0
+    colliderSplit: 0
+    separateVisualMeshes: 0
+    floorGrid: 0
+    floorGridStyle: 0
+    floorCellSize: 1
     splineSmoothing: 0.1
     splineSmoothingIterations: 0
     topOffset: {x: 0, y: 13.9, z: 0}
@@ -1704,9 +1719,14 @@ MonoBehaviour:
     segmentsPerSpline: 30
     colliderMatchesVisual: 0
     colliderSimplify: 0.599
+    colliderSplit: 0
+    separateVisualMeshes: 0
+    floorGrid: 0
+    floorGridStyle: 0
+    floorCellSize: 1
     splineSmoothing: 0.1
     splineSmoothingIterations: 0
-    topOffset: {x: 0, y: 13.85, z: 0}
+    topOffset: {x: 0, y: 25, z: 0}
     topEuler: {x: 0, y: 0, z: 0}
     topScale: 0.99
     wallHeightSegments: 4
@@ -2188,7 +2208,7 @@ Transform:
   m_GameObject: {fileID: 148418501}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0.9789029, z: -0, w: 0.20432621}
-  m_LocalPosition: {x: 146.81062, y: -7.499999, z: 433.724}
+  m_LocalPosition: {x: 146.81062, y: -42.5, z: 433.724}
   m_LocalScale: {x: 2.9887, y: 2.9887, z: 2.9887}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -2220,7 +2240,7 @@ Transform:
   m_GameObject: {fileID: 185143595}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 13.85, z: 0}
+  m_LocalPosition: {x: 0, y: 25, z: 0}
   m_LocalScale: {x: 0.99, y: 1, z: 0.99}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -2362,6 +2382,11 @@ MonoBehaviour:
     segmentsPerSpline: 30
     colliderMatchesVisual: 0
     colliderSimplify: 0
+    colliderSplit: 0
+    separateVisualMeshes: 1
+    floorGrid: 1
+    floorGridStyle: 0
+    floorCellSize: 1
     splineSmoothing: 0.1
     splineSmoothingIterations: 0
     topOffset: {x: 0, y: 2.6, z: 0}
@@ -2385,7 +2410,7 @@ MonoBehaviour:
   floorMaterial: {fileID: 2100000, guid: 5431bfb76dd2d1f4685b68ed8983fffb, type: 2}
   wallMaterial: {fileID: 2100000, guid: 3aa3c53a2124ba24dbd9a968e6906838, type: 2}
   edgeMaterial: {fileID: 2100000, guid: 5431bfb76dd2d1f4685b68ed8983fffb, type: 2}
-  bakedData: {fileID: 0}
+  bakedData: {fileID: 11400000, guid: 3ef0b88fa8f31b743a0f6e0dcabfc465, type: 2}
   bakeCollider: 1
   meshSaveFolder: Assets/Spline Terrain/Baked
   dataSaveFolder: Assets/Spline Terrain/Baked
@@ -2739,6 +2764,9 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 647337695}
+  - {fileID: 482499580}
+  - {fileID: 307646924}
+  - {fileID: 569069386}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &230477764
@@ -2756,7 +2784,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &230477765
 Transform:
   m_ObjectHideFlags: 0
@@ -2824,6 +2852,11 @@ MonoBehaviour:
     segmentsPerSpline: 30
     colliderMatchesVisual: 0
     colliderSimplify: 0
+    colliderSplit: 0
+    separateVisualMeshes: 0
+    floorGrid: 0
+    floorGridStyle: 0
+    floorCellSize: 1
     splineSmoothing: 0.1
     splineSmoothingIterations: 0
     topOffset: {x: 0, y: 2.6, z: 0}
@@ -3303,6 +3336,11 @@ MonoBehaviour:
     segmentsPerSpline: 30
     colliderMatchesVisual: 0
     colliderSimplify: 0
+    colliderSplit: 0
+    separateVisualMeshes: 0
+    floorGrid: 0
+    floorGridStyle: 0
+    floorCellSize: 1
     splineSmoothing: 0.1
     splineSmoothingIterations: 0
     topOffset: {x: 0, y: 7.5, z: 0}
@@ -3864,6 +3902,11 @@ MonoBehaviour:
     segmentsPerSpline: 30
     colliderMatchesVisual: 0
     colliderSimplify: 0
+    colliderSplit: 0
+    separateVisualMeshes: 0
+    floorGrid: 0
+    floorGridStyle: 0
+    floorCellSize: 1
     splineSmoothing: 0.1
     splineSmoothingIterations: 0
     topOffset: {x: 0, y: 6.85, z: 0}
@@ -4425,6 +4468,11 @@ MonoBehaviour:
     segmentsPerSpline: 30
     colliderMatchesVisual: 0
     colliderSimplify: 0
+    colliderSplit: 0
+    separateVisualMeshes: 0
+    floorGrid: 0
+    floorGridStyle: 0
+    floorCellSize: 1
     splineSmoothing: 0.1
     splineSmoothingIterations: 0
     topOffset: {x: 0, y: 28, z: 0}
@@ -5029,6 +5077,93 @@ CanvasGroup:
   m_CorrespondingSourceObject: {fileID: 3306645437457150204, guid: 779d4e08007fa6b4ab38cffeb5438254, type: 3}
   m_PrefabInstance: {fileID: 1227135700}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &307646923
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 307646924}
+  - component: {fileID: 307646926}
+  - component: {fileID: 307646925}
+  m_Layer: 0
+  m_Name: STT_Visual_Walls
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &307646924
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 307646923}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 224943679}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!23 &307646925
+MeshRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 307646923}
+  m_Enabled: 1
+  m_CastShadows: 1
+  m_ReceiveShadows: 1
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: 3aa3c53a2124ba24dbd9a968e6906838, type: 2}
+  - {fileID: 2100000, guid: 5431bfb76dd2d1f4685b68ed8983fffb, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_AdditionalVertexStreams: {fileID: 0}
+--- !u!33 &307646926
+MeshFilter:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 307646923}
+  m_Mesh: {fileID: 0}
 --- !u!1 &310276461
 GameObject:
   m_ObjectHideFlags: 0
@@ -5130,6 +5265,11 @@ MonoBehaviour:
     segmentsPerSpline: 30
     colliderMatchesVisual: 0
     colliderSimplify: 0
+    colliderSplit: 0
+    separateVisualMeshes: 0
+    floorGrid: 0
+    floorGridStyle: 0
+    floorCellSize: 1
     splineSmoothing: 0.1
     splineSmoothingIterations: 0
     topOffset: {x: 0, y: 29.11, z: 0}
@@ -5722,6 +5862,11 @@ MonoBehaviour:
     segmentsPerSpline: 30
     colliderMatchesVisual: 0
     colliderSimplify: 0
+    colliderSplit: 0
+    separateVisualMeshes: 0
+    floorGrid: 0
+    floorGridStyle: 0
+    floorCellSize: 1
     splineSmoothing: 0.1
     splineSmoothingIterations: 0
     topOffset: {x: 0, y: 13, z: 0}
@@ -6414,6 +6559,92 @@ MonoBehaviour:
       m_PostInfinity: 2
       m_RotationOrder: 4
   CustomBlends: {fileID: 0}
+--- !u!1 &482499579
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 482499580}
+  - component: {fileID: 482499582}
+  - component: {fileID: 482499581}
+  m_Layer: 0
+  m_Name: STT_Visual_Floor
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &482499580
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 482499579}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 224943679}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!23 &482499581
+MeshRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 482499579}
+  m_Enabled: 1
+  m_CastShadows: 1
+  m_ReceiveShadows: 1
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: 5431bfb76dd2d1f4685b68ed8983fffb, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_AdditionalVertexStreams: {fileID: 0}
+--- !u!33 &482499582
+MeshFilter:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 482499579}
+  m_Mesh: {fileID: 0}
 --- !u!1001 &525544227
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -6640,6 +6871,60 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1552331650}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &569069385
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 569069386}
+  - component: {fileID: 569069387}
+  m_Layer: 0
+  m_Name: STT_Collider
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &569069386
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 569069385}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 224943679}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!64 &569069387
+MeshCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 569069385}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 5
+  m_Convex: 0
+  m_CookingOptions: 30
+  m_Mesh: {fileID: 4300000, guid: 428097b23d583fb4d847fe07f29aed8a, type: 2}
 --- !u!1 &576129515
 GameObject:
   m_ObjectHideFlags: 0
@@ -6679,6 +6964,11 @@ MonoBehaviour:
     segmentsPerSpline: 60
     colliderMatchesVisual: 1
     colliderSimplify: 0
+    colliderSplit: 0
+    separateVisualMeshes: 0
+    floorGrid: 0
+    floorGridStyle: 0
+    floorCellSize: 1
     splineSmoothing: 1
     splineSmoothingIterations: 0
     topOffset: {x: 0, y: 1, z: 0}
@@ -7097,6 +7387,11 @@ MonoBehaviour:
     segmentsPerSpline: 30
     colliderMatchesVisual: 0
     colliderSimplify: 0
+    colliderSplit: 0
+    separateVisualMeshes: 0
+    floorGrid: 0
+    floorGridStyle: 0
+    floorCellSize: 1
     splineSmoothing: 0.1
     splineSmoothingIterations: 0
     topOffset: {x: 0, y: 6.3331285, z: 0}
@@ -8105,6 +8400,11 @@ MonoBehaviour:
     segmentsPerSpline: 30
     colliderMatchesVisual: 0
     colliderSimplify: 0
+    colliderSplit: 0
+    separateVisualMeshes: 0
+    floorGrid: 0
+    floorGridStyle: 0
+    floorCellSize: 1
     splineSmoothing: 0.1
     splineSmoothingIterations: 0
     topOffset: {x: 0, y: 14.2, z: 0}
@@ -8756,6 +9056,11 @@ MonoBehaviour:
     segmentsPerSpline: 30
     colliderMatchesVisual: 0
     colliderSimplify: 0
+    colliderSplit: 0
+    separateVisualMeshes: 0
+    floorGrid: 0
+    floorGridStyle: 0
+    floorCellSize: 1
     splineSmoothing: 0.1
     splineSmoothingIterations: 0
     topOffset: {x: 0, y: 13, z: 0}
@@ -9286,6 +9591,11 @@ MonoBehaviour:
     segmentsPerSpline: 60
     colliderMatchesVisual: 1
     colliderSimplify: 0
+    colliderSplit: 0
+    separateVisualMeshes: 0
+    floorGrid: 0
+    floorGridStyle: 0
+    floorCellSize: 1
     splineSmoothing: 1
     splineSmoothingIterations: 0
     topOffset: {x: 0, y: 1, z: 0}
@@ -9704,6 +10014,11 @@ MonoBehaviour:
     segmentsPerSpline: 30
     colliderMatchesVisual: 0
     colliderSimplify: 0
+    colliderSplit: 0
+    separateVisualMeshes: 0
+    floorGrid: 0
+    floorGridStyle: 0
+    floorCellSize: 1
     splineSmoothing: 0.1
     splineSmoothingIterations: 0
     topOffset: {x: 0, y: 8.62, z: 0}
@@ -10280,6 +10595,11 @@ MonoBehaviour:
     segmentsPerSpline: 30
     colliderMatchesVisual: 0
     colliderSimplify: 0
+    colliderSplit: 0
+    separateVisualMeshes: 0
+    floorGrid: 0
+    floorGridStyle: 0
+    floorCellSize: 1
     splineSmoothing: 0.1
     splineSmoothingIterations: 0
     topOffset: {x: 0, y: 13, z: 0}
@@ -10888,6 +11208,11 @@ MonoBehaviour:
     segmentsPerSpline: 30
     colliderMatchesVisual: 0
     colliderSimplify: 0
+    colliderSplit: 0
+    separateVisualMeshes: 0
+    floorGrid: 0
+    floorGridStyle: 0
+    floorCellSize: 1
     splineSmoothing: 0.1
     splineSmoothingIterations: 0
     topOffset: {x: 0, y: 2.6, z: 0}
@@ -11769,6 +12094,11 @@ MonoBehaviour:
     segmentsPerSpline: 30
     colliderMatchesVisual: 0
     colliderSimplify: 0
+    colliderSplit: 0
+    separateVisualMeshes: 0
+    floorGrid: 0
+    floorGridStyle: 0
+    floorCellSize: 1
     splineSmoothing: 0.1
     splineSmoothingIterations: 0
     topOffset: {x: 0, y: 14.2, z: 0}
@@ -12414,6 +12744,11 @@ MonoBehaviour:
     segmentsPerSpline: 49
     colliderMatchesVisual: 0
     colliderSimplify: 0
+    colliderSplit: 0
+    separateVisualMeshes: 0
+    floorGrid: 0
+    floorGridStyle: 0
+    floorCellSize: 1
     splineSmoothing: 0.1
     splineSmoothingIterations: 0
     topOffset: {x: 0, y: 13.5, z: 0}
@@ -13172,6 +13507,11 @@ MonoBehaviour:
     segmentsPerSpline: 30
     colliderMatchesVisual: 0
     colliderSimplify: 0
+    colliderSplit: 0
+    separateVisualMeshes: 0
+    floorGrid: 0
+    floorGridStyle: 0
+    floorCellSize: 1
     splineSmoothing: 0.1
     splineSmoothingIterations: 0
     topOffset: {x: 0, y: 8.62, z: 0}
@@ -13733,6 +14073,11 @@ MonoBehaviour:
     segmentsPerSpline: 30
     colliderMatchesVisual: 0
     colliderSimplify: 0
+    colliderSplit: 0
+    separateVisualMeshes: 0
+    floorGrid: 0
+    floorGridStyle: 0
+    floorCellSize: 1
     splineSmoothing: 0.1
     splineSmoothingIterations: 0
     topOffset: {x: 0, y: 13, z: 0}
@@ -14258,11 +14603,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3358111438306157177, guid: 779d4e08007fa6b4ab38cffeb5438254, type: 3}
       propertyPath: m_AnchorMax.x
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 3358111438306157177, guid: 779d4e08007fa6b4ab38cffeb5438254, type: 3}
       propertyPath: m_AnchorMax.y
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 5375894990364583636, guid: 779d4e08007fa6b4ab38cffeb5438254, type: 3}
       propertyPath: m_AnchoredPosition.x
@@ -14426,7 +14771,7 @@ Transform:
   m_GameObject: {fileID: 1239894018}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 13.85, z: 0}
+  m_LocalPosition: {x: 0, y: 25, z: 0}
   m_LocalScale: {x: 0.99, y: 1, z: 0.99}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -14471,6 +14816,11 @@ MonoBehaviour:
     segmentsPerSpline: 30
     colliderMatchesVisual: 0
     colliderSimplify: 0
+    colliderSplit: 0
+    separateVisualMeshes: 0
+    floorGrid: 0
+    floorGridStyle: 0
+    floorCellSize: 1
     splineSmoothing: 0.1
     splineSmoothingIterations: 0
     topOffset: {x: 0, y: 18.9, z: 0}
@@ -15093,6 +15443,11 @@ MonoBehaviour:
     segmentsPerSpline: 30
     colliderMatchesVisual: 0
     colliderSimplify: 0
+    colliderSplit: 0
+    separateVisualMeshes: 0
+    floorGrid: 0
+    floorGridStyle: 0
+    floorCellSize: 1
     splineSmoothing: 0.1
     splineSmoothingIterations: 0
     topOffset: {x: 0, y: 31.6, z: 0}
@@ -15623,6 +15978,11 @@ MonoBehaviour:
     segmentsPerSpline: 30
     colliderMatchesVisual: 0
     colliderSimplify: 0
+    colliderSplit: 0
+    separateVisualMeshes: 0
+    floorGrid: 0
+    floorGridStyle: 0
+    floorCellSize: 1
     splineSmoothing: 0.1
     splineSmoothingIterations: 0
     topOffset: {x: 0, y: 27.63, z: 0}
@@ -16153,6 +16513,11 @@ MonoBehaviour:
     segmentsPerSpline: 30
     colliderMatchesVisual: 0
     colliderSimplify: 0
+    colliderSplit: 0
+    separateVisualMeshes: 0
+    floorGrid: 0
+    floorGridStyle: 0
+    floorCellSize: 1
     splineSmoothing: 0.1
     splineSmoothingIterations: 0
     topOffset: {x: 0, y: 1.55, z: 0}
@@ -16688,9 +17053,14 @@ MonoBehaviour:
     segmentsPerSpline: 30
     colliderMatchesVisual: 0
     colliderSimplify: 0
+    colliderSplit: 0
+    separateVisualMeshes: 0
+    floorGrid: 0
+    floorGridStyle: 0
+    floorCellSize: 1
     splineSmoothing: 0.1
     splineSmoothingIterations: 0
-    topOffset: {x: 0, y: 13.85, z: 0}
+    topOffset: {x: 0, y: 25, z: 0}
     topEuler: {x: 0, y: 0, z: 0}
     topScale: 0.99
     wallHeightSegments: 4
@@ -17172,7 +17542,7 @@ Transform:
   m_GameObject: {fileID: 1387733571}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0.23284036, z: -0, w: 0.972515}
-  m_LocalPosition: {x: 217, y: -7.5, z: 445}
+  m_LocalPosition: {x: 217, y: -42.5, z: 445}
   m_LocalScale: {x: 2.9887, y: 2.9887, z: 2.9887}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -17254,6 +17624,11 @@ MonoBehaviour:
     segmentsPerSpline: 30
     colliderMatchesVisual: 0
     colliderSimplify: 0
+    colliderSplit: 0
+    separateVisualMeshes: 0
+    floorGrid: 0
+    floorGridStyle: 0
+    floorCellSize: 1
     splineSmoothing: 0.1
     splineSmoothingIterations: 0
     topOffset: {x: 0, y: 2.6, z: 0}
@@ -17734,6 +18109,11 @@ MonoBehaviour:
     segmentsPerSpline: 30
     colliderMatchesVisual: 0
     colliderSimplify: 0
+    colliderSplit: 0
+    separateVisualMeshes: 0
+    floorGrid: 0
+    floorGridStyle: 0
+    floorCellSize: 1
     splineSmoothing: 0.1
     splineSmoothingIterations: 0
     topOffset: {x: 0, y: 2.79, z: 0}
@@ -18389,6 +18769,11 @@ MonoBehaviour:
     segmentsPerSpline: 30
     colliderMatchesVisual: 0
     colliderSimplify: 0
+    colliderSplit: 0
+    separateVisualMeshes: 0
+    floorGrid: 0
+    floorGridStyle: 0
+    floorCellSize: 1
     splineSmoothing: 0.1
     splineSmoothingIterations: 0
     topOffset: {x: 0, y: 28, z: 0}
@@ -18939,6 +19324,11 @@ MonoBehaviour:
     segmentsPerSpline: 30
     colliderMatchesVisual: 0
     colliderSimplify: 0
+    colliderSplit: 0
+    separateVisualMeshes: 0
+    floorGrid: 0
+    floorGridStyle: 0
+    floorCellSize: 1
     splineSmoothing: 0.1
     splineSmoothingIterations: 0
     topOffset: {x: 0, y: 18, z: 0}
@@ -19647,6 +20037,11 @@ MonoBehaviour:
     segmentsPerSpline: 30
     colliderMatchesVisual: 0
     colliderSimplify: 0
+    colliderSplit: 0
+    separateVisualMeshes: 0
+    floorGrid: 0
+    floorGridStyle: 0
+    floorCellSize: 1
     splineSmoothing: 0.1
     splineSmoothingIterations: 0
     topOffset: {x: 0, y: 13, z: 0}
@@ -20384,6 +20779,11 @@ MonoBehaviour:
     segmentsPerSpline: 30
     colliderMatchesVisual: 0
     colliderSimplify: 0
+    colliderSplit: 0
+    separateVisualMeshes: 0
+    floorGrid: 0
+    floorGridStyle: 0
+    floorCellSize: 1
     splineSmoothing: 0.1
     splineSmoothingIterations: 0
     topOffset: {x: 0, y: 21.3, z: 0}
@@ -20981,6 +21381,11 @@ MonoBehaviour:
     segmentsPerSpline: 30
     colliderMatchesVisual: 0
     colliderSimplify: 0
+    colliderSplit: 0
+    separateVisualMeshes: 0
+    floorGrid: 0
+    floorGridStyle: 0
+    floorCellSize: 1
     splineSmoothing: 0.1
     splineSmoothingIterations: 0
     topOffset: {x: 0, y: 13, z: 0}
@@ -21644,6 +22049,11 @@ MonoBehaviour:
     segmentsPerSpline: 30
     colliderMatchesVisual: 0
     colliderSimplify: 0
+    colliderSplit: 0
+    separateVisualMeshes: 0
+    floorGrid: 0
+    floorGridStyle: 0
+    floorCellSize: 1
     splineSmoothing: 0.1
     splineSmoothingIterations: 0
     topOffset: {x: 0, y: 14.2, z: 0}
@@ -22205,6 +22615,11 @@ MonoBehaviour:
     segmentsPerSpline: 30
     colliderMatchesVisual: 0
     colliderSimplify: 0
+    colliderSplit: 0
+    separateVisualMeshes: 0
+    floorGrid: 0
+    floorGridStyle: 0
+    floorCellSize: 1
     splineSmoothing: 0.1
     splineSmoothingIterations: 0
     topOffset: {x: 0, y: 13.9, z: 0}
@@ -22828,6 +23243,11 @@ MonoBehaviour:
     segmentsPerSpline: 30
     colliderMatchesVisual: 0
     colliderSimplify: 0
+    colliderSplit: 0
+    separateVisualMeshes: 0
+    floorGrid: 0
+    floorGridStyle: 0
+    floorCellSize: 1
     splineSmoothing: 0.1
     splineSmoothingIterations: 0
     topOffset: {x: 0, y: 13, z: 0}
@@ -23482,6 +23902,11 @@ MonoBehaviour:
     segmentsPerSpline: 30
     colliderMatchesVisual: 0
     colliderSimplify: 0
+    colliderSplit: 0
+    separateVisualMeshes: 0
+    floorGrid: 0
+    floorGridStyle: 0
+    floorCellSize: 1
     splineSmoothing: 0.1
     splineSmoothingIterations: 0
     topOffset: {x: 0, y: 14.2, z: 0}
@@ -24012,6 +24437,11 @@ MonoBehaviour:
     segmentsPerSpline: 30
     colliderMatchesVisual: 0
     colliderSimplify: 0
+    colliderSplit: 0
+    separateVisualMeshes: 0
+    floorGrid: 0
+    floorGridStyle: 0
+    floorCellSize: 1
     splineSmoothing: 0.1
     splineSmoothingIterations: 0
     topOffset: {x: 0, y: 13, z: 0}
@@ -24542,6 +24972,11 @@ MonoBehaviour:
     segmentsPerSpline: 30
     colliderMatchesVisual: 0
     colliderSimplify: 0
+    colliderSplit: 0
+    separateVisualMeshes: 0
+    floorGrid: 0
+    floorGridStyle: 0
+    floorCellSize: 1
     splineSmoothing: 0.1
     splineSmoothingIterations: 0
     topOffset: {x: 0, y: 31.6, z: 0}
@@ -25072,7 +25507,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &2068912316
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -25092,6 +25527,11 @@ MonoBehaviour:
     segmentsPerSpline: 30
     colliderMatchesVisual: 0
     colliderSimplify: 0
+    colliderSplit: 0
+    separateVisualMeshes: 0
+    floorGrid: 0
+    floorGridStyle: 0
+    floorCellSize: 1
     splineSmoothing: 0.1
     splineSmoothingIterations: 0
     topOffset: {x: 0, y: 9.1, z: 0}
@@ -25673,6 +26113,11 @@ MonoBehaviour:
     segmentsPerSpline: 30
     colliderMatchesVisual: 0
     colliderSimplify: 0
+    colliderSplit: 0
+    separateVisualMeshes: 0
+    floorGrid: 0
+    floorGridStyle: 0
+    floorCellSize: 1
     splineSmoothing: 0.1
     splineSmoothingIterations: 0
     topOffset: {x: 0, y: 6.85, z: 0}

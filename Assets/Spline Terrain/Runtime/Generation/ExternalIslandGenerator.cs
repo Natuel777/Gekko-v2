@@ -93,6 +93,15 @@ namespace SplineTerrainTool.Generation
             for (int i = 0; i < n; i++)
             {
                 int j = (i + 1) % n;
+
+                // Grid mode: subdivide each ring quad into a dense paintable grid.
+                if (s.floorGrid)
+                {
+                    GeneratorUtils.AddFloorQuadGrid(result, floorInner[i], floorOuter[i], floorOuter[j], floorInner[j],
+                        s.floorUvScale, s.floorCellSize, MeshBuildResult.SubmeshFloor);
+                    continue;
+                }
+
                 int it = result.AddVertex(floorInner[i], Vector3.up, new Vector2(floorInner[i].x, floorInner[i].z) * s.floorUvScale);
                 int ot = result.AddVertex(floorOuter[i], Vector3.up, new Vector2(floorOuter[i].x, floorOuter[i].z) * s.floorUvScale);
                 int oj = result.AddVertex(floorOuter[j], Vector3.up, new Vector2(floorOuter[j].x, floorOuter[j].z) * s.floorUvScale);

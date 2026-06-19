@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Splines;
 using SplineTerrainTool.Generation;
@@ -52,6 +53,11 @@ namespace SplineTerrainTool
         private Mesh _workingMesh;     // reusable working mesh (not an asset)
         private bool _dirty;
         private bool _subscribed;
+
+        // Names of the managed child pieces (kept under this GameObject for tidiness).
+        public const string FloorPieceName = "STT_Visual_Floor";
+        public const string WallsPieceName = "STT_Visual_Walls";
+        public const string ColliderPiecePrefix = "STT_Collider";
 
         public SplineTerrainSettings Settings => settings;
         public Material FloorMaterial { get => floorMaterial; set => floorMaterial = value; }
@@ -127,6 +133,8 @@ namespace SplineTerrainTool
 
         /// <summary>
         /// Regenerates the visual mesh according to the current mode and assigns it to the MeshFilter/Renderer.
+        /// When <see cref="SplineTerrainSettings.separateVisualMeshes"/> is on, the floor and walls are split
+        /// into child GameObjects (kept under this one) so the floor can carry its own dense grid.
         /// </summary>
         public void Regenerate()
         {
@@ -134,23 +142,66 @@ namespace SplineTerrainTool
             if (splineContainer == null) splineContainer = GetComponent<SplineContainer>();
             if (splineContainer == null) return;
 
-            Spline spline = splineContainer.Spline;
-            if (spline == null || spline.Count < 2) return;
-
-            // Internal/External close the shape internally (forceClosed) without modifying the spline,
-            // so they also work with open splines.
-            MeshBuildResult build = GetGenerator(settings.mode).Generate(spline, settings);
+            MeshBuildResult build = BuildVisualResult(-1);
             if (build == null || build.IsEmpty) return;
 
+            if (settings.separateVisualMeshes)
+                ApplySeparatedVisual(build);
+            else
+                ApplyCombinedVisual(build);
+        }
+
+        /// <summary>Single combined mesh on this GameObject (default). Removes any split pieces.</summary>
+        private void ApplyCombinedVisual(MeshBuildResult build)
+        {
             if (_workingMesh == null)
             {
                 _workingMesh = new Mesh { name = "SplineTerrainMesh (working)" };
                 _workingMesh.hideFlags = HideFlags.DontSave;
             }
             build.ToMesh(_workingMesh);
-
             _meshFilter.sharedMesh = _workingMesh;
             ApplyMaterials();
+            DestroyPieceIfExists(FloorPieceName);
+            DestroyPieceIfExists(WallsPieceName);
+        }
+
+        /// <summary>Floor and walls as separate child renderers, parented under this GameObject.</summary>
+        private void ApplySeparatedVisual(MeshBuildResult build)
+        {
+            // The parent shows nothing; the pieces carry the geometry.
+            _meshFilter.sharedMesh = null;
+
+            // Floor piece (floor submesh only).
+            MeshFilter floorMf = EnsureRendererPiece(FloorPieceName, out MeshRenderer floorMr);
+            Mesh floorMesh = GetWorkingMesh(floorMf, "SplineTerrain Floor (working)");
+            Mesh floorOut = build.ToMeshSubset(floorMesh, includeFloor: true, includeWall: false, includeEdge: false);
+            floorMf.sharedMesh = floorOut;
+            floorMr.sharedMaterials = new[] { floorMaterial };
+
+            // Walls piece (wall + bevel/edge submeshes).
+            MeshFilter wallMf = EnsureRendererPiece(WallsPieceName, out MeshRenderer wallMr);
+            Mesh wallMesh = GetWorkingMesh(wallMf, "SplineTerrain Walls (working)");
+            Mesh wallOut = build.ToMeshSubset(wallMesh, includeFloor: false, includeWall: true, includeEdge: true);
+            wallMf.sharedMesh = wallOut;
+            wallMr.sharedMaterials = build.HasEdge
+                ? new[] { wallMaterial, edgeMaterial }
+                : new[] { wallMaterial };
+        }
+
+        /// <summary>
+        /// Builds the visual <see cref="MeshBuildResult"/> for the current mode/settings.
+        /// Internal/External close the shape internally (forceClosed) so open splines also work.
+        /// </summary>
+        public MeshBuildResult BuildVisualResult(int segmentOverride)
+        {
+            if (splineContainer == null) splineContainer = GetComponent<SplineContainer>();
+            if (splineContainer == null) return null;
+            Spline spline = splineContainer.Spline;
+            if (spline == null || spline.Count < 2) return null;
+
+            MeshBuildResult build = GetGenerator(settings.mode).Generate(spline, settings, segmentOverride);
+            return (build == null || build.IsEmpty) ? null : build;
         }
 
         /// <summary>
@@ -160,16 +211,9 @@ namespace SplineTerrainTool
         /// <param name="segmentOverride">-1 = visual resolution; &gt;0 = forced resolution.</param>
         public Mesh BuildMesh(int segmentOverride, string meshName)
         {
-            if (splineContainer == null) splineContainer = GetComponent<SplineContainer>();
-            if (splineContainer == null) return null;
-            Spline spline = splineContainer.Spline;
-            if (spline == null || spline.Count < 2) return null;
-
-            MeshBuildResult build = GetGenerator(settings.mode).Generate(spline, settings, segmentOverride);
-            if (build == null || build.IsEmpty) return null;
-
-            var mesh = new Mesh { name = meshName };
-            return build.ToMesh(mesh);
+            MeshBuildResult build = BuildVisualResult(segmentOverride);
+            if (build == null) return null;
+            return build.ToMesh(new Mesh { name = meshName });
         }
 
         /// <summary>Independent visual mesh (resolution of settings.segmentsPerSpline).</summary>
@@ -189,8 +233,18 @@ namespace SplineTerrainTool
         /// </summary>
         public Mesh BuildColliderMesh()
         {
+            MeshBuildResult build = BuildColliderResult();
+            return build == null ? null : build.ToMesh(new Mesh { name = "SplineTerrainCollider" });
+        }
+
+        /// <summary>
+        /// Builds the collider <see cref="MeshBuildResult"/> (before any submesh split). Honors
+        /// <see cref="SplineTerrainSettings.colliderMatchesVisual"/> and the optimized-collider logic.
+        /// </summary>
+        public MeshBuildResult BuildColliderResult()
+        {
             if (settings.colliderMatchesVisual)
-                return BuildMesh(-1, "SplineTerrainCollider");
+                return BuildVisualResult(-1);
 
             if (splineContainer == null) splineContainer = GetComponent<SplineContainer>();
             if (splineContainer == null) return null;
@@ -205,6 +259,9 @@ namespace SplineTerrainTool
             const float curveEpsilon = 1e-4f;
             if (Mathf.Abs(cs.wallCurvature) < curveEpsilon) cs.wallHeightSegments = 1;
             if (Mathf.Abs(cs.bevelCurvature) < curveEpsilon) cs.bevelSegments = 1;
+            // The dense paint grid is for the visual floor only; the optimized collider keeps the
+            // minimal floor triangulation.
+            cs.floorGrid = false;
 
             MeshBuildResult build;
             if (cs.colliderSimplify > 0f)
@@ -220,8 +277,50 @@ namespace SplineTerrainTool
                 build = generator.Generate(spline, cs, -1);
             }
 
-            if (build == null || build.IsEmpty) return null;
-            return build.ToMesh(new Mesh { name = "SplineTerrainCollider" });
+            return (build == null || build.IsEmpty) ? null : build;
+        }
+
+        // ---- Collider split plan ----
+
+        /// <summary>One collider piece: a child GameObject name suffix + which submesh groups it carries.</summary>
+        public struct ColliderGroup
+        {
+            public string suffix;   // appended to ColliderPiecePrefix ("" = the single combined collider)
+            public bool floor, wall, edge;
+            public ColliderGroup(string suffix, bool floor, bool wall, bool edge)
+            { this.suffix = suffix; this.floor = floor; this.wall = wall; this.edge = edge; }
+        }
+
+        /// <summary>Returns the collider pieces to generate for the given split mode.</summary>
+        public static List<ColliderGroup> GetColliderGroups(ColliderSplitMode mode)
+        {
+            switch (mode)
+            {
+                case ColliderSplitMode.AllSeparate:
+                    return new List<ColliderGroup>
+                    {
+                        new ColliderGroup("_Floor", true, false, false),
+                        new ColliderGroup("_Wall",  false, true, false),
+                        new ColliderGroup("_Bevel", false, false, true),
+                    };
+                case ColliderSplitMode.FloorBevelTogether_WallSeparate:
+                    return new List<ColliderGroup>
+                    {
+                        new ColliderGroup("_FloorBevel", true, false, true),
+                        new ColliderGroup("_Wall",       false, true, false),
+                    };
+                case ColliderSplitMode.WallBevelTogether_FloorSeparate:
+                    return new List<ColliderGroup>
+                    {
+                        new ColliderGroup("_WallBevel", false, true, true),
+                        new ColliderGroup("_Floor",     true, false, false),
+                    };
+                default: // AllTogether
+                    return new List<ColliderGroup>
+                    {
+                        new ColliderGroup("", true, true, true),
+                    };
+            }
         }
 
         private ISplineTerrainGenerator GetGenerator(SplineTerrainMode mode)
@@ -281,6 +380,102 @@ namespace SplineTerrainTool
             topTransform.localPosition = settings.topOffset;
             topTransform.localEulerAngles = settings.topEuler;
             topTransform.localScale = new Vector3(settings.topScale, 1f, settings.topScale);
+        }
+
+        // ---- Managed child pieces (kept under this GameObject) ----
+
+        /// <summary>Finds or creates a child GameObject with MeshFilter + MeshRenderer, parented here.</summary>
+        public MeshFilter EnsureRendererPiece(string name, out MeshRenderer mr)
+        {
+            GameObject go = FindOrCreateChild(name);
+            var mf = go.GetComponent<MeshFilter>();
+            if (mf == null) mf = go.AddComponent<MeshFilter>();
+            mr = go.GetComponent<MeshRenderer>();
+            if (mr == null) mr = go.AddComponent<MeshRenderer>();
+            return mf;
+        }
+
+        /// <summary>Finds or creates a child GameObject with a MeshCollider, parented here.</summary>
+        public MeshCollider EnsureColliderPiece(string fullName)
+        {
+            GameObject go = FindOrCreateChild(fullName);
+            var mc = go.GetComponent<MeshCollider>();
+            if (mc == null) mc = go.AddComponent<MeshCollider>();
+            return mc;
+        }
+
+        private GameObject FindOrCreateChild(string name)
+        {
+            Transform t = transform.Find(name);
+            if (t != null) return t.gameObject;
+            var go = new GameObject(name);
+            go.transform.SetParent(transform, false);
+            return go;
+        }
+
+        /// <summary>Removes a managed child piece if it exists.</summary>
+        public void DestroyPieceIfExists(string name)
+        {
+            Transform t = transform.Find(name);
+            if (t == null) return;
+            if (Application.isPlaying) Destroy(t.gameObject);
+            else DestroyImmediate(t.gameObject);
+        }
+
+        /// <summary>Removes the separated visual pieces (floor / walls).</summary>
+        public void DestroyVisualPieces()
+        {
+            DestroyPieceIfExists(FloorPieceName);
+            DestroyPieceIfExists(WallsPieceName);
+        }
+
+        /// <summary>Removes every collider piece (all children whose name starts with the collider prefix).</summary>
+        public void ClearColliderPieces()
+        {
+            for (int i = transform.childCount - 1; i >= 0; i--)
+            {
+                Transform c = transform.GetChild(i);
+                if (c != null && c.name.StartsWith(ColliderPiecePrefix))
+                {
+                    if (Application.isPlaying) Destroy(c.gameObject);
+                    else DestroyImmediate(c.gameObject);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Rebuilds the collider child pieces in the editor (live preview) using working meshes,
+        /// according to <see cref="SplineTerrainSettings.colliderSplit"/>. The bake produces the same
+        /// hierarchy but with saved mesh assets instead.
+        /// </summary>
+        public void RebuildCollidersPreview()
+        {
+            ClearColliderPieces();
+
+            MeshBuildResult build = BuildColliderResult();
+            if (build == null) return;
+
+            foreach (ColliderGroup g in GetColliderGroups(settings.colliderSplit))
+            {
+                Mesh m = build.ToMeshSubset(null, g.floor, g.wall, g.edge);
+                if (m == null) continue; // this group had no geometry (e.g. no bevel)
+                m.name = ColliderPiecePrefix + g.suffix + " (working)";
+                m.hideFlags = HideFlags.DontSave;
+                MeshCollider mc = EnsureColliderPiece(ColliderPiecePrefix + g.suffix);
+                mc.sharedMesh = m;
+            }
+        }
+
+        /// <summary>Reusable working mesh for a piece: reuses a non-asset mesh, otherwise makes one.</summary>
+        private Mesh GetWorkingMesh(MeshFilter mf, string name)
+        {
+            Mesh m = mf.sharedMesh;
+            if (m == null || (m.hideFlags & HideFlags.DontSave) == 0)
+            {
+                m = new Mesh { name = name };
+                m.hideFlags = HideFlags.DontSave;
+            }
+            return m;
         }
 
         private void DestroyWorkingMesh()

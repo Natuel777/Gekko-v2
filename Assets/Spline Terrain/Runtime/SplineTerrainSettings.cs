@@ -17,6 +17,36 @@ namespace SplineTerrainTool
     }
 
     /// <summary>
+    /// How the dense floor is built when <see cref="SplineTerrainSettings.floorGrid"/> is on.
+    /// </summary>
+    public enum FloorGridStyle
+    {
+        /// <summary>Regular row/column grid clipped to the outline. Even quads inside, but the boundary
+        /// cells are split into small irregular polygons.</summary>
+        ClippedGrid,
+        /// <summary>Triangulates the outline (ear clip) and subdivides each triangle uniformly. The
+        /// boundary follows the outline exactly (no clipped slivers); interior is triangle-based.</summary>
+        SubdividedContour
+    }
+
+    /// <summary>
+    /// How the baked/live collider is split into separate MeshCollider pieces.
+    /// The visual mesh is NOT affected by this; it only changes the collider geometry.
+    /// Groups map to the submeshes: floor (0), wall (1), bevel/edge (2).
+    /// </summary>
+    public enum ColliderSplitMode
+    {
+        /// <summary>One single collider with floor + wall + bevel together (default).</summary>
+        AllTogether,
+        /// <summary>Three separate colliders: floor, wall and bevel each on their own.</summary>
+        AllSeparate,
+        /// <summary>Two colliders: floor+bevel together, wall on its own.</summary>
+        FloorBevelTogether_WallSeparate,
+        /// <summary>Two colliders: wall+bevel together, floor on its own.</summary>
+        WallBevelTogether_FloorSeparate
+    }
+
+    /// <summary>
     /// All the editable terrain parameters in a single serializable object.
     /// Shared between the <see cref="SplineTerrain"/> component and the bake ScriptableObject,
     /// so they can be copied from one to the other without duplicating fields.
@@ -38,6 +68,29 @@ namespace SplineTerrainTool
                  "0 = keep the full perimeter / footprint (recommended for faithful collision). Higher reduces the " +
                  "floor and wall columns at the cost of shape fidelity.")]
         [Range(0f, 1f)] public float colliderSimplify = 0f;
+
+        [Tooltip("How the collider is split into separate MeshCollider pieces (does NOT affect the visual mesh). " +
+                 "All together = one collider; the rest separate floor / wall / bevel into their own child colliders.")]
+        public ColliderSplitMode colliderSplit = ColliderSplitMode.AllTogether;
+
+        [Header("Visual mesh layout")]
+        [Tooltip("Splits the VISUAL mesh into separate child GameObjects (Floor / Walls) under the terrain, " +
+                 "so the floor can carry a denser grid for Polybrush painting independently from the walls. " +
+                 "Everything stays parented under the terrain GameObject for tidiness.")]
+        public bool separateVisualMeshes = false;
+
+        [Tooltip("Replaces the floor triangulation (fan/ear-clip) with a dense grid so it has enough polygon " +
+                 "density to be painted with Polybrush.")]
+        public bool floorGrid = false;
+
+        [Tooltip("Floor grid technique (only the Internal solid floor; Road/External always subdivide their quads). " +
+                 "Clipped Grid = even quads but messy boundary cells. Subdivided Contour = clean outline-following " +
+                 "boundary, triangle-based interior (usually fewer odd border polys).")]
+        public FloorGridStyle floorGridStyle = FloorGridStyle.ClippedGrid;
+
+        [Tooltip("Approximate world-space size of each floor grid cell. Smaller = denser (more polys). " +
+                 "Drives the row/column subdivision of the floor in every mode.")]
+        [Min(0.05f)] public float floorCellSize = 1f;
 
         [Tooltip("Smoothing of the outline relative to the spline (0 = none). Helps with very sharp splines.")]
         [Range(0f, 1f)] public float splineSmoothing = 0f;
@@ -139,6 +192,11 @@ namespace SplineTerrainTool
             segmentsPerSpline = other.segmentsPerSpline;
             colliderMatchesVisual = other.colliderMatchesVisual;
             colliderSimplify = other.colliderSimplify;
+            colliderSplit = other.colliderSplit;
+            separateVisualMeshes = other.separateVisualMeshes;
+            floorGrid = other.floorGrid;
+            floorGridStyle = other.floorGridStyle;
+            floorCellSize = other.floorCellSize;
             splineSmoothing = other.splineSmoothing;
             splineSmoothingIterations = other.splineSmoothingIterations;
             topOffset = other.topOffset;
@@ -176,6 +234,7 @@ namespace SplineTerrainTool
             bevelSize = Mathf.Max(0f, bevelSize);
             bevelSegments = Mathf.Clamp(bevelSegments, 1, 32);
             bevelCurvature = Mathf.Clamp(bevelCurvature, -1f, 1f);
+            floorCellSize = Mathf.Max(0.05f, floorCellSize);
         }
     }
 }

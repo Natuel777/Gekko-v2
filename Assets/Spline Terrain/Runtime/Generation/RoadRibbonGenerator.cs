@@ -73,6 +73,15 @@ namespace SplineTerrainTool.Generation
             for (int i = 0; i < segments; i++)
             {
                 int j = (i + 1) % n;
+
+                // Grid mode: subdivide each ribbon quad into a dense paintable grid.
+                if (s.floorGrid)
+                {
+                    GeneratorUtils.AddFloorQuadGrid(result, floorLeft[i], floorRight[i], floorRight[j], floorLeft[j],
+                        s.floorUvScale, s.floorCellSize, MeshBuildResult.SubmeshFloor);
+                    continue;
+                }
+
                 float vA = outline.ArcLengths[i] * s.floorUvScale;
                 float vB = (j == 0) ? outline.TotalLength * s.floorUvScale : outline.ArcLengths[j] * s.floorUvScale;
 

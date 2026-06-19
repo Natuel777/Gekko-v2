@@ -55,7 +55,13 @@ namespace SplineTerrainTool.Generation
             else { floorRing = topRim; wallTop = topRim; }
 
             // Floor (upper cap): real normal (may be inclined), facing upward.
-            GeneratorUtils.AddFlatCap(result, floorRing, s.floorUvScale, faceUp: true, MeshBuildResult.SubmeshFloor);
+            // Grid mode: dense paintable topology. Otherwise: plain ear-clip fan.
+            if (s.floorGrid && s.floorGridStyle == FloorGridStyle.ClippedGrid)
+                GeneratorUtils.AddGridCap(result, floorRing, s.floorUvScale, faceUp: true, s.floorCellSize, MeshBuildResult.SubmeshFloor);
+            else if (s.floorGrid)
+                GeneratorUtils.AddSubdividedCap(result, floorRing, s.floorUvScale, faceUp: true, s.floorCellSize, MeshBuildResult.SubmeshFloor);
+            else
+                GeneratorUtils.AddFlatCap(result, floorRing, s.floorUvScale, faceUp: true, MeshBuildResult.SubmeshFloor);
 
             // Curved walls: from the base to the top (possibly lowered by the bevel), normal outward.
             GeneratorUtils.AddWall(result, bottom, wallTop, outline.Normals, outline.ArcLengths, outline.TotalLength,

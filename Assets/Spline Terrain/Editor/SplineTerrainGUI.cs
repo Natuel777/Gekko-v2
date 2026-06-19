@@ -36,6 +36,7 @@ namespace SplineTerrainTool.EditorTools
             Field(settings, "colliderMatchesVisual", "Collider = visual shape");
             if (!settings.FindPropertyRelative("colliderMatchesVisual").boolValue)
                 Field(settings, "colliderSimplify", "Collider extra simplify (perimeter)");
+            Field(settings, "colliderSplit", "Collider split");
             Field(settings, "splineSmoothing", "Outline smoothing");
             if (settings.FindPropertyRelative("splineSmoothing").floatValue > 0f)
                 Field(settings, "splineSmoothingIterations", "Smoothing iterations");
@@ -69,6 +70,15 @@ namespace SplineTerrainTool.EditorTools
                     DrawWallSection(settings);
                     break;
             }
+
+            EditorGUILayout.LabelField("Visual mesh layout", EditorStyles.boldLabel);
+            Field(settings, "floorGrid", "Dense floor grid (Polybrush)");
+            if (settings.FindPropertyRelative("floorGrid").boolValue)
+            {
+                Field(settings, "floorGridStyle", "Grid style (Internal)");
+                Field(settings, "floorCellSize", "Grid cell size");
+            }
+            Field(settings, "separateVisualMeshes", "Separate floor / walls meshes");
 
             EditorGUILayout.LabelField("UVs / Tiling", EditorStyles.boldLabel);
             Field(settings, "floorUvScale", "Floor UV scale");
@@ -165,8 +175,17 @@ namespace SplineTerrainTool.EditorTools
                 }
             }
 
-            if (GUILayout.Button("Regenerate"))
-                terrain.Regenerate();
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                if (GUILayout.Button("Regenerate"))
+                    terrain.Regenerate();
+
+                if (GUILayout.Button("Rebuild colliders (preview)"))
+                {
+                    Undo.RegisterFullObjectHierarchyUndo(terrain.gameObject, "Rebuild colliders");
+                    terrain.RebuildCollidersPreview();
+                }
+            }
         }
 
         private static void Field(SerializedProperty settings, string relativeName, string label)

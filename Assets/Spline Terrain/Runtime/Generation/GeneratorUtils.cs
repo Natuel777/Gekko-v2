@@ -65,6 +65,216 @@ namespace SplineTerrainTool.Generation
         }
 
         /// <summary>
+        /// Like <see cref="AddFlatCap"/> but triangulates the (planar, possibly tilted) ring as a
+        /// regular row/column grid clipped to the outline instead of an ear-clipped fan. Gives a dense,
+        /// even, paintable topology (Polybrush). <paramref name="cellSize"/> drives the density.
+        /// </summary>
+        public static void AddGridCap(MeshBuildResult r, IReadOnlyList<Vector3> ring, float uvScale, bool faceUp,
+            float cellSize, int submesh = MeshBuildResult.SubmeshFloor)
+        {
+            int n = ring.Count;
+            if (n < 3) return;
+            if (cellSize <= 0f) { AddFlatCap(r, ring, uvScale, faceUp, submesh); return; }
+
+            // Plane fit: centroid + area-weighted normal (handles a tilted floor).
+            Vector3 centroid = Vector3.zero;
+            for (int i = 0; i < n; i++) centroid += ring[i];
+            centroid /= n;
+
+            Vector3 accum = Vector3.zero;
+            for (int i = 0; i < n; i++)
+            {
+                Vector3 a = ring[i] - centroid;
+                Vector3 b = ring[(i + 1) % n] - centroid;
+                accum += Vector3.Cross(a, b);
+            }
+            Vector3 normal = accum.sqrMagnitude > 1e-12f ? accum.normalized : Vector3.up;
+            if ((normal.y >= 0f) != faceUp) normal = -normal;
+
+            // In-plane orthonormal basis with u x v = normal (so CCW in (u,v) faces 'normal').
+            Vector3 helper = Mathf.Abs(normal.y) < 0.9f ? Vector3.up : Vector3.right;
+            Vector3 u = Vector3.Cross(helper, normal);
+            if (u.sqrMagnitude < 1e-10f) u = Vector3.Cross(Vector3.right, normal);
+            u.Normalize();
+            Vector3 v = Vector3.Cross(normal, u); // already unit
+
+            // Project the ring to 2D (relative to the centroid).
+            var poly2D = new List<Vector2>(n);
+            for (int i = 0; i < n; i++)
+            {
+                Vector3 d = ring[i] - centroid;
+                poly2D.Add(new Vector2(Vector3.Dot(d, u), Vector3.Dot(d, v)));
+            }
+            // Ensure CCW so the clipped triangles face 'normal'.
+            if (SignedArea2D(poly2D) < 0f) poly2D.Reverse();
+
+            var verts2D = new List<Vector2>();
+            var tris = new List<int>();
+            GridCapTriangulator.Triangulate(poly2D, cellSize, verts2D, tris);
+            if (tris.Count < 3) { AddFlatCap(r, ring, uvScale, faceUp, submesh); return; }
+
+            int baseIndex = r.Vertices.Count;
+            for (int i = 0; i < verts2D.Count; i++)
+            {
+                Vector3 pos = centroid + u * verts2D[i].x + v * verts2D[i].y;
+                Vector2 uv = new Vector2(pos.x, pos.z) * uvScale;
+                r.AddVertex(pos, normal, uv);
+            }
+            for (int t = 0; t < tris.Count; t += 3)
+                r.AddTriangle(submesh, baseIndex + tris[t], baseIndex + tris[t + 1], baseIndex + tris[t + 2]);
+        }
+
+        /// <summary>
+        /// Like <see cref="AddFlatCap"/> but, after ear-clipping the ring, uniformly subdivides each
+        /// triangle so the floor gets paint-ready density while the boundary follows the outline exactly
+        /// (no clipped slivers). Crack-free: every triangle uses the same subdivision level, so shared
+        /// edges match and coincident vertices are welded.
+        /// </summary>
+        public static void AddSubdividedCap(MeshBuildResult r, IReadOnlyList<Vector3> ring, float uvScale, bool faceUp,
+            float cellSize, int submesh = MeshBuildResult.SubmeshFloor)
+        {
+            int n = ring.Count;
+            if (n < 3) return;
+            if (cellSize <= 0f) { AddFlatCap(r, ring, uvScale, faceUp, submesh); return; }
+
+            // Triangulate the outline (XZ projection, like AddFlatCap).
+            var poly2D = new List<Vector2>(n);
+            for (int i = 0; i < n; i++) poly2D.Add(new Vector2(ring[i].x, ring[i].z));
+            List<int> tris = EarClippingTriangulator.Triangulate(poly2D);
+            if (tris.Count < 3) { AddFlatCap(r, ring, uvScale, faceUp, submesh); return; }
+
+            // Representative normal (area-weighted), oriented to the requested side.
+            Vector3 accum = Vector3.zero;
+            for (int t = 0; t < tris.Count; t += 3)
+            {
+                Vector3 a = ring[tris[t]], b = ring[tris[t + 1]], c = ring[tris[t + 2]];
+                accum += Vector3.Cross(b - a, c - a);
+            }
+            Vector3 normal = accum.sqrMagnitude > 1e-10f ? accum.normalized : Vector3.up;
+            if ((normal.y >= 0f) != faceUp) normal = -normal;
+
+            // One global subdivision level from the average triangle edge, so all triangles match.
+            float avgEdge = 0f; int edgeCount = 0;
+            for (int t = 0; t < tris.Count; t += 3)
+            {
+                Vector3 a = ring[tris[t]], b = ring[tris[t + 1]], c = ring[tris[t + 2]];
+                avgEdge += Vector3.Distance(a, b) + Vector3.Distance(b, c) + Vector3.Distance(c, a);
+                edgeCount += 3;
+            }
+            avgEdge = edgeCount > 0 ? avgEdge / edgeCount : cellSize;
+            int L = Mathf.Clamp(Mathf.CeilToInt(avgEdge / cellSize), 1, 64);
+
+            // Vertex welding shared across triangles (quantized position).
+            float q = cellSize * 1e-3f;
+            if (q <= 0f) q = 1e-5f;
+            var weld = new Dictionary<long, int>();
+
+            int VertexAt(Vector3 p)
+            {
+                int ix = Mathf.RoundToInt(p.x / q);
+                int iy = Mathf.RoundToInt(p.y / q);
+                int iz = Mathf.RoundToInt(p.z / q);
+                long key = ((long)(ix & 0x1FFFFF) << 42) ^ ((long)(iy & 0x1FFFFF) << 21) ^ (long)(iz & 0x1FFFFF);
+                if (weld.TryGetValue(key, out int idx)) return idx;
+                idx = r.AddVertex(p, normal, new Vector2(p.x, p.z) * uvScale);
+                weld[key] = idx;
+                return idx;
+            }
+
+            for (int t = 0; t < tris.Count; t += 3)
+            {
+                Vector3 A = ring[tris[t]], B = ring[tris[t + 1]], C = ring[tris[t + 2]];
+                // Keep each sub-triangle facing 'normal' (the ear-clip winding may not).
+                bool flip = Vector3.Dot(Vector3.Cross(B - A, C - A), normal) < 0f;
+
+                Vector3 P(int i, int j) => A + (B - A) * (i / (float)L) + (C - A) * (j / (float)L);
+
+                for (int j = 0; j < L; j++)
+                {
+                    for (int i = 0; i < L - j; i++)
+                    {
+                        int v00 = VertexAt(P(i, j));
+                        int v10 = VertexAt(P(i + 1, j));
+                        int v01 = VertexAt(P(i, j + 1));
+                        EmitTri(r, submesh, v00, v10, v01, flip);
+
+                        if (i < L - j - 1)
+                        {
+                            int v11 = VertexAt(P(i + 1, j + 1));
+                            EmitTri(r, submesh, v10, v11, v01, flip);
+                        }
+                    }
+                }
+            }
+        }
+
+        private static void EmitTri(MeshBuildResult r, int submesh, int a, int b, int c, bool flip)
+        {
+            if (a == b || b == c || a == c) return;
+            if (flip) r.AddTriangle(submesh, a, c, b);
+            else r.AddTriangle(submesh, a, b, c);
+        }
+
+        /// <summary>
+        /// Adds a planar quad (corners a,b,c,d in order) subdivided into a grid so the floor has enough
+        /// density to paint. Density follows <paramref name="cellSize"/> on each edge. Triangles face up.
+        /// Planar XZ UVs. Used by the Road and External floors (which are already quad strips/rings).
+        /// </summary>
+        public static void AddFloorQuadGrid(MeshBuildResult r, Vector3 a, Vector3 b, Vector3 c, Vector3 d,
+            float uvScale, float cellSize, int submesh = MeshBuildResult.SubmeshFloor)
+        {
+            // P(s,t) = lerp( lerp(a,b,s), lerp(d,c,s), t ). s along a->b, t along a->d.
+            int su = cellSize > 0f ? Mathf.Clamp(Mathf.CeilToInt(Vector3.Distance(a, b) / cellSize), 1, 256) : 1;
+            int sv = cellSize > 0f ? Mathf.Clamp(Mathf.CeilToInt(Vector3.Distance(a, d) / cellSize), 1, 256) : 1;
+
+            // Orient so the face points up regardless of the input corner order.
+            Vector3 rawN = TriNormal(a, b, c);
+            bool flip = rawN.y < 0f;
+            Vector3 nrm = flip ? -rawN : rawN;
+
+            int cols = su + 1, rows = sv + 1;
+            int baseIndex = r.Vertices.Count;
+            for (int j = 0; j < rows; j++)
+            {
+                float t = j / (float)sv;
+                for (int i = 0; i < cols; i++)
+                {
+                    float s = i / (float)su;
+                    Vector3 ab = Vector3.Lerp(a, b, s);
+                    Vector3 dc = Vector3.Lerp(d, c, s);
+                    Vector3 p = Vector3.Lerp(ab, dc, t);
+                    r.AddVertex(p, nrm, new Vector2(p.x, p.z) * uvScale);
+                }
+            }
+            for (int j = 0; j < sv; j++)
+            {
+                for (int i = 0; i < su; i++)
+                {
+                    int i00 = baseIndex + j * cols + i;
+                    int i10 = i00 + 1;
+                    int i01 = i00 + cols;
+                    int i11 = i01 + 1;
+                    // a(i00) -> b(i10) -> c(i11) -> d(i01); reverse if the natural normal faced down.
+                    if (flip) r.AddQuad(submesh, i00, i01, i11, i10);
+                    else r.AddQuad(submesh, i00, i10, i11, i01);
+                }
+            }
+        }
+
+        private static float SignedArea2D(IReadOnlyList<Vector2> p)
+        {
+            int n = p.Count;
+            float area = 0f;
+            for (int i = 0; i < n; i++)
+            {
+                Vector2 a = p[i];
+                Vector2 b = p[(i + 1) % n];
+                area += a.x * b.y - b.x * a.y;
+            }
+            return area * 0.5f;
+        }
+
+        /// <summary>
         /// Builds a wall between two contours (bottom and top), with vertical subdivisions and
         /// curvature. The profile goes from the base to the top; the curvature bows the wall along
         /// the horizontal direction of each column. If the top is inclined, the wall curves
