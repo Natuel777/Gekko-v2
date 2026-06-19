@@ -34,6 +34,8 @@ public class GekkoHealth : IDamageable
         Debug.Log("Gekko took " + dmg + " damage!");
         _currentHealth -= dmg;
         _healthBar.UpdateHealthBar(_currentHealth, _maxHealth);
+        EventManager.Trigger<float>("OnCameraShake", 1f);
+        _healthBar.TriggerDamagePulse();
 
         if(_currentHealth <= 0f)
         {

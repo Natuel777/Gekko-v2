@@ -20,6 +20,8 @@ public class HealthBar
     private float _damageTimer = 0f;
     private float _pulseTime = 0f;
     private Vector3 _baseScale;
+    private bool _isPulsing = false;
+    private float _pulseTimer = 0f;
 
     public void Initialize()
     {
@@ -68,7 +70,21 @@ public class HealthBar
         }
 
         bool isCritical = _targetValue < _criticalThreshold && _targetValue > 0f;
-        if (isCritical)
+        if (_isPulsing)
+        {
+            _pulseTimer += Time.deltaTime;
+            float t = Mathf.PingPong(_pulseTimer * 2f / _pulsePeriod, 1f);
+            float smoothT = Mathf.SmoothStep(0f, 1f, t);
+            _healthBar.transform.localScale = _baseScale + Vector3.one * (smoothT * _pulseScale);
+
+            if (_pulseTimer >= _pulsePeriod)
+            {
+                _isPulsing = false;
+                _pulseTimer = 0f;
+                if (!isCritical) _healthBar.transform.localScale = _baseScale;
+            }
+        }
+        else if (isCritical)
         {
             _pulseTime += Time.deltaTime;
             float t = Mathf.PingPong(_pulseTime * 2f / _pulsePeriod, 1f);
@@ -80,5 +96,11 @@ public class HealthBar
             _pulseTime = 0f;
             _healthBar.transform.localScale = _baseScale;
         }
+    }
+
+    public void TriggerDamagePulse()
+    {
+        _isPulsing = true;
+        _pulseTimer = 0f;
     }
 }
