@@ -1,3 +1,4 @@
+using System.Collections;
 using Unity.Cinemachine;
 using UnityEngine;
 using UnityEngine.InputSystem.LowLevel;
@@ -16,8 +17,10 @@ public class MainMenuManager : MonoBehaviour
     public GameObject mainMenuButtons;   // Play, Credits, Exit
     public GameObject ButtonsPressAnyKey;
     public GameObject BackCredits;
+    public GameObject creditsText;
 
     private MenuState currentState = MenuState.Intro;
+    public float creditsDelay = 2f;
 
     void Update()
     {
@@ -37,6 +40,7 @@ public class MainMenuManager : MonoBehaviour
         titleGroup.SetActive(false);
         ButtonsPressAnyKey.SetActive(false);
         mainMenuButtons.SetActive(true);
+        creditsText.SetActive(false);
     }
 
     public void OnCreditsPressed()
@@ -48,6 +52,17 @@ public class MainMenuManager : MonoBehaviour
 
         mainMenuButtons.SetActive(false);
         BackCredits.SetActive(true);
+        StartCoroutine(ShowCreditsAfterDelay());
+    }
+
+    IEnumerator ShowCreditsAfterDelay()
+    {
+        creditsText.SetActive(false);
+
+        yield return new WaitForSeconds(creditsDelay);
+
+        if (currentState == MenuState.Credits)
+            creditsText.SetActive(true);
     }
 
     public void OnBackFromCredits()
@@ -58,6 +73,7 @@ public class MainMenuManager : MonoBehaviour
         vcamMainMenu.Priority = 10;
         mainMenuButtons.SetActive(true);
         BackCredits.SetActive(false);
+        creditsText.SetActive(false);
     }
 
     public void OnPlayPressed() { SceneManager.LoadScene("LvlParcialBlocking 2"); }
