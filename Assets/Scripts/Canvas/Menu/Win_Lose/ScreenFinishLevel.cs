@@ -8,9 +8,9 @@ public class ScreenFinishLevel : Screens
     [SerializeField] private TMP_Text _strawberryText;
     [SerializeField] private TMP_Text _timeText;
 
-    [Header("Keys del registro (ojo: prefabs cruzados)")]
-    [SerializeField] private string _blueberryKey = "PF_CollectableRasberry";   // arándano
-    [SerializeField] private string _strawberryKey = "PF_CollectableBlueberry"; // frutilla
+    [Header("Keys del registro (= _name del NotificationSO)")]
+    [SerializeField] private string _blueberryKey = "BlueBerry";  // arándano
+    [SerializeField] private string _strawberryKey = "RaspBerry"; // frutilla
 
     private new void Awake()
     {
