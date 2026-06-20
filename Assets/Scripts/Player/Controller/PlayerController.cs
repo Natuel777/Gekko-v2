@@ -90,6 +90,8 @@ public class PlayerController
         _surfaces = _climbRayMask | _groundRayMask;
         _interactM = interact;
         _trail = trail;
+        // Arrancamos sin boost: el post proceso de viento empieza apagado.
+        WindEffectController.SetActive(false);
     }
 
     public void Teleport(Vector3 position)
@@ -110,6 +112,7 @@ public class PlayerController
                 _boostTimeRemaining = 0f;
                 _speedMultiplier = 1f;
                 if (_trail.isPlaying) _trail.Stop();
+                WindEffectController.SetActive(false);
             }
         }
 
@@ -694,6 +697,7 @@ public class PlayerController
     {
         _speedMultiplier = multiplier;
         _boostTimeRemaining = duration;
+        WindEffectController.SetActive(true);
     }
 
     public void ExtendSpeedBoost(float extraSeconds)
@@ -705,6 +709,7 @@ public class PlayerController
     {
         _speedMultiplier = 1f;
         _boostTimeRemaining = 0f;
+        WindEffectController.SetActive(false);
     }
 
 }
