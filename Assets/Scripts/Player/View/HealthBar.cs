@@ -65,6 +65,8 @@ public class HealthBar
             _currentDisplayValue = _targetValue;
         _healthBar.value = _currentDisplayValue;
 
+        bool isCritical = _targetValue < _criticalThreshold && _targetValue > 0f;
+
         if (_canvasGroup != null)
         {
             if (_isDamaged)
@@ -72,11 +74,9 @@ public class HealthBar
                 _damageTimer -= Time.deltaTime;
                 if (_damageTimer <= 0f) _isDamaged = false;
             }
-            float targetOpacity = _isDamaged ? 1f : _idleOpacity;
+            float targetOpacity = (isCritical || _isDamaged) ? 1f : _idleOpacity;
             _canvasGroup.alpha = Mathf.Lerp(_canvasGroup.alpha, targetOpacity, Time.deltaTime * _opacityLerpSpeed);
         }
-
-        bool isCritical = _targetValue < _criticalThreshold && _targetValue > 0f;
         if (_isPulsing)
         {
             _pulseTimer += Time.deltaTime;
