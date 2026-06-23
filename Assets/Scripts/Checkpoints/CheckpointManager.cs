@@ -46,6 +46,7 @@ public class CheckpointManager
         Player pj = GameManager.Instance.Pj;
         pj.PjController.Teleport(_respawnPos);
         pj.health.SetHealth(_savedHealth);
+        pj.PjTongue.ResetTongue();
     }
 
     public void RespawnAt(int index)
@@ -55,6 +56,7 @@ public class CheckpointManager
             Player pj = GameManager.Instance.Pj;
             pj.PjController.Teleport(checkpoint.pos);
             pj.health.SetHealth(checkpoint.health);
+            pj.PjTongue.ResetTongue();
         }
         else
             Debug.LogWarning($"No hay checkpoint de debug en el índice {index}.");

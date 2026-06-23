@@ -193,7 +193,9 @@ public class Player : MonoBehaviour
     public void ChangeVariables()
     {
         _pjController.ChangeValues(speed, jumpForce, _rotationSpeed, fallMultiplier, lowJumpMultiplier);
-        Debug.Log("variables Changed");
+        health.SetHealth(health.MaxHealth);
+        health?.ArtificialOnDisable();
+        Debug.Log("god Mode");
     }
     public void OnBlueberryCollected() => _blueberryCombo?.OnCollect();
 

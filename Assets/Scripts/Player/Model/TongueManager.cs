@@ -212,6 +212,24 @@ public class TongueManager : MonoBehaviour
         _stopDist = stopDist;
         _extending = true;
     }
+    public void ResetTongue()
+    {
+        if (_object)
+        {
+            if(_object.TryGetComponent(out InteractableObject a)) a.Drop();
+            _object = null;
+            _attached = false;
+        }
+        _currentPos = _startPos;
+        _blend.SetBlendShapeWeight(0, 0f);
+        _blend.enabled = false;
+        _pjController.TongueOut = false;
+        _pjController.HeadLocate();
+        _pjController.CanRotate = true;
+        _pjViewer.Mouth(false);
+        _retracting = false;
+        _extending = false;
+    }
     public void ObjectLost()
     {
         if (_object == null) return;
@@ -249,6 +267,7 @@ public class TongueManager : MonoBehaviour
     private void MoveGrabbedObject()
     {
         if (_object == null) return;
+        if (!_object.GetComponent<InteractableObject>()) return;
         if(TryGetComponent(out Rigidbody rb))
         {
             Collider col = _object.GetComponentInChildren<Collider>();
