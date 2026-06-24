@@ -21,7 +21,7 @@ public class HeavyBeetleCollision
             return;
         }
 
-        if(((1 << other.gameObject.layer) & LayerMask.GetMask("Wall")) != 0)
+        if(((1 << other.gameObject.layer) & _owner.ObstacleLayers.value) != 0)
             _owner.SendEvent(CreatureEvent.ChargeHitWall);
     }
 }

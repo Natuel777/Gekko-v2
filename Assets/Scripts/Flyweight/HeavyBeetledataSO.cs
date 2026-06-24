@@ -15,6 +15,7 @@ public class HeavyBeetledataSO : ScriptableObject
 
     [Header("Detection")]
     public float detectionRange = 6f;
+    public float groundCheckDistance = 1.5f; // largo del ray hacia abajo para detectar borde
 
     [Header("Combat")]
     public float attackDamage = 20f;

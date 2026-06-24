@@ -9,6 +9,7 @@ public class BeetleAlertState : IState
 
     public void Enter()
     {
+        _beetle.SetAngry(true);
         _beetle.lookAt.StartLooking(_beetle.playerTransform);
     }
 

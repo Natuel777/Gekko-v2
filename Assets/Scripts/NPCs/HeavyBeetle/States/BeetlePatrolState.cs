@@ -6,10 +6,11 @@ public class BeetlePatrolState : IState
 
     public BeetlePatrolState(HeavyBeetle beetle) {_beetle = beetle;}
 
-    public void Enter() 
+    public void Enter()
     {
-        _beetle.SetCharging(false); 
+        _beetle.SetCharging(false);
         _beetle.SetDazed(false);
+        _beetle.SetAngry(false);
     }
 
     public void Exit(){}

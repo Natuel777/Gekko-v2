@@ -5,13 +5,15 @@ public class ObstacleAvoidance
     private readonly Transform _transform;
     private readonly float _range;
 
-    private readonly LayerMask _wallMask;
+    private readonly LayerMask _obstacleMask;
 
-    public ObstacleAvoidance(Transform t, float range)
+    // obstacleMask: capas que cuentan como obstáculo a esquivar. Si se pasa vacía (0),
+    // cae al comportamiento histórico (solo "Wall") para no romper a otros usuarios.
+    public ObstacleAvoidance(Transform t, float range, LayerMask obstacleMask = default)
     {
         _transform = t;
         _range = range;
-        _wallMask = 1 << LayerMask.NameToLayer("Wall");
+        _obstacleMask = obstacleMask.value != 0 ? obstacleMask : (1 << LayerMask.NameToLayer("Wall"));
     }
 
     public Vector3 Avoid(Vector3 desiredDir)
@@ -53,7 +55,7 @@ public class ObstacleAvoidance
 
     private Vector3 GetSteer(Vector3 origin, Vector3 dir, float weight)
     {
-        if(!Physics.Raycast(origin, dir, out RaycastHit hit, _range, _wallMask, QueryTriggerInteraction.Ignore))
+        if(!Physics.Raycast(origin, dir, out RaycastHit hit, _range, _obstacleMask, QueryTriggerInteraction.Ignore))
             return Vector3.zero;
         Vector3 normal = hit.normal;
         normal.y = 0f;
