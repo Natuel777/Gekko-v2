@@ -19,6 +19,7 @@ public class Player : MonoBehaviour
     [SerializeField] private HealthBar _healthBar;
     [SerializeField] private AudioSource _jumpSound;
     [SerializeField] private AudioSource _landingSound;
+    [SerializeField] private AudioSource _walkSound;
     [SerializeField] private ParticleSystem _trail;
 
 
@@ -75,7 +76,8 @@ public class Player : MonoBehaviour
                         _pjViewer,
                         _tongue,
                         _interactM,
-                        _trail);
+                        _trail,
+                        _walkSound);
 
         _aimM = GetComponent<AimManager>();
         _aimM.SetControllerAndCamera(_pjController, camTransform);

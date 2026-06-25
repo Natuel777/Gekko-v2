@@ -2,6 +2,7 @@ using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UI;
 using Unity.Cinemachine;
+using System.Collections;
 
 public class PuzzleBeaver : MonoBehaviour, IInteractable, IDialogueable
 {
@@ -17,6 +18,7 @@ public class PuzzleBeaver : MonoBehaviour, IInteractable, IDialogueable
     [SerializeField] Image _exclamation;
     [SerializeField] Image _EIndicator;
     private int _currentDialogue;
+    [SerializeField] private AudioClip _audioTalk;
     [Header("Recompensa")]
     [SerializeField] private NotificationSO _notificationData;
 
@@ -37,6 +39,7 @@ public class PuzzleBeaver : MonoBehaviour, IInteractable, IDialogueable
 
     public Sprite Image => _imagedialogue;
 
+    public AudioClip AudioClip => _audioTalk;
 
     private void Start()
     {
@@ -88,6 +91,7 @@ public class PuzzleBeaver : MonoBehaviour, IInteractable, IDialogueable
         _exclamation.enabled = false;
         if (UIManager.Instance == null || UIManager.Instance.HasActiveDialogue()) return;
         UIManager.Instance.StartDialogue(this);
+
     }
     private void BridgeFinished()
     {
@@ -98,7 +102,7 @@ public class PuzzleBeaver : MonoBehaviour, IInteractable, IDialogueable
     }  
     public void OnDialogueStart()
     {
-        //anim
+        _anim.SetBool("isTalk",true);
         _beaverCam.Priority = 30;
     }
 
@@ -112,8 +116,10 @@ public class PuzzleBeaver : MonoBehaviour, IInteractable, IDialogueable
             _currentDialogue++;
             _missionAccepted = true;
         }
-        if(_finish)
+
+        if (_finish)
         {
+            _anim.SetTrigger("RaiseArm");
             CollectiblesRegister.RegisterCollectible(_notificationData.Name);
             int count = CollectiblesRegister.GetCollectibleCount(_notificationData.Name);
             UIManager.Instance.notifications.ShowRaspberryCollectible(_notificationData, count);
@@ -122,7 +128,15 @@ public class PuzzleBeaver : MonoBehaviour, IInteractable, IDialogueable
             pj.health.SetHealth(pj.health.MaxHealth);
             pj.PjController.ApplySpeedBoost(_notificationData.SpeedBoostMultiplier, _notificationData.SpeedBoostTimer);
             _finish = false;
+            StartCoroutine(Count());
         }
+        else _anim.SetBool("isTalk", false);
+
+    }
+    private IEnumerator Count()
+    {
+        yield return new WaitForSeconds(1f);
+        _anim.SetBool("isTalk", false);
     }
     private void FollowPlayer()
     {
