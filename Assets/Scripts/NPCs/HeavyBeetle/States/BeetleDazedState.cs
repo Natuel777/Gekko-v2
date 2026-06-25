@@ -10,12 +10,15 @@ public class BeetleDazedState : IState
     public void Enter()
     {
         _beetle.SetDazed(true);
+        _beetle.SetAngry(false);
+        _beetle.SetTurnedInsideOut(true);
         _dazeTimer = _beetle.data.dazeDuration;
     }
 
-    public void Exit() 
+    public void Exit()
     {
         _beetle.SetDazed(false);
+        _beetle.SetTurnedInsideOut(false);
     }
 
     public void Update() 

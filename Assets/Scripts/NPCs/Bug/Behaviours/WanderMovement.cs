@@ -19,6 +19,16 @@ public class WanderMovement
 
     public void Active(bool value) { _active = value; }
 
+    // Fuerza una dirección concreta (la calcula HeavyBeetle al detectar un borde sin piso)
+    // y reinicia el timer. Complementa el re-pick por IsBlocked, no lo reemplaza.
+    public void Redirect(Vector3 newDirection)
+    {
+        newDirection.y = 0f;
+        if (newDirection.sqrMagnitude < 0.001f) return;
+        _direction = newDirection.normalized;
+        _timer = 0f;
+    }
+
     public void ArtificialUpdate()
     {
         if (_transform == null) return;

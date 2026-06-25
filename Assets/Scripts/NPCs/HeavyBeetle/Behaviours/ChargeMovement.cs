@@ -34,4 +34,14 @@ public class ChargeMovement
         _transform.rotation = Quaternion.LookRotation(_chargeDirection);
         _distanceTraveled += step;
     }
+
+    // Redirige la embestida sin reiniciar la distancia recorrida: la embestida
+    // redirigida igual llega a ChargeDone y termina en Recalibrate.
+    public void Redirect(Vector3 newDirection)
+    {
+        newDirection.y = 0f;
+        if (newDirection.sqrMagnitude < 0.001f) return;
+        _chargeDirection = newDirection.normalized;
+        _transform.rotation = Quaternion.LookRotation(_chargeDirection);
+    }
 }
