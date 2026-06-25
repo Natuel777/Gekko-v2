@@ -2,9 +2,10 @@ using UnityEngine;
 
 public class SlipperyPlatform : MonoBehaviour
 {
-    [SerializeField] private float _slideForce = 500f;
+    [SerializeField] protected float _slideForce = 500f;
 
-    private void OnCollisionEnter(Collision col)
+
+    protected void OnCollisionEnter(Collision col)
     {
         if (col.gameObject.TryGetComponent(out Player player))
         {
@@ -12,7 +13,7 @@ public class SlipperyPlatform : MonoBehaviour
         }
     }
 
-    private void OnCollisionExit(Collision col)
+    protected void OnCollisionExit(Collision col)
     {
         if (col.gameObject.TryGetComponent(out Player player))
         {
@@ -20,7 +21,7 @@ public class SlipperyPlatform : MonoBehaviour
         }
     }
 
-    private void OnCollisionStay(Collision col)
+    protected virtual void OnCollisionStay(Collision col)
     {
         if (col.gameObject.TryGetComponent(out Rigidbody rb))
         {
@@ -28,4 +29,5 @@ public class SlipperyPlatform : MonoBehaviour
             rb.AddForce(slideDir * _slideForce, ForceMode.Acceleration);
         }
     }
+    
 }
