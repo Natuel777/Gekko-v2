@@ -22,13 +22,15 @@ public class HeavyBeetle : MonoBehaviour, IDamageable
     private Vector3 _lastPosition;
     private const float GroundCheckEpsilon = 0.0001f;
 
-    private Animator _anim;
-    private static readonly int TurnedInsideOutHash = Animator.StringToHash("IsturnedInsideOut");
+    // El flip de mareo ahora es por código (DazedFlip), no por Animator.
+    // private Animator _anim;
+    // private static readonly int TurnedInsideOutHash = Animator.StringToHash("IsturnedInsideOut");
 
     #region FSM
     public WanderMovement wanderMovement;
     public ChargeMovement chargeMovement;
     public LookAtTarget lookAt;
+    public DazedFlip dazedFlip;
     public BugDetection detection;
     private HeavyBeetleCollision _collision;
     private StateMachine _eventFSM;
@@ -51,7 +53,7 @@ public class HeavyBeetle : MonoBehaviour, IDamageable
     private void Awake()
     {
         _eventFSM = new StateMachine();
-        _anim = GetComponentInChildren<Animator>();
+        // _anim = GetComponentInChildren<Animator>();
 
         #region State initialization
         PatrolState = new BeetlePatrolState(this);
@@ -66,6 +68,7 @@ public class HeavyBeetle : MonoBehaviour, IDamageable
         wanderMovement = new WanderMovement(data.wanderSpeed, data.changeDirTime, transform, avoidance, data.rotationSpeed);
         chargeMovement = new ChargeMovement(GetComponent<Rigidbody>(), transform, data.chargeSpeed, data.chargeMaxDist, avoidance);
         lookAt = new LookAtTarget(data.rotationSpeed, transform);
+        dazedFlip = new DazedFlip(transform, data.flipSpeed);
         #endregion
 
         _collision = new HeavyBeetleCollision(this);
@@ -128,13 +131,13 @@ public class HeavyBeetle : MonoBehaviour, IDamageable
     public void SetDazed(bool v) => IsDazed = v;
     private void DelayedEnter() => SendEvent(CreatureEvent.GekkoEnter);
 
-    // Dispara la animación de quedar patas arriba (dazed). El Animator vive en el
-    // hijo del modelo (PF_Scarab), por eso se cachea con GetComponentInChildren.
-    public void SetTurnedInsideOut(bool value)
-    {
-        if (_anim == null) return;
-        _anim.SetBool(TurnedInsideOutHash, value);
-    }
+    // Reemplazado por el flip por código (DazedFlip). Se deja comentado por si se
+    // retoma la animación del Animator más adelante.
+    // public void SetTurnedInsideOut(bool value)
+    // {
+    //     if (_anim == null) return;
+    //     _anim.SetBool(TurnedInsideOutHash, value);
+    // }
 
     public void SetAngry(bool value)
     {
