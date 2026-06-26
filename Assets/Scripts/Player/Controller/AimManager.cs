@@ -82,6 +82,7 @@ public class AimManager : MonoBehaviour
             {
                 var renderer = _target.GetComponentInChildren<MeshRenderer>();
                 if (renderer != null) renderer.material.color = Color.red;
+                ShowIndicator(_target);
                 _lockedIn = true;
             }
             else TargetNull();
@@ -138,11 +139,15 @@ public class AimManager : MonoBehaviour
 
         }
         if (_target != null)
+        {
             _target.GetComponentInChildren<MeshRenderer>().material.color = Color.white;
+            HideIndicator(_target);
+        }
 
         _pjController.TargetAquired();
         _target = _orderedTargets[_currentIndex];
         _target.GetComponentInChildren<MeshRenderer>().material.color = Color.red;
+        ShowIndicator(_target);
     }
     private List<Transform> GetOrderedTargets()
     {
@@ -166,7 +171,10 @@ public class AimManager : MonoBehaviour
     private void TargetNull()
     {
         if (_target != null)
+        {
             _target.GetComponentInChildren<MeshRenderer>().material.color = Color.white;
+            HideIndicator(_target);
+        }
         _pjController.TargetLost();
         _target = null;
         _pointToLook.localPosition = new Vector3(0, 0.2f,1.12f);
@@ -187,4 +195,16 @@ public class AimManager : MonoBehaviour
     }
 
     Vector3 GetAngleFromDir(float angleInDegrees) => new Vector3(Mathf.Sin(angleInDegrees * Mathf.Deg2Rad), 0, Mathf.Cos(angleInDegrees * Mathf.Deg2Rad));
+
+    private void ShowIndicator(Transform target)
+    {
+        if (target != null && target.TryGetComponent(out ICanvasTarget ct) && ct.IndicatorCanvas != null)
+            ct.IndicatorCanvas.alpha = 1f;
+    }
+
+    private void HideIndicator(Transform target)
+    {
+        if (target != null && target.TryGetComponent(out ICanvasTarget ct) && ct.IndicatorCanvas != null)
+            ct.IndicatorCanvas.alpha = 0f;
+    }
 }

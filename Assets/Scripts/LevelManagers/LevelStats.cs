@@ -28,6 +28,9 @@ public class LevelStats : MonoBehaviour
             if (!_totals.ContainsKey(c.CollectibleName)) _totals[c.CollectibleName] = 0;
             _totals[c.CollectibleName]++;
         }
+
+        int bugCount = FindObjectsByType<Bug>(FindObjectsInactive.Exclude, FindObjectsSortMode.None).Length;
+        if (bugCount > 0) _totals["Bug"] = bugCount;
     }
 
     private void Update()

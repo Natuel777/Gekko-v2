@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class HeavyBeetle : MonoBehaviour, IDamageable
+public class HeavyBeetle : MonoBehaviour, IDamageable, ICanvasTarget
 {
     public HeavyBeetledataSO data;
     public Transform playerTransform;
@@ -9,6 +9,8 @@ public class HeavyBeetle : MonoBehaviour, IDamageable
 
     [Header("Feedback")]
     [SerializeField] private ParticleSystem _angryParticle;
+    [SerializeField] private CanvasGroup _indicatorCanvas;
+    public CanvasGroup IndicatorCanvas => _indicatorCanvas;
 
     [Header("Ground Check")]
     [SerializeField] private Transform _detectGroundPosition;
@@ -98,6 +100,15 @@ public class HeavyBeetle : MonoBehaviour, IDamageable
         _eventFSM.UpdateState();
         UpdateDetection();
         UpdateGroundCheck();
+        UpdateCanvasPosition();
+    }
+
+    private void UpdateCanvasPosition()
+    {
+        if (_indicatorCanvas == null) return;
+        _indicatorCanvas.transform.position = transform.position + Vector3.up * 1.76f;
+        if (Camera.main != null)
+            _indicatorCanvas.transform.rotation = Camera.main.transform.rotation;
     }
 
     private void UpdateDetection()
