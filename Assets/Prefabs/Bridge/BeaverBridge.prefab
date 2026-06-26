@@ -2798,7 +2798,7 @@ Transform:
   m_GameObject: {fileID: 1814526162886408550}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: 1, z: -0, w: 0}
-  m_LocalPosition: {x: 0, y: 4.7, z: 0}
+  m_LocalPosition: {x: 0.87, y: 6.1, z: 0}
   m_LocalScale: {x: 2.4199998, y: 2.4199998, z: 2.4199998}
   m_ConstrainProportionsScale: 1
   m_Children: []
@@ -2827,7 +2827,7 @@ ParticleSystem:
   startDelay:
     serializedVersion: 2
     minMaxState: 0
-    scalar: 0.4
+    scalar: 0.1
     minScalar: 0
     maxCurve:
       serializedVersion: 2
@@ -8331,6 +8331,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 6189817045182064300}
     m_Modifications:
+    - target: {fileID: 97942456572152878, guid: 085b15935aa1dbd4ab7eab97a7034cc3, type: 3}
+      propertyPath: playOnAwake
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 1044816593002998013, guid: 085b15935aa1dbd4ab7eab97a7034cc3, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0.7
@@ -8369,6 +8373,18 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1044816593002998013, guid: 085b15935aa1dbd4ab7eab97a7034cc3, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1088732588615673337, guid: 085b15935aa1dbd4ab7eab97a7034cc3, type: 3}
+      propertyPath: playOnAwake
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1717477551818371714, guid: 085b15935aa1dbd4ab7eab97a7034cc3, type: 3}
+      propertyPath: playOnAwake
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2750513210334933079, guid: 085b15935aa1dbd4ab7eab97a7034cc3, type: 3}
+      propertyPath: playOnAwake
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7580933918244144712, guid: 085b15935aa1dbd4ab7eab97a7034cc3, type: 3}
