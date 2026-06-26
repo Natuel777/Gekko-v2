@@ -84,6 +84,7 @@ public class TongueManager : MonoBehaviour
                     if (_object.TryGetComponent(out Bug buggy))
                     {
                         buggy.Absorbed = true;
+                        CollectiblesRegister.RegisterCollectible("Bug");
                         _slurpSound.Play();
                     }
                     else if(_object.TryGetComponent(out Collectible col))
