@@ -14,7 +14,8 @@ public class BeaverBridge : MonoBehaviour
     [SerializeField] GameObject _fixedBridge;
     [SerializeField] private Transform _canvas;
     [SerializeField] private TextMeshProUGUI _textCount;
-    [SerializeField] private ParticleSystem _particleCompleted;
+    [SerializeField] private ParticleSystem _particlePlankSetted;
+    [SerializeField] private GameObject _particleCompleted;
     [SerializeField] private AudioSource _plankSound;
     [SerializeField] private AudioSource _completedSound;
     private Transform _pjPosition;
@@ -42,6 +43,7 @@ public class BeaverBridge : MonoBehaviour
     {
         _currentPlanks++;
         _plankSound.Play();
+        _particlePlankSetted.Play();
         SetText();
         if (_currentPlanks >= _planksQuantity)
         {
@@ -54,11 +56,31 @@ public class BeaverBridge : MonoBehaviour
     private IEnumerator Completed()
     {
         _completedSound.Play();
-        _particleCompleted.Play();
-        while(_particleCompleted.isPlaying)
+        _particleCompleted.SetActive(true);
+
+        ParticleSystem[] particleSystems = _particleCompleted.GetComponentsInChildren<ParticleSystem>();
+
+        foreach (ParticleSystem ps in particleSystems)
         {
-            yield return null;
+            ps.Play();
         }
+        bool anyPlaying;
+        do
+        {
+            anyPlaying = false;
+
+            foreach (ParticleSystem ps in particleSystems)
+            {
+                if (ps.IsAlive(true))
+                {
+                    anyPlaying = true;
+                    break;
+                }
+            }
+
+            yield return null;
+
+        } while (anyPlaying);
         _canvas.gameObject.SetActive(false);
     }
     #region Canvas

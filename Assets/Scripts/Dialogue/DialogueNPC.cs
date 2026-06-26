@@ -11,6 +11,8 @@ public class DialogueNPC : MonoBehaviour, IDialogueable
 
     public Sprite Image => throw new System.NotImplementedException();
 
+    public AudioClip AudioClip => throw new System.NotImplementedException();
+
     // Hooks para futuro (animación de "hablar", girar hacia el player, etc.).
     public void OnDialogueStart() { }
     public void OnDialogueEnd() { }

@@ -1,8 +1,9 @@
-using UnityEngine;
-using UnityEngine.UI;
-using TMPro;
 using System.Collections;
 using System.Collections.Generic;
+using TMPro;
+using UnityEngine;
+using UnityEngine.Audio;
+using UnityEngine.UI;
 
 public class UIManager : MonoBehaviour
 {
@@ -27,6 +28,9 @@ public class UIManager : MonoBehaviour
     private bool _isTyping;
     private string _currentSentence;
     private Coroutine _typing;
+    private AudioSource _audioTalk;
+    private AudioClip _audioClip;
+    private int _countLetters;
 
     public delegate void ActivatingDialogue();
     public event ActivatingDialogue OnActivatingDialogue;
@@ -51,6 +55,7 @@ public class UIManager : MonoBehaviour
             _dialogueGroup.interactable = false;
             _dialogueGroup.blocksRaycasts = false;
         }
+        _audioTalk = GetComponent<AudioSource>();
         #endregion
     }
 
@@ -96,6 +101,7 @@ public class UIManager : MonoBehaviour
 
         _currentDialogue = dialogueable;
         _dialogueImage.sprite = dialogueable.Image;
+        _audioClip = dialogueable.AudioClip;
         _currentDialogue.OnDialogueStart();
         OnActivatingDialogue?.Invoke();
 
@@ -149,6 +155,16 @@ public class UIManager : MonoBehaviour
         foreach(char c in sentence)
         {
             _dialogueText.text += c;
+            if (!char.IsWhiteSpace(c))
+            {
+                _countLetters++;
+
+                if (_countLetters % 2 == 0)
+                {
+                    _audioTalk.pitch = Random.Range(0.9f, 1.1f);
+                    _audioTalk.PlayOneShot(_audioClip);
+                }
+            }
             yield return new WaitForSeconds(_typeSpeed);
         }
 

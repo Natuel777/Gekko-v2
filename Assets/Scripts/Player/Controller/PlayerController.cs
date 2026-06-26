@@ -62,6 +62,7 @@ public class PlayerController
     private Vector3 _lastDirJump;
     [SerializeField] private CinemachineOrbitalFollow _orbitalFollow;
     private ParticleSystem _trail;
+    private AudioSource _walkSound;
 
     public bool JumpPressed { set { _jumpPressed = value; } }
     public bool IsMoving { get { return _isMoving; } }
@@ -74,7 +75,7 @@ public class PlayerController
     private bool CanInteract => !_talking && !TongueOut && _isSurface;
     #endregion
 
-    public PlayerController(Rigidbody rb, Transform pjTransform, CapsuleCollider col, Transform camTransform, PlayerViewer pjV, Transform head,InteractionManager interact, ParticleSystem trail)
+    public PlayerController(Rigidbody rb, Transform pjTransform, CapsuleCollider col, Transform camTransform, PlayerViewer pjV, Transform head,InteractionManager interact, ParticleSystem trail, AudioSource walk)
     {
         _rb = rb;
         _rb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationY| RigidbodyConstraints.FreezeRotationZ;
@@ -90,6 +91,7 @@ public class PlayerController
         _surfaces = _climbRayMask | _groundRayMask;
         _interactM = interact;
         _trail = trail;
+        _walkSound = walk;
         // Arrancamos sin boost: el post proceso de viento empieza apagado.
         WindEffectController.SetActive(false);
     }
@@ -388,8 +390,10 @@ public class PlayerController
                 _rb.AddForce(lateralDir * lateralForce * Mathf.Sign(input.x), ForceMode.Acceleration);
             }
         }
-        
-        
+
+        if (!_walkSound.isPlaying && _isSurface) _walkSound.Play();
+        else if (_walkSound.isPlaying && !_isSurface) _walkSound.Stop();
+
 
         if (_isClimbing)
         {
@@ -683,7 +687,7 @@ public class PlayerController
             horizontalVel *= 0.995f;
             _rb.linearVelocity = new Vector3(horizontalVel.x, _rb.linearVelocity.y, horizontalVel.z);
         }
-
+        if (_walkSound.isPlaying) _walkSound.Stop();
         _pjViewer.Move(false);
         _isMoving = false;
         _lastValidDir = Vector3.zero;
