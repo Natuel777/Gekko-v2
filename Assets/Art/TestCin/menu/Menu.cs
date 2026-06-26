@@ -5,7 +5,8 @@ public class Menu : MonoBehaviour
 {
     public void Play()
     {
-        SceneManager.LoadScene("LvlParcialBlocking 1");
+        AsyncLoader.SetSceneToLoad(ScenesNames.Intentocin);
+        SceneManager.LoadScene("SceneLoader");
     }
 
     public void QuitGame()  

@@ -2,5 +2,6 @@ public enum ScenesNames
 {
     LoadScene,
     Menu,
-    Level1
+    Level1,
+    Intentocin
 }

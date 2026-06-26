@@ -6,14 +6,30 @@ using UnityEngine.UI;
 
 public class AsyncLoader : MonoBehaviour
 {
+    private const string PrefKey = "SceneToLoad";
     public static ScenesNames sceneToLoad = default;
     [SerializeField] private string _sceneName = default;
     [SerializeField] private Slider _progressBar = default;
     [SerializeField] private TextMeshProUGUI _percentage = default;
 
+    public static void SetSceneToLoad(ScenesNames scene)
+    {
+        sceneToLoad = scene;
+        PlayerPrefs.SetInt(PrefKey, (int)scene);
+        PlayerPrefs.Save();
+    }
+
     private void Awake()
     {
-        _sceneName = ScenesDictionary.SceneName[sceneToLoad];
+        // Recover from Domain Reload: static may have been wiped, PlayerPrefs persists
+        if (sceneToLoad == default && PlayerPrefs.HasKey(PrefKey))
+            sceneToLoad = (ScenesNames)PlayerPrefs.GetInt(PrefKey);
+
+        if (!ScenesDictionary.SceneName.TryGetValue(sceneToLoad, out _sceneName))
+        {
+            Debug.LogError($"[AsyncLoader] ScenesNames.{sceneToLoad} no está en ScenesDictionary.");
+            return;
+        }
         if (!_progressBar) _progressBar = FindAnyObjectByType<Slider>();
         if (!_percentage) _percentage = FindAnyObjectByType<TextMeshProUGUI>();
     }
@@ -26,6 +42,11 @@ public class AsyncLoader : MonoBehaviour
     private void ChargeAsyncScene(string sceneName)
     {
         AsyncOperation async = SceneManager.LoadSceneAsync(sceneName);
+        if (async == null)
+        {
+            Debug.LogError($"[AsyncLoader] No se pudo cargar la escena '{sceneName}'. ¿Está en el Build Profile?");
+            return;
+        }
         Application.backgroundLoadingPriority = ThreadPriority.High;
         StartCoroutine(ChargeSceneCorrutine(async));
     }

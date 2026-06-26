@@ -9,7 +9,7 @@ public class SceneLoadButton : MonoBehaviour
     public void LoadScene()
     {
         if (_loadScreen == _scene) return;
-        AsyncLoader.sceneToLoad = _scene;
+        AsyncLoader.SetSceneToLoad(_scene);
         SceneManager.LoadScene(ScenesDictionary.SceneName[_loadScreen]);
     }
 

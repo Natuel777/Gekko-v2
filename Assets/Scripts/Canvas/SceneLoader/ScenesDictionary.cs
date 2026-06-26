@@ -8,6 +8,7 @@ public static class ScenesDictionary
         {ScenesNames.LoadScene, "SceneLoader" },
         {ScenesNames.Menu, "Menu" },
         {ScenesNames.Level1, "LvlParcialBlocking 2" },
+        {ScenesNames.Intentocin, "intentocin" },
     };
     public static Dictionary<int, ScenesNames> LevelIndex = new Dictionary<int, ScenesNames>
     {
