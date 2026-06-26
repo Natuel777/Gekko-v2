@@ -85,10 +85,10 @@ CapsuleCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 2
-  m_Radius: 0.9289789
-  m_Height: 4.0391273
+  m_Radius: 2.1195512
+  m_Height: 5.211237
   m_Direction: 1
-  m_Center: {x: 0.02, y: 1.7896729, z: 0.16309452}
+  m_Center: {x: 0.051532507, y: 2.0189362, z: 0.32955217}
 --- !u!114 &4572244124533710064
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -104,10 +104,11 @@ MonoBehaviour:
   data: {fileID: 11400000, guid: fcd6c928abfe5a8478a794a13c54bbdf, type: 2}
   playerTransform: {fileID: 0}
   _venomPrefab: {fileID: 4090355632537916707, guid: e52e939f2193aea47b4ec1488fc1b77b, type: 3}
-  _head: {fileID: 0}
+  _head: {fileID: 7283786708917656112}
   _firePoint: {fileID: 5625072394243308955}
   _purifiedParticle: {fileID: 0}
   _purifiedSound: {fileID: 0}
+  _animatorCarnivorousPlant: {fileID: 1749979985346082821}
 --- !u!1001 &5223061434202096278
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -222,5 +223,10 @@ Animator:
 --- !u!4 &5761990474622952829 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 027c378a5e0137949a4799d97ef00a4b, type: 3}
+  m_PrefabInstance: {fileID: 5223061434202096278}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &7283786708917656112 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -5951155234622990170, guid: 027c378a5e0137949a4799d97ef00a4b, type: 3}
   m_PrefabInstance: {fileID: 5223061434202096278}
   m_PrefabAsset: {fileID: 0}

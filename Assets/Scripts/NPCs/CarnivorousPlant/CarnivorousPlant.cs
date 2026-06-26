@@ -15,6 +15,7 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable
     [Header("Feedback")]
     [SerializeField] private ParticleSystem _purifiedParticle;
     [SerializeField] private AudioSource _purifiedSound;
+    [SerializeField] private Animator _animatorCarnivorousPlant;
 
     private bool _playerInRange = false;
     private bool _purified = false;
@@ -117,6 +118,7 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable
     {
         if(_head == null || _isLunging) return;
         StartCoroutine(BiteLungeRoutine());
+        _animatorCarnivorousPlant.SetTrigger("nibble");
     }
 
     private IEnumerator BiteLungeRoutine()
