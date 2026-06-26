@@ -13,6 +13,9 @@ public class HeavyBeetledataSO : ScriptableObject
     public float dazeDuration = 4f;
     public float reactionDelay = 0.2f;
 
+    [Header("Daze")]
+    public float flipSpeed = 180f; // deg/seg; 180 => ~1s para darse vuelta, ~1s para enderezarse
+
     [Header("Detection")]
     public float detectionRange = 6f;
     public float groundCheckDistance = 1.5f; // largo del ray hacia abajo para detectar borde
