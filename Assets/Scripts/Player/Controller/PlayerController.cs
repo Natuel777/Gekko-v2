@@ -22,6 +22,8 @@ public class PlayerController
 
     private float _speed = 11f;
     private float _jumpForce = 6f;
+    private float _coyoteTime = 0.3f;
+    private float _coyoteTimer;
     private float _fallMultiplier = 2.5f;
     private float _lowJumpMultiplier = 3f;
     private float _rotationSpeed = 10f;
@@ -155,28 +157,29 @@ public class PlayerController
         _wasClimbing = _isClimbing;
         if (_jumpGraceTime <= 0f)
             DetectSurface();
+
         _isGrounded = IsGrounded();
+
         _tongueM.CanUseTongue = _isSurface;
+
         if (_wasClimbing && !_isClimbing)
         {
             _rb.linearVelocity = Vector3.zero;
         }
         if (_isSurface && !_wasSurface)
         {
-            if (_jumpPressed) _jumpDelayCount = _jumpDelayTimer;
             _pjTransform.GetComponent<Player>().LandingSound();
         }
         _wasSurface = _isSurface;
-        if (_jumpPressed && _isSurface)
-        {
-            _jumpDelayCount -= Time.deltaTime;
 
-            if (_jumpDelayCount <= 0)
-            {
-                _jumpDelayCount = 0;
-                Jump(_jumpForce);
-                _pjTransform.GetComponent<Player>().JumpSound();
-            }
+        if (_isSurface) _coyoteTimer = _coyoteTime;
+        else  _coyoteTimer -= Time.deltaTime;
+
+        if (_coyoteTimer > 0f && _jumpPressed && _canJump && !TongueOut)
+        {
+            Jump(_jumpForce);
+            _coyoteTimer = 0f;
+            _pjTransform.GetComponent<Player>().JumpSound();
         }
         if (_isClimbing)
         {
@@ -469,8 +472,6 @@ public class PlayerController
 
     public void Jump(float force)
     {
-        if(!_canJump) return;
-        if (_tongueOut) return;
         _isClimbing = false;
         _rb.useGravity = true;
         _jumpGraceTime = _jumpGraceDuration;
@@ -632,7 +633,7 @@ public class PlayerController
             _currentUp = Vector3.Slerp(_currentUp, Vector3.up, 5f * Time.deltaTime);
             Vector3 verticalVelocity = Vector3.Project(_rb.linearVelocity, Vector3.up);
             _rb.linearVelocity = verticalVelocity;
-            _canJump = false;
+            if(_coyoteTimer <0f) _canJump = false;
         }
     }
     public bool CanMoveTo(Vector3 targetPos, Vector3 objectPos, float objectRadius)
@@ -677,7 +678,7 @@ public class PlayerController
     public void CancelJump() { _pjViewer.Jump(false); }
     public void CancelMovement() 
     {
-        if (!_isIcySurface || !_isSlipperySurface)
+        if (_isSurface && !_isIcySurface && !_isSlipperySurface)
         {
             _rb.linearVelocity = Vector3.zero;
         }
