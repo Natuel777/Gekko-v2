@@ -262,7 +262,6 @@ public class PlayerController
     private void Move(Vector2 input)
     {
         if(_camTransform == null) return;
-
         Vector3 camForward = Vector3.Cross(_camTransform.right, _currentUp).normalized;
         Vector3 camRight = Vector3.Cross(_currentUp, camForward).normalized;
 
@@ -411,6 +410,9 @@ public class PlayerController
             {
                 // Mantenemos la Y del moveVel para poder subir rampas
                 Vector3 horizontalVel = new Vector3(moveVel.x, moveVel.y, moveVel.z);
+                float currentY = _rb.linearVelocity.y;
+                if (currentY < -0.5f)
+                    horizontalVel.y = currentY;
                 if (horizontalVel.magnitude > _speed * _speedMultiplier)
                     horizontalVel = horizontalVel.normalized * _speed * _speedMultiplier;
                 _rb.linearVelocity = horizontalVel;
@@ -427,6 +429,7 @@ public class PlayerController
                 moveVel.x = horizontalVel.x;
                 moveVel.z = horizontalVel.z;
                 _rb.linearVelocity = moveVel;
+                Debug.Log($"useGravity: {_rb.useGravity}, velY: {_rb.linearVelocity.y}");
             }
         }
     }
