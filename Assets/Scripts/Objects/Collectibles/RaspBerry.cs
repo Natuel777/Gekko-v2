@@ -17,7 +17,7 @@ public class RaspBerry : Collectible
 
         var pj = GameManager.Instance.Pj;
         pj.health.SetHealth(pj.health.MaxHealth);
-        pj.PjController.ApplySpeedBoost(_notificationData.SpeedBoostMultiplier, _notificationData.SpeedBoostTimer);
+        pj.BlueberryTracker.ActivateBoost(_notificationData.SpeedBoostMultiplier, _notificationData.SpeedBoostTimer);
 
         GetComponentInChildren<CollectableView>().Collect();
     }

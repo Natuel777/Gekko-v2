@@ -2,6 +2,8 @@ using UnityEngine;
 
 public class TongueManager : MonoBehaviour
 {
+    private PlayerController _pjController;
+
     [SerializeField] private Transform _pj;
     [SerializeField] private float _speed = 15f;
     [SerializeField] private float _maxDistance = 7f;
@@ -19,8 +21,6 @@ public class TongueManager : MonoBehaviour
     private bool _retracting;
     private float _objectRadius = 0f;
     private float _stopDist;
-
-    private PlayerController _pjController;
 
     [SerializeField] private AudioSource _tongueSound;
     [SerializeField] private AudioSource _slurpSound;
@@ -292,10 +292,5 @@ public class TongueManager : MonoBehaviour
     public void GetPlayerController(PlayerController pjC)
     {
         _pjController = pjC;
-    }
-    public void SlurpSound()
-    {
-        _slurpSound.Play();
-        _pjViewer.Attack();
     }
 }

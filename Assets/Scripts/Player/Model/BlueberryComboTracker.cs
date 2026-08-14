@@ -10,21 +10,37 @@ public class BlueberryComboTracker
     private readonly NotificationSO _blueberry;
 
     private readonly PlayerController _controller;
+    private PlayerViewer _pjViewer;
     private readonly GekkoHealth      _health;
+    private float _boostTimeRemaining = 0f;
 
     public int  ComboCount  => _comboCount;
     public bool BoostActive => _boostActive;
 
-    public BlueberryComboTracker(PlayerController controller, GekkoHealth health, NotificationSO blueberr)
+    public BlueberryComboTracker(PlayerController controller, GekkoHealth health, NotificationSO blueberr, PlayerViewer pjViewer)
     {
         _controller = controller;
-        _health     = health;
+        _health = health;
         _blueberry = blueberr;
+        _pjViewer = pjViewer;
     }
 
     public void ArtificialUpdate()
     {
-        if (_boostActive && _controller.BoostTimeRemaining <= 0f)
+        if (_boostTimeRemaining > 0f)
+        {
+            _boostTimeRemaining -= Time.deltaTime;
+            if (_controller.IsMoving) if (!_pjViewer.IsTrailPlaying()) _pjViewer.PlayTrail();
+            if (_boostTimeRemaining <= 0f)
+            {
+                _boostTimeRemaining = 0f;
+                _controller.SetSpeedMultiplier(1f);
+                if (_pjViewer.IsTrailPlaying()) _pjViewer.StopTrail();
+                WindEffectController.SetActive(false);
+            }
+        }
+
+        if (_boostActive && _boostTimeRemaining <= 0f)
             _boostActive = false;
     }
 
@@ -46,20 +62,34 @@ public class BlueberryComboTracker
 
         if (_boostActive)
         {
-            _controller.ExtendSpeedBoost(BoostExtendPerBerry);
+            ExtendSpeedBoost(BoostExtendPerBerry);
             return;
         }
 
         _comboCount++;
 
-        if (_comboCount >= ComboTarget) ActivateBoost();
+        if (_comboCount >= ComboTarget) ActivateBoost(_blueberry.SpeedBoostMultiplier, _blueberry.SpeedBoostTimer);
     }
 
-    private void ActivateBoost()
+    public void ActivateBoost(float multiplier, float duration)
     {
-        _controller.ApplySpeedBoost(_blueberry.SpeedBoostMultiplier, _blueberry.SpeedBoostTimer);
         _boostActive = true;
         _comboCount  = 0;
+        _boostTimeRemaining = duration;
+        _controller.SetSpeedMultiplier(multiplier);
+        WindEffectController.SetActive(true);
+    }
+
+    public void ExtendSpeedBoost(float extraSeconds)
+    {
+        _boostTimeRemaining += extraSeconds;
+    }
+
+    public void ResetSpeedBoost()
+    {
+        _controller.SetSpeedMultiplier(1f);
+        _boostTimeRemaining = 0f;
+        WindEffectController.SetActive(false);
     }
 
 }

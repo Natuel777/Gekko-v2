@@ -3,20 +3,28 @@ using UnityEngine;
 [RequireComponent(typeof(Rigidbody))]
 public class Player : MonoBehaviour
 {
+    #region variables
     private PlayerInputs _pjInputs;
+    private PlayerController _pjController;
     private TongueManager _pjTongue;
     private AimManager _aimM;
     private InteractionManager _interactM;
-
-    [HideInInspector] public GekkoHealth health;
     private GekkoCollision _collision;
-    [SerializeField] private PlayerViewer _pjViewer;
-    private string[] _cameraTags;
+    private DialogueInteractor _interactor;
+    private DebugController _debugController;
+    private BlueberryComboTracker _blueberryCombo;
 
-    [SerializeField] private Transform _tongue;
-    [SerializeField] private PlayerController _pjController;
-    [SerializeField] float _rotationSpeed, speed, jumpForce, fallMultiplier, lowJumpMultiplier;
+    [Header("Health")]
     [SerializeField] private HealthBar _healthBar;
+    [HideInInspector] public GekkoHealth health;
+
+    [Header("View")]
+    [SerializeField] private PlayerViewer _pjViewer;
+    [SerializeField] private Transform _tongue;
+
+    [Header("Testing")]
+    [SerializeField] float _rotationSpeed, speed, jumpForce, fallMultiplier, lowJumpMultiplier;
+
     [SerializeField] private AudioSource _jumpSound;
     [SerializeField] private AudioSource _landingSound;
     [SerializeField] private AudioSource _walkSound;
@@ -25,22 +33,21 @@ public class Player : MonoBehaviour
 
     [Header("HUD")]
     [SerializeField] private BlueberryComboUI _comboUI;
+    [SerializeField] private NotificationSO _blueberry;
 
     [Header("Dialogue")]
     [SerializeField] private float _interactReach = 3f;
     [SerializeField] private float _interactOriginY = 1f;
     [SerializeField] private LayerMask _dialogueLayer;
-    private DialogueInteractor _interactor;
-
+    #endregion
     #region Properties
     public PlayerController PjController {get{return _pjController;}}
     public TongueManager PjTongue => _pjTongue;
     public DialogueInteractor Interactor => _interactor;
+    public PlayerViewer PjViewer => _pjViewer;
+    public BlueberryComboTracker BlueberryTracker => _blueberryCombo;
     #endregion
 
-    private DebugController _debugController;
-    private BlueberryComboTracker _blueberryCombo;
-    [SerializeField] private NotificationSO _blueberry;
 
     private void Awake()
     {
@@ -67,17 +74,15 @@ public class Player : MonoBehaviour
                 camTransform = currentCamera.transform;
         }
 
-        _interactM = GetComponentInChildren<InteractionManager>();
-
         _pjController = new PlayerController(GetComponent<Rigidbody>(),
                         transform,
                         GetComponent<CapsuleCollider>(),
                         camTransform,
                         _pjViewer,
-                        _tongue,
-                        _interactM,
-                        _trail,
-                        _walkSound);
+                        _tongue);
+
+        _interactM = GetComponentInChildren<InteractionManager>();
+        _interactM.GetPlayerController(_pjController);
 
         _aimM = GetComponent<AimManager>();
         _aimM.SetControllerAndCamera(_pjController, camTransform);
@@ -88,14 +93,14 @@ public class Player : MonoBehaviour
         _pjController.GetTongueManager(_pjTongue);
 
         CameraFollow cam = camTransform.GetComponent<CameraFollow>();
-        //CameraRotation cam = camTransform.GetComponent<CameraRotation>();
+
         cam.SetPJC(_pjController);
 
 
         _pjInputs = new PlayerInputs(_pjController, _pjTongue, _aimM,cam, _interactM, this);
-        _blueberryCombo = new BlueberryComboTracker(_pjController, health, _blueberry);
+        _blueberryCombo = new BlueberryComboTracker(_pjController, health, _blueberry, _pjViewer);
         UIManager.Instance.notifications.OnBlueberryWindowClosed += _blueberryCombo.ResetCombo;
-        // Raycast desde el Gekko hacia adelante (no desde la cámara orbital).
+
         _interactor = new DialogueInteractor(transform, _interactReach, _interactOriginY, _dialogueLayer);
         ActivateInputs();
 
@@ -172,10 +177,6 @@ public class Player : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        //if(other.GetComponent<Collectible>() != null)
-        //{
-        //    other.GetComponent<Collectible>().Grab();
-        //}
         _collision.ArtificialOnTriggerEnter(other);
     }
 
@@ -200,17 +201,4 @@ public class Player : MonoBehaviour
         Debug.Log("god Mode");
     }
     public void OnBlueberryCollected() => _blueberryCombo?.OnCollect();
-
-    public void LandingSound()
-    {
-        _landingSound.Play();
-    }
-    public void JumpSound()
-    {
-        _jumpSound.Play();
-    }
-    public void SlurpSound()
-    {
-        _pjTongue.SlurpSound();
-    }
 }

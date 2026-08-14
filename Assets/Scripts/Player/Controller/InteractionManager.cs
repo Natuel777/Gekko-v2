@@ -3,11 +3,12 @@ using UnityEngine;
 public class InteractionManager : MonoBehaviour
 {
     private bool _canInteract = true;
+    private PlayerController _controller;
     [SerializeField] private float _interactionRange = 1f;
     private IInteractable _currentInteractable;
-    public bool CanInteract { set { _canInteract = value; } }
     private void Update()
     {
+        _canInteract = _controller.CanInteract;
         CheckInteraction();
     }
     private void CheckInteraction()
@@ -38,6 +39,7 @@ public class InteractionManager : MonoBehaviour
         if (_currentInteractable != null) _currentInteractable.HideInteractUI();
         _currentInteractable = null;
     }
+    public void GetPlayerController(PlayerController _pjController) => _controller = _pjController;
     private void OnDrawGizmos()
     {
         Gizmos.color = Color.red;

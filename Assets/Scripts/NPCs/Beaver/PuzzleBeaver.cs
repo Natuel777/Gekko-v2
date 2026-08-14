@@ -126,7 +126,7 @@ public class PuzzleBeaver : MonoBehaviour, IInteractable, IDialogueable
 
             var pj = GameManager.Instance.Pj;
             pj.health.SetHealth(pj.health.MaxHealth);
-            pj.PjController.ApplySpeedBoost(_notificationData.SpeedBoostMultiplier, _notificationData.SpeedBoostTimer);
+            pj.BlueberryTracker.ActivateBoost(_notificationData.SpeedBoostMultiplier, _notificationData.SpeedBoostTimer);
             _finish = false;
             StartCoroutine(Count());
         }
