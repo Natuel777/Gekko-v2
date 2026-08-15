@@ -3,6 +3,7 @@
 [RequireComponent(typeof(Collider))]
 public class Bug : MonoBehaviour , IDamageable
 {
+    #region Model
     private StateMachine _eventFSM;
     private BugCollision _collision;
     public FleeMovement fleeMovement;
@@ -11,6 +12,7 @@ public class Bug : MonoBehaviour , IDamageable
     //public DefensiveBehaviour defensiveBehaviour;
     public BugDetection detection;
     public DefensiveFlyingBehaviour defensiveFlyingBehaviour;
+    #endregion
 
     #region Cached states
     public IdleState IdleState { get; private set; }
@@ -31,6 +33,8 @@ public class Bug : MonoBehaviour , IDamageable
     private bool _absorbed = false;
     public bool Absorbed { set { _absorbed = value; } }
     private bool _playerInRange = false;
+    private float _enterDelayTimer;
+    private bool _enterPending;
 
     #region Getters
     public bool IsAttacking => _isAttacking;
@@ -77,9 +81,8 @@ public class Bug : MonoBehaviour , IDamageable
 
     private void Start()
     {
-        // Se resuelve acá (no en Awake) para garantizar que el Player ya seteó GameManager.Instance.Pj.
         PlayerTransform = GameManager.Instance.Pj.transform;
-        detection = new BugDetection(this, PlayerTransform, bugData.detectionRange);
+        detection = new BugDetection(transform, PlayerTransform, bugData.detectionRange);
         SetState(IdleState);
     }
 
@@ -87,6 +90,7 @@ public class Bug : MonoBehaviour , IDamageable
     {
         _eventFSM.UpdateState();
         UpdateDetection();
+        UpdateEnterDelay();
     }
 
     private void UpdateDetection()
@@ -98,6 +102,7 @@ public class Bug : MonoBehaviour , IDamageable
             _playerInRange = true;
             EventManager.Trigger<(Bug, Transform)>("OnPlayerDetected", (this, PlayerTransform));
         }
+        
         else if(!inRange && _playerInRange)
         {
             _playerInRange = false;
@@ -114,17 +119,27 @@ public class Bug : MonoBehaviour , IDamageable
         if(data.sender != this) return;
 
         PlayerTransform = data.player;
-        CancelInvoke(nameof(DelayedEnter));
-        Invoke(nameof(DelayedEnter), bugData.reactionDelay);
+        _enterDelayTimer = bugData.reactionDelay;
+        _enterPending = true;
     }
 
-    private void DelayedEnter() {SendEvent(CreatureEvent.GekkoEnter);}
+    private void UpdateEnterDelay()
+    {
+        if(!_enterPending) return;
+
+        _enterDelayTimer -= Time.deltaTime;
+        if(_enterDelayTimer <= 0f)
+        {
+            _enterPending = false;
+            SendEvent(CreatureEvent.GekkoEnter);
+        }
+    }
 
     private void OnPlayerLost(Bug sender)
     {
         if(sender != this) return;
 
-        CancelInvoke(nameof(DelayedEnter));
+        _enterPending = false;
         SendEvent(CreatureEvent.GekkoExit);
     }
 
@@ -134,6 +149,7 @@ public class Bug : MonoBehaviour , IDamageable
 
     public void Damage(float dmg) {Destroy(gameObject);}
 
+    #if UNITY_EDITOR
     private void OnDrawGizmos() 
     {
         Gizmos.color = Color.red;
@@ -142,4 +158,5 @@ public class Bug : MonoBehaviour , IDamageable
         Gizmos.color = Color.yellow;
         Gizmos.DrawWireSphere(transform.position, bugData.defenseThreshold);
     }
+    #endif
 }

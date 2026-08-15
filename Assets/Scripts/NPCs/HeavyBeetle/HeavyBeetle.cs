@@ -24,6 +24,11 @@ public class HeavyBeetle : MonoBehaviour, IDamageable, ICanvasTarget
     private Vector3 _lastPosition;
     private const float GroundCheckEpsilon = 0.0001f;
 
+    private float _enterDelayTimer;
+    private bool _enterPending;
+    private bool _indicatorVisible;
+    private Camera _mainCamera;
+
     // El flip de mareo ahora es por código (DazedFlip), no por Animator.
     // private Animator _anim;
     // private static readonly int TurnedInsideOutHash = Animator.StringToHash("IsturnedInsideOut");
@@ -89,26 +94,31 @@ public class HeavyBeetle : MonoBehaviour, IDamageable, ICanvasTarget
     private void Start()
     {
         playerTransform = GameManager.Instance.Pj.transform;
-        detection = new BugDetection(this, playerTransform, data.detectionRange);
+        detection = new BugDetection(transform, playerTransform, data.detectionRange);
         SetState(PatrolState);
         _lastPosition = transform.position;
     }
     #endregion
-    
+
     private void Update()
     {
         _eventFSM.UpdateState();
         UpdateDetection();
         UpdateGroundCheck();
         UpdateCanvasPosition();
+        UpdateEnterDelay();
     }
 
     private void UpdateCanvasPosition()
     {
-        if (_indicatorCanvas == null) return;
+        if (_indicatorCanvas == null || !_indicatorVisible) return;
+
+        if (_mainCamera == null)
+            _mainCamera = Camera.main;
+
         _indicatorCanvas.transform.position = transform.position + Vector3.up * 1.76f;
-        if (Camera.main != null)
-            _indicatorCanvas.transform.rotation = Camera.main.transform.rotation;
+        if (_mainCamera != null)
+            _indicatorCanvas.transform.rotation = _mainCamera.transform.rotation;
     }
 
     private void UpdateDetection()
@@ -119,15 +129,32 @@ public class HeavyBeetle : MonoBehaviour, IDamageable, ICanvasTarget
         {
             _playerInRange = true;
             group?.AlertAll(this, playerTransform);
-            CancelInvoke(nameof(DelayedEnter));
-            Invoke(nameof(DelayedEnter), data.reactionDelay);
+            StartEnterDelay();
         }
 
         else if(!inRange && _playerInRange)
         {
             _playerInRange = false;
-            CancelInvoke(nameof(DelayedEnter));
+            _enterPending = false;
             SendEvent(CreatureEvent.GekkoExit);
+        }
+    }
+
+    private void StartEnterDelay()
+    {
+        _enterDelayTimer = data.reactionDelay;
+        _enterPending = true;
+    }
+
+    private void UpdateEnterDelay()
+    {
+        if(!_enterPending) return;
+
+        _enterDelayTimer -= Time.deltaTime;
+        if(_enterDelayTimer <= 0f)
+        {
+            _enterPending = false;
+            SendEvent(CreatureEvent.GekkoEnter);
         }
     }
     
@@ -140,7 +167,6 @@ public class HeavyBeetle : MonoBehaviour, IDamageable, ICanvasTarget
     public void SendEvent(CreatureEvent e) => _eventFSM.SendEvent(e);
     public void SetCharging(bool v) => IsCharging = v;
     public void SetDazed(bool v) => IsDazed = v;
-    private void DelayedEnter() => SendEvent(CreatureEvent.GekkoEnter);
 
     // Reemplazado por el flip por código (DazedFlip). Se deja comentado por si se
     // retoma la animación del Animator más adelante.
@@ -152,6 +178,8 @@ public class HeavyBeetle : MonoBehaviour, IDamageable, ICanvasTarget
 
     public void SetAngry(bool value)
     {
+        _indicatorVisible = value;
+
         if (_angryParticle == null) return;
 
         if (value)
@@ -214,8 +242,7 @@ public class HeavyBeetle : MonoBehaviour, IDamageable, ICanvasTarget
     public void ReceiveGroupAlert(Transform player)
     {
         playerTransform = player;
-        CancelInvoke(nameof(DelayedEnter));
-        Invoke(nameof(DelayedEnter), data.reactionDelay);
+        StartEnterDelay();
     }
     
     public void Damage(float dmg)

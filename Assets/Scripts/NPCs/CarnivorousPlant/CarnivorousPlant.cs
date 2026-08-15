@@ -19,6 +19,8 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable
 
     private bool _playerInRange = false;
     private bool _purified = false;
+    private float _enterDelayTimer;
+    private bool _enterPending;
 
     #region FSM
     public PlantSpitBehaviour spitBehaviour;
@@ -64,8 +66,8 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable
     {
         // Se resuelve acá (no en Awake) para garantizar que el Player ya seteó GameManager.Instance.Pj.
         playerTransform = GameManager.Instance.Pj.transform;
-        detection = new BugDetection(this, playerTransform, data.detectionRange);
-        biteDetection = new BugDetection(this, playerTransform, data.biteRange);
+        detection = new BugDetection(transform, playerTransform, data.detectionRange);
+        biteDetection = new BugDetection(transform, playerTransform, data.biteRange);
         SetState(IdleState);
     }
 
@@ -77,6 +79,7 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable
 
         _eventFSM.UpdateState();
         UpdateDetection();
+        UpdateEnterDelay();
     }
 
     private void UpdateDetection()
@@ -86,21 +89,33 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable
         if(inRange && !_playerInRange)
         {
             _playerInRange = true;
-            CancelInvoke(nameof(DelayedEnter));
-            Invoke(nameof(DelayedEnter), data.reactionDelay);
+            _enterDelayTimer = data.reactionDelay;
+            _enterPending = true;
         }
 
         else if(!inRange && _playerInRange)
         {
             _playerInRange = false;
-            CancelInvoke(nameof(DelayedEnter));
+            _enterPending = false;
             SendEvent(CreatureEvent.GekkoExit);
+        }
+    }
+
+    private void UpdateEnterDelay()
+    {
+        if(!_enterPending) return;
+
+        _enterDelayTimer -= Time.deltaTime;
+        
+        if(_enterDelayTimer <= 0f)
+        {
+            _enterPending = false;
+            SendEvent(CreatureEvent.GekkoEnter);
         }
     }
 
     public void SetState(IState state) => _eventFSM.SetState(state);
     public void SendEvent(CreatureEvent e) => _eventFSM.SendEvent(e);
-    private void DelayedEnter() => SendEvent(CreatureEvent.GekkoEnter);
 
     // Purificación con la lengua: TongueManager llama Damage() sobre cualquier IDamageable.
     public void Damage(float dmg)
@@ -108,7 +123,7 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable
         if(_purified) return;
 
         _purified = true;
-        CancelInvoke(nameof(DelayedEnter));
+        _enterPending = false;
         EventManager.Trigger<float>("OnPlayerDamaged", data.purifyHealthCost);
         SetState(PurifiedState);
     }
