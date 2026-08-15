@@ -53,7 +53,8 @@ public class PlayerViewer : MonoBehaviour
     public void WalkSoundStop() => _walkSound.Stop();
     public void LandingSoundPlay() => _landingSound.Play();
     public void JumpSoundPlay() => _jumpSound.Play();
-    public void SlurpSound() => _slurpSound.Play();
+    public void SlurpSoundPlay() => _slurpSound.Play();
+    public void TongueSoundPlay() => _tongueSound.Play();
     #endregion
 
 }

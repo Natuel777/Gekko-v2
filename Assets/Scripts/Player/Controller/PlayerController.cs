@@ -168,7 +168,6 @@ public class PlayerController
                     Quaternion targetRot = Quaternion.LookRotation(projectedForward, _currentUp);
                     Quaternion newRot = Quaternion.Slerp(_pjTransform.rotation, targetRot, 5f * Time.deltaTime);
 
-                    // Mismo chequeo
                     if (_tongueM != null && _tongueM.IsAttached)
                     {
                         Vector3 newForward = newRot * Vector3.forward;
@@ -186,9 +185,7 @@ public class PlayerController
                     else
                     {
                         _pjTransform.rotation = newRot;
-                    }
-
-                    
+                    }  
                 }
             }
         }
@@ -199,8 +196,6 @@ public class PlayerController
         }
 
     }
-
-
     private void Move(Vector2 input)
     {
         if(_camTransform == null) return;
@@ -354,7 +349,6 @@ public class PlayerController
             float rotSpeed = _rotationSpeed * Time.deltaTime;
             if (_tongueOut && !_tongueM.IsAttached) rotSpeed *= _tongueSlowness;
 
-            // Calculá la rotación futura SIN aplicarla todavía
             Quaternion newRot = Quaternion.Slerp(_pjTransform.rotation, rot, rotSpeed);
 
             if (_tongueM != null && _tongueM.IsAttached)
@@ -379,8 +373,6 @@ public class PlayerController
              _pjTransform.rotation = newRot;
         }
     }
-
-
     public void Jump(float force)
     {
         _isClimbing = false;
@@ -391,7 +383,6 @@ public class PlayerController
         _rb.linearVelocity += _currentUp * force;
         _canJump = false;
     }
-
     private bool IsGrounded()
     {
         float half = (_collider.height / 2f) - _collider.radius;
@@ -411,7 +402,6 @@ public class PlayerController
         float angle = Vector3.Angle(validHit.normal, Vector3.up);
         return angle < 60f;
     }
-
     private void DetectSurface()
     {
             Vector3[] directions =
@@ -542,7 +532,6 @@ public class PlayerController
             if(_coyoteTimer <0f) _canJump = false;
         }
     }
-
     public void SetIcySurface(bool slippery)
     {
         _isIcySurface = slippery;
@@ -582,7 +571,6 @@ public class PlayerController
         if (_pjViewer.IsWalkSoundPlaying()) _pjViewer.WalkSoundStop();
         if (_pjViewer.IsTrailPlaying()) _pjViewer.StopTrail();
     }
-
     public void GetTongueManager(TongueManager tongue) { _tongueM = tongue; }
     public void SetSpeedMultiplier(float speed) => _speedMultiplier = speed;
 

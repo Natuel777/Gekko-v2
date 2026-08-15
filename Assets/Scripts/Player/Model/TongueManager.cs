@@ -22,9 +22,6 @@ public class TongueManager : MonoBehaviour
     private float _objectRadius = 0f;
     private float _stopDist;
 
-    [SerializeField] private AudioSource _tongueSound;
-    [SerializeField] private AudioSource _slurpSound;
-
     private bool _canUseTongue = true;
     public bool IsAttached => _attached;
     public Vector3 MouthPos => transform.position + new Vector3(0,1,0);
@@ -85,12 +82,12 @@ public class TongueManager : MonoBehaviour
                     {
                         buggy.Absorbed = true;
                         CollectiblesRegister.RegisterCollectible("Bug");
-                        _slurpSound.Play();
+                        _pjViewer.SlurpSoundPlay();
                     }
                     else if(_object.TryGetComponent(out Collectible col))
                     {
                         _object.GetComponent<Collider>().enabled = false;
-                        _slurpSound.Play();
+                        _pjViewer.SlurpSoundPlay();
                     }
                     else if (_object.TryGetComponent(out IDamageable damageableObj))
                         damageableObj.Damage(1);
@@ -167,7 +164,7 @@ public class TongueManager : MonoBehaviour
         _blend.SetBlendShapeWeight(0, 0f);
         _startPos = transform.position;
         _currentPos = _startPos;
-        _tongueSound.Play();
+        _pjViewer.TongueSoundPlay();
 
         float stopDist = 0.05f;
         if (Physics.Raycast(transform.position, transform.forward, out RaycastHit hit, _maxDistance, ~0, QueryTriggerInteraction.Ignore))
@@ -185,7 +182,6 @@ public class TongueManager : MonoBehaviour
                     else _object = null;
                 }
                     
-
                 if (_object != null)
                 {
                     Collider col = _object.GetComponentInChildren<Collider>();

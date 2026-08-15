@@ -18,7 +18,7 @@ public class GekkoCollision
         if(other.TryGetComponent(out Collectible collectible))
         {
             collectible.Grab();
-            _owner.PjViewer.SlurpSound();
+            _owner.PjViewer.SlurpSoundPlay();
             _owner.PjViewer.Attack();
         }
 
