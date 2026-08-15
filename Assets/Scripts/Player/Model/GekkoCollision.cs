@@ -18,7 +18,8 @@ public class GekkoCollision
         if(other.TryGetComponent(out Collectible collectible))
         {
             collectible.Grab();
-            _owner.SlurpSound();
+            _owner.PjViewer.SlurpSoundPlay();
+            _owner.PjViewer.Attack();
         }
 
         if(other.CompareTag("Nexus"))

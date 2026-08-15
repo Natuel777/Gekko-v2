@@ -9,12 +9,10 @@ public class PlayerController
     private Rigidbody _rb;
     private CapsuleCollider _collider;
     private PlayerViewer _pjViewer;
-    private InteractionManager _interactM;
     private TongueManager _tongueM;
     private Transform _pjTransform;
     private Transform _camTransform;
     private Transform _head;
-    private bool _target;
 
     private LayerMask _groundRayMask;
     private LayerMask _climbRayMask;
@@ -28,7 +26,6 @@ public class PlayerController
     private float _lowJumpMultiplier = 3f;
     private float _rotationSpeed = 10f;
     private float _speedMultiplier = 1f;
-    private float _boostTimeRemaining = 0f;
     
     private bool _isGrounded = false;
     private bool _isSurface = false;
@@ -52,19 +49,10 @@ public class PlayerController
     private float _smoothInputSpeed = 0.2f;
     private float _tongueSlowness = 0.05f;
     
-    private bool _usingLastDir = false;
     private Vector3 _lastValidDir = Vector3.zero;
-    private float _climbGraceTime = 0.4f;
-    private float _timeSinceSurface = 0f;
-    private Vector3 _lastSurfaceNormal = Vector3.up;
     private float _jumpGraceTime = 0f;
     private float _jumpGraceDuration = 0.4f;
-    private float _jumpDelayTimer = 0.5f;
-    private float _jumpDelayCount;
-    private Vector3 _lastDirJump;
-    [SerializeField] private CinemachineOrbitalFollow _orbitalFollow;
-    private ParticleSystem _trail;
-    private AudioSource _walkSound;
+
 
     public bool JumpPressed { set { _jumpPressed = value; } }
     public bool IsMoving { get { return _isMoving; } }
@@ -73,17 +61,15 @@ public class PlayerController
     public bool Talking { set { _talking = value; } }
     public Vector3 CurrentUp { get { return _currentUp; } }
     public Vector2 RawInput { get { return _rawInput; } set { _rawInput = value; } }
-    public float BoostTimeRemaining => _boostTimeRemaining;
-    private bool CanInteract => !_talking && !TongueOut && _isSurface;
+    public bool CanInteract => !_talking && !TongueOut && _isSurface;
     #endregion
 
-    public PlayerController(Rigidbody rb, Transform pjTransform, CapsuleCollider col, Transform camTransform, PlayerViewer pjV, Transform head,InteractionManager interact, ParticleSystem trail, AudioSource walk)
+    public PlayerController(Rigidbody rb, Transform pjTransform, CapsuleCollider col, Transform camTransform, PlayerViewer pjV, Transform head)
     {
         _rb = rb;
         _rb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationY| RigidbodyConstraints.FreezeRotationZ;
         _pjTransform = pjTransform;
         _camTransform = camTransform;
-        _orbitalFollow = camTransform.GetComponent<CinemachineOrbitalFollow>();
         _groundRayMask = GameManager.Instance.GroundLayer;
         _climbRayMask = GameManager.Instance.ClimbLayer;
         _collider = col;
@@ -91,9 +77,6 @@ public class PlayerController
         _head = head;
         _pjViewer = pjV;
         _surfaces = _climbRayMask | _groundRayMask;
-        _interactM = interact;
-        _trail = trail;
-        _walkSound = walk;
         // Arrancamos sin boost: el post proceso de viento empieza apagado.
         WindEffectController.SetActive(false);
     }
@@ -107,42 +90,8 @@ public class PlayerController
 
     public void ArtificialUpdate()
     {
-        if (_boostTimeRemaining > 0f)
-        {
-            _boostTimeRemaining -= Time.deltaTime;
-            if (_isMoving) if (!_trail.isPlaying) _trail.Play();
-            if (_boostTimeRemaining <= 0f)
-            {
-                _boostTimeRemaining = 0f;
-                _speedMultiplier = 1f;
-                if (_trail.isPlaying) _trail.Stop();
-                WindEffectController.SetActive(false);
-            }
-        }
-
         _smoothedInput = Vector2.SmoothDamp(_smoothedInput, _rawInput, ref _smoothedVelocity, _smoothInputSpeed);
         _pjViewer.Floor(_isSurface);
-        _interactM.CanInteract = CanInteract;
-
-        #region CameraCollition
-        //Vector3 wallForward = -_currentUp;
-        //Vector3 projected = Vector3.ProjectOnPlane(wallForward, Vector3.up).normalized;
-        //float wallAngle = Vector3.SignedAngle(Vector3.forward,projected, Vector3.up);
-        //
-        //// Ángulo actual de la cámara
-        //float camAngle = _orbitalFollow.HorizontalAxis.Value;
-        //
-        //// Diferencia entre cámara y jugador
-        //float diff = Mathf.DeltaAngle(wallAngle, camAngle);
-        //
-        //// Limitar la diferencia a ±85°
-        //float limit = _isClimbing ? 85f : 180f;
-        //if (Mathf.Abs(diff) > limit)
-        //{
-        //    float clampedDiff = Mathf.Clamp(diff, -limit, limit);
-        //    _orbitalFollow.HorizontalAxis.Value = wallAngle + clampedDiff;
-        //}
-        #endregion
     }
     public void ArtificialLateUpdate()
     {
@@ -168,7 +117,7 @@ public class PlayerController
         }
         if (_isSurface && !_wasSurface)
         {
-            _pjTransform.GetComponent<Player>().LandingSound();
+            _pjViewer.LandingSoundPlay();
         }
         _wasSurface = _isSurface;
 
@@ -179,7 +128,7 @@ public class PlayerController
         {
             Jump(_jumpForce);
             _coyoteTimer = 0f;
-            _pjTransform.GetComponent<Player>().JumpSound();
+            _pjViewer.JumpSoundPlay();
         }
         if (_isClimbing)
         {
@@ -219,7 +168,6 @@ public class PlayerController
                     Quaternion targetRot = Quaternion.LookRotation(projectedForward, _currentUp);
                     Quaternion newRot = Quaternion.Slerp(_pjTransform.rotation, targetRot, 5f * Time.deltaTime);
 
-                    // Mismo chequeo
                     if (_tongueM != null && _tongueM.IsAttached)
                     {
                         Vector3 newForward = newRot * Vector3.forward;
@@ -237,9 +185,7 @@ public class PlayerController
                     else
                     {
                         _pjTransform.rotation = newRot;
-                    }
-
-                    
+                    }  
                 }
             }
         }
@@ -249,16 +195,7 @@ public class PlayerController
             Move(_smoothedInput);
         }
 
-        //if (_target != null)  MoveLocked();
     }
-
-    //private void MoveLocked()
-    //{
-    //    if (_target == null) return;
-    //    if (_tongueOut) return;
-    //    _head.LookAt(_target.position);
-    //}
-
     private void Move(Vector2 input)
     {
         if(_camTransform == null) return;
@@ -267,55 +204,23 @@ public class PlayerController
 
         Vector3 dir = (camForward * input.y + camRight * input.x).normalized;
         dir = Vector3.ProjectOnPlane(dir, _currentUp).normalized;
-            //Vector3 surfaceUp, surfaceRight;
-            //
-            //if (_isClimbing)
-            //{
-            //    // En superficie: usamos ejes fijos de la superficie
-            //    // up = dirección en la que está mirando el personaje sobre la superficie
-            //    // right = perpendicular a eso sobre la superficie
-            //    surfaceUp = Vector3.ProjectOnPlane(_pjTransform.forward, _currentUp).normalized;
-            //    surfaceRight = Vector3.Cross(_currentUp, surfaceUp).normalized;
-            //
-            //    // Fallback
-            //    if (surfaceUp.sqrMagnitude < 0.01f)
-            //        surfaceUp = Vector3.ProjectOnPlane(Vector3.forward, _currentUp).normalized;
-            //    if (surfaceRight.sqrMagnitude < 0.01f)
-            //        surfaceRight = Vector3.Cross(_currentUp, surfaceUp).normalized;
-            //}
-            //else
-            //{
-            //    // En el suelo: relativo a la cámara como antes
-            //    surfaceUp = Vector3.ProjectOnPlane(_camTransform.up, _currentUp).normalized;
-            //    surfaceRight = Vector3.ProjectOnPlane(_camTransform.right, _currentUp).normalized;
-            //
-            //    if (surfaceUp.sqrMagnitude < 0.01f)
-            //        surfaceUp = Vector3.ProjectOnPlane(_pjTransform.forward, _currentUp).normalized;
-            //    if (surfaceRight.sqrMagnitude < 0.01f)
-            //        surfaceRight = Vector3.Cross(_currentUp, surfaceUp).normalized;
-            //}
-            //
-            //Vector3 dir = (surfaceUp * input.y + surfaceRight * input.x);
 
-            if (dir.sqrMagnitude > 0.0001f)
+        if (dir.sqrMagnitude > 0.0001f)
         {
             dir.Normalize();
             _lastValidDir = dir;
-            _usingLastDir = false;
             Rotate(dir);
         }
         else if(_lastValidDir.sqrMagnitude > 0.0001f)
         {
             float drift = _isIcySurface ? 0.1f : 0.3f;
             dir = Vector3.Slerp(_lastValidDir, dir.normalized, drift).normalized;
-            _usingLastDir = true;
             Rotate(dir);
         }
 
         _pjViewer.Move(true);
         _isMoving = true;
 
-       //float currentSpeed = _tongueM != null && _tongueM.IsAttached ? _speed * 0.5f : _speed;
         float currentSpeed = (_tongueM != null && _tongueOut ? _speed * 0.8f : _speed) * _speedMultiplier;
         Vector3 targetPos = _rb.position + dir * currentSpeed * Time.fixedDeltaTime;
 
@@ -376,7 +281,6 @@ public class PlayerController
                 }
             }
         }
-        //_rb.MovePosition(targetPos);
         Vector3 moveVel = (targetPos - _rb.position) / Time.fixedDeltaTime;
 
         if (_isIcySurface && input.magnitude > 0.01f)
@@ -393,8 +297,8 @@ public class PlayerController
             }
         }
 
-        if (!_walkSound.isPlaying && _isSurface) _walkSound.Play();
-        else if (_walkSound.isPlaying && !_isSurface) _walkSound.Stop();
+        if (!_pjViewer.IsWalkSoundPlaying() && _isSurface) _pjViewer.WalkSoundPlay();
+        else if (_pjViewer.IsWalkSoundPlaying() && !_isSurface) _pjViewer.WalkSoundStop();
 
 
         if (_isClimbing)
@@ -429,7 +333,6 @@ public class PlayerController
                 moveVel.x = horizontalVel.x;
                 moveVel.z = horizontalVel.z;
                 _rb.linearVelocity = moveVel;
-                Debug.Log($"useGravity: {_rb.useGravity}, velY: {_rb.linearVelocity.y}");
             }
         }
     }
@@ -446,7 +349,6 @@ public class PlayerController
             float rotSpeed = _rotationSpeed * Time.deltaTime;
             if (_tongueOut && !_tongueM.IsAttached) rotSpeed *= _tongueSlowness;
 
-            // Calculá la rotación futura SIN aplicarla todavía
             Quaternion newRot = Quaternion.Slerp(_pjTransform.rotation, rot, rotSpeed);
 
             if (_tongueM != null && _tongueM.IsAttached)
@@ -464,27 +366,23 @@ public class PlayerController
                     out RaycastHit boxHit, newRot, moveDist, blockMask, QueryTriggerInteraction.Ignore))
                 {
                     if (boxHit.distance < moveDist)
-                        return; // bloqueado, no rotar
+                        return; 
                 }
             }
 
-             _pjTransform.rotation = newRot; // recién acá aplicás
+             _pjTransform.rotation = newRot;
         }
     }
-
-
     public void Jump(float force)
     {
         _isClimbing = false;
         _rb.useGravity = true;
         _jumpGraceTime = _jumpGraceDuration;
-        _lastDirJump = _currentUp;
         _pjViewer.Jump(true);
 
         _rb.linearVelocity += _currentUp * force;
         _canJump = false;
     }
-
     private bool IsGrounded()
     {
         float half = (_collider.height / 2f) - _collider.radius;
@@ -504,12 +402,10 @@ public class PlayerController
         float angle = Vector3.Angle(validHit.normal, Vector3.up);
         return angle < 60f;
     }
-
     private void DetectSurface()
     {
-        //if (_tongueM != null && _tongueM.IsAttached) return;
             Vector3[] directions =
-        {
+            {
             -_currentUp,
             Vector3.down,
             _pjTransform.forward,
@@ -517,7 +413,7 @@ public class PlayerController
             -Vector3.right,
             Vector3.forward,
             -Vector3.forward,
-        };
+            };
         RaycastHit bestHit = default;
         bool found = false;
         float bestScore = -999f;
@@ -589,9 +485,6 @@ public class PlayerController
                     found = true;
                 }
 
-                //// Fuerza hacia la nueva superficie proporcional a la velocidad
-                    //float attractForce = 200f + _rb.linearVelocity.magnitude * 2f;
-                    //_rb.AddForce(-hitDown.normal * attractForce, ForceMode.Acceleration);
             }
         }
         
@@ -601,7 +494,7 @@ public class PlayerController
             bool isGround = ((_groundRayMask.value & (1 << bestHit.collider.gameObject.layer)) != 0);
             bool isSurface = ((_surfaces.value & (1 << bestHit.collider.gameObject.layer)) != 0);
 
-            if (_jumpGraceTime > 0f)// && !isSurface)
+            if (_jumpGraceTime > 0f)
             {
                 _isClimbing = false;
                 _rb.useGravity = true;
@@ -639,15 +532,6 @@ public class PlayerController
             if(_coyoteTimer <0f) _canJump = false;
         }
     }
-    public bool CanMoveTo(Vector3 targetPos, Vector3 objectPos, float objectRadius)
-    {
-        Vector3 moveDir = (targetPos - objectPos).normalized;
-        float moveDist = Vector3.Distance(objectPos, targetPos);
-
-        return !Physics.SphereCast(objectPos, objectRadius * 0.8f, moveDir,
-            out RaycastHit hit, moveDist, ~(1 << _pjTransform.gameObject.layer), QueryTriggerInteraction.Ignore);
-    }
-
     public void SetIcySurface(bool slippery)
     {
         _isIcySurface = slippery;
@@ -655,16 +539,6 @@ public class PlayerController
     public void SetSlipperySurface(bool slippery)
     {
         _isSlipperySurface = slippery;
-    }
-
-    public void TargetAquired()
-    {
-        _target = true;
-    }
-
-    public void TargetLost()
-    {
-        _target = false;
     }
     public void HeadLocate()
     {
@@ -691,33 +565,13 @@ public class PlayerController
             horizontalVel *= 0.995f;
             _rb.linearVelocity = new Vector3(horizontalVel.x, _rb.linearVelocity.y, horizontalVel.z);
         }
-        if (_walkSound.isPlaying) _walkSound.Stop();
         _pjViewer.Move(false);
         _isMoving = false;
         _lastValidDir = Vector3.zero;
-        _usingLastDir = false;
-        if (_trail.isPlaying) _trail.Stop();
+        if (_pjViewer.IsWalkSoundPlaying()) _pjViewer.WalkSoundStop();
+        if (_pjViewer.IsTrailPlaying()) _pjViewer.StopTrail();
     }
-
     public void GetTongueManager(TongueManager tongue) { _tongueM = tongue; }
-
-    public void ApplySpeedBoost(float multiplier, float duration)
-    {
-        _speedMultiplier = multiplier;
-        _boostTimeRemaining = duration;
-        WindEffectController.SetActive(true);
-    }
-
-    public void ExtendSpeedBoost(float extraSeconds)
-    {
-        _boostTimeRemaining += extraSeconds;
-    }
-
-    public void ResetSpeedBoost()
-    {
-        _speedMultiplier = 1f;
-        _boostTimeRemaining = 0f;
-        WindEffectController.SetActive(false);
-    }
+    public void SetSpeedMultiplier(float speed) => _speedMultiplier = speed;
 
 }

@@ -74,7 +74,6 @@ public class AimManager : MonoBehaviour
             _currentIndex = 0;
             if(_orderedTargets.Count>0)
             {
-                _pjController.TargetAquired();
                 _target = _orderedTargets[_currentIndex];
             }
 
@@ -144,7 +143,6 @@ public class AimManager : MonoBehaviour
             HideIndicator(_target);
         }
 
-        _pjController.TargetAquired();
         _target = _orderedTargets[_currentIndex];
         _target.GetComponentInChildren<MeshRenderer>().material.color = Color.red;
         ShowIndicator(_target);
@@ -175,7 +173,6 @@ public class AimManager : MonoBehaviour
             _target.GetComponentInChildren<MeshRenderer>().material.color = Color.white;
             HideIndicator(_target);
         }
-        _pjController.TargetLost();
         _target = null;
         _pointToLook.localPosition = new Vector3(0, 0.2f,1.12f);
         if(!_pjController.TongueOut)

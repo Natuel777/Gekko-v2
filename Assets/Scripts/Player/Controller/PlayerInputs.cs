@@ -9,7 +9,6 @@ public class PlayerInputs
     private AimManager _aimM;
     private CameraFollow _cam;
     private InteractionManager _pjInteract;
-    //private CameraRotation _cam;
     private Player _pj;
 
     public PlayerInputs(PlayerController controller, TongueManager tongue, AimManager aim, CameraFollow cam, InteractionManager interact, Player pj)
@@ -22,17 +21,6 @@ public class PlayerInputs
         _pjInteract = interact;
         _pj = pj;
     }
-    
-    //public PlayerInputs(PlayerController controller, TongueManager tongue, AimManager aim, CameraRotation cam, Player pj)
-    //{
-    //    pjController = controller;
-    //    _input = new CharacterInput();
-    //    _tongue = tongue;
-    //    _aimM = aim;
-    //    _cam = cam;
-    //    _pj = pj;
-    //}
-
     public void ArtificialEnable()
     {
         _input.Enable();
