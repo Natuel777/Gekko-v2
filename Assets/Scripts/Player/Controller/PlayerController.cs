@@ -62,6 +62,7 @@ public class PlayerController
     public Vector3 CurrentUp { get { return _currentUp; } }
     public Vector2 RawInput { get { return _rawInput; } set { _rawInput = value; } }
     public bool CanInteract => !_talking && !TongueOut && _isSurface;
+    public bool Grounded => _isGrounded;
     #endregion
 
     public PlayerController(Rigidbody rb, Transform pjTransform, CapsuleCollider col, Transform camTransform, PlayerViewer pjV, Transform head)
