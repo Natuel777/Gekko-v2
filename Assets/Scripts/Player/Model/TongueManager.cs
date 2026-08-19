@@ -2,6 +2,8 @@ using UnityEngine;
 
 public class TongueManager : MonoBehaviour
 {
+    private PlayerController _pjController;
+
     [SerializeField] private Transform _pj;
     [SerializeField] private float _speed = 15f;
     [SerializeField] private float _maxDistance = 7f;
@@ -19,11 +21,6 @@ public class TongueManager : MonoBehaviour
     private bool _retracting;
     private float _objectRadius = 0f;
     private float _stopDist;
-
-    private PlayerController _pjController;
-
-    [SerializeField] private AudioSource _tongueSound;
-    [SerializeField] private AudioSource _slurpSound;
 
     private bool _canUseTongue = true;
     public bool IsAttached => _attached;
@@ -85,12 +82,12 @@ public class TongueManager : MonoBehaviour
                     {
                         buggy.Absorbed = true;
                         CollectiblesRegister.RegisterCollectible("Bug");
-                        _slurpSound.Play();
+                        _pjViewer.SlurpSoundPlay();
                     }
                     else if(_object.TryGetComponent(out Collectible col))
                     {
                         _object.GetComponent<Collider>().enabled = false;
-                        _slurpSound.Play();
+                        _pjViewer.SlurpSoundPlay();
                     }
                     else if (_object.TryGetComponent(out IDamageable damageableObj))
                         damageableObj.Damage(1);
@@ -167,7 +164,7 @@ public class TongueManager : MonoBehaviour
         _blend.SetBlendShapeWeight(0, 0f);
         _startPos = transform.position;
         _currentPos = _startPos;
-        _tongueSound.Play();
+        _pjViewer.TongueSoundPlay();
 
         float stopDist = 0.05f;
         if (Physics.Raycast(transform.position, transform.forward, out RaycastHit hit, _maxDistance, ~0, QueryTriggerInteraction.Ignore))
@@ -185,7 +182,6 @@ public class TongueManager : MonoBehaviour
                     else _object = null;
                 }
                     
-
                 if (_object != null)
                 {
                     Collider col = _object.GetComponentInChildren<Collider>();
@@ -292,10 +288,5 @@ public class TongueManager : MonoBehaviour
     public void GetPlayerController(PlayerController pjC)
     {
         _pjController = pjC;
-    }
-    public void SlurpSound()
-    {
-        _slurpSound.Play();
-        _pjViewer.Attack();
     }
 }

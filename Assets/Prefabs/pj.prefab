@@ -67819,13 +67819,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2353fc8e28ee2c647b2ec5f0dd0c6286, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _pjViewer: {fileID: 8983164166701744861}
-  _tongue: {fileID: 4128742378122881986}
-  _rotationSpeed: 5
-  speed: 13
-  jumpForce: 6
-  fallMultiplier: 2.5
-  lowJumpMultiplier: 3
   _healthBar:
     _healthBar: {fileID: 0}
     _fillImage: {fileID: 0}
@@ -67838,17 +67831,24 @@ MonoBehaviour:
     _pulseScale: 0.1
     _damageColor: {r: 1, g: 0, b: 0, a: 1}
     _healColor: {r: 0, g: 1, b: 0, a: 1}
+  _pjViewer: {fileID: 8983164166701744861}
+  _tongue: {fileID: 4128742378122881986}
+  _rotationSpeed: 5
+  speed: 13
+  jumpForce: 6
+  fallMultiplier: 2.5
+  lowJumpMultiplier: 3
   _jumpSound: {fileID: 608877318914057234}
   _landingSound: {fileID: 1806906792319682609}
   _walkSound: {fileID: 4569331153675997192}
   _trail: {fileID: 482027665284902523}
   _comboUI: {fileID: 0}
+  _blueberry: {fileID: 11400000, guid: ffa6392ad324cd14fa91f97fef542839, type: 2}
   _interactReach: 3
   _interactOriginY: 1
   _dialogueLayer:
     serializedVersion: 2
     m_Bits: 2048
-  _blueberry: {fileID: 11400000, guid: ffa6392ad324cd14fa91f97fef542839, type: 2}
 --- !u!114 &3432168389014509898
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -78204,6 +78204,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _tongueAnim: {fileID: 7166436667373030177}
+  _trail: {fileID: 482027665284902523}
+  _walkSound: {fileID: 4569331153675997192}
+  _jumpSound: {fileID: 608877318914057234}
+  _landingSound: {fileID: 1806906792319682609}
+  _tongueSound: {fileID: 4554780291620666826}
+  _slurpSound: {fileID: 6121066271781308998}
 --- !u!114 &8820234209301927368
 MonoBehaviour:
   m_ObjectHideFlags: 0

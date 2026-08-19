@@ -4,7 +4,6 @@ public class ObstacleAvoidance
 {
     private readonly Transform _transform;
     private readonly float _range;
-
     private readonly LayerMask _obstacleMask;
 
     // obstacleMask: capas que cuentan como obstáculo a esquivar. Si se pasa vacía (0),
@@ -43,11 +42,14 @@ public class ObstacleAvoidance
     public bool IsBlocked(Vector3 dir)
     {
         dir.y = 0f;
-        if (dir.sqrMagnitude < 0.001f) return false;
+        
+        if(dir.sqrMagnitude < 0.001f) return false;
+        
         dir.Normalize();
 
         Vector3 origin = _transform.position + Vector3.up * 0.3f;
-        if (Physics.Raycast(origin, dir, out RaycastHit hit, _range, ~0, QueryTriggerInteraction.Ignore))
+        
+        if(Physics.Raycast(origin, dir, out RaycastHit hit, _range, _obstacleMask, QueryTriggerInteraction.Ignore))
             return !hit.transform.IsChildOf(_transform) && !hit.transform.CompareTag("Player");
 
         return false;
@@ -57,6 +59,7 @@ public class ObstacleAvoidance
     {
         if(!Physics.Raycast(origin, dir, out RaycastHit hit, _range, _obstacleMask, QueryTriggerInteraction.Ignore))
             return Vector3.zero;
+        
         Vector3 normal = hit.normal;
         normal.y = 0f;
         return normal.normalized * (1f - hit.distance / _range) * weight;

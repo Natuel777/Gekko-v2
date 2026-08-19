@@ -9,10 +9,8 @@ public class UIManager : MonoBehaviour
 {
     public static UIManager Instance { get; private set; }
 
-    public NotificationManager notifications;
-
     [Header("Collectibles")]
-    [SerializeField] private GameObject[] _collectiblesCounters;
+    public NotificationManager notifications;
 
     [Header("Dialogue")]
     [SerializeField] private CanvasGroup _dialogueGroup;

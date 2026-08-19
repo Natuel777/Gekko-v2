@@ -12,7 +12,7 @@ public class CameraFollow : MonoBehaviour
     //public float _autoAlignSpeed = 30f;
     //public float _alignDeadzone = 15f;
     //public float _alignDelay = 0.5f;
-
+    [SerializeField] private float _upThreshold = 0.98f;
     private float _timeSincePjMoved = 0f;
 
     public float cameraUpLerpSpeed = 2f;
@@ -66,7 +66,7 @@ public class CameraFollow : MonoBehaviour
     private void LateUpdate()
     {
         PushCameraFromGeometry();
-        
+        UpdateVerticalRange();
     }
     private void SmoothCameraUp()
     {
@@ -148,6 +148,19 @@ public class CameraFollow : MonoBehaviour
         else
         {
             _camera.Radius = Mathf.Lerp(_camera.Radius, _baseRadius, 2f * Time.deltaTime);
+        }
+    }
+    private void UpdateVerticalRange()
+    {
+        float alignment = Vector3.Dot(_pjC.CurrentUp.normalized, Vector3.up);
+
+        if (alignment >= _upThreshold || _pjC.Grounded)
+        {
+            _camera.VerticalAxis.Range = new Vector2(0f, 80f);
+        }
+        else
+        {
+            _camera.VerticalAxis.Range = new Vector2(-80f, 80f);
         }
     }
     private void DeactivateInput() { _input.enabled = false; }

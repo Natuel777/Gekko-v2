@@ -31,13 +31,12 @@ public class WanderMovement
 
     public void ArtificialUpdate()
     {
-        if (_transform == null) return;
+        if(_transform == null) return;
 
         _timer += Time.deltaTime;
-
         bool blocked = _avoidance != null && _avoidance.IsBlocked(_transform.forward);
 
-        if (_timer > _changeDirTime || blocked || _direction.sqrMagnitude < 0.001f)
+        if(_timer > _changeDirTime || blocked || _direction.sqrMagnitude < 0.001f)
         {
             PickNewDirection();
             _timer = 0f;

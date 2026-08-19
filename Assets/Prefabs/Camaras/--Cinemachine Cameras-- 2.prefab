@@ -24,7 +24,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1363861984802325388}
   serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 32.709282, y: -22.909292, z: -28.067549}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -207,13 +207,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5311595508401500984}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.17750396, y: 0.7698311, z: -0.24272673, w: 0.5629709}
-  m_LocalPosition: {x: -48.418507, y: 31.47794, z: 1.5319772}
+  m_LocalRotation: {x: 0.28393167, y: 0.31408128, z: -0.09902948, w: 0.9005159}
+  m_LocalPosition: {x: 125.64919, y: 24.47794, z: -411.81454}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 7781979054490694218}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: -3.951, y: -257.099, z: -34.805}
 --- !u!114 &2697348421157159615
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -303,7 +303,7 @@ MonoBehaviour:
   VerticalAxis:
     Value: 35
     Center: 35
-    Range: {x: 20, y: 45}
+    Range: {x: -80, y: 80}
     Wrap: 0
     Recentering:
       Enabled: 0
@@ -439,9 +439,10 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 193
   _impulseSource: {fileID: 0}
+  _upThreshold: 0.98
   cameraUpLerpSpeed: 0.5
   _angleChange: 120
-  _newAngle: 90
+  _newAngle: 0
   _worldUpReference: {fileID: 0}
 --- !u!114 &7946087792733345381
 MonoBehaviour:

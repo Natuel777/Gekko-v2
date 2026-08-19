@@ -50,7 +50,7 @@ public class PuzzleBeaver : MonoBehaviour, IInteractable, IDialogueable
         LevelOneManager.Instance.OnBridgeConstructed += BridgeFinished;
 
         _playerTransform = GameManager.Instance.Pj.transform;
-        _playerDetection = new BugDetection(this, _playerTransform, _detectionRange);
+        _playerDetection = new BugDetection(transform, _playerTransform, _detectionRange);
         _lookAtPlayer = new LookAtTarget(_rotationSpeed, transform, lockYAxis: true);
     }
     private void Update()
@@ -126,7 +126,7 @@ public class PuzzleBeaver : MonoBehaviour, IInteractable, IDialogueable
 
             var pj = GameManager.Instance.Pj;
             pj.health.SetHealth(pj.health.MaxHealth);
-            pj.PjController.ApplySpeedBoost(_notificationData.SpeedBoostMultiplier, _notificationData.SpeedBoostTimer);
+            pj.BlueberryTracker.ActivateBoost(_notificationData.SpeedBoostMultiplier, _notificationData.SpeedBoostTimer);
             _finish = false;
             StartCoroutine(Count());
         }
