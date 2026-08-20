@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.IO.Pipes;
 using Unity.Cinemachine;
 using UnityEngine;
 using UnityEngine.Animations.Rigging;
@@ -195,13 +196,13 @@ public class AimManager : MonoBehaviour
 
     private void ShowIndicator(Transform target)
     {
-        if (target != null && target.TryGetComponent(out ICanvasTarget ct) && ct.IndicatorCanvas != null)
-            ct.IndicatorCanvas.alpha = 1f;
+        if(target != null && target.TryGetComponent(out IParticleSystemTarget pst) && pst.Indicator != null)
+            pst.Indicator.Play();     
     }
 
     private void HideIndicator(Transform target)
     {
-        if (target != null && target.TryGetComponent(out ICanvasTarget ct) && ct.IndicatorCanvas != null)
-            ct.IndicatorCanvas.alpha = 0f;
+        if(target != null && target.TryGetComponent(out IParticleSystemTarget pst) && pst.Indicator != null)
+            pst.Indicator.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
     }
 }

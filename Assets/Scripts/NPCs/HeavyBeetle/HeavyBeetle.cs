@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class HeavyBeetle : MonoBehaviour, IDamageable, ICanvasTarget
+public class HeavyBeetle : MonoBehaviour, IDamageable, IParticleSystemTarget
 {
     public HeavyBeetledataSO data;
     public Transform playerTransform;
@@ -9,8 +9,11 @@ public class HeavyBeetle : MonoBehaviour, IDamageable, ICanvasTarget
 
     [Header("Feedback")]
     [SerializeField] private ParticleSystem _angryParticle;
-    [SerializeField] private CanvasGroup _indicatorCanvas;
-    public CanvasGroup IndicatorCanvas => _indicatorCanvas;
+
+    [Tooltip("The reference for the 'Selected' Particle System. Variable inherited by IParticleSystemTarget")]
+    [SerializeField] private ParticleSystem _indicator;
+
+    public ParticleSystem Indicator => _indicator;
 
     [Header("Ground Check")]
     [SerializeField] private Transform _detectGroundPosition;
@@ -26,7 +29,6 @@ public class HeavyBeetle : MonoBehaviour, IDamageable, ICanvasTarget
 
     private float _enterDelayTimer;
     private bool _enterPending;
-    private bool _indicatorVisible;
     private Camera _mainCamera;
 
     // El flip de mareo ahora es por código (DazedFlip), no por Animator.
@@ -111,14 +113,14 @@ public class HeavyBeetle : MonoBehaviour, IDamageable, ICanvasTarget
 
     private void UpdateCanvasPosition()
     {
-        if (_indicatorCanvas == null || !_indicatorVisible) return;
+        if (_indicator == null) return;
 
         if (_mainCamera == null)
             _mainCamera = Camera.main;
 
-        _indicatorCanvas.transform.position = transform.position + Vector3.up * 1.76f;
+        _indicator.transform.position = transform.position + Vector3.up * 1.76f;
         if (_mainCamera != null)
-            _indicatorCanvas.transform.rotation = _mainCamera.transform.rotation;
+            _indicator.transform.rotation = _mainCamera.transform.rotation;
     }
 
     private void UpdateDetection()
@@ -178,8 +180,6 @@ public class HeavyBeetle : MonoBehaviour, IDamageable, ICanvasTarget
 
     public void SetAngry(bool value)
     {
-        _indicatorVisible = value;
-
         if (_angryParticle == null) return;
 
         if (value)
@@ -199,18 +199,20 @@ public class HeavyBeetle : MonoBehaviour, IDamageable, ICanvasTarget
     // _detectGroundPosition). Si no hay, redirige la estrategia activa para no caer.
     private void UpdateGroundCheck()
     {
-        if (_detectGroundPosition == null) return;
+        if(_detectGroundPosition == null) return;
 
         // Solo chequear si la posición cambió desde el frame anterior.
         Vector3 pos = transform.position;
-        if ((pos - _lastPosition).sqrMagnitude <= GroundCheckEpsilon * GroundCheckEpsilon)
+        
+        if((pos - _lastPosition).sqrMagnitude <= GroundCheckEpsilon * GroundCheckEpsilon)
             return;
+        
         _lastPosition = pos;
 
         // ¿Hay piso debajo del sensor?
-        if (Physics.Raycast(_detectGroundPosition.position, Vector3.down,
+        if(Physics.Raycast(_detectGroundPosition.position, Vector3.down,
                 data.groundCheckDistance, _groundMask, QueryTriggerInteraction.Ignore))
-            return; // hay piso -> no hacer nada
+            return;
 
         Vector3 safeDir = FindGroundedDirection();
         if (IsCharging) chargeMovement.Redirect(safeDir);

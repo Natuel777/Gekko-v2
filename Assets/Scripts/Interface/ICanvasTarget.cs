@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public interface ICanvasTarget
+public interface IParticleSystemTarget
 {
-    CanvasGroup IndicatorCanvas { get; }
+    ParticleSystem Indicator { get; }
 }
