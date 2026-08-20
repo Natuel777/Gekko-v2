@@ -104,7 +104,9 @@ serialized fields, unless the change is genuinely instance-specific.
 
 - `Player/` — `Controller/` (input, movement, aiming, interaction — plain classes driven by `Player.cs`),
   `Model/` (health, collision, tongue, combo tracking), `View/` (UI-facing display components).
-- `NPCs/` — one folder per creature type, each with its own FSM `States/` and strategy `Behaviours/` subfolders.
+- `NPCs/` — one folder per creature type. `Bug`, `HeavyBeetle`, and `CarnivorousPlant` follow the event-driven FSM
+  pattern above (own `States/` and strategy `Behaviours/` subfolders). `Beaver` and `Ducks` are simpler creatures
+  without an FSM — don't assume every folder under `NPCs/` uses `StateMachine`/`IState`.
 - `Objects/` — interactable/physical world objects (bridges, platforms, collectibles, grabbable/bringable objects),
   built around `IInteractable`, `IBringgable`, `IDamageable` interfaces in `Interface/`.
 - `Canvas/` — all UI, split into `InGame/`, `Menu/` (further split by screen: `Pause/`, `Win_Lose/`, `Scenes/`), and

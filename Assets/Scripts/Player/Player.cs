@@ -93,6 +93,7 @@ public class Player : MonoBehaviour
 
         _pjInputs = new PlayerInputs(_pjController, _pjTongue, _aimM,cam, _interactM, this);
         _blueberryCombo = new BlueberryComboTracker(_pjController, health, _blueberry, _pjViewer);
+        _blueberryCombo.ArtificialOnEnable();
         UIManager.Instance.notifications.OnBlueberryWindowClosed += _blueberryCombo.ResetCombo;
 
         _interactor = new DialogueInteractor(transform, _interactReach, _interactOriginY, _dialogueLayer);
@@ -135,6 +136,11 @@ public class Player : MonoBehaviour
         health?.ArtificialOnDisable();
         if (UIManager.Instance != null && _blueberryCombo != null)
             UIManager.Instance.notifications.OnBlueberryWindowClosed -= _blueberryCombo.ResetCombo;
+    }
+
+    private void OnDestroy()
+    {
+        _blueberryCombo?.ArtificialOnDisable();
     }
     public void ActivateInputs()
     {
