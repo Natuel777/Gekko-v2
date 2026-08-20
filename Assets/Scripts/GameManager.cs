@@ -15,6 +15,8 @@ public class GameManager : MonoBehaviour
 
     public CollectiblesFactory factory;
 
+    private ScreenPause _screenPause;
+
     [Header("Environment")]
     public float lavaDamage;
 
@@ -28,6 +30,7 @@ public class GameManager : MonoBehaviour
             Instance = this;
             DontDestroyOnLoad(gameObject);
             checkpointManager = new CheckpointManager();
+            SceneManager.sceneLoaded += OnSceneLoaded;
         }
 
         else Destroy(gameObject);
@@ -36,11 +39,25 @@ public class GameManager : MonoBehaviour
     private void OnDestroy()
     {
         factory?.ClearPools();
+        SceneManager.sceneLoaded -= OnSceneLoaded;
+    }
+
+    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        if (_screenPause != null)
+            _screenPause.gameObject.SetActive(false);
+
+        IsPause = false;
     }
 
     private void Start()
     {
         checkpointManager.InitializeDebugLevelsDictionary(_levels);
+
+        _screenPause = Instantiate(Resources.Load<ScreenPause>("Canvas_Pause"));
+        _screenPause.Initialize();
+        _screenPause.gameObject.SetActive(false);
+        DontDestroyOnLoad(_screenPause.gameObject);
     }
 
     public void Respawn() {checkpointManager.Respawn();}
@@ -68,8 +85,8 @@ public class GameManager : MonoBehaviour
     {
         if(IsPause) return;
 
-        var screenPause = Instantiate(Resources.Load<ScreenPause>("Canvas_Pause"));
-        ScreenManager.Instance.Push(screenPause);
+        ScreenManager.Instance.Push(_screenPause);
+        EventManager.Trigger("PauseEvent");
         IsPause = true;
     }
 

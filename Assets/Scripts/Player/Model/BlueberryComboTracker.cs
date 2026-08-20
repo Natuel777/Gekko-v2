@@ -2,10 +2,10 @@ using UnityEngine;
 
 public class BlueberryComboTracker
 {
-    private int   _comboCount;
-    private bool  _boostActive;
+    private int _comboCount;
+    private bool _boostActive;
 
-    private const int   ComboTarget         = 5;
+    private const int ComboTarget = 5;
     private const float BoostExtendPerBerry = 2f;
     private readonly NotificationSO _blueberry;
 
@@ -14,7 +14,7 @@ public class BlueberryComboTracker
     private readonly GekkoHealth      _health;
     private float _boostTimeRemaining = 0f;
 
-    public int  ComboCount  => _comboCount;
+    public int ComboCount  => _comboCount;
     public bool BoostActive => _boostActive;
 
     public BlueberryComboTracker(PlayerController controller, GekkoHealth health, NotificationSO blueberr, PlayerViewer pjViewer)
@@ -25,13 +25,29 @@ public class BlueberryComboTracker
         _pjViewer = pjViewer;
     }
 
+    public void ArtificialOnEnable()
+    {
+        EventManager.Subscribe("PauseEvent", OnPause);
+        EventManager.Subscribe("UnPauseEvent", OnUnpause);
+    }
+
+    public void ArtificialOnDisable()
+    {
+        EventManager.Unsubscribe("PauseEvent", OnPause);
+        EventManager.Unsubscribe("UnPauseEvent", OnUnpause);
+    }
+
+    private void OnPause() => WindEffectController.SetActive(false);
+    private void OnUnpause() { if (CheckBoost()) WindEffectController.SetActive(true); }
+
     public void ArtificialUpdate()
     {
         if (_boostTimeRemaining > 0f)
         {
             _boostTimeRemaining -= Time.deltaTime;
             if (_controller.IsMoving) if (!_pjViewer.IsTrailPlaying()) _pjViewer.PlayTrail();
-            if (_boostTimeRemaining <= 0f)
+            
+            if(_boostTimeRemaining <= 0f)
             {
                 _boostTimeRemaining = 0f;
                 _controller.SetSpeedMultiplier(1f);
@@ -92,4 +108,5 @@ public class BlueberryComboTracker
         WindEffectController.SetActive(false);
     }
 
+    public bool CheckBoost() => BoostActive;
 }

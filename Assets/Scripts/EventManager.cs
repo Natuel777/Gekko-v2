@@ -9,8 +9,9 @@ public static class EventManager
     #region NO PARAMS
     public static void Subscribe(string eventName, Action action)
     {
-        if (!_eventsNoParams.ContainsKey(eventName))
+        if(!_eventsNoParams.ContainsKey(eventName))
             _eventsNoParams[eventName] = action;
+            
         else
             _eventsNoParams[eventName] += action;
     }
@@ -25,6 +26,11 @@ public static class EventManager
     {
         if (_eventsNoParams.ContainsKey(eventName))
             _eventsNoParams[eventName]?.Invoke();
+    }
+
+    public static bool IsSubscribed(string eventName)
+    {
+        return _eventsNoParams.TryGetValue(eventName, out var existing) && existing != null;
     }
     #endregion
 
@@ -47,6 +53,11 @@ public static class EventManager
     {
         if (_eventsWithParams.TryGetValue(eventName, out var existing))
             (existing as Action<T>)?.Invoke(data);
+    }
+
+    public static bool IsSubscribed<T>(string eventName)
+    {
+        return _eventsWithParams.TryGetValue(eventName, out var existing) && existing != null;
     }
     #endregion
 }
