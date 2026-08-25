@@ -4,7 +4,6 @@ using UnityEngine;
 public class CarnivorousPlantDataSO : ScriptableObject
 {
     [Header("Config")]
-    public float reactionDelay = 0.25f;
     public float detectionRange = 6f;
 
     [Header("Attack")]

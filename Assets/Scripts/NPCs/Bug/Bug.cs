@@ -33,8 +33,6 @@ public class Bug : MonoBehaviour , IDamageable
     private bool _absorbed = false;
     public bool Absorbed { set { _absorbed = value; } }
     private bool _playerInRange = false;
-    private float _enterDelayTimer;
-    private bool _enterPending;
 
     #region Getters
     public bool IsAttacking => _isAttacking;
@@ -90,7 +88,6 @@ public class Bug : MonoBehaviour , IDamageable
     {
         _eventFSM.UpdateState();
         UpdateDetection();
-        UpdateEnterDelay();
     }
 
     private void UpdateDetection()
@@ -119,27 +116,13 @@ public class Bug : MonoBehaviour , IDamageable
         if(data.sender != this) return;
 
         PlayerTransform = data.player;
-        _enterDelayTimer = bugData.reactionDelay;
-        _enterPending = true;
-    }
-
-    private void UpdateEnterDelay()
-    {
-        if(!_enterPending) return;
-
-        _enterDelayTimer -= Time.deltaTime;
-        if(_enterDelayTimer <= 0f)
-        {
-            _enterPending = false;
-            SendEvent(CreatureEvent.GekkoEnter);
-        }
+        SendEvent(CreatureEvent.GekkoEnter);
     }
 
     private void OnPlayerLost(Bug sender)
     {
         if(sender != this) return;
 
-        _enterPending = false;
         SendEvent(CreatureEvent.GekkoExit);
     }
 

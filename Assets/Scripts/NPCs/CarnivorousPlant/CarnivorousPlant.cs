@@ -19,8 +19,6 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable
 
     private bool _playerInRange = false;
     private bool _purified = false;
-    private float _enterDelayTimer;
-    private bool _enterPending;
 
     #region FSM
     public PlantSpitBehaviour spitBehaviour;
@@ -79,7 +77,6 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable
 
         _eventFSM.UpdateState();
         UpdateDetection();
-        UpdateEnterDelay();
     }
 
     private void UpdateDetection()
@@ -89,28 +86,13 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable
         if(inRange && !_playerInRange)
         {
             _playerInRange = true;
-            _enterDelayTimer = data.reactionDelay;
-            _enterPending = true;
+            SendEvent(CreatureEvent.GekkoEnter);
         }
 
         else if(!inRange && _playerInRange)
         {
             _playerInRange = false;
-            _enterPending = false;
             SendEvent(CreatureEvent.GekkoExit);
-        }
-    }
-
-    private void UpdateEnterDelay()
-    {
-        if(!_enterPending) return;
-
-        _enterDelayTimer -= Time.deltaTime;
-        
-        if(_enterDelayTimer <= 0f)
-        {
-            _enterPending = false;
-            SendEvent(CreatureEvent.GekkoEnter);
         }
     }
 
@@ -123,7 +105,6 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable
         if(_purified) return;
 
         _purified = true;
-        _enterPending = false;
         EventManager.Trigger<float>("OnPlayerDamaged", data.purifyHealthCost);
         SetState(PurifiedState);
     }
