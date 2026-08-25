@@ -4,7 +4,6 @@ using UnityEngine;
 public class BugDataSO : ScriptableObject
 {
     [Header("Config")]
-    public float reactionDelay = 0.25f;
     public float attackDamage = 10f;
     public float detectionRange = 5f;
 

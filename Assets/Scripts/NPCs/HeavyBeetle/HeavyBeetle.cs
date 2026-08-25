@@ -27,8 +27,6 @@ public class HeavyBeetle : MonoBehaviour, IDamageable, IParticleSystemTarget
     private Vector3 _lastPosition;
     private const float GroundCheckEpsilon = 0.0001f;
 
-    private float _enterDelayTimer;
-    private bool _enterPending;
     private Camera _mainCamera;
 
     // El flip de mareo ahora es por código (DazedFlip), no por Animator.
@@ -108,7 +106,6 @@ public class HeavyBeetle : MonoBehaviour, IDamageable, IParticleSystemTarget
         UpdateDetection();
         UpdateGroundCheck();
         UpdateCanvasPosition();
-        UpdateEnterDelay();
     }
 
     private void UpdateCanvasPosition()
@@ -131,35 +128,16 @@ public class HeavyBeetle : MonoBehaviour, IDamageable, IParticleSystemTarget
         {
             _playerInRange = true;
             group?.AlertAll(this, playerTransform);
-            StartEnterDelay();
+            SendEvent(CreatureEvent.GekkoEnter);
         }
 
         else if(!inRange && _playerInRange)
         {
             _playerInRange = false;
-            _enterPending = false;
             SendEvent(CreatureEvent.GekkoExit);
         }
     }
 
-    private void StartEnterDelay()
-    {
-        _enterDelayTimer = data.reactionDelay;
-        _enterPending = true;
-    }
-
-    private void UpdateEnterDelay()
-    {
-        if(!_enterPending) return;
-
-        _enterDelayTimer -= Time.deltaTime;
-        if(_enterDelayTimer <= 0f)
-        {
-            _enterPending = false;
-            SendEvent(CreatureEvent.GekkoEnter);
-        }
-    }
-    
     private void OnTriggerEnter(Collider other)
     {
         _collision.ArtificialTriggerEnter(other);
@@ -180,14 +158,16 @@ public class HeavyBeetle : MonoBehaviour, IDamageable, IParticleSystemTarget
 
     public void SetAngry(bool value)
     {
-        if (_angryParticle == null) return;
+        if(_angryParticle == null) return;
 
-        if (value)
+        if(value)
         {
-            if (!_angryParticle.gameObject.activeSelf)
+            if(!_angryParticle.gameObject.activeSelf)
                 _angryParticle.gameObject.SetActive(true);
+            
             _angryParticle.Play();
         }
+        
         else
         {
             _angryParticle.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
@@ -215,36 +195,42 @@ public class HeavyBeetle : MonoBehaviour, IDamageable, IParticleSystemTarget
             return;
 
         Vector3 safeDir = FindGroundedDirection();
-        if (IsCharging) chargeMovement.Redirect(safeDir);
-        else            wanderMovement.Redirect(safeDir);
+        
+        if(IsCharging) chargeMovement.Redirect(safeDir);
+        
+        else wanderMovement.Redirect(safeDir);
     }
 
     // Prueba un abanico de direcciones y devuelve la primera con piso; si ninguna, reversa.
     private Vector3 FindGroundedDirection()
     {
         Vector3 fwd = transform.forward; fwd.y = 0f;
-        if (fwd.sqrMagnitude < 0.001f) fwd = Vector3.forward;
+        
+        if(fwd.sqrMagnitude < 0.001f) fwd = Vector3.forward;
+        
         fwd.Normalize();
-
         float ahead = 0.75f;
         float up = Mathf.Max(0.1f, _detectGroundPosition.position.y - transform.position.y + 0.3f);
-
         float[] yaws = { 90f, -90f, 135f, -135f, 180f };
-        foreach (float yaw in yaws)
+        
+        foreach(float yaw in yaws)
         {
             Vector3 d = Quaternion.Euler(0f, yaw, 0f) * fwd;
             Vector3 origin = transform.position + d * ahead + Vector3.up * up;
-            if (Physics.Raycast(origin, Vector3.down, data.groundCheckDistance + up,
+            
+            if(Physics.Raycast(origin, Vector3.down, data.groundCheckDistance + up,
                     _groundMask, QueryTriggerInteraction.Ignore))
                 return d;
         }
+        
         return -fwd; // sin salida segura: reversa para no caminar al vacío
     }
     
     public void ReceiveGroupAlert(Transform player)
     {
+        _playerInRange = true;
         playerTransform = player;
-        StartEnterDelay();
+        SendEvent(CreatureEvent.GekkoEnter);
     }
     
     public void Damage(float dmg)
@@ -252,4 +238,12 @@ public class HeavyBeetle : MonoBehaviour, IDamageable, IParticleSystemTarget
         //Expandir a pool
         if(IsDazed) Destroy(gameObject);
     }
+
+    #if UNITY_EDITOR
+    private void OnDrawGizmos() 
+    {
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawWireSphere(transform.position, data.detectionRange);
+    }
+    #endif
 }
