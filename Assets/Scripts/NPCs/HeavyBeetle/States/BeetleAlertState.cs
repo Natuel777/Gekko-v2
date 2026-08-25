@@ -24,9 +24,10 @@ public class BeetleAlertState : IState
 
         Vector3 dir = _beetle.playerTransform.position - _beetle.transform.position;
         dir.y = 0f;
-        if (dir.sqrMagnitude < 0.001f) return;
 
-        if (Vector3.Angle(_beetle.transform.forward, dir.normalized) < FacingThreshold)
+        if(dir.sqrMagnitude < 0.001f) return;
+
+        if(Vector3.Angle(_beetle.transform.forward, dir.normalized) < FacingThreshold)
             _beetle.SetState(_beetle.ChargeState);
     }
 

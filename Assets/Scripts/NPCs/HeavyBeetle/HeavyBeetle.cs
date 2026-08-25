@@ -122,20 +122,20 @@ public class HeavyBeetle : MonoBehaviour, IDamageable, IParticleSystemTarget
 
     private void UpdateDetection()
     {
-        _playerInRange = detection.IsTargetInRange();
+        bool inRange = detection.IsTargetInRange();
 
-        if(_playerInRange)
+        if(inRange && !_playerInRange)
         {
+            _playerInRange = true;
             group?.AlertAll(this, playerTransform);
             SendEvent(CreatureEvent.GekkoEnter);
         }
 
-        else
+        else if(!inRange && _playerInRange)
         {
+            _playerInRange = false;
             SendEvent(CreatureEvent.GekkoExit);
         }
-
-        _playerInRange = false;
     }
 
     private void OnTriggerEnter(Collider other)
@@ -158,14 +158,16 @@ public class HeavyBeetle : MonoBehaviour, IDamageable, IParticleSystemTarget
 
     public void SetAngry(bool value)
     {
-        if (_angryParticle == null) return;
+        if(_angryParticle == null) return;
 
-        if (value)
+        if(value)
         {
-            if (!_angryParticle.gameObject.activeSelf)
+            if(!_angryParticle.gameObject.activeSelf)
                 _angryParticle.gameObject.SetActive(true);
+            
             _angryParticle.Play();
         }
+        
         else
         {
             _angryParticle.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
@@ -226,6 +228,7 @@ public class HeavyBeetle : MonoBehaviour, IDamageable, IParticleSystemTarget
     
     public void ReceiveGroupAlert(Transform player)
     {
+        _playerInRange = true;
         playerTransform = player;
         SendEvent(CreatureEvent.GekkoEnter);
     }
@@ -235,4 +238,12 @@ public class HeavyBeetle : MonoBehaviour, IDamageable, IParticleSystemTarget
         //Expandir a pool
         if(IsDazed) Destroy(gameObject);
     }
+
+    #if UNITY_EDITOR
+    private void OnDrawGizmos() 
+    {
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawWireSphere(transform.position, data.detectionRange);
+    }
+    #endif
 }
