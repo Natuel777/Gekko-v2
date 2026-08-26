@@ -6,8 +6,8 @@ public class SliderMaster : AudioSlider
 {
     protected override void InitialiceValues()
     {
-        _slider.onValueChanged.AddListener(AudioManager.Instance.SetMasterVolume);
-        _slider.value = AudioManager.Instance.masterValue;
+        _slider.onValueChanged.AddListener(VolumeManager.Instance.SetMasterVolume);
+        _slider.value = VolumeManager.Instance.masterValue;
     }
 
 }

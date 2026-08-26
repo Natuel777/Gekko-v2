@@ -5,7 +5,7 @@ public class SliderSFX : AudioSlider
 {
     protected override void InitialiceValues()
     {
-        _slider.onValueChanged.AddListener(AudioManager.Instance.SetSFXVolume);
-        _slider.value = AudioManager.Instance.sfxValue;
+        _slider.onValueChanged.AddListener(VolumeManager.Instance.SetSFXVolume);
+        _slider.value = VolumeManager.Instance.sfxValue;
     }
 }

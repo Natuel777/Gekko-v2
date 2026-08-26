@@ -2,6 +2,8 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.InputSystem;
 using System.Collections;
+using NUnit.Framework;
+using System.Collections.Generic;
 
 public class GameManager : MonoBehaviour
 {
@@ -86,6 +88,8 @@ public class GameManager : MonoBehaviour
         if(IsPause) return;
 
         ScreenManager.Instance.Push(_screenPause);
+        List<SoundNames> soundsToNotPause = new List<SoundNames>{ SoundNames.Menu, SoundNames.LvlOne};
+        AudioManager.instance.PauseAll(soundsToNotPause);
         EventManager.Trigger("PauseEvent");
         IsPause = true;
     }

@@ -10,9 +10,9 @@ public class ScreenAudio : Screens
             button.interactable = true;
         }
         //AudioManager.Instance.LoadGame();
-        AudioManager.Instance.SetMasterVolume(AudioManager.Instance.masterValue);
-        AudioManager.Instance.SetMusicVolume(AudioManager.Instance.musicValue);
-        AudioManager.Instance.SetSFXVolume(AudioManager.Instance.sfxValue);
+        VolumeManager.Instance.SetMasterVolume(VolumeManager.Instance.masterValue);
+        VolumeManager.Instance.SetMusicVolume(VolumeManager.Instance.musicValue);
+        VolumeManager.Instance.SetSFXVolume(VolumeManager.Instance.sfxValue);
     }
     public override void Free()
     {

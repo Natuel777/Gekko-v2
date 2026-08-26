@@ -1,60 +1,104 @@
-using UnityEngine.Audio;
+using System.Collections;
+using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEngine;
 
-public class AudioManager : MonoBehaviour//, ISaveLoad
+public class AudioManager : MonoBehaviour
 {
-    public static AudioManager Instance;
-    [SerializeField] AudioMixer audioMixer;
-    public float masterValue = 1;
-    public float musicValue = 1;
-    public float sfxValue = 1;
+    public static AudioManager instance;
+
+    [SerializeField] private Sounds[] sounds;
+    private List<AudioSource> _sources;
+    private List<AudioSource> _pausedSources;
+    private float _timePerCheck = 5;
+    private bool _paused;
+
     private void Awake()
     {
-        Instance = this;
+        if (!instance) instance = this;
+        else Destroy(gameObject);
 
-       // SaveWithJson.Instance.OnLoad += LoadGame;
-       // SaveWithJson.Instance.OnSave += SaveGame;
+        DontDestroyOnLoad(gameObject);
+        _sources = new();
+        StartCoroutine(CheckStatus());
     }
-    public void SetMasterVolume(float value)
+    private IEnumerator CheckStatus()
     {
-        value = Mathf.Clamp(value, 0.0001f, 1);
-        audioMixer.SetFloat("MasterVolume", Mathf.Log10(value) * 20);
-        masterValue = value;
-    }
+        while (true)
+        {
+            if (_sources.Count <= 0) yield return new WaitForSeconds(_timePerCheck);
 
-    public void SetMusicVolume(float value)
+            foreach (AudioSource source in _sources)
+            {
+                if (_paused && _pausedSources.Contains(source)) continue;
+                if (!source.isPlaying)
+                {
+                    _sources.Remove(source);
+                    Destroy(source);
+                }
+            }
+            yield return new WaitForSeconds(_timePerCheck);
+        }
+    }
+    private void Set(Sounds sound)
     {
-        value = Mathf.Clamp(value, 0.0001f, 1);
-        audioMixer.SetFloat("MusicVolume", Mathf.Log10(value) * 20);
-        musicValue = value;
+        AudioSource source = gameObject.AddComponent<AudioSource>();
+        _sources.Add(source);
+        sound.source = source;
+        sound.source.clip = sound.soundClip;
+        sound.source.outputAudioMixerGroup = sound.audioMixer;
+        sound.source.volume = sound.volume;
+        sound.source.pitch = sound.pitch;
+        sound.source.loop = sound.loop;
     }
-
-    public void SetSFXVolume(float value)
+    public void Play(SoundNames name, bool loop = false)
     {
-        value = Mathf.Clamp(value, 0.0001f, 1);
-        audioMixer.SetFloat("SFXVolume", Mathf.Log10(value) * 20);
-        sfxValue = value;
+        Sounds sound = FindSound(name);
+
+        if (sound == null)
+        {
+            Debug.Log("no se encontro el sonido");
+            return;
+        }
+        Set(sound);
+        sound.source.loop = loop;
+        sound.source.Play();
     }
 
-   // public void LoadGame()
-   // {
-   //     masterValue = PlayerPrefs.GetFloat(PlayerPrefsKeys.masterValueKey, masterValue);
-   //     musicValue = PlayerPrefs.GetFloat(PlayerPrefsKeys.musicValueKey, musicValue);
-   //     sfxValue = PlayerPrefs.GetFloat(PlayerPrefsKeys.sfxValueKey, sfxValue);
-   //     LoadVolume();
-   // }
-   //
-   // public void SaveGame()
-   // {
-   //     PlayerPrefs.SetFloat(PlayerPrefsKeys.masterValueKey, masterValue);
-   //     PlayerPrefs.SetFloat(PlayerPrefsKeys.musicValueKey, musicValue);
-   //     PlayerPrefs.SetFloat(PlayerPrefsKeys.sfxValueKey, sfxValue);
-   // }
-   // void LoadVolume()
-   // {
-   //     audioMixer.SetFloat("MasterVolume", Mathf.Log10(PlayerPrefs.GetFloat(PlayerPrefsKeys.masterValueKey, masterValue)) * 20);
-   //     audioMixer.SetFloat("MusicVolume", Mathf.Log10(PlayerPrefs.GetFloat(PlayerPrefsKeys.musicValueKey, musicValue)) * 20);
-   //     audioMixer.SetFloat("SFXVolume", Mathf.Log10(PlayerPrefs.GetFloat(PlayerPrefsKeys.sfxValueKey, sfxValue)) * 20);
-   // }
+    public void Pause(SoundNames name)
+    {
+        Sounds sound = FindSound(name);
+        if (sound == null)
+        {
+            Debug.Log("no se encontro el sonido");
+            return;
+        }
+        sound.source.Pause();
+    }
 
+    public void PauseAll(List<SoundNames> notToPauseSounds = null)
+    {
+        foreach (var sound in sounds)
+        {
+            if (notToPauseSounds != null && notToPauseSounds.Contains(sound._name)) continue;
+            sound.source.Pause(); 
+        }
+        _pausedSources = _sources;
+        _paused = true;
+    }
+    public void UnPauseAll()
+    {
+        foreach (var sound in sounds) sound.source.UnPause();
+        _pausedSources = null;
+        _paused = false;
+        StartCoroutine(CheckStatus());
+    }
+    private Sounds FindSound(SoundNames name)
+    {
+        foreach (var sound in sounds)
+        {
+            if(sound._name == name) return sound;
+        }
+        return null;
+    }
 }
