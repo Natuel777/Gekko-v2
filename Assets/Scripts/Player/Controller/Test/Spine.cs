@@ -3,14 +3,11 @@ using UnityEngine.Animations.Rigging;
 
 public class Spine : MonoBehaviour
 {
-    [SerializeField] private Transform _neck;      // cuello — el que ya rotás
-    [SerializeField] private Transform _col4;      // columna_4 — cerca del cuello
+    [SerializeField] private Transform _neck;      // cuello ï¿½ el que ya rotï¿½s
+    [SerializeField] private Transform _col4;      // columna_4 ï¿½ cerca del cuello
     [SerializeField] private Transform _col3;
     [SerializeField] private Transform _col2;
-    [SerializeField] private Transform _col1;      // columna — más lejos
-
-    [SerializeField] private float _followSpeed = 5f;
-    [SerializeField] private float _falloff = 0.7f; // cuánto reduce cada hueso (0-1)
+    [SerializeField] private Transform _col1;      // columna ï¿½ mï¿½s lejos
 
     private Quaternion _lastNeckRot;
 
@@ -22,11 +19,11 @@ public class Spine : MonoBehaviour
     private void LateUpdate()
     {
         if (_lastNeckRot == _neck.rotation) return;
-        // Delta de rotación del cuello este frame
+        // Delta de rotaciï¿½n del cuello este frame
         Quaternion neckDelta = _neck.rotation * Quaternion.Inverse(_lastNeckRot);
         _lastNeckRot = _neck.rotation;
 
-        // Cada hueso aplica una fracción del delta
+        // Cada hueso aplica una fracciï¿½n del delta
         //ApplyDelta(_col4, neckDelta, Mathf.Pow(_falloff, 1));
         //ApplyDelta(_col3, neckDelta, Mathf.Pow(_falloff, 2));
         //ApplyDelta(_col2, neckDelta, Mathf.Pow(_falloff, 3));
@@ -45,7 +42,7 @@ public class Spine : MonoBehaviour
 
     private void ApplyDelta(Transform bone, Quaternion delta, float weight)
     {
-        // Interpolamos el delta según el peso
+        // Interpolamos el delta segï¿½n el peso
         Quaternion weightedDelta = Quaternion.Slerp(Quaternion.identity, delta, weight);
         bone.rotation = weightedDelta * bone.rotation;
     }

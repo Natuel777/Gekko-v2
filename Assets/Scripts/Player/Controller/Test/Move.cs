@@ -17,7 +17,6 @@ public class Move : MonoBehaviour
     private float _smoothInputSpeed = 0.2f;
     [SerializeField] private float _gravityForce = 20f;
     private float _gravityVelocity;
-    private float _gravitySurfaceGrace = 0.2f;
     private float _timeSinceSurface = 0f;
 
     [Header("<color=green>Jump</color>")]
@@ -93,10 +92,10 @@ public class Move : MonoBehaviour
         ApplyGravity();
         if (!_isSurface)
         {
-            // Caída más rápida
+            // Caï¿½da mï¿½s rï¿½pida
             if (_rb.linearVelocity.y < 0)
                 _gravityVelocity += _gravityForce * (_fallMultiplier - 1) * Time.fixedDeltaTime;
-            // Salto corto si soltás el botón
+            // Salto corto si soltï¿½s el botï¿½n
             else if (_rb.linearVelocity.y > 0 && !_jumpPressed)
                 _gravityVelocity += _gravityForce * (_lowJumpMultiplier - 1) * Time.fixedDeltaTime;
         }

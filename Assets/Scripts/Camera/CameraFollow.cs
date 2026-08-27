@@ -13,13 +13,11 @@ public class CameraFollow : MonoBehaviour
     //public float _alignDeadzone = 15f;
     //public float _alignDelay = 0.5f;
     [SerializeField] private float _upThreshold = 0.98f;
-    private float _timeSincePjMoved = 0f;
 
     public float cameraUpLerpSpeed = 2f;
     [SerializeField] private float _angleChange = 120f;
     [SerializeField] private float _newAngle = 90f;
     private Vector3 _cameraUp = Vector3.up;
-    private float timeSincePlayerMoved = 0f;
 
     private bool _movingCamera;
     public Transform _worldUpReference;

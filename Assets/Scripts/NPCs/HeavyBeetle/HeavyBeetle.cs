@@ -10,6 +10,7 @@ public class HeavyBeetle : MonoBehaviour, IDamageable, IParticleSystemTarget
 
     [Header("Feedback")]
     [SerializeField] private ParticleSystem _angryParticle;
+    [SerializeField] private ParticleSystem _collisionParticle;
 
     [Tooltip("The reference for the 'Selected' Particle System. Variable inherited by IParticleSystemTarget")]
     [SerializeField] private ParticleSystem _indicator;
@@ -65,7 +66,7 @@ public class HeavyBeetle : MonoBehaviour, IDamageable, IParticleSystemTarget
         AlertState = new BeetleAlertState(this, data.lookAtThreshold);
         ChargeState = new BeetleChargeState(this);
         RecalibrateState = new BeetleRecalibrateState(this);
-        DazedState = new BeetleDazedState(this);
+        DazedState = new BeetleDazedState(this, _collisionParticle);
         #endregion
 
         #region Strategy
@@ -157,14 +158,6 @@ public class HeavyBeetle : MonoBehaviour, IDamageable, IParticleSystemTarget
     } 
 
     public void SetDazed(bool v) => IsDazed = v;
-
-    // Reemplazado por el flip por código (DazedFlip). Se deja comentado por si se
-    // retoma la animación del Animator más adelante.
-    // public void SetTurnedInsideOut(bool value)
-    // {
-    //     if (_anim == null) return;
-    //     _anim.SetBool(TurnedInsideOutHash, value);
-    // }
 
     public void SetAngry(bool value)
     {

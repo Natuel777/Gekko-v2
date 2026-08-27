@@ -13,7 +13,6 @@ public class LegsManager : MonoBehaviour
 
     [Header("<color=green>Body</color>")]
     [SerializeField] private Transform _bodyTransform;
-    [SerializeField] private float _bodyHeight = 0.5f;
     [SerializeField] private float _bodySmoothing = 5f;
     private float _targetWeight = 1f;
     private bool _isMoving = false;
@@ -35,7 +34,7 @@ public class LegsManager : MonoBehaviour
             Vector3 sum = Vector3.zero;
             int count = 0;
 
-            // Solo incluimos patas que están en superficie
+            // Solo incluimos patas que estï¿½n en superficie
             if (_RA.IsOnSurface) { sum += _RA.SurfaceNormal * 2f; count++; }
             if (_LA.IsOnSurface) { sum += _LA.SurfaceNormal * 2f; count++; }
             if (_RL.IsOnSurface) { sum += _RL.SurfaceNormal; count++; }
@@ -45,8 +44,8 @@ public class LegsManager : MonoBehaviour
 
             Vector3 avg = sum.normalized;
 
-            // Si la normal promedio es muy horizontal (transición pared/suelo)
-            // usamos solo las patas delanteras que son las que guían
+            // Si la normal promedio es muy horizontal (transiciï¿½n pared/suelo)
+            // usamos solo las patas delanteras que son las que guï¿½an
             float avgAngle = Vector3.Angle(avg, Vector3.up);
             if (avgAngle > 45f && avgAngle < 135f)
             {

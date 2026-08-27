@@ -21,7 +21,6 @@ public class Leg : MonoBehaviour
     private float _currentStepHeight = 0.3f;
     [SerializeField] private float _detectRadius = 0.1f;
     [SerializeField] private float _DetectSurfaceDistance = 2f;
-    [SerializeField] private float _wallDetectDistance = 0.5f;
     [SerializeField] private float _stepPrediction = 0.1f;
     [SerializeField] private float _velocitySmoothing = 0.15f;
     [SerializeField] private LayerMask _surface;
@@ -128,7 +127,7 @@ public class Leg : MonoBehaviour
 
             float dist = Vector3.Distance(_currentPos, _targetPos);
 
-            // Si hay un cambio grande de superficie, forzamos el paso aunque esté cerca
+            // Si hay un cambio grande de superficie, forzamos el paso aunque estï¿½ cerca
             bool surfaceChanged = angleDiff > 30f;
 
             if (dist > _maxDistance || surfaceChanged)
@@ -150,7 +149,7 @@ public class Leg : MonoBehaviour
         _body.forward,                                      // adelante
         (_body.forward + (-_currentUp)).normalized,         // diagonal adelante-abajo
         (_body.forward - Vector3.down).normalized,          // diagonal adelante-arriba
-        //(Vector3.down + _body.forward * 0.5f).normalized,   //directo hacia abajo en world space con más alcance
+        //(Vector3.down + _body.forward * 0.5f).normalized,   //directo hacia abajo en world space con mï¿½s alcance
         (-_currentUp + Vector3.down).normalized,
         };
         float movingForward = Mathf.Clamp01(_smoothedVelocity.magnitude);
@@ -167,7 +166,7 @@ public class Leg : MonoBehaviour
             {
                 if (_isFrontLeg)
                     Debug.DrawRay(hit.point, hit.normal * 0.3f, Color.green);
-                // Score: priorizamos la más cercana y la que va en la dirección de movimiento
+                // Score: priorizamos la mï¿½s cercana y la que va en la direcciï¿½n de movimiento
                 float distScore = 1f - (hit.distance / castDist);
                 float currentSurfaceScore = Vector3.Dot(hit.normal, _currentUp) * 0.5f;
 
@@ -232,14 +231,14 @@ public class Leg : MonoBehaviour
 
         if (FindBestSurface(out RaycastHit hit))
         {
-            // Sin predicción de velocidad
+            // Sin predicciï¿½n de velocidad
             _targetPos = hit.point;
 
             float dist = Vector3.Distance(_currentPos, _targetPos);
             float angleDiff = Vector3.Angle(_currentUp, hit.normal);
             _currentStepHeight = angleDiff > 45f ? _maxHeight * 0.2f : _maxHeight;
 
-            // Umbral más pequeño para que se acomode bien al detenerse
+            // Umbral mï¿½s pequeï¿½o para que se acomode bien al detenerse
             if (dist > _maxDistance * 0.5f || angleDiff > 30f)
             {
                 _moving = true;
@@ -256,17 +255,17 @@ public class Leg : MonoBehaviour
         if (Physics.Raycast(_pointer.position, Vector3.down, out RaycastHit hit, 2f, _surface, QueryTriggerInteraction.Ignore))
             groundPos = hit.point;
 
-        // Círculo de distancia máxima antes de dar un paso
+        // Cï¿½rculo de distancia mï¿½xima antes de dar un paso
         Gizmos.color = Color.yellow;
         DrawCircle(groundPos, _maxDistance, 32);
 
-        // Altura máxima del arco
+        // Altura mï¿½xima del arco
         Gizmos.color = Color.cyan;
         Gizmos.DrawLine(groundPos, groundPos + Vector3.up * _maxHeight);
         Gizmos.DrawSphere(groundPos + Vector3.up * _maxHeight, 0.01f);
 
 
-        // Línea desde origen al suelo
+        // Lï¿½nea desde origen al suelo
         Gizmos.color = Color.green;
         Gizmos.DrawLine(_pointer.position, groundPos);
 

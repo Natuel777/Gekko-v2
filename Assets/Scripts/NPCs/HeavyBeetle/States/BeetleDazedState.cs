@@ -5,8 +5,13 @@ public class BeetleDazedState : IState
     private readonly HeavyBeetle _beetle;
     private float _dazeTimer = 0f;
     private bool _recovering = false;
+    private ParticleSystem _collisionParticle;
 
-    public BeetleDazedState(HeavyBeetle beetle) {_beetle = beetle;}
+    public BeetleDazedState(HeavyBeetle beetle, ParticleSystem col) 
+    {
+        _beetle = beetle;
+        _collisionParticle = col;
+    }
 
     public void Enter()
     {
@@ -16,6 +21,7 @@ public class BeetleDazedState : IState
         _beetle.dazedFlip.StartFlip();
         _dazeTimer = _beetle.data.dazeDuration;
         _recovering = false;
+        _collisionParticle.Play();
     }
 
     public void Exit()

@@ -16,7 +16,6 @@ public class CameraRotation : MonoBehaviour
     public float cameraUpLerpSpeed = 2f;
     public float maxCameraRollSpeed = 30f;
     private Vector3 _cameraUp = Vector3.up;
-    private float timeSincePlayerMoved = 0f;
 
     private bool _movingCamera;
     public Transform _worldUpReference;
@@ -56,7 +55,7 @@ public class CameraRotation : MonoBehaviour
 
     private void LateUpdate()
     {
-        // Posición deseada: detrás y arriba del personaje según su orientación
+        // Posiciï¿½n deseada: detrï¿½s y arriba del personaje segï¿½n su orientaciï¿½n
         Vector3 targetPos = _pj.position
             - _pj.forward * distance
             + _pjC.CurrentUp * height;
@@ -69,9 +68,9 @@ public class CameraRotation : MonoBehaviour
     }
     private void SmoothCameraUp()
     {
-        Vector3 targetUp = _pjC.CurrentUp; // exponé _currentUp como propiedad
+        Vector3 targetUp = _pjC.CurrentUp; // exponï¿½ _currentUp como propiedad
 
-        // Interpolamos el up de la cámara lentamente
+        // Interpolamos el up de la cï¿½mara lentamente
         _cameraUp = Vector3.Slerp(
             _cameraUp,
             targetUp,
@@ -82,13 +81,13 @@ public class CameraRotation : MonoBehaviour
     }
     //void AutoAlign()
     //{
-    //    // Ángulo actual de la cámara en Y (world space)
+    //    // ï¿½ngulo actual de la cï¿½mara en Y (world space)
     //    float cameraAngle = _camera.HorizontalAxis.Value;
     //
-    //    // Ángulo al que mira el jugador
+    //    // ï¿½ngulo al que mira el jugador
     //    float playerAngle = _pj.eulerAngles.y;
     //
-    //    // Diferencia angular (teniendo en cuenta el wrap de 360°)
+    //    // Diferencia angular (teniendo en cuenta el wrap de 360ï¿½)
     //    float delta = Mathf.DeltaAngle(cameraAngle, playerAngle);
     //
     //    // Solo corregir si supera la deadzone
@@ -106,16 +105,16 @@ public class CameraRotation : MonoBehaviour
     //
     //    if (dirToCamera.sqrMagnitude < 0.01f) return;
     //
-    //    // Chequeamos si hay geometría en la dirección actual de la cámara
+    //    // Chequeamos si hay geometrï¿½a en la direcciï¿½n actual de la cï¿½mara
     //    if (Physics.SphereCast(_pj.position, 0.3f, dirToCamera,
     //        out RaycastHit hit, _baseRadius, _obstacle))
     //    {
-    //        float targetRadius = Mathf.Max(hit.distance - 0.3f, 1f); // mínimo radio de 1
+    //        float targetRadius = Mathf.Max(hit.distance - 0.3f, 1f); // mï¿½nimo radio de 1
     //        _camera.Radius = Mathf.Lerp(_camera.Radius, targetRadius, 10f * Time.deltaTime);
     //    }
     //    else
     //    {
-    //        // Restauramos hacia el radio base pero más lento para no hacer zoom brusco
+    //        // Restauramos hacia el radio base pero mï¿½s lento para no hacer zoom brusco
     //        _camera.Radius = Mathf.Lerp(_camera.Radius, _baseRadius, 2f * Time.deltaTime);
     //    }
     //}
