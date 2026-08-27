@@ -11,6 +11,7 @@ public class HeavyBeetledataSO : ScriptableObject
     [Header("Timers")]
     public float recalibrateDelay = 1.2f;
     public float dazeDuration = 4f;
+    public float lookAtThreshold = 1f;
 
     [Header("Daze")]
     public float flipSpeed = 180f; // deg/seg; 180 => ~1s para darse vuelta, ~1s para enderezarse

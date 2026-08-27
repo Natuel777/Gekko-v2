@@ -62,7 +62,7 @@ public class HeavyBeetle : MonoBehaviour, IDamageable, IParticleSystemTarget
 
         #region State initialization
         PatrolState = new BeetlePatrolState(this);
-        AlertState = new BeetleAlertState(this);
+        AlertState = new BeetleAlertState(this, data.lookAtThreshold);
         ChargeState = new BeetleChargeState(this);
         RecalibrateState = new BeetleRecalibrateState(this);
         DazedState = new BeetleDazedState(this);

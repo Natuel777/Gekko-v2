@@ -4,8 +4,14 @@ public class BeetleAlertState : IState
 {
     private readonly HeavyBeetle _beetle;
     private const float FacingThreshold = 15f;
+    private float _timer = 0f;
+    private readonly float _looakAtThreshold;
 
-    public BeetleAlertState(HeavyBeetle beetle) { _beetle = beetle; }
+    public BeetleAlertState(HeavyBeetle beetle, float lookAtThreshold) 
+    {
+        _beetle = beetle; 
+        _looakAtThreshold = lookAtThreshold;
+    }
 
     public void Enter()
     {
@@ -30,7 +36,14 @@ public class BeetleAlertState : IState
         if(dir.sqrMagnitude < 0.001f) return;
 
         if(Vector3.Angle(_beetle.transform.forward, dir.normalized) < FacingThreshold)
-            _beetle.SetState(_beetle.ChargeState);
+        {
+            _timer += Time.deltaTime;
+
+            if(_timer >= _looakAtThreshold)
+                _beetle.SetState(_beetle.ChargeState);
+        }
+
+        else _timer = 0f;
     }
 
     public void HandleEvent(CreatureEvent evt, object data = null)
