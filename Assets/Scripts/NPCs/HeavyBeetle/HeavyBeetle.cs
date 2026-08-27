@@ -6,6 +6,7 @@ public class HeavyBeetle : MonoBehaviour, IDamageable, IParticleSystemTarget
     public Transform playerTransform;
     public BeetleGroupSO group;
     private bool _playerInRange = false;
+    
 
     [Header("Feedback")]
     [SerializeField] private ParticleSystem _angryParticle;
@@ -29,10 +30,6 @@ public class HeavyBeetle : MonoBehaviour, IDamageable, IParticleSystemTarget
 
     private Camera _mainCamera;
 
-    // El flip de mareo ahora es por código (DazedFlip), no por Animator.
-    // private Animator _anim;
-    // private static readonly int TurnedInsideOutHash = Animator.StringToHash("IsturnedInsideOut");
-
     #region FSM
     public WanderMovement wanderMovement;
     public ChargeMovement chargeMovement;
@@ -54,6 +51,7 @@ public class HeavyBeetle : MonoBehaviour, IDamageable, IParticleSystemTarget
     #region Getters
     public bool IsCharging { get; private set; }
     public bool IsDazed { get; private set; }
+    public bool AlertedByGroup { get; private set; }
     #endregion
 
     #region Initialization
@@ -110,18 +108,21 @@ public class HeavyBeetle : MonoBehaviour, IDamageable, IParticleSystemTarget
 
     private void UpdateCanvasPosition()
     {
-        if (_indicator == null) return;
+        if(_indicator == null) return;
 
-        if (_mainCamera == null)
+        if(_mainCamera == null)
             _mainCamera = Camera.main;
 
         _indicator.transform.position = transform.position + Vector3.up * 1.76f;
-        if (_mainCamera != null)
+        
+        if(_mainCamera != null)
             _indicator.transform.rotation = _mainCamera.transform.rotation;
     }
 
     private void UpdateDetection()
     {
+        if(AlertedByGroup) return;
+
         bool inRange = detection.IsTargetInRange();
 
         if(inRange && !_playerInRange)
@@ -144,8 +145,17 @@ public class HeavyBeetle : MonoBehaviour, IDamageable, IParticleSystemTarget
     }
 
     public void SetState(IState state) => _eventFSM.SetState(state);
+
     public void SendEvent(CreatureEvent e) => _eventFSM.SendEvent(e);
-    public void SetCharging(bool v) => IsCharging = v;
+
+    public void SetCharging(bool v) 
+    {
+        IsCharging = v;
+
+        if(AlertedByGroup != v)
+            AlertedByGroup = v;
+    } 
+
     public void SetDazed(bool v) => IsDazed = v;
 
     // Reemplazado por el flip por código (DazedFlip). Se deja comentado por si se
@@ -201,7 +211,6 @@ public class HeavyBeetle : MonoBehaviour, IDamageable, IParticleSystemTarget
         else wanderMovement.Redirect(safeDir);
     }
 
-    // Prueba un abanico de direcciones y devuelve la primera con piso; si ninguna, reversa.
     private Vector3 FindGroundedDirection()
     {
         Vector3 fwd = transform.forward; fwd.y = 0f;
@@ -223,12 +232,14 @@ public class HeavyBeetle : MonoBehaviour, IDamageable, IParticleSystemTarget
                 return d;
         }
         
-        return -fwd; // sin salida segura: reversa para no caminar al vacío
+        return -fwd;
     }
     
     public void ReceiveGroupAlert(Transform player)
     {
+        Debug.Log($"[{this}] received group alert.");
         _playerInRange = true;
+        AlertedByGroup = true;
         playerTransform = player;
         SendEvent(CreatureEvent.GekkoEnter);
     }

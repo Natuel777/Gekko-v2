@@ -9,12 +9,14 @@ public class BeetleAlertState : IState
 
     public void Enter()
     {
+        Debug.Log($"[{_beetle}] entered alert state.");
         _beetle.SetAngry(true);
         _beetle.lookAt.StartLooking(_beetle.playerTransform);
     }
 
     public void Exit()
     {
+        Debug.Log($"[{_beetle}] exit alert state.");
         _beetle.lookAt.StopLooking();
     }
 

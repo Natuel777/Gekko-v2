@@ -7,12 +7,14 @@ public class BeetleChargeState : IState
     public BeetleChargeState(HeavyBeetle beetle) {_beetle = beetle;}
     public void Enter()
     {
+        Debug.Log($"[{_beetle}] entered charge state.");
         _beetle.SetCharging(true);
         _beetle.chargeMovement.StartCharge(_beetle.playerTransform.position);
     }
 
     public void Exit()
     {
+        Debug.Log($"[{_beetle}] exit charge state.");
         _beetle.SetCharging(false);
     }
     
