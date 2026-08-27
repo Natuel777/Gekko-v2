@@ -158,6 +158,7 @@ public class HeavyBeetle : MonoBehaviour, IDamageable, IParticleSystemTarget
     } 
 
     public void SetDazed(bool v) => IsDazed = v;
+    
 
     public void SetAngry(bool value)
     {
