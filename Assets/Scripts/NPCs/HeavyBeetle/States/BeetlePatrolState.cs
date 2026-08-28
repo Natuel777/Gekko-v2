@@ -19,6 +19,8 @@ public class BeetlePatrolState : IState
 
     public void HandleEvent(CreatureEvent evt, object data = null) 
     {
+        if(_beetle.IsPurified) return;
+        
         if(evt == CreatureEvent.GekkoEnter)
             _beetle.SetState(_beetle.AlertState);
     }

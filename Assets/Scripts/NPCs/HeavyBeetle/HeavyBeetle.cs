@@ -6,16 +6,17 @@ public class HeavyBeetle : MonoBehaviour, IDamageable, IParticleSystemTarget
     public Transform playerTransform;
     public BeetleGroupSO group;
     private bool _playerInRange = false;
-    
 
     [Header("Feedback")]
     [SerializeField] private ParticleSystem _angryParticle;
     [SerializeField] private ParticleSystem _collisionParticle;
+    [SerializeField] private ParticleSystem _purifiedParticle;
 
     [Tooltip("The reference for the 'Selected' Particle System. Variable inherited by IParticleSystemTarget")]
     [SerializeField] private ParticleSystem _indicator;
 
     public ParticleSystem Indicator => _indicator;
+    public bool CanBeTargeted => !IsPurified;
 
     [Header("Ground Check")]
     [SerializeField] private Transform _detectGroundPosition;
@@ -52,6 +53,7 @@ public class HeavyBeetle : MonoBehaviour, IDamageable, IParticleSystemTarget
     #region Getters
     public bool IsCharging { get; private set; }
     public bool IsDazed { get; private set; }
+    public bool IsPurified { get; private set; }
     public bool AlertedByGroup { get; private set; }
     #endregion
 
@@ -94,11 +96,13 @@ public class HeavyBeetle : MonoBehaviour, IDamageable, IParticleSystemTarget
     {
         playerTransform = GameManager.Instance.Pj.transform;
         detection = new BugDetection(transform, playerTransform, data.detectionRange);
+        SetPurified(false);
         SetState(PatrolState);
         _lastPosition = transform.position;
     }
     #endregion
 
+    #region Loop
     private void Update()
     {
         _eventFSM.UpdateState();
@@ -107,17 +111,26 @@ public class HeavyBeetle : MonoBehaviour, IDamageable, IParticleSystemTarget
         UpdateCanvasPosition();
     }
 
+    //View
     private void UpdateCanvasPosition()
     {
-        if(_indicator == null) return;
-
         if(_mainCamera == null)
             _mainCamera = Camera.main;
 
-        _indicator.transform.position = transform.position + Vector3.up * 1.76f;
-        
+        CorrectBillboardParticle(_indicator, Vector3.up * 1.76f);
+        CorrectBillboardParticle(_purifiedParticle, new Vector3(0.031f, 0.99f, 0f));
+    }
+
+    // Fuerza posición/rotación en espacio de mundo cada frame para que el PS no herede
+    // el giro del transform padre (ej. DazedFlip dando vuelta al escarabajo).
+    private void CorrectBillboardParticle(ParticleSystem ps, Vector3 offset)
+    {
+        if(ps == null) return;
+
+        ps.transform.position = transform.position + offset;
+
         if(_mainCamera != null)
-            _indicator.transform.rotation = _mainCamera.transform.rotation;
+            ps.transform.rotation = _mainCamera.transform.rotation;
     }
 
     private void UpdateDetection()
@@ -139,6 +152,7 @@ public class HeavyBeetle : MonoBehaviour, IDamageable, IParticleSystemTarget
             SendEvent(CreatureEvent.GekkoExit);
         }
     }
+    #endregion
 
     private void OnTriggerEnter(Collider other)
     {
@@ -159,7 +173,15 @@ public class HeavyBeetle : MonoBehaviour, IDamageable, IParticleSystemTarget
 
     public void SetDazed(bool v) => IsDazed = v;
     
+    public void SetPurified(bool v)
+    {
+        IsPurified = v;
 
+        if(v == true)
+            SetState(PatrolState);
+    } 
+
+    //View
     public void SetAngry(bool value)
     {
         if(_angryParticle == null) return;
@@ -179,6 +201,7 @@ public class HeavyBeetle : MonoBehaviour, IDamageable, IParticleSystemTarget
         }
     }
 
+    //Model
     // Cada frame que el escarabajo se movió, chequea que haya piso adelante (en
     // _detectGroundPosition). Si no hay, redirige la estrategia activa para no caer.
     private void UpdateGroundCheck()
@@ -205,6 +228,7 @@ public class HeavyBeetle : MonoBehaviour, IDamageable, IParticleSystemTarget
         else wanderMovement.Redirect(safeDir);
     }
 
+    //Model
     private Vector3 FindGroundedDirection()
     {
         Vector3 fwd = transform.forward; fwd.y = 0f;
@@ -240,8 +264,12 @@ public class HeavyBeetle : MonoBehaviour, IDamageable, IParticleSystemTarget
     
     public void Damage(float dmg)
     {
-        //Expandir a pool
-        if(IsDazed) Destroy(gameObject);
+        if(IsDazed)
+        {
+            //View
+            _purifiedParticle.Play();
+            SetPurified(true);
+        } 
     }
 
     #if UNITY_EDITOR

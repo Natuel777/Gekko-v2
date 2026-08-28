@@ -89,6 +89,8 @@ public class AimManager : MonoBehaviour
         }
         //else TargetNull();
     }
+
+    //Candidato a optimizar
     private List<Transform> GetTargets()
     {
         Collider[] hits = Physics.OverlapSphere(transform.position, _viewRange, _aimableMask);
@@ -98,6 +100,8 @@ public class AimManager : MonoBehaviour
         foreach (var hit in hits)
         {
             if (hit.GetComponentInChildren<MeshRenderer>() == null) continue;
+
+            if (hit.TryGetComponent(out IParticleSystemTarget pst) && !pst.CanBeTargeted) continue;
 
             if(InFOV(transform, hit.transform.position, _viewRange, _viewAngle))
                 targets.Add(hit.transform);
