@@ -28,7 +28,7 @@ public class BeetleChargeState : IState
     public void HandleEvent(CreatureEvent evt, object data = null)
     {
         if(evt == CreatureEvent.ChargeHitPlayer)
-            _beetle.SetState(_beetle.PatrolState);
+            _beetle.SetState(_beetle.DazedState);
         
         else if(evt == CreatureEvent.ChargeHitWall)
             _beetle.SetState(_beetle.DazedState);
