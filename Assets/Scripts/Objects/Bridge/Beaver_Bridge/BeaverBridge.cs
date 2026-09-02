@@ -18,20 +18,12 @@ public class BeaverBridge : MonoBehaviour
     [SerializeField] private GameObject _particleCompleted;
     [SerializeField] private AudioSource _plankSound;
     [SerializeField] private AudioSource _completedSound;
-    private Transform _pjPosition;
-
     private void Start()
     {
         if (_missionActive) ActivateMission();
 
-        _pjPosition = GameManager.Instance.Pj.transform;
-
         if(LevelOneManager.Instance != null)
             LevelOneManager.Instance.OnBeaverMission += ActivateMission;
-    }
-    private void Update()
-    {
-        if(_missionActive) FollowPlayer();
     }
     private void ActivateMission()
     {
@@ -61,17 +53,17 @@ public class BeaverBridge : MonoBehaviour
         ParticleSystem[] particleSystems = _particleCompleted.GetComponentsInChildren<ParticleSystem>();
 
         foreach (ParticleSystem ps in particleSystems)
-        {
             ps.Play();
-        }
+        
         bool anyPlaying;
+        
         do
         {
             anyPlaying = false;
 
-            foreach (ParticleSystem ps in particleSystems)
+            foreach(ParticleSystem ps in particleSystems)
             {
-                if (ps.IsAlive(true))
+                if(ps.IsAlive(true))
                 {
                     anyPlaying = true;
                     break;
@@ -81,18 +73,13 @@ public class BeaverBridge : MonoBehaviour
             yield return null;
 
         } while (anyPlaying);
+        
         _canvas.gameObject.SetActive(false);
     }
     #region Canvas
     private void SetText()
     {
         _textCount.text = $"{_currentPlanks} / {_planksQuantity}";
-    }
-    private void FollowPlayer()
-    {
-        Vector3 forward = transform.position - _pjPosition.position;
-        Vector3 newForward = new Vector3(forward.x, 0, forward.z);
-        _canvas.forward = newForward;
     }
     #endregion
     private void OnTriggerEnter(Collider other)
