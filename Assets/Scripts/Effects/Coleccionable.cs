@@ -63,7 +63,7 @@ public class Coleccionable : CollectableView
     public override void Collect()
     {
         _timerCollected = _maxTimeCollected;
-        GetComponent<AudioSource>().Play();
+        if (AudioManager.instance != null) AudioManager.instance.Play(SoundNames.PlayerSlurp);
         isMoving = false;
         isShrinking = true;
 

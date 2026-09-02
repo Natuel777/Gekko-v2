@@ -98,7 +98,7 @@ public class Breadcrumb : CollectableView
     public override void Collect()
     {
         _timerCollected = _maxTimeCollected;
-        GetComponent<AudioSource>().Play();
+        if (AudioManager.instance != null) AudioManager.instance.Play(SoundNames.PlayerSlurp);
         float current = rend.material.GetFloat("_RotationSpeed");
         rend.material.SetFloat("_RotationSpeed", current * boostedRotationSpeed);
         isStretching = true;
