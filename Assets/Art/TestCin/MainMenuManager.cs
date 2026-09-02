@@ -1,9 +1,6 @@
 using System.Collections;
 using Unity.Cinemachine;
 using UnityEngine;
-using UnityEngine.InputSystem.LowLevel;
-using UnityEngine.SceneManagement;
-using UnityEngine.UI;
 
 public class MainMenuManager : MonoBehaviour
 {
@@ -21,6 +18,10 @@ public class MainMenuManager : MonoBehaviour
 
     private MenuState currentState = MenuState.Intro;
     public float creditsDelay = 2f;
+    private void Start()
+    {
+        if (AudioManager.instance) AudioManager.instance.Play(SoundNames.Menu, true);
+    }
 
     void Update()
     {
@@ -75,8 +76,6 @@ public class MainMenuManager : MonoBehaviour
         BackCredits.SetActive(false);
         creditsText.SetActive(false);
     }
-
-    public void OnPlayPressed() { SceneManager.LoadScene("LvlParcialBlocking 2"); }
     public void OnExitPressed() { Application.Quit(); }
 }
 public enum MenuState { Intro, MainMenu, Credits }

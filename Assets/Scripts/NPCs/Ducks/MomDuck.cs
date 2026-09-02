@@ -36,7 +36,7 @@ public class MomDuck : MonoBehaviour
         }
         if (finish)
         {
-            GetComponent<AudioSource>().Play();
+            if(AudioManager.instance) AudioManager.instance.Play(SoundNames.FinishPuzzle);
             GetComponentInChildren<ParticleSystem>().Play();
         }
     }

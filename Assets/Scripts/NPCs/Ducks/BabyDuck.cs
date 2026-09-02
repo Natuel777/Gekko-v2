@@ -35,7 +35,7 @@ public class BabyDuck : MonoBehaviour
         transform.rotation = _wayp[_currentWayp - 1].rotation;
         _onPosition = true;
         _anim.SetBool("BabyDuckisWalk", false);
-        GetComponent<AudioSource>().Play();
+        if (AudioManager.instance) AudioManager.instance.Play(SoundNames.Duck);
         _mom.DuckPositioned();
     }
     
