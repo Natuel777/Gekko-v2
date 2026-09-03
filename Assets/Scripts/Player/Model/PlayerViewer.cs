@@ -9,10 +9,6 @@ public class PlayerViewer : MonoBehaviour
     [SerializeField] private ParticleSystem _trail;
     [Header("Sounds")]
     [SerializeField] private AudioSource _walkSound; 
-    [SerializeField] private AudioSource _jumpSound;
-    [SerializeField] private AudioSource _landingSound;
-    [SerializeField] private AudioSource _tongueSound;
-    [SerializeField] private AudioSource _slurpSound;
     private void Awake()
     {
         _anim = GetComponent<Animator>();
@@ -50,10 +46,22 @@ public class PlayerViewer : MonoBehaviour
     public bool IsWalkSoundPlaying() => _walkSound.isPlaying;
     public void WalkSoundPlay() => _walkSound.Play();
     public void WalkSoundStop() => _walkSound.Stop();
-    public void LandingSoundPlay() => _landingSound.Play();
-    public void JumpSoundPlay() => _jumpSound.Play();
-    public void SlurpSoundPlay() => _slurpSound.Play();
-    public void TongueSoundPlay() => _tongueSound.Play();
+    public void LandingSoundPlay()
+    {
+        if (AudioManager.instance != null) AudioManager.instance.Play(SoundNames.PlayerLanding);
+    }
+    public void JumpSoundPlay()
+    {
+        if (AudioManager.instance != null) AudioManager.instance.Play(SoundNames.PlayerJump);
+    }
+    public void SlurpSoundPlay()
+    {
+        if (AudioManager.instance != null) AudioManager.instance.Play(SoundNames.PlayerSlurp);
+    }
+    public void TongueSoundPlay()
+    {
+        if (AudioManager.instance != null) AudioManager.instance.Play(SoundNames.PlayerTongueOut);
+    }
     #endregion
 
 }

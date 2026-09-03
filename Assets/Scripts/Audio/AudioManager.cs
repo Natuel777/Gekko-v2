@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using Unity.VisualScripting;
 using UnityEngine;
+using static Unity.VisualScripting.Member;
 
 public class AudioManager : MonoBehaviour
 {
@@ -11,7 +12,6 @@ public class AudioManager : MonoBehaviour
     private List<AudioSource> _sources;
     private List<AudioSource> _pausedSources;
     private float _timePerCheck = 5;
-    private bool _paused;
 
     private void Awake()
     {
@@ -20,6 +20,7 @@ public class AudioManager : MonoBehaviour
 
         DontDestroyOnLoad(gameObject);
         _sources = new();
+        _pausedSources = new();
         StartCoroutine(CheckStatus());
     }
     private IEnumerator CheckStatus()
@@ -27,17 +28,17 @@ public class AudioManager : MonoBehaviour
         while (true)
         {
             if (_sources.Count <= 0) yield return new WaitForSeconds(_timePerCheck);
-
-            foreach (AudioSource source in _sources)
+            AudioSource[] sources = _sources.ToArray();
+            for (int i = 0; i < sources.Length; i++)
             {
-                if (_paused && _pausedSources.Contains(source)) continue;
-                if (!source.isPlaying)
+                if (_pausedSources.Count >0 && _pausedSources.Contains(sources[i])) continue;
+                if (!sources[i].isPlaying)
                 {
-                    _sources.Remove(source);
-                    Destroy(source);
+                    _sources.Remove(sources[i]);
+                    Destroy(sources[i]);
                 }
-            }
-            yield return new WaitForSeconds(_timePerCheck);
+            };
+                yield return new WaitForSeconds(_timePerCheck);
         }
     }
     private void Set(Sounds sound)
@@ -50,6 +51,17 @@ public class AudioManager : MonoBehaviour
         sound.source.volume = sound.volume;
         sound.source.pitch = sound.pitch;
         sound.source.loop = sound.loop;
+    }
+    public bool IsPlaying(SoundNames name)
+    {
+        Sounds sound = FindSound(name);
+
+        if (sound == null)
+        {
+            Debug.Log("no se encontro el sonido");
+        }
+        if(sound.source.isPlaying) return true;
+        return false;
     }
     public void Play(SoundNames name, bool loop = false)
     {
@@ -73,24 +85,45 @@ public class AudioManager : MonoBehaviour
             Debug.Log("no se encontro el sonido");
             return;
         }
-        sound.source.Pause();
+        if(sound.source != null)
+        {
+            _pausedSources.Add(sound.source);
+            sound.source.Pause();
+        }
+    }
+    public void UnPause(SoundNames name)
+    {
+        Sounds sound = FindSound(name);
+        if (sound == null)
+        {
+            Debug.Log("no se encontro el sonido");
+            return;
+        }
+        if (sound.source != null)
+        {
+            sound.source.UnPause();
+            _pausedSources.Remove(sound.source);
+        }
     }
 
     public void PauseAll(List<SoundNames> notToPauseSounds = null)
     {
         foreach (var sound in sounds)
         {
+            if (sound.source == null) continue;
             if (notToPauseSounds != null && notToPauseSounds.Contains(sound._name)) continue;
             sound.source.Pause(); 
         }
         _pausedSources = _sources;
-        _paused = true;
     }
     public void UnPauseAll()
     {
-        foreach (var sound in sounds) sound.source.UnPause();
-        _pausedSources = null;
-        _paused = false;
+        foreach (var sound in sounds)
+        {
+            if (sound.source == null) continue;
+            sound.source.UnPause();
+        }
+        _pausedSources.Clear();
         StartCoroutine(CheckStatus());
     }
     private Sounds FindSound(SoundNames name)
