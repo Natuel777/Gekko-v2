@@ -18,6 +18,8 @@ public class BeaverBridge : MonoBehaviour
     [SerializeField] private GameObject _particleCompleted;
     [SerializeField] private AudioSource _plankSound;
     [SerializeField] private AudioSource _completedSound;
+    [SerializeField] private GameObject _beaverAnimation;
+    [SerializeField] private GameObject _hammerAnimation;
     private void Start()
     {
         if (_missionActive) ActivateMission();
@@ -36,6 +38,8 @@ public class BeaverBridge : MonoBehaviour
         _currentPlanks++;
         _plankSound.Play();
         _particlePlankSetted.Play();
+        _beaverAnimation.SetActive(true);
+        _hammerAnimation.SetActive(true);
         SetText();
         if (_currentPlanks >= _planksQuantity)
         {
