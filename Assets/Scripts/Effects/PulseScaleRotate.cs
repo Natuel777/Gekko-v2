@@ -7,9 +7,11 @@ public class PulseScaleRotate : MonoBehaviour
     [SerializeField] private float _speed = 1f;
 
     [Header("Scale")]
+    [SerializeField] private bool _animateScale = true;
     [SerializeField] private float _pulseScale = 0.15f;
 
     [Header("Rotation")]
+    [SerializeField] private bool _animateRotation = true;
     [SerializeField] private float _maxAngle = 35f;
 
     private Vector3 _baseScale;
@@ -37,11 +39,16 @@ public class PulseScaleRotate : MonoBehaviour
             return;
         }
 
-        float t = Mathf.PingPong(_timer * 2f / _duration, 1f);
-        float smoothT = Mathf.SmoothStep(0f, 1f, t);
-        transform.localScale = _baseScale + Vector3.one * (smoothT * _pulseScale);
+        if (_animateScale)
+        {
+            float smoothT = OscillationMath.PulseT(_timer, _duration);
+            transform.localScale = _baseScale + Vector3.one * (smoothT * _pulseScale);
+        }
 
-        float angle = _maxAngle * Mathf.Sin(_timer * 2f * Mathf.PI / _duration);
-        transform.localEulerAngles = new Vector3(0f, 0f, angle);
+        if (_animateRotation)
+        {
+            float angle = OscillationMath.Swing(_timer, _duration, _maxAngle);
+            transform.localEulerAngles = new Vector3(0f, 0f, angle);
+        }
     }
 }
