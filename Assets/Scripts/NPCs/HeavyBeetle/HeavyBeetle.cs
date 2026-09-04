@@ -23,9 +23,8 @@ public class HeavyBeetle : MonoBehaviour, IDamageable, IParticleSystemTarget
     [SerializeField] private LayerMask _groundMask;
 
     [Header("Obstacles")]
-    [SerializeField] private LayerMask _obstacleLayers; // capas que el escarabajo esquiva y contra las que queda dazed al embestir
-    // Si la máscara quedó vacía en el Inspector, cae a "Wall" para no romper el comportamiento histórico.
-    public LayerMask ObstacleLayers => _obstacleLayers.value != 0 ? _obstacleLayers : (1 << LayerMask.NameToLayer("Wall"));
+    [Tooltip("Capas que el escarabajo esquiva y contra las que queda dazed al embestir. Si la máscara quedó vacía en el Inspector, cae a 'Wall' para no romper el comportamiento histórico.")]
+    [SerializeField] private LayerMask _obstacleLayers;
 
     private Vector3 _lastPosition;
     private const float GroundCheckEpsilon = 0.0001f;
@@ -42,6 +41,8 @@ public class HeavyBeetle : MonoBehaviour, IDamageable, IParticleSystemTarget
     private StateMachine _eventFSM;
     #endregion
 
+    public HeavyBeetleView view;
+
     #region States
     public BeetlePatrolState PatrolState { get; private set; }
     public BeetleAlertState AlertState { get; private set; }
@@ -55,13 +56,13 @@ public class HeavyBeetle : MonoBehaviour, IDamageable, IParticleSystemTarget
     public bool IsDazed { get; private set; }
     public bool IsPurified { get; private set; }
     public bool AlertedByGroup { get; private set; }
+    public LayerMask ObstacleLayers => _obstacleLayers.value != 0 ? _obstacleLayers : (1 << LayerMask.NameToLayer("Wall"));
     #endregion
 
     #region Initialization
     private void Awake()
     {
         _eventFSM = new StateMachine();
-        // _anim = GetComponentInChildren<Animator>();
 
         #region State initialization
         PatrolState = new BeetlePatrolState(this);
@@ -80,6 +81,9 @@ public class HeavyBeetle : MonoBehaviour, IDamageable, IParticleSystemTarget
         #endregion
 
         _collision = new HeavyBeetleCollision(this);
+        view = new HeavyBeetleView(transform).SetPS(_indicator, _purifiedParticle, _angryParticle)
+                                            .SetMaterials(data.purifiedMaterial)
+                                            .SetMeshRenderers(GetComponentsInChildren<SkinnedMeshRenderer>());
     }
 
     private void OnEnable()
@@ -108,29 +112,7 @@ public class HeavyBeetle : MonoBehaviour, IDamageable, IParticleSystemTarget
         _eventFSM.UpdateState();
         UpdateDetection();
         UpdateGroundCheck();
-        UpdateCanvasPosition();
-    }
-
-    //View
-    private void UpdateCanvasPosition()
-    {
-        if(_mainCamera == null)
-            _mainCamera = Camera.main;
-
-        CorrectBillboardParticle(_indicator, Vector3.up * 1.76f);
-        CorrectBillboardParticle(_purifiedParticle, new Vector3(0.031f, 0.99f, 0f));
-    }
-
-    // Fuerza posición/rotación en espacio de mundo cada frame para que el PS no herede
-    // el giro del transform padre (ej. DazedFlip dando vuelta al escarabajo).
-    private void CorrectBillboardParticle(ParticleSystem ps, Vector3 offset)
-    {
-        if(ps == null) return;
-
-        ps.transform.position = transform.position + offset;
-
-        if(_mainCamera != null)
-            ps.transform.rotation = _mainCamera.transform.rotation;
+        view.UpdateCanvasPosition();
     }
 
     private void UpdateDetection()
@@ -180,36 +162,7 @@ public class HeavyBeetle : MonoBehaviour, IDamageable, IParticleSystemTarget
         if(v == true)
         {
             SetState(PatrolState);
-            ApplyPurifiedMaterial();
-        }
-    }
-
-    //View
-    private void ApplyPurifiedMaterial()
-    {
-        if(data.purifiedMaterial == null) return;
-
-        foreach(SkinnedMeshRenderer skinnedMesh in GetComponentsInChildren<SkinnedMeshRenderer>())
-            skinnedMesh.sharedMaterial = data.purifiedMaterial;
-    }
-
-    //View
-    public void SetAngry(bool value)
-    {
-        if(_angryParticle == null) return;
-
-        if(value)
-        {
-            if(!_angryParticle.gameObject.activeSelf)
-                _angryParticle.gameObject.SetActive(true);
-            
-            _angryParticle.Play();
-        }
-        
-        else
-        {
-            _angryParticle.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
-            _angryParticle.gameObject.SetActive(false);
+            view.ApplyPurifiedMaterial();
         }
     }
 

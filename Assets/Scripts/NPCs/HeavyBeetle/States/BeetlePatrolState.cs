@@ -10,7 +10,7 @@ public class BeetlePatrolState : IState
     {
         _beetle.SetCharging(false);
         _beetle.SetDazed(false);
-        _beetle.SetAngry(false);
+        _beetle.view.SetAngry(false);
     }
 
     public void Exit(){}
