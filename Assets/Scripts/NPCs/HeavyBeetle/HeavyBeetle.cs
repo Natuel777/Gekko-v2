@@ -178,8 +178,20 @@ public class HeavyBeetle : MonoBehaviour, IDamageable, IParticleSystemTarget
         IsPurified = v;
 
         if(v == true)
+        {
             SetState(PatrolState);
-    } 
+            ApplyPurifiedMaterial();
+        }
+    }
+
+    //View
+    private void ApplyPurifiedMaterial()
+    {
+        if(data.purifiedMaterial == null) return;
+
+        foreach(SkinnedMeshRenderer skinnedMesh in GetComponentsInChildren<SkinnedMeshRenderer>())
+            skinnedMesh.sharedMaterial = data.purifiedMaterial;
+    }
 
     //View
     public void SetAngry(bool value)
