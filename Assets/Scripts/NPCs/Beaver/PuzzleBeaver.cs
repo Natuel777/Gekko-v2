@@ -53,10 +53,12 @@ public class PuzzleBeaver : MonoBehaviour, IInteractable, IDialogueable
         _playerDetection = new BugDetection(transform, _playerTransform, _detectionRange);
         _lookAtPlayer = new LookAtTarget(_rotationSpeed, transform, lockYAxis: true);
     }
+
     private void Update()
     {
-        if (_exclamation.enabled) FollowPlayer();
-        else if (_EIndicator.enabled) FollowPlayer();
+        if(_exclamation.enabled) FollowPlayer();
+        
+        else if(_EIndicator.enabled) FollowPlayer();
 
         UpdatePlayerRotation();
     }
@@ -70,6 +72,7 @@ public class PuzzleBeaver : MonoBehaviour, IInteractable, IDialogueable
             _playerInRotationRange = true;
             _lookAtPlayer.StartLooking(_playerTransform);
         }
+        
         else if(!inRange && _playerInRotationRange)
         {
             _playerInRotationRange = false;
@@ -78,6 +81,7 @@ public class PuzzleBeaver : MonoBehaviour, IInteractable, IDialogueable
 
         _lookAtPlayer.ArtificialUpdate();
     }
+
     public void StartAnim()
     {
         if (_missionAccepted) return;
@@ -93,6 +97,7 @@ public class PuzzleBeaver : MonoBehaviour, IInteractable, IDialogueable
         UIManager.Instance.StartDialogue(this);
 
     }
+
     private void BridgeFinished()
     {
         _currentDialogue++;
@@ -100,6 +105,7 @@ public class PuzzleBeaver : MonoBehaviour, IInteractable, IDialogueable
         _finish = true;
         //animacion o dialogo de terminado y dar frutilla
     }  
+
     public void OnDialogueStart()
     {
         _anim.SetBool("isTalk",true);
@@ -133,17 +139,20 @@ public class PuzzleBeaver : MonoBehaviour, IInteractable, IDialogueable
         else _anim.SetBool("isTalk", false);
 
     }
+
     private IEnumerator Count()
     {
         yield return new WaitForSeconds(1f);
         _anim.SetBool("isTalk", false);
     }
+
     private void FollowPlayer()
     {
         Vector3 forward = transform.position - _cam.position;
         Vector3 newForward = new Vector3(forward.x, 0, forward.z);
         _canvas.transform.forward = newForward;
     }
+
     public void ShowInteractUI()
     {
         _EIndicator.enabled = true;
@@ -153,10 +162,12 @@ public class PuzzleBeaver : MonoBehaviour, IInteractable, IDialogueable
     {
         _EIndicator.enabled = false;
     }
+
     private void OnDisable()
     {
         LevelOneManager.Instance.OnBridgeConstructed -= BridgeFinished;
     }
+
     private void OnDrawGizmosSelected()
     {
         Gizmos.color = Color.cyan;

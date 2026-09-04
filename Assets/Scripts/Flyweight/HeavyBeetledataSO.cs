@@ -27,4 +27,7 @@ public class HeavyBeetledataSO : ScriptableObject
     public float wanderSpeed = 1.5f;
     public float changeDirTime = 3f;
     public float rotationSpeed = 5f;
+
+    [Header("Purified")]
+    public Material purifiedMaterial;
 }
