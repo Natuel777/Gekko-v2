@@ -1,7 +1,7 @@
 using UnityEngine.Audio;
 using UnityEngine;
 
-public class VolumeManager : MonoBehaviour//, ISaveLoad
+public class VolumeManager : MonoBehaviour, ISaveLoad
 {
     public static VolumeManager Instance;
     [SerializeField] AudioMixer audioMixer;
@@ -12,8 +12,11 @@ public class VolumeManager : MonoBehaviour//, ISaveLoad
     {
         Instance = this;
 
-       // SaveWithJson.Instance.OnLoad += LoadGame;
-       // SaveWithJson.Instance.OnSave += SaveGame;
+        if(SaveManager.Instance != null)
+        {
+            SaveManager.Instance.OnLoad += LoadGame;
+            SaveManager.Instance.OnSave += SaveGame;
+        }
     }
     public void SetMasterVolume(float value)
     {
@@ -36,25 +39,25 @@ public class VolumeManager : MonoBehaviour//, ISaveLoad
         sfxValue = value;
     }
 
-   // public void LoadGame()
-   // {
-   //     masterValue = PlayerPrefs.GetFloat(PlayerPrefsKeys.masterValueKey, masterValue);
-   //     musicValue = PlayerPrefs.GetFloat(PlayerPrefsKeys.musicValueKey, musicValue);
-   //     sfxValue = PlayerPrefs.GetFloat(PlayerPrefsKeys.sfxValueKey, sfxValue);
-   //     LoadVolume();
-   // }
-   //
-   // public void SaveGame()
-   // {
-   //     PlayerPrefs.SetFloat(PlayerPrefsKeys.masterValueKey, masterValue);
-   //     PlayerPrefs.SetFloat(PlayerPrefsKeys.musicValueKey, musicValue);
-   //     PlayerPrefs.SetFloat(PlayerPrefsKeys.sfxValueKey, sfxValue);
-   // }
-   // void LoadVolume()
-   // {
-   //     audioMixer.SetFloat("MasterVolume", Mathf.Log10(PlayerPrefs.GetFloat(PlayerPrefsKeys.masterValueKey, masterValue)) * 20);
-   //     audioMixer.SetFloat("MusicVolume", Mathf.Log10(PlayerPrefs.GetFloat(PlayerPrefsKeys.musicValueKey, musicValue)) * 20);
-   //     audioMixer.SetFloat("SFXVolume", Mathf.Log10(PlayerPrefs.GetFloat(PlayerPrefsKeys.sfxValueKey, sfxValue)) * 20);
-   // }
+    public void LoadGame()
+    {
+        masterValue = PlayerPrefs.GetFloat(PlayerPrefsKeys.masterValueKey, masterValue);
+        musicValue = PlayerPrefs.GetFloat(PlayerPrefsKeys.musicValueKey, musicValue);
+        sfxValue = PlayerPrefs.GetFloat(PlayerPrefsKeys.sfxValueKey, sfxValue);
+        LoadVolume();
+    }
+   
+    public void SaveGame()
+    {
+        PlayerPrefs.SetFloat(PlayerPrefsKeys.masterValueKey, masterValue);
+        PlayerPrefs.SetFloat(PlayerPrefsKeys.musicValueKey, musicValue);
+        PlayerPrefs.SetFloat(PlayerPrefsKeys.sfxValueKey, sfxValue);
+    }
+    void LoadVolume()
+    {
+        audioMixer.SetFloat("MasterVolume", Mathf.Log10(PlayerPrefs.GetFloat(PlayerPrefsKeys.masterValueKey, masterValue)) * 20);
+        audioMixer.SetFloat("MusicVolume", Mathf.Log10(PlayerPrefs.GetFloat(PlayerPrefsKeys.musicValueKey, musicValue)) * 20);
+        audioMixer.SetFloat("SFXVolume", Mathf.Log10(PlayerPrefs.GetFloat(PlayerPrefsKeys.sfxValueKey, sfxValue)) * 20);
+    }
 
 }
