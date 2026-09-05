@@ -163,6 +163,8 @@ public class Player : MonoBehaviour
         _pjController.Talking = false;
         _pjInputs.ReactivatePlayerInputs();
     }
+
+    #if UNITY_EDITOR
     private void OnDrawGizmosSelected()
     {
         Vector3 origin = transform.position + Vector3.up * _interactOriginY;
@@ -170,20 +172,25 @@ public class Player : MonoBehaviour
         Gizmos.DrawRay(origin, transform.forward * _interactReach);
         Gizmos.DrawWireSphere(origin + transform.forward * _interactReach, 0.15f);
     }
+    #endif
+
     private void OnTriggerEnter(Collider other)
     {
         _collision.ArtificialOnTriggerEnter(other);
     }
+    
     private void OnTriggerExit(Collider other)
     {
         _collision.ArtificialOnTriggerExit(other);
     }
+    
     private void OnTriggerStay(Collider other) {_collision.ArtificialOnTriggerStay(other);}
 
     public void ChangeAim()
     {
         _aimM.SwitchTarget(new Vector2(0,1));
     }
+    
     public void ChangeVariables()
     {
         _pjController.ChangeValues(speed, jumpForce, _rotationSpeed, fallMultiplier, lowJumpMultiplier);
