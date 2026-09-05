@@ -25,7 +25,7 @@ public class Bug : MonoBehaviour , IDamageable
 
     public BugDataSO bugData;
     public Transform PlayerTransform;
-    
+
     [Header("Flying Bug Settings")]
     [SerializeField] private bool _isFlyingBug = false;
     [SerializeField] private BugBullet _bulletPrefab;
@@ -33,6 +33,11 @@ public class Bug : MonoBehaviour , IDamageable
     private bool _absorbed = false;
     public bool Absorbed { set { _absorbed = value; } }
     private bool _playerInRange = false;
+
+    [Header("Ground Check")]
+    [SerializeField] private Transform _detectGroundPosition;
+    [SerializeField] private LayerMask _groundMask;
+    private GroundCheck _groundCheck;
 
     #region Getters
     public bool IsAttacking => _isAttacking;
@@ -63,6 +68,7 @@ public class Bug : MonoBehaviour , IDamageable
         #endregion
 
         _collision = new BugCollision(this);
+        _groundCheck = new GroundCheck(transform, _detectGroundPosition, bugData.groundCheckDistance, _groundMask);
     }
 
     private void OnEnable() 
@@ -88,6 +94,7 @@ public class Bug : MonoBehaviour , IDamageable
     {
         _eventFSM.UpdateState();
         UpdateDetection();
+        UpdateGroundCheck();
     }
 
     private void UpdateDetection()
@@ -132,6 +139,18 @@ public class Bug : MonoBehaviour , IDamageable
 
     public void Damage(float dmg) {Destroy(gameObject);}
 
+    // Cada frame que el bug se movió, chequea que haya piso adelante (vía GroundCheck).
+    // Si no hay, redirige el movimiento activo (flee o wander) para no caminar en el aire.
+    private void UpdateGroundCheck()
+    {
+        if(_groundCheck.TryGetSafeDirection(out Vector3 safeDir))
+        {
+            if(fleeMovement.IsActive) fleeMovement.Redirect(safeDir);
+
+            else wanderMovement.Redirect(safeDir);
+        }
+    }
+
     #if UNITY_EDITOR
     private void OnDrawGizmos() 
     {
@@ -140,6 +159,9 @@ public class Bug : MonoBehaviour , IDamageable
 
         Gizmos.color = Color.yellow;
         Gizmos.DrawWireSphere(transform.position, bugData.defenseThreshold);
+
+        Gizmos.color = Color.red;
+        Gizmos.DrawRay(_detectGroundPosition.position, Vector3.down * bugData.groundCheckDistance);
     }
     #endif
 }

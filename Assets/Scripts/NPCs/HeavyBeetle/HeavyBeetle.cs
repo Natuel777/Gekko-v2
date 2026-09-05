@@ -26,8 +26,7 @@ public class HeavyBeetle : MonoBehaviour, IDamageable, IParticleSystemTarget
     [Tooltip("Capas que el escarabajo esquiva y contra las que queda dazed al embestir. Si la máscara quedó vacía en el Inspector, cae a 'Wall' para no romper el comportamiento histórico.")]
     [SerializeField] private LayerMask _obstacleLayers;
 
-    private Vector3 _lastPosition;
-    private const float GroundCheckEpsilon = 0.0001f;
+    private GroundCheck _groundCheck;
 
     private Camera _mainCamera;
 
@@ -84,6 +83,7 @@ public class HeavyBeetle : MonoBehaviour, IDamageable, IParticleSystemTarget
         view = new HeavyBeetleView(transform).SetPS(_indicator, _purifiedParticle, _angryParticle)
                                             .SetMaterials(data.purifiedMaterial)
                                             .SetMeshRenderers(GetComponentsInChildren<SkinnedMeshRenderer>());
+        _groundCheck = new GroundCheck(transform, _detectGroundPosition, data.groundCheckDistance, _groundMask);
     }
 
     private void OnEnable()
@@ -102,7 +102,6 @@ public class HeavyBeetle : MonoBehaviour, IDamageable, IParticleSystemTarget
         detection = new BugDetection(transform, playerTransform, data.detectionRange);
         SetPurified(false);
         SetState(PatrolState);
-        _lastPosition = transform.position;
     }
     #endregion
 
@@ -167,57 +166,18 @@ public class HeavyBeetle : MonoBehaviour, IDamageable, IParticleSystemTarget
     }
 
     //Model
-    // Cada frame que el escarabajo se movió, chequea que haya piso adelante (en
-    // _detectGroundPosition). Si no hay, redirige la estrategia activa para no caer.
+    // Cada frame que el escarabajo se movió, chequea que haya piso adelante (vía
+    // GroundCheck). Si no hay, redirige la estrategia activa para no caminar en el aire.
     private void UpdateGroundCheck()
     {
-        if(_detectGroundPosition == null) return;
-
-        // Solo chequear si la posición cambió desde el frame anterior.
-        Vector3 pos = transform.position;
-        
-        if((pos - _lastPosition).sqrMagnitude <= GroundCheckEpsilon * GroundCheckEpsilon)
-            return;
-        
-        _lastPosition = pos;
-
-        // ¿Hay piso debajo del sensor?
-        if(Physics.Raycast(_detectGroundPosition.position, Vector3.down,
-                data.groundCheckDistance, _groundMask, QueryTriggerInteraction.Ignore))
-            return;
-
-        Vector3 safeDir = FindGroundedDirection();
-        
-        if(IsCharging) chargeMovement.Redirect(safeDir);
-        
-        else wanderMovement.Redirect(safeDir);
-    }
-
-    //Model
-    private Vector3 FindGroundedDirection()
-    {
-        Vector3 fwd = transform.forward; fwd.y = 0f;
-        
-        if(fwd.sqrMagnitude < 0.001f) fwd = Vector3.forward;
-        
-        fwd.Normalize();
-        float ahead = 0.75f;
-        float up = Mathf.Max(0.1f, _detectGroundPosition.position.y - transform.position.y + 0.3f);
-        float[] yaws = { 90f, -90f, 135f, -135f, 180f };
-        
-        foreach(float yaw in yaws)
+        if(_groundCheck.TryGetSafeDirection(out Vector3 safeDir))
         {
-            Vector3 d = Quaternion.Euler(0f, yaw, 0f) * fwd;
-            Vector3 origin = transform.position + d * ahead + Vector3.up * up;
-            
-            if(Physics.Raycast(origin, Vector3.down, data.groundCheckDistance + up,
-                    _groundMask, QueryTriggerInteraction.Ignore))
-                return d;
+            if(IsCharging) chargeMovement.Redirect(safeDir);
+
+            else wanderMovement.Redirect(safeDir);
         }
-        
-        return -fwd;
     }
-    
+
     public void ReceiveGroupAlert(Transform player)
     {
         Debug.Log($"[{this}] received group alert.");
@@ -242,6 +202,9 @@ public class HeavyBeetle : MonoBehaviour, IDamageable, IParticleSystemTarget
     {
         Gizmos.color = Color.yellow;
         Gizmos.DrawWireSphere(transform.position, data.detectionRange);
+
+        Gizmos.color = Color.red;
+        Gizmos.DrawRay(_detectGroundPosition.position, Vector3.down * data.groundCheckDistance);
     }
     #endif
 }

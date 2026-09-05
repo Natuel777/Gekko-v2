@@ -3,17 +3,13 @@ using UnityEngine;
 public class AlertState : IState
 {
     private Bug _bug;
-    private float _lastStateChangeTime;
- 
+
     public AlertState(Bug bug) {_bug = bug;}
- 
+
     public void Enter()
     {
-        if(Time.time - _lastStateChangeTime < 0.2f)
-            return;
- 
         var reaction = PickReaction();
- 
+
         switch(reaction)
         {
             case ReactionType.Flee :
@@ -29,8 +25,6 @@ public class AlertState : IState
                 _bug.SetState(_bug.ObserveState);
                 break;
         }
-        
-        _lastStateChangeTime = Time.time;
     }
  
     public void Exit(){}
