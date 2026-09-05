@@ -1,9 +1,10 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-public class Coleccionable : CollectableView
+public class StrawBerryView : CollectableView
 {
-    public float amplitude = 0.5f;
+    private Transform _transform;
+    public float amplitude = 1f;
     public float speed = 2f;
     public float shrinkSpeed = 3f;
 
@@ -15,34 +16,37 @@ public class Coleccionable : CollectableView
     public GameObject mainStar;
     public GameObject starParticles;
 
-    private void Awake()
+    public StrawBerryView(Transform transform, StrawBerry sb) 
     {
+        _transform = transform;
+        _collectible = sb;
         startY = transform.position.y;
         isMoving = true;
         isShrinking = false;
+        _maxTimeCollected = 2;
     }
 
-    void Update()
+    public void VirtualUpdate()
     {
         if(isMoving)
         {
             float offset = Mathf.Sin(Time.time * speed) * amplitude;
 
-            Vector3 pos = transform.position;
+            Vector3 pos = _transform.position;
             pos.y = startY + offset;
-            transform.position = pos;
+            _transform.position = pos;
         }
 
         if (isShrinking)
         {
-            transform.localScale = Vector3.Lerp(
-                transform.localScale,
+            _transform.localScale = Vector3.Lerp(
+                _transform.localScale,
                 Vector3.zero,
                 Time.deltaTime * shrinkSpeed
             );
-            if (transform.localScale.magnitude < 0.1f)
+            if (_transform.localScale.magnitude < 0.1f)
             {
-                Destroy(gameObject);
+                //Destroy(gameObject);
             }
         }
 
@@ -55,22 +59,13 @@ public class Coleccionable : CollectableView
         }
     }
 
-    public void Collected()
-    {
-        
-    }
-
     public override void Collect()
     {
         _timerCollected = _maxTimeCollected;
         if (AudioManager.instance != null) AudioManager.instance.Play(SoundNames.PlayerSlurp);
         isMoving = false;
         isShrinking = true;
-
-        GameObject mainStar_ps = Instantiate(mainStar, transform.position, Quaternion.identity);
-        GameObject starParticles_ps = Instantiate(starParticles, transform.position, Quaternion.identity);
-
-        Destroy(mainStar_ps, 2f);
-        Destroy(starParticles_ps, 2f);
+        StrawBerry a = _collectible as StrawBerry;
+        a.Particles();
     }
 }
