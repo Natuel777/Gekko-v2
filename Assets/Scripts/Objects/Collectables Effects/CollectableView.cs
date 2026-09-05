@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public abstract class CollectableView: MonoBehaviour
+public abstract class CollectableView
 {
     protected float _timerCollected = 0;
     [SerializeField] protected float _maxTimeCollected;

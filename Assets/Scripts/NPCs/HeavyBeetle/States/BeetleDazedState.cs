@@ -16,7 +16,7 @@ public class BeetleDazedState : IState
     public void Enter()
     {
         _beetle.SetDazed(true);
-        _beetle.SetAngry(false);
+        _beetle.view.SetAngry(false);
         // _beetle.SetTurnedInsideOut(true);   // reemplazado por el flip por código
         _beetle.dazedFlip.StartFlip();
         _dazeTimer = _beetle.data.dazeDuration;

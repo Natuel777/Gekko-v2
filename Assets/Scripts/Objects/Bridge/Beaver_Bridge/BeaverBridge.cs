@@ -1,6 +1,7 @@
 using UnityEngine;
 using TMPro;
 using System.Collections;
+using Unity.Cinemachine;
 
 public class BeaverBridge : MonoBehaviour
 {
@@ -18,6 +19,9 @@ public class BeaverBridge : MonoBehaviour
     [SerializeField] private GameObject _particleCompleted;
     [SerializeField] private AudioSource _plankSound;
     [SerializeField] private AudioSource _completedSound;
+    [SerializeField] private GameObject _beaverAnimation;
+    [SerializeField] private GameObject _hammerAnimation;
+    [SerializeField] private CinemachineCamera _camFinish;
     private void Start()
     {
         if (_missionActive) ActivateMission();
@@ -36,6 +40,8 @@ public class BeaverBridge : MonoBehaviour
         _currentPlanks++;
         _plankSound.Play();
         _particlePlankSetted.Play();
+        _beaverAnimation.SetActive(true);
+        _hammerAnimation.SetActive(true);
         SetText();
         if (_currentPlanks >= _planksQuantity)
         {
@@ -47,6 +53,8 @@ public class BeaverBridge : MonoBehaviour
     }
     private IEnumerator Completed()
     {
+        _camFinish.Priority = 30;
+        GameManager.Instance.Pj.Inputs(false);
         _completedSound.Play();
         _particleCompleted.SetActive(true);
 
@@ -75,6 +83,8 @@ public class BeaverBridge : MonoBehaviour
         } while (anyPlaying);
         
         _canvas.gameObject.SetActive(false);
+        GameManager.Instance.Pj.Inputs(true);
+        _camFinish.Priority = 0;
     }
     #region Canvas
     private void SetText()

@@ -6,6 +6,7 @@ public class BugDataSO : ScriptableObject
     [Header("Config")]
     public float attackDamage = 10f;
     public float detectionRange = 5f;
+    public float groundCheckDistance = 3f; // largo del ray hacia abajo para detectar borde
 
     [Header("Flee")]
     public float fleeSpeed;
