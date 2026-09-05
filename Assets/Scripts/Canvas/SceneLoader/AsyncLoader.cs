@@ -38,6 +38,7 @@ public class AsyncLoader : MonoBehaviour
     {
         yield return null;
         ChargeAsyncScene(_sceneName);
+        if(AudioManager.instance != null) AudioManager.instance.ResetAudio();
     }
     private void ChargeAsyncScene(string sceneName)
     {

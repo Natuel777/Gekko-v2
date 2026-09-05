@@ -1,5 +1,6 @@
 using System.Collections;
 using Unity.Cinemachine;
+using UnityEditor;
 using UnityEngine;
 
 public class MainMenuManager : MonoBehaviour
@@ -76,6 +77,14 @@ public class MainMenuManager : MonoBehaviour
         BackCredits.SetActive(false);
         creditsText.SetActive(false);
     }
-    public void OnExitPressed() { Application.Quit(); }
+    public void OnExitPressed()
+    {
+        SaveManager.Instance.SaveGame();
+#if UNITY_EDITOR
+        EditorApplication.ExitPlaymode();
+#else
+        Application.Quit();
+#endif
+    }
 }
 public enum MenuState { Intro, MainMenu, Credits }

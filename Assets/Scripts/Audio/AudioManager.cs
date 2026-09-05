@@ -1,8 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
-using Unity.VisualScripting;
 using UnityEngine;
-using static Unity.VisualScripting.Member;
 
 public class AudioManager : MonoBehaviour
 {
@@ -125,6 +123,14 @@ public class AudioManager : MonoBehaviour
         }
         _pausedSources.Clear();
         StartCoroutine(CheckStatus());
+    }
+    public void ResetAudio()
+    {
+        foreach (var source in _sources)
+        {
+            if(source.isPlaying)
+            source.Stop();
+        }
     }
     private Sounds FindSound(SoundNames name)
     {
