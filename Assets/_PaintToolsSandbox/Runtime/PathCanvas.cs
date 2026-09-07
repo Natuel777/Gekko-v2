@@ -39,6 +39,13 @@ namespace Gekko.PaintTools
 
         private MaterialPropertyBlock _propertyBlock;
 
+        // Estado de lo ultimo que se empujo, para no reescribir el MPB cada frame.
+        private bool _hasAppliedOnce;
+        private int _appliedMaskId;
+        private int _appliedTargetCount;
+        private Vector2 _appliedSize;
+        private Vector3 _appliedPosition;
+
         public Texture2D Mask => _mask;
         public Vector2 Size => _size;
         public PathBrushSet BrushSet => _brushSet;
@@ -53,16 +60,20 @@ namespace Gekko.PaintTools
             }
         }
 
-        /// <summary>Texels por unidad del mundo. Es la resolucion efectiva del pincel.</summary>
-        public float TexelsPerUnit
+        /// <summary>
+        /// Texels por unidad del mundo en cada eje. Si la zona no es cuadrada, los dos
+        /// valores difieren: la textura siempre es cuadrada, asi que el eje mas largo
+        /// tiene menos resolucion.
+        /// </summary>
+        public Vector2 TexelsPerUnit
         {
             get
             {
-                if (_mask == null || _size.x <= 0f)
+                if (_mask == null || _size.x <= 0f || _size.y <= 0f)
                 {
-                    return 0f;
+                    return Vector2.zero;
                 }
-                return _mask.width / _size.x;
+                return new Vector2(_mask.width / _size.x, _mask.height / _size.y);
             }
         }
 
@@ -86,12 +97,63 @@ namespace Gekko.PaintTools
 
         private void Update()
         {
-            // El transform se puede mover en el editor sin que dispare OnValidate, y la
-            // mascara tiene que seguir la zona. Es una escritura barata por frame.
-            if (!Application.isPlaying)
+            // El MPB se queda viejo con demasiada facilidad: mover el transform no
+            // dispara OnValidate, y editar los campos por SerializedObject (que es lo que
+            // hacen el Undo y las herramientas) tampoco. Si eso pasa, el shader sigue
+            // usando la zona anterior y el camino aparece corrido o directamente no
+            // aparece. Se re-empuja cuando algo cambio, en editor y en runtime.
+            if (HasChangedSinceLastApply())
             {
                 Apply();
             }
+        }
+
+        private bool HasChangedSinceLastApply()
+        {
+            int maskId = _mask != null ? _mask.GetInstanceID() : 0;
+            int targetCount = _targetRenderers != null ? _targetRenderers.Length : 0;
+
+            if (!_hasAppliedOnce
+                || maskId != _appliedMaskId
+                || targetCount != _appliedTargetCount
+                || _appliedSize != _size
+                || _appliedPosition != transform.position)
+            {
+                return true;
+            }
+
+            return HasDanglingMask();
+        }
+
+        /// <summary>
+        /// Detecta el caso que ningun contador de cambios ve: la mascara se reimporto,
+        /// el Texture2D viejo se destruyo, y adentro del MaterialPropertyBlock quedo una
+        /// referencia muerta. El bloque sigue diciendo que tiene la propiedad, pero la
+        /// textura es null, asi que el shader cae al valor del material y el camino
+        /// desaparece de golpe SIN ningun error en consola.
+        ///
+        /// Se revisa un solo renderer por frame: alcanza, porque Apply() los escribe a
+        /// todos juntos, y GetPropertyBlock sobre un bloque cacheado no aloca.
+        /// </summary>
+        private bool HasDanglingMask()
+        {
+            if (_mask == null || _propertyBlock == null || _targetRenderers == null)
+            {
+                return false;
+            }
+
+            foreach (Renderer target in _targetRenderers)
+            {
+                if (target == null)
+                {
+                    continue;
+                }
+
+                target.GetPropertyBlock(_propertyBlock);
+                return _propertyBlock.GetTexture(MaskId) == null;
+            }
+
+            return false;
         }
 
         /// <summary>
@@ -109,6 +171,12 @@ namespace Gekko.PaintTools
             }
 
             _propertyBlock ??= new MaterialPropertyBlock();
+
+            _hasAppliedOnce = true;
+            _appliedMaskId = _mask.GetInstanceID();
+            _appliedTargetCount = _targetRenderers.Length;
+            _appliedSize = _size;
+            _appliedPosition = transform.position;
 
             Vector2 min = WorldMin;
 
@@ -144,10 +212,16 @@ namespace Gekko.PaintTools
             return u >= 0f && u <= 1f && v >= 0f && v <= 1f;
         }
 
-        /// <summary>Cuantos pixeles de la mascara ocupa un radio dado del mundo.</summary>
-        public float WorldRadiusToPixels(float worldRadius)
+        /// <summary>
+        /// Cuantos pixeles de la mascara ocupa un radio dado del mundo, por eje.
+        ///
+        /// Devuelve dos valores y no uno porque la textura es cuadrada pero la zona no
+        /// tiene por que serlo: con una zona de 120x60, un pincel circular en el mundo
+        /// es una ELIPSE en pixeles. Usar un solo radio deforma el pincel.
+        /// </summary>
+        public Vector2 WorldRadiusToPixels(float worldRadius)
         {
-            return _mask == null ? 0f : worldRadius * (_mask.width / _size.x);
+            return _mask == null ? Vector2.zero : worldRadius * TexelsPerUnit;
         }
 
         private void OnDrawGizmosSelected()

@@ -88,14 +88,26 @@ namespace Gekko.PaintTools.EditorTools
 
         private void DrawSummary(PathCanvas canvas)
         {
-            float texelsPerUnit = canvas.TexelsPerUnit;
+            Vector2 texelsPerUnit = canvas.TexelsPerUnit;
+            float worst = Mathf.Min(texelsPerUnit.x, texelsPerUnit.y);
 
             EditorGUILayout.HelpBox(
                 $"Mascara {canvas.Mask.width} x {canvas.Mask.height} sobre {canvas.Size.x:0} x {canvas.Size.y:0} unidades\n" +
-                $"{texelsPerUnit:0.00} texels por unidad",
+                $"{texelsPerUnit.x:0.00} texels por unidad en X, {texelsPerUnit.y:0.00} en Z",
                 MessageType.Info);
 
-            if (texelsPerUnit < 4f)
+            // La textura es cuadrada: si la zona no lo es, un eje pierde resolucion.
+            float aspect = Mathf.Max(canvas.Size.x, canvas.Size.y)
+                           / Mathf.Max(0.01f, Mathf.Min(canvas.Size.x, canvas.Size.y));
+            if (aspect > 1.5f)
+            {
+                EditorGUILayout.HelpBox(
+                    "La zona no es cuadrada, así que un eje tiene bastante menos resolución que el otro. " +
+                    "El pincel sigue siendo circular en el mundo, pero si la diferencia molesta, usá varias zonas cuadradas.",
+                    MessageType.None);
+            }
+
+            if (worst < 4f)
             {
                 EditorGUILayout.HelpBox(
                     "Menos de 4 texels por unidad: el borde del camino va a depender casi por completo " +
@@ -114,8 +126,9 @@ namespace Gekko.PaintTools.EditorTools
                 new[] { "256", "512", "1024", "2048", "4096" },
                 new[] { 256, 512, 1024, 2048, 4096 });
 
-            float texels = _newMaskResolution / Mathf.Max(canvas.Size.x, 0.01f);
-            EditorGUILayout.LabelField(" ", $"{texels:0.00} texels por unidad");
+            // Se muestra el peor eje: es el que manda para el detalle del borde.
+            float texels = _newMaskResolution / Mathf.Max(canvas.Size.x, canvas.Size.y, 0.01f);
+            EditorGUILayout.LabelField(" ", $"{texels:0.00} texels por unidad (eje más largo)");
 
             if (GUILayout.Button("Crear máscara", GUILayout.Height(28f)))
             {
@@ -299,6 +312,11 @@ namespace Gekko.PaintTools.EditorTools
                     {
                         EditorUtility.SetDirty(_cachedMask);
                     }
+                    // Se reempuja al terminar el trazo: si el asset de la mascara se
+                    // reimporto (cualquier Reimport, o un refresh forzado), la referencia
+                    // que quedo dentro del MaterialPropertyBlock apunta a una textura
+                    // destruida y el camino desaparece de golpe sin ningun error.
+                    canvas.Apply();
                     Repaint();
                     break;
             }
@@ -309,18 +327,21 @@ namespace Gekko.PaintTools.EditorTools
             EnsurePixels(canvas);
 
             Texture2D mask = canvas.Mask;
-            float radiusPx = canvas.WorldRadiusToPixels(Brush.Radius);
-            if (radiusPx < 0.5f)
+
+            // Dos radios: en una zona no cuadrada, un circulo del mundo es una elipse en
+            // pixeles. Con un solo radio el pincel sale deformado.
+            Vector2 radiusPx = canvas.WorldRadiusToPixels(Brush.Radius);
+            if (radiusPx.x < 0.5f || radiusPx.y < 0.5f)
             {
                 return;
             }
 
             canvas.TryWorldToPixel(worldPoint, out Vector2 center);
 
-            int minX = Mathf.Max(0, Mathf.FloorToInt(center.x - radiusPx));
-            int maxX = Mathf.Min(mask.width - 1, Mathf.CeilToInt(center.x + radiusPx));
-            int minY = Mathf.Max(0, Mathf.FloorToInt(center.y - radiusPx));
-            int maxY = Mathf.Min(mask.height - 1, Mathf.CeilToInt(center.y + radiusPx));
+            int minX = Mathf.Max(0, Mathf.FloorToInt(center.x - radiusPx.x));
+            int maxX = Mathf.Min(mask.width - 1, Mathf.CeilToInt(center.x + radiusPx.x));
+            int minY = Mathf.Max(0, Mathf.FloorToInt(center.y - radiusPx.y));
+            int maxY = Mathf.Min(mask.height - 1, Mathf.CeilToInt(center.y + radiusPx.y));
 
             if (minX > maxX || minY > maxY)
             {
@@ -340,7 +361,7 @@ namespace Gekko.PaintTools.EditorTools
         }
 
         private void StampRegion(
-            PathCanvas canvas, Vector2 center, float radiusPx,
+            PathCanvas canvas, Vector2 center, Vector2 radiusPx,
             int minX, int minY, int maxX, int maxY, bool erase)
         {
             LoadBrush(canvas);
@@ -361,8 +382,10 @@ namespace Gekko.PaintTools.EditorTools
             {
                 for (int x = minX; x <= maxX; x++)
                 {
-                    float dx = (x + 0.5f - center.x) / radiusPx;
-                    float dy = (y + 0.5f - center.y) / radiusPx;
+                    // Se normaliza por eje: en pixeles el pincel es una elipse, pero en
+                    // el mundo vuelve a ser el circulo que dibuja el cursor.
+                    float dx = (x + 0.5f - center.x) / radiusPx.x;
+                    float dy = (y + 0.5f - center.y) / radiusPx.y;
 
                     float rx = dx * cos - dy * sin;
                     float ry = dx * sin + dy * cos;

@@ -28,6 +28,18 @@ public class GeckoAnimation : MonoBehaviour
     [Tooltip("Suavizado de la velocidad medida. Más alto = más suave pero con más retraso.")]
     [SerializeField] private float _velocitySmoothing = 0.1f;
 
+    [Header("Cadencia del paso")]
+    [Tooltip("Desacopla el ritmo de las patas de la velocidad real del cuerpo. " +
+             "1 = pisan al ritmo que corresponde a lo que se mueve. " +
+             "0.8 = pisan como si fuera al 80%: mas lento y con zancadas mas largas, " +
+             "aunque el personaje se mueva rapido. 1.5 = pasitos cortos y rapidos.")]
+    [Range(0.2f, 3f)]
+    [SerializeField] private float _gaitSpeedScale = 1f;
+
+    [Tooltip("Al bajar la cadencia, alargar la zancada para que el pie no patine. " +
+             "Apagalo solo si queres el deslizamiento a proposito.")]
+    [SerializeField] private bool _compensateStride = true;
+
     private GeckoLeg[] _diagonalA;   // FL + BR
     private GeckoLeg[] _diagonalB;   // FR + BL
 
@@ -35,6 +47,17 @@ public class GeckoAnimation : MonoBehaviour
     private Vector3 _velocity;
     private Vector3 _velocitySmoothVel;
     #endregion
+
+    /// <summary>
+    /// Ritmo de las patas respecto de la velocidad real. Se puede cambiar en vivo desde
+    /// gameplay (por ejemplo, cadencia calmada al caminar y agitada al huir) sin tocar
+    /// para nada la velocidad a la que se desplaza el personaje.
+    /// </summary>
+    public float GaitSpeedScale
+    {
+        get => _gaitSpeedScale;
+        set => _gaitSpeedScale = Mathf.Clamp(value, 0.2f, 3f);
+    }
 
     private void Awake()
     {
@@ -54,6 +77,9 @@ public class GeckoAnimation : MonoBehaviour
         _velocity = Vector3.SmoothDamp(_velocity, rawVelocity, ref _velocitySmoothVel, _velocitySmoothing);
 
         // 2. Cada pata recalcula su punto ideal y avanza el paso en curso.
+        //    La cadencia se empuja cada frame para poder cambiarla en vivo.
+        PushGait(_frontLeft); PushGait(_frontRight); PushGait(_backLeft); PushGait(_backRight);
+
         _frontLeft.ArtificialUpdate(_velocity);
         _frontRight.ArtificialUpdate(_velocity);
         _backLeft.ArtificialUpdate(_velocity);
@@ -73,6 +99,13 @@ public class GeckoAnimation : MonoBehaviour
             if (aUrgency > 0f || bUrgency > 0f)
                 StepPair(aUrgency >= bUrgency ? _diagonalA : _diagonalB);
         }
+    }
+
+    private void PushGait(GeckoLeg leg)
+    {
+        if (leg == null) return;
+        leg.GaitSpeedScale = _gaitSpeedScale;
+        leg.CompensateStride = _compensateStride;
     }
 
     private static float PairUrgency(GeckoLeg[] pair)

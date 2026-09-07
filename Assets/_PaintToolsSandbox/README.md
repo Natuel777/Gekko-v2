@@ -174,9 +174,29 @@ rango. `Alinear a la superficie` va de vertical (0) a perpendicular al piso (1).
 
 ---
 
-## Pendiente / a decidir
+## Estado de las pruebas
 
-- **Nada de esto se compiló todavía.** Hay que abrir Unity y mirar la consola.
+La herramienta de caminos se probó de punta a punta en `PruebasCaminos.unity` (escena de
+prueba en esta carpeta), invocando el código real del editor:
+
+- Máscara creada, pintado, borrado con shift, tinte de color y desenfoque: **funcionan**.
+- **Independencia de vértices verificada**: el mismo camino cruza un Plane de 121 vértices
+  y un Quad de **4 vértices** con resultado idéntico.
+- Capturas en `Assets/Screenshots/camino_prueba_*.png`.
+
+Dos bugs encontrados y corregidos durante esa prueba:
+
+1. **Pincel elíptico en zonas no cuadradas.** El radio en píxeles se calculaba con un
+   solo eje, así que en una zona de 120×60 el círculo salía aplastado. Ahora se normaliza
+   por eje: 34×67 píxeles en la máscara, pero 3.98×3.93 unidades en el mundo.
+2. **La máscara desaparecía tras un reimport.** Al reimportarse el asset, la referencia
+   guardada dentro del `MaterialPropertyBlock` quedaba apuntando a una textura destruida
+   y el camino se iba sin ningún error en consola. Ahora `PathCanvas` detecta el cambio y
+   reempuja, y el pincel además reempuja al terminar cada trazo.
+
+El dispersor de props todavía **no se probó**.
+
+## Pendiente / a decidir
 - El shader de camino muestrea las dos capas por XZ del mundo (planar). En paredes se
   estira. Para paredes haría falta triplanar, que es un cambio chico si lo necesitás.
 - `PathCanvas` usa `MaterialPropertyBlock`, así que esos renderers salen del SRP Batcher.
