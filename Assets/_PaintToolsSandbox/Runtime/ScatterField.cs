@@ -56,6 +56,11 @@ namespace Gekko.PaintTools
         private readonly List<Chunk> _chunks = new List<Chunk>();
         private readonly Plane[] _frustumPlanes = new Plane[6];
 
+        // Materiales de prototipos sin GPU Instancing: no se pueden dibujar con
+        // DrawMeshInstanced, se saltean en Rebuild y el inspector los lista.
+        private readonly HashSet<string> _missingInstancing = new HashSet<string>();
+        public IEnumerable<string> MissingInstancingMaterials => _missingInstancing;
+
         private Matrix4x4 _builtWithMatrix;
         private bool _built;
 
@@ -103,6 +108,7 @@ namespace Gekko.PaintTools
         public void Rebuild()
         {
             _chunks.Clear();
+            _missingInstancing.Clear();
             _built = false;
 
             if (_data == null || _data.Count == 0 || _data.Prototypes.Count == 0)
@@ -201,6 +207,16 @@ namespace Gekko.PaintTools
                                 continue;
                             }
 
+                            // Graphics.DrawMeshInstanced TIRA una excepcion si el material no
+                            // tiene GPU Instancing, y como se llama desde beginCameraRendering,
+                            // esa excepcion deja la vista entera en gris. Mejor saltear el
+                            // material y avisar: los demas props se siguen dibujando.
+                            if (!material.enableInstancing)
+                            {
+                                _missingInstancing.Add(material.name);
+                                continue;
+                            }
+
                             // DrawMeshInstanced no acepta mas de 1023 por llamada.
                             for (int offset = 0; offset < partMatrices.Length; offset += MaxInstancesPerBatch)
                             {
@@ -231,6 +247,14 @@ namespace Gekko.PaintTools
 
             _builtWithMatrix = fieldMatrix;
             _built = true;
+
+            if (_missingInstancing.Count > 0)
+            {
+                Debug.LogWarning(
+                    "[ScatterField] Estos materiales de prototipos no tienen GPU Instancing y sus props " +
+                    "NO se dibujan: " + string.Join(", ", _missingInstancing) +
+                    ". Activalo desde el inspector del ScatterField.", this);
+            }
         }
 
         private void OnBeginCameraRendering(ScriptableRenderContext context, Camera camera)
@@ -286,6 +310,13 @@ namespace Gekko.PaintTools
         /// Saca las mallas de cada prefab, incluyendo las de sus hijos, con la
         /// transformada relativa a la raiz. Asi un prefab de varias piezas se dibuja
         /// entero y no solo su primer renderer.
+        ///
+        /// OJO con la escala de la RAIZ del prefab: muchos props traen el escalado en el
+        /// transform raiz (p. ej. localScale 0.01 sobre una malla exportada en cm). Si se
+        /// tomara solo `root.worldToLocalMatrix * filter.localToWorldMatrix`, para una
+        /// malla que cuelga de la raiz eso da identidad y el 0.01 se pierde: el prop se
+        /// dibuja al tamano crudo de la malla (decenas de metros). Por eso se antepone el
+        /// TRS local de la raiz.
         /// </summary>
         private static List<List<MeshPart>> CollectPrototypeParts(List<GameObject> prototypes)
         {
@@ -298,6 +329,8 @@ namespace Gekko.PaintTools
                 if (prototype != null)
                 {
                     Transform root = prototype.transform;
+                    Matrix4x4 rootLocal = Matrix4x4.TRS(
+                        root.localPosition, root.localRotation, root.localScale);
 
                     foreach (MeshFilter filter in prototype.GetComponentsInChildren<MeshFilter>(false))
                     {
@@ -313,7 +346,8 @@ namespace Gekko.PaintTools
                         {
                             Mesh = mesh,
                             Materials = renderer.sharedMaterials,
-                            LocalMatrix = root.worldToLocalMatrix * filter.transform.localToWorldMatrix,
+                            LocalMatrix = rootLocal *
+                                (root.worldToLocalMatrix * filter.transform.localToWorldMatrix),
                         });
                     }
                 }
