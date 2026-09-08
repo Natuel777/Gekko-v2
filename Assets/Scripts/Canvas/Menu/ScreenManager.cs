@@ -8,7 +8,6 @@ public class ScreenManager : MonoBehaviour
 
     static public ScreenManager Instance;
 
-    public AudioSource ButtonSound;
     public bool CanPause;
 
     void Awake()

@@ -22,6 +22,8 @@ public class MainMenuManager : MonoBehaviour
     private void Start()
     {
         if (AudioManager.instance) AudioManager.instance.Play(SoundNames.Menu, true);
+
+        ScreenManager.Instance.Push(new ScreenGO(transform));
     }
 
     void Update()
@@ -66,7 +68,10 @@ public class MainMenuManager : MonoBehaviour
         if (currentState == MenuState.Credits)
             creditsText.SetActive(true);
     }
-
+    public void OnOptionsPressed()
+    {
+        ScreenManager.Instance.Push("Canvas_Options");
+    }
     public void OnBackFromCredits()
     {
         currentState = MenuState.MainMenu;
