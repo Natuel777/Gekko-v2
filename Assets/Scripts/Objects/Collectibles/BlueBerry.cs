@@ -2,6 +2,12 @@ using UnityEngine;
 
 public class Blueberry : Collectible
 {
+    private BlueberryView _bv;
+    [SerializeField] private Transform _transform;
+    private void Start()
+    {
+        _bv = new BlueberryView(GetComponentInChildren<Renderer>(), transform,this);
+    }
     public override Collectible CreateCollectibleType()
     {
         return GameManager.Instance.factory.Create(_notificationData.Name, transform.position, transform.rotation);
@@ -11,7 +17,7 @@ public class Blueberry : Collectible
     {
         GetComponent<Collider>().enabled = false;
         GameManager.Instance.Pj.OnBlueberryCollected();
-        GetComponentInChildren<CollectableView>().Collect();
+        _bv.Collect();
     }
 
     public override void ReturnToFactory()

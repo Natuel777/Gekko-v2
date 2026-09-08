@@ -58,6 +58,19 @@ public class GeckoLeg : MonoBehaviour
     [Tooltip("Cuántos m/s por encima de _referenceSpeed hacen falta para llegar al retardo máximo.")]
     [SerializeField] private float _lagSpeedRange = 1.5f;
 
+    [Header("Alcance real de la cadena IK")]
+    [Tooltip("Hueso raiz de la cadena IK: el muslo. Si se asigna, la pata mide su alcance " +
+             "REAL (muslo-rodilla-tobillo) y nunca deja que el pie se aleje mas de lo que el " +
+             "IK puede resolver. Es distinto de Max Reach, que se mide desde el Home: el Home " +
+             "no es el hombro, asi que un pie dentro de ese limite puede quedar mucho mas lejos " +
+             "del muslo de lo que la pata da, y ahi el IK se satura, la rodilla no puede doblar " +
+             "y la pata tiembla en cada paso.")]
+    [SerializeField] private Transform _ikRoot;
+    [Tooltip("Fraccion del alcance real que se permite usar. En 1 la pata se estira recta; " +
+             "por debajo queda margen para que la rodilla doble.")]
+    [Range(0.5f, 1f)]
+    [SerializeField] private float _reachUsage = 0.9f;
+
     [Header("Raycast de detección")]
     [Tooltip("Cuánto por encima del Home arranca el rayo.")]
     [SerializeField] private float _rayUpOffset = 0.35f;
@@ -88,10 +101,25 @@ public class GeckoLeg : MonoBehaviour
     private float _effStepDuration;
     private float _effStepDistance;
     private float _bodySpeed;
+    private float _chainReach = -1f;
     private Vector3 _targetPosVel;   // estado interno del SmoothDamp del IK target
     #endregion
 
     #region Propiedades públicas
+    /// <summary>
+    /// Escala de CADENCIA. La setea GeckoAnimation cada frame. 1 = la pata usa la
+    /// velocidad real del cuerpo. 0.8 = la pata pisa como si el cuerpo fuera al 80%,
+    /// aunque en realidad se mueva más rápido: pasos más lentos y más largos.
+    /// </summary>
+    public float GaitSpeedScale { get; set; } = 1f;
+
+    /// <summary>
+    /// Si está activo, bajar la cadencia ALARGA la zancada en la misma proporción, para
+    /// que el pie siga cayendo donde corresponde y no patine. Es lo que hace que bajar
+    /// la cadencia se vea como zancadas largas y no como el bicho deslizándose.
+    /// </summary>
+    public bool CompensateStride { get; set; } = true;
+
     public bool IsStepping => _stepLerp < 1f;
     public bool HasGround => _hasGround;
     public Vector3 CurrentPosition => _currentPos;
@@ -129,6 +157,8 @@ public class GeckoLeg : MonoBehaviour
             enabled = false;
             return;
         }
+
+        MeasureChainReach();
 
         _effStepDuration = _stepDuration;
         _effStepDistance = _stepDistance;
@@ -179,6 +209,24 @@ public class GeckoLeg : MonoBehaviour
         if (flatComp.magnitude > _maxReach)
             _currentPos = transform.position + upComp + flatComp.normalized * _maxReach;
 
+        // Tope duro por el alcance REAL de la cadena IK, medido desde el muslo. Sin esto
+        // el pie puede pedirle a la pata mas de lo que da: el IK queda saturado, la
+        // rodilla no puede doblar y aparece el temblequeo al caminar.
+        if (_ikRoot != null && _chainReach > 0f)
+        {
+            Vector3 fromRoot = _currentPos - _ikRoot.position;
+            Vector3 upPart = Vector3.Project(fromRoot, _body.up);
+            Vector3 flatPart = fromRoot - upPart;
+
+            // Solo se recorta la parte HORIZONTAL. Escalar el vector entero acercaba el
+            // pie al muslo tambien en vertical y lo levantaba del piso: el bicho quedaba
+            // en puntas de pie. Lo que se achica es el ancho de la parada, no la altura.
+            float limit = _chainReach * _reachUsage;
+            float maxFlat = Mathf.Sqrt(Mathf.Max(limit * limit - upPart.sqrMagnitude, 0f));
+            if (flatPart.magnitude > maxFlat)
+                _currentPos = _ikRoot.position + upPart + flatPart.normalized * maxFlat;
+        }
+
         ApplyToTarget();
     }
 
@@ -194,6 +242,23 @@ public class GeckoLeg : MonoBehaviour
         _stepLerp = 0f;
     }
 
+    /// <summary>
+    /// Suma los dos segmentos de la cadena IK (muslo->rodilla->tobillo). Se mide una sola
+    /// vez, en la pose de bind, que es cuando la jerarquia todavia no fue tocada por nada.
+    /// </summary>
+    private void MeasureChainReach()
+    {
+        _chainReach = -1f;
+        if (_ikRoot == null || _ikRoot.childCount == 0) return;
+
+        Transform mid = _ikRoot.GetChild(0);
+        if (mid.childCount == 0) return;
+        Transform tip = mid.GetChild(0);
+
+        _chainReach = Vector3.Distance(_ikRoot.position, mid.position)
+                    + Vector3.Distance(mid.position, tip.position);
+    }
+
     private void RecalculateIdeal(Vector3 bodyVelocity)
     {
         Vector3 origin = transform.position + _body.up * _rayUpOffset;
@@ -204,9 +269,26 @@ public class GeckoLeg : MonoBehaviour
         // para que las patas acompañen la velocidad y no se queden atrás.
         float speed = bodyVelocity.magnitude;
         _bodySpeed = speed;
-        _effStepDuration = Mathf.Max(_minStepDuration,
+
+        // La CADENCIA se calcula con la velocidad escalada: es lo que permite que el
+        // bicho corra rápido pero pise con el ritmo de una caminata.
+        float scale = Mathf.Max(GaitSpeedScale, 0.05f);
+        // Primero la cadencia que corresponde a la velocidad real (el gait adaptativo de
+        // siempre): cuanto mas rapido va el cuerpo, mas corto el paso.
+        float baseDuration = Mathf.Max(_minStepDuration,
             _stepDuration * Mathf.Clamp01(_referenceSpeed / Mathf.Max(speed, 0.001f)));
-        _effStepDistance = Mathf.Min(_maxStepDistance, _stepDistance + speed * _stepStretch);
+
+        // Y encima el multiplicador de "velocidad de animacion". Va DESPUES del clamp a
+        // proposito: aplicado antes, el piso _minStepDuration se comia el efecto y a alta
+        // velocidad bajar la cadencia casi no se notaba.
+        // 0.8 = el paso dura 1/0.8 = 25% mas, igual que poner un clip al 80%.
+        _effStepDuration = baseDuration / scale;
+
+        // La ZANCADA se calcula con la velocidad REAL, y se alarga al bajar la cadencia.
+        // Si no se compensara, pisar más lento mientras el cuerpo va igual de rápido
+        // haría que el pie se quede atrás y termine deslizando contra _maxReach.
+        float strideScale = CompensateStride ? 1f / scale : 1f;
+        _effStepDistance = Mathf.Min(_maxStepDistance, (_stepDistance + speed * _stepStretch) * strideScale);
 
         if (!_hasGround) return;
 

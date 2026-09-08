@@ -38,8 +38,18 @@ public class GeckoSecondaryMotion : MonoBehaviour
     [Tooltip("Balanceo idle de la cola: amplitud (grados) y frecuencia (Hz).")]
     [SerializeField] private float _tailIdleSwayDeg = 5f;
     [SerializeField] private float _tailIdleSwayFreq = 0.8f;
-    [Tooltip("Caída de la cola por gravedad: grados hacia abajo, acumulados por segmento.")]
+    [Tooltip("Caida de la cola por gravedad: grados, acumulados por segmento. En 0 la cola " +
+             "no sube ni baja, solo se mueve de lado a lado.")]
     [SerializeField] private float _tailDroopDeg = 2.5f;
+    [Tooltip("Vaiven lateral al caminar: grados por segmento, al ritmo del paso.")]
+    [SerializeField] private float _tailWalkSwayDeg = 7f;
+    [Tooltip("Ciclos de vaiven de cola por metro recorrido.")]
+    [SerializeField] private float _tailWalkSwayCyclesPerMeter = 1.1f;
+    [Tooltip("Ejes locales del hueso de cola. Se DERIVAN en Awake de la orientacion real " +
+             "del hueso; solo tocalos si el resultado no es el esperado.")]
+    [SerializeField] private bool _deriveTailAxes = true;
+    [SerializeField] private Vector3 _tailSwayAxis = Vector3.up;
+    [SerializeField] private Vector3 _tailDroopAxis = Vector3.right;
 
     [Header("Columna — curva en los giros")]
     [SerializeField] private bool _spineEnabled = true;
@@ -48,6 +58,23 @@ public class GeckoSecondaryMotion : MonoBehaviour
     [SerializeField] private float _spineMaxBendDeg = 16f;
     [Tooltip("Qué tan rápido la columna llega a la curva objetivo y vuelve a la recta.")]
     [SerializeField] private float _spineResponse = 9f;
+
+    [Header("Columna — conformado al trepar")]
+    [Tooltip("Dobla el cuerpo entero cuando las patas de adelante y las de atras estan en " +
+             "superficies distintas (por ejemplo al empezar a subir un bloque). Sin esto el " +
+             "cuerpo queda rigido y el bicho tiene que treparse 'de una pieza'.")]
+    [SerializeField] private bool _conformEnabled = true;
+    [Tooltip("Las 4 patas. Se usan las posiciones de los pies para medir la inclinacion real " +
+             "del terreno bajo el cuerpo.")]
+    [SerializeField] private GeckoLeg _legFL, _legFR, _legBL, _legBR;
+    [Tooltip("Tope de cuanto se dobla el cuerpo, en grados repartidos por toda la columna.")]
+    [SerializeField] private float _conformMaxDeg = 45f;
+    [Tooltip("Grados de doblado por cada grado de desnivel medido entre patas.")]
+    [SerializeField] private float _conformGain = 1f;
+    [SerializeField] private float _conformResponse = 8f;
+    [Tooltip("Eje local sobre el que se dobla la columna. Se deriva en Awake.")]
+    [SerializeField] private bool _deriveSpineAxis = true;
+    [SerializeField] private Vector3 _spinePitchAxis = Vector3.right;
 
     [Header("Bob / respiración")]
     [SerializeField] private bool _bobEnabled = true;
@@ -83,6 +110,13 @@ public class GeckoSecondaryMotion : MonoBehaviour
     private float _lastYaw;
     private float _bobPhase;
     private float _spineBend;
+
+    private Transform[] _spineChain;
+    private Quaternion[] _spineChainRest;
+    private Vector3 _pitchAxis = Vector3.right;   // derivados en Awake
+    private Vector3 _yawAxis = Vector3.up;
+    private float _conformAngle;
+    private float _tailSwayPhase;
     private float _headYaw, _headPitch;
     private bool _ready;
     #endregion
@@ -109,6 +143,9 @@ public class GeckoSecondaryMotion : MonoBehaviour
             }
         }
 
+        BuildSpineChain();
+        DeriveAxes();
+
         _lastPos = transform.position;
         _lastYaw = transform.eulerAngles.y;
         _ready = true;
@@ -131,7 +168,7 @@ public class GeckoSecondaryMotion : MonoBehaviour
         if (_spineEnabled) UpdateSpine(dt, yawRate);
         if (_bobEnabled)   UpdateBob(dt, planarSpeed);
         if (_headEnabled)  UpdateHead(dt, vel, planarSpeed);
-        if (_tailEnabled)  UpdateTail(dt, yawRate);
+        if (_tailEnabled)  UpdateTail(dt, yawRate, planarSpeed);
     }
 
     // -------------------------------------------------------------------------
@@ -140,9 +177,49 @@ public class GeckoSecondaryMotion : MonoBehaviour
         float target = Mathf.Clamp(-yawRate * _spineBendPerTurn, -_spineMaxBendDeg, _spineMaxBendDeg);
         _spineBend = Mathf.Lerp(_spineBend, target, 1f - Mathf.Exp(-_spineResponse * dt));
 
-        Quaternion bend = Quaternion.AngleAxis(_spineBend, Vector3.up);
-        if (_spine1) _spine1.localRotation = _spine1Rest * bend;
-        if (_spine2) _spine2.localRotation = _spine2Rest * bend;
+        // Conformado: si las patas de adelante quedaron mas altas que las de atras (por
+        // ejemplo empezando a subir un bloque), el cuerpo se dobla para acompanar en vez
+        // de quedar rigido y tener que treparse de una pieza.
+        float conformTarget = 0f;
+        if (_conformEnabled) conformTarget = Mathf.Clamp(MeasureIncline() * _conformGain, -_conformMaxDeg, _conformMaxDeg);
+        _conformAngle = Mathf.Lerp(_conformAngle, conformTarget, 1f - Mathf.Exp(-_conformResponse * dt));
+
+        if (_spineChain == null || _spineChain.Length == 0) return;
+
+        // Se reparte entre TODOS los huesos de la columna: el cuerpo se curva parejo en
+        // vez de quebrarse en una sola articulacion.
+        float yawPer = _spineBend / _spineChain.Length;
+        float pitchPer = _conformAngle / _spineChain.Length;
+
+        Quaternion yaw = Quaternion.AngleAxis(yawPer, _yawAxis);
+        Quaternion pitch = Quaternion.AngleAxis(pitchPer, _pitchAxis);
+
+        for (int i = 0; i < _spineChain.Length; i++)
+        {
+            if (_spineChain[i] == null) continue;
+            _spineChain[i].localRotation = _spineChainRest[i] * yaw * pitch;
+        }
+    }
+
+    /// <summary>
+    /// Desnivel entre el promedio de los pies de adelante y el de atras, en grados.
+    /// Positivo = el frente esta mas alto (subiendo). Se mide con las posiciones REALES
+    /// de los pies, que ya siguen el terreno, asi que sirve igual en un escalon, en una
+    /// rampa o en el borde de un bloque.
+    /// </summary>
+    private float MeasureIncline()
+    {
+        if (_legFL == null || _legFR == null || _legBL == null || _legBR == null) return 0f;
+
+        Vector3 front = (_legFL.CurrentPosition + _legFR.CurrentPosition) * 0.5f;
+        Vector3 back = (_legBL.CurrentPosition + _legBR.CurrentPosition) * 0.5f;
+        Vector3 delta = front - back;
+
+        float along = Mathf.Abs(Vector3.Dot(delta, transform.forward));
+        float up = Vector3.Dot(delta, transform.up);
+        if (along < 0.001f) return 0f;
+
+        return Mathf.Atan2(up, along) * Mathf.Rad2Deg;
     }
 
     private void UpdateBob(float dt, float speed)
@@ -192,13 +269,22 @@ public class GeckoSecondaryMotion : MonoBehaviour
         _neck.localRotation = _neckRest * Quaternion.Euler(_headPitch, _headYaw, 0f);
     }
 
-    private void UpdateTail(float dt, float yawRate)
+    private void UpdateTail(float dt, float yawRate, float planarSpeed)
     {
         if (_tail == null) return;
 
         // el "latigazo": la cola se retrasa contra el giro del cuerpo
         float whipBase = -yawRate * _tailWhip;
         float idleSway = Mathf.Sin(Time.time * _tailIdleSwayFreq * Mathf.PI * 2f) * _tailIdleSwayDeg;
+
+        // Vaiven lateral al caminar. La fase avanza con la DISTANCIA recorrida, no con el
+        // reloj, asi la cola barre al ritmo del paso y no por su cuenta.
+        float walkSway = 0f;
+        if (_tailWalkSwayDeg > 0f)
+        {
+            _tailSwayPhase += planarSpeed * _tailWalkSwayCyclesPerMeter * Mathf.PI * 2f * dt;
+            walkSway = Mathf.Sin(_tailSwayPhase) * _tailWalkSwayDeg;
+        }
 
         for (int i = 0; i < _tail.Length; i++)
         {
@@ -207,11 +293,17 @@ public class GeckoSecondaryMotion : MonoBehaviour
             float seg = i + 1f;
             float whip   = whipBase * Mathf.Pow(_tailWhipFalloff, i);
             float sway   = idleSway * (0.4f + 0.15f * seg);
+            float walk   = walkSway * (0.35f + 0.18f * seg);
             float droop  = _tailDroopDeg * seg;
 
-            // objetivo LOCAL de este segmento respecto de su padre: pose de reposo
-            // + latigazo/sway en yaw + caída en pitch
-            Quaternion targetLocal = _tailRest[i] * Quaternion.Euler(droop, whip + sway, 0f);
+            // Objetivo LOCAL de este segmento respecto de su padre. Antes esto era un
+            // Quaternion.Euler(droop, yaw, 0), que asume que el hueso tiene el eje Y
+            // "hacia arriba" del bicho. En este modelo no es asi, y por eso la cola se
+            // iba para arriba en vez de moverse de lado. Ahora el lateral gira sobre un
+            // eje DERIVADO de la orientacion real del hueso, y la caida sobre otro.
+            Quaternion lateral = Quaternion.AngleAxis(whip + sway + walk, _tailSwayAxis);
+            Quaternion fall = Quaternion.AngleAxis(droop, _tailDroopAxis);
+            Quaternion targetLocal = _tailRest[i] * lateral * fall;
 
             // resorte crítico-ish hacia el objetivo (integración semi-implícita)
             Quaternion diff = targetLocal * Quaternion.Inverse(_tailCur[i]);
@@ -254,6 +346,70 @@ public class GeckoSecondaryMotion : MonoBehaviour
         }
     }
 
+    /// <summary>Arma la cadena Spine1..SpineN siguiendo los nombres del rig.</summary>
+    private void BuildSpineChain()
+    {
+        var all = GetComponentsInChildren<Transform>(true);
+        var list = new System.Collections.Generic.List<Transform>();
+        for (int n = 1; n <= 8; n++)
+        {
+            var t = Find(all, "Gecko_Spine" + n);
+            if (t == null) break;
+            list.Add(t);
+        }
+
+        _spineChain = list.ToArray();
+        _spineChainRest = new Quaternion[_spineChain.Length];
+        for (int i = 0; i < _spineChain.Length; i++)
+            _spineChainRest[i] = _spineChain[i].localRotation;
+    }
+
+    /// <summary>
+    /// Saca los ejes de giro de la orientacion REAL de los huesos en vez de asumir que
+    /// el hueso tiene Y hacia arriba y X hacia el costado. Es lo que hacia que la cola se
+    /// fuera para arriba: el Euler(pitch, yaw, 0) daba en los ejes equivocados.
+    /// </summary>
+    private void DeriveAxes()
+    {
+        if (_deriveSpineAxis && _spineChain != null && _spineChain.Length > 0)
+        {
+            Transform bone = _spineChain[0];
+            Vector3 upLocal = bone.InverseTransformDirection(transform.up);
+            Vector3 alongLocal = bone.childCount > 0
+                ? bone.InverseTransformDirection((bone.GetChild(0).position - bone.position).normalized)
+                : bone.InverseTransformDirection(transform.forward);
+
+            _yawAxis = upLocal.normalized;                              // serpenteo lateral
+            Vector3 pitch = Vector3.Cross(alongLocal, upLocal);         // levantar/bajar el frente
+            _pitchAxis = pitch.sqrMagnitude > 1e-6f ? pitch.normalized : Vector3.right;
+        }
+        else
+        {
+            _yawAxis = Vector3.up;
+            _pitchAxis = _spinePitchAxis.normalized;
+        }
+
+        if (_deriveTailAxes && _tail != null && _tail.Length > 0 && _tail[0] != null)
+        {
+            Transform bone = _tail[0];
+            Vector3 upLocal = bone.InverseTransformDirection(transform.up);
+            Vector3 alongLocal = bone.childCount > 0
+                ? bone.InverseTransformDirection((bone.GetChild(0).position - bone.position).normalized)
+                : bone.InverseTransformDirection(-transform.forward);
+
+            // Girar sobre el "arriba" del cuerpo mueve la cola de lado a lado, que es lo
+            // que se quiere. La caida va sobre el perpendicular.
+            _tailSwayAxis = upLocal.normalized;
+            Vector3 droop = Vector3.Cross(alongLocal, upLocal);
+            _tailDroopAxis = droop.sqrMagnitude > 1e-6f ? droop.normalized : Vector3.right;
+        }
+        else
+        {
+            _tailSwayAxis = _tailSwayAxis.normalized;
+            _tailDroopAxis = _tailDroopAxis.normalized;
+        }
+    }
+
     private static Transform Find(Transform[] all, string n)
     {
         foreach (var t in all) if (t.name == n) return t;
@@ -268,6 +424,9 @@ public class GeckoSecondaryMotion : MonoBehaviour
         if (_spine1) _spine1.localRotation = _spine1Rest;
         if (_spine2) _spine2.localRotation = _spine2Rest;
         if (_neck)   _neck.localRotation = _neckRest;
+        if (_spineChain != null)
+            for (int i = 0; i < _spineChain.Length; i++)
+                if (_spineChain[i]) _spineChain[i].localRotation = _spineChainRest[i];
         if (_tail != null)
             for (int i = 0; i < _tail.Length; i++)
                 if (_tail[i]) _tail[i].localRotation = _tailRest[i];

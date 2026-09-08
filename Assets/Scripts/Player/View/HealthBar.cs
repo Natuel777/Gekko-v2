@@ -42,10 +42,11 @@ public class HealthBar
 
     public void UpdateHealthBar(float currentHealth, float maxHealth)
     {
-        if (_healthBar == null) return;
+        if(_healthBar == null) return;
+
         _targetValue = currentHealth / maxHealth;
 
-        if (currentHealth >= maxHealth)
+        if(currentHealth >= maxHealth)
         {
             _isDamaged = false;
             return;
@@ -53,67 +54,76 @@ public class HealthBar
 
         _isDamaged = true;
         _damageTimer = _damageFadeDelay;
-        if (_canvasGroup != null) _canvasGroup.alpha = 1f;
+
+        if(_canvasGroup != null) _canvasGroup.alpha = 1f;
     }
 
     public void ArtificialUpdate()
     {
-        if (_healthBar == null) return;
+        if(_healthBar == null) return;
 
         _currentDisplayValue = Mathf.Lerp(_currentDisplayValue, _targetValue, Time.deltaTime * _lerpSpeed);
-        if (Mathf.Abs(_currentDisplayValue - _targetValue) < 0.001f)
+        
+        if(Mathf.Abs(_currentDisplayValue - _targetValue) < 0.001f)
             _currentDisplayValue = _targetValue;
+        
         _healthBar.value = _currentDisplayValue;
-
         bool isCritical = _targetValue < _criticalThreshold && _targetValue > 0f;
 
-        if (_canvasGroup != null)
+        if(_canvasGroup != null)
         {
-            if (_isDamaged)
+            if(_isDamaged)
             {
                 _damageTimer -= Time.deltaTime;
-                if (_damageTimer <= 0f) _isDamaged = false;
+                
+                if(_damageTimer <= 0f) _isDamaged = false;
             }
+
             float targetOpacity = (isCritical || _isDamaged) ? 1f : _idleOpacity;
             _canvasGroup.alpha = Mathf.Lerp(_canvasGroup.alpha, targetOpacity, Time.deltaTime * _opacityLerpSpeed);
         }
-        if (_isPulsing)
+
+        if(_isPulsing)
         {
             _pulseTimer += Time.deltaTime;
-            float t = Mathf.PingPong(_pulseTimer * 2f / _pulsePeriod, 1f);
-            float smoothT = Mathf.SmoothStep(0f, 1f, t);
+            float smoothT = OscillationMath.PulseT(_pulseTimer, _pulsePeriod);
             _healthBar.transform.localScale = _baseScale + Vector3.one * (smoothT * _pulseScale);
 
-            if (_pulseTimer >= _pulsePeriod)
+            if(_pulseTimer >= _pulsePeriod)
             {
                 _isPulsing = false;
                 _pulseTimer = 0f;
-                if (_fillImage != null) _fillImage.color = _fillBaseColor;
-                if (!isCritical) _healthBar.transform.localScale = _baseScale;
+                
+                if(_fillImage != null) _fillImage.color = _fillBaseColor;
+                
+                if(!isCritical) _healthBar.transform.localScale = _baseScale;
             }
         }
-        else if (_isHealPulsing)
+
+        else if(_isHealPulsing)
         {
             _healPulseTimer += Time.deltaTime;
-            float t = Mathf.PingPong(_healPulseTimer * 2f / _pulsePeriod, 1f);
-            float smoothT = Mathf.SmoothStep(0f, 1f, t);
+            float smoothT = OscillationMath.PulseT(_healPulseTimer, _pulsePeriod);
             _healthBar.transform.localScale = _baseScale + Vector3.one * (smoothT * _pulseScale);
 
-            if (_healPulseTimer >= _pulsePeriod)
+            if(_healPulseTimer >= _pulsePeriod)
             {
                 _isHealPulsing = false;
                 _healPulseTimer = 0f;
-                if (_fillImage != null) _fillImage.color = _fillBaseColor;
-                if (!isCritical) _healthBar.transform.localScale = _baseScale;
+                
+                if(_fillImage != null) _fillImage.color = _fillBaseColor;
+                
+                if(!isCritical) _healthBar.transform.localScale = _baseScale;
             }
         }
-        else if (isCritical)
+
+        else if(isCritical)
         {
             _pulseTime += Time.deltaTime;
-            float t = Mathf.PingPong(_pulseTime * 2f / _pulsePeriod, 1f);
-            float smoothT = Mathf.SmoothStep(0f, 1f, t);
+            float smoothT = OscillationMath.PulseT(_pulseTime, _pulsePeriod);
             _healthBar.transform.localScale = _baseScale + Vector3.one * (smoothT * _pulseScale);
         }
+
         else
         {
             _pulseTime = 0f;
@@ -125,13 +135,15 @@ public class HealthBar
     {
         _isPulsing = true;
         _pulseTimer = 0f;
-        if (_fillImage != null) _fillImage.color = _damageColor;
+
+        if(_fillImage != null) _fillImage.color = _damageColor;
     }
 
     public void TriggerHealPulse()
     {
         _isHealPulsing = true;
         _healPulseTimer = 0f;
-        if (_fillImage != null) _fillImage.color = _healColor;
+        
+        if(_fillImage != null) _fillImage.color = _healColor;
     }
 }

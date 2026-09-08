@@ -9,14 +9,14 @@ public class ScreenAudio : Screens
         {
             button.interactable = true;
         }
-        //AudioManager.Instance.LoadGame();
-        VolumeManager.Instance.SetMasterVolume(VolumeManager.Instance.masterValue);
-        VolumeManager.Instance.SetMusicVolume(VolumeManager.Instance.musicValue);
-        VolumeManager.Instance.SetSFXVolume(VolumeManager.Instance.sfxValue);
+        AudioManager.instance.LoadGame();
+        AudioManager.instance.SetMasterVolume(AudioManager.instance.masterValue);
+        AudioManager.instance.SetMusicVolume(AudioManager.instance.musicValue);
+        AudioManager.instance.SetSFXVolume(AudioManager.instance.sfxValue);
     }
     public override void Free()
     {
-        //AudioManager.Instance.SaveGame();
+        AudioManager.instance.SaveGame();
         Destroy(gameObject);
     }
 }

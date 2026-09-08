@@ -5,7 +5,8 @@ public class ScreenReafirm : Screens
 {
     public void BTN_Menu()
     {
-        ScreenManager.Instance.ButtonSound.Play();
+        AudioManager.instance.Play(SoundNames.UiButton);
+        if(GameManager.Instance)
         GameManager.Instance.IsPause = false;
         SceneManager.LoadScene(ScenesDictionary.SceneName[ScenesNames.Menu]);
     }

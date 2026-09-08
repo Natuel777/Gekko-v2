@@ -6,7 +6,7 @@ public class SliderMusic : AudioSlider
 {
     protected override void InitialiceValues()
     {
-        _slider.onValueChanged.AddListener(VolumeManager.Instance.SetMusicVolume);
-        _slider.value = VolumeManager.Instance.musicValue;
+        _slider.onValueChanged.AddListener(AudioManager.instance.SetMusicVolume);
+        _slider.value = AudioManager.instance.musicValue;
     }
 }

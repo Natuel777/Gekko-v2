@@ -15,7 +15,7 @@ public abstract class Screens : MonoBehaviour, IScreen
     }
     public virtual void BTN_Back()
     {
-        ScreenManager.Instance.ButtonSound.Play();
+        AudioManager.instance.Play(SoundNames.UiButton);
         ScreenManager.Instance.Pop();
     }
 

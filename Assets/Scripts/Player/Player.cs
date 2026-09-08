@@ -163,6 +163,11 @@ public class Player : MonoBehaviour
         _pjController.Talking = false;
         _pjInputs.ReactivatePlayerInputs();
     }
+    public void Inputs(bool active)
+    {
+        if (active) EnablePlayerControl();
+        else DisablePlayerControl();
+    }
     private void OnDrawGizmosSelected()
     {
         Vector3 origin = transform.position + Vector3.up * _interactOriginY;

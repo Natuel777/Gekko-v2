@@ -28,6 +28,9 @@ public class GeckoMover : MonoBehaviour
 
     [Header("Movimiento")]
     [SerializeField] private float _speed = 1.6f;
+    [Tooltip("Que tan rapido el cuerpo gira hacia la direccion de movimiento y se alinea a " +
+             "la superficie. Por debajo de ~6 el bicho tarda demasiado en acomodarse a una " +
+             "pared y da la sensacion de que no puede trepar.")]
     [SerializeField] private float _rotationSpeed = 12f;
     [SerializeField] private float _jumpForce = 2.6f;
     [Tooltip("Suavizado del input de movimiento (segundos).")]
@@ -62,6 +65,8 @@ public class GeckoMover : MonoBehaviour
 
     private Rigidbody _rb;
     private LayerMask _surfaceMask;
+    private Vector3 _surfacePoint;
+    private bool _hasSurfacePoint;
 
     private Vector3 _currentUp = Vector3.up;
     private Vector3 _surfaceNormal = Vector3.up;
@@ -167,7 +172,8 @@ public class GeckoMover : MonoBehaviour
         if (_jumpGrace > 0f)
         {
             _isSurface = _isGround = _isClimbing = _isGrounded = false;
-            _currentUp = Vector3.Slerp(_currentUp, Vector3.up, _alignSpeed * dt).normalized;
+            _hasSurfacePoint = false;
+            _currentUp = Vector3.Slerp(_currentUp, Vector3.up, 1f - Mathf.Exp(-_alignSpeed * dt)).normalized;
             return;
         }
 
@@ -191,6 +197,12 @@ public class GeckoMover : MonoBehaviour
             if (Physics.SphereCast(origin, _castRadius, d, out RaycastHit hit,
                     _castDistance, _surfaceMask, QueryTriggerInteraction.Ignore))
             {
+                // Descarta caras vistas DESDE ATRAS. Si la normal no apunta hacia el
+                // origen del rayo, estamos del lado de adentro del collider; engancharse
+                // ahi es lo que mandaba al Gecko a la cara opuesta de la pared al llegar
+                // rapido y meterse en la geometria durante el giro.
+                if (Vector3.Dot(hit.normal, origin - hit.point) <= 0f) continue;
+
                 float distScore = 1f - hit.distance / _castDistance;
                 float downPenalty = Mathf.Clamp01(Vector3.Dot(hit.normal, Vector3.up)) * 0.15f;
                 float alignBonus = Vector3.Dot(hit.normal, _currentUp) * 0.15f;
@@ -212,18 +224,21 @@ public class GeckoMover : MonoBehaviour
         if (!found)
         {
             _isSurface = _isGround = _isClimbing = _isGrounded = false;
-            _currentUp = Vector3.Slerp(_currentUp, Vector3.up, _alignSpeed * dt).normalized;
+            _hasSurfacePoint = false;
+            _currentUp = Vector3.Slerp(_currentUp, Vector3.up, 1f - Mathf.Exp(-_alignSpeed * dt)).normalized;
             return;
         }
 
         _surfaceNormal = best.normal;
+        _surfacePoint = best.point;
+        _hasSurfacePoint = true;
         _isSurface = true;
 
         int layerBit = 1 << best.collider.gameObject.layer;
         _isGround = (_groundMask.value & layerBit) != 0;
         _isClimbing = !_isGround;
 
-        _currentUp = Vector3.Slerp(_currentUp, _surfaceNormal, _alignSpeed * dt).normalized;
+        _currentUp = Vector3.Slerp(_currentUp, _surfaceNormal, 1f - Mathf.Exp(-_alignSpeed * dt)).normalized;
 
         _isGrounded = _isGround && (best.distance < _castDistance * 0.85f ||
             Physics.SphereCast(origin, _castRadius, -_currentUp, out _,
@@ -242,7 +257,12 @@ public class GeckoMover : MonoBehaviour
             return;
 
         Quaternion target = Quaternion.LookRotation(desiredForward.normalized, _currentUp);
-        transform.rotation = Quaternion.Slerp(transform.rotation, target, _rotationSpeed * dt);
+
+        // Suavizado exponencial en vez de Slerp con factor lineal. El factor lineal
+        // ademas de depender del framerate hacia que, con _rotationSpeed bajo, el cuerpo
+        // tardara SEGUNDOS en alinearse a una pared: por eso costaba tanto trepar.
+        float k = 1f - Mathf.Exp(-_rotationSpeed * dt);
+        transform.rotation = Quaternion.Slerp(transform.rotation, target, k);
     }
 
     private void Move(float dt)
@@ -267,6 +287,17 @@ public class GeckoMover : MonoBehaviour
         {
             _rb.linearVelocity = planarVel;
             _rb.AddForce(-up * _stickForce, ForceMode.Acceleration);
+
+            // Se mantiene una separacion fija de la pared. Sin esto, en la transicion
+            // piso -> pared el capsule gira, se mete dentro del collider, y la
+            // depenetracion de PhysX lo escupe por el otro lado.
+            if (_hasSurfacePoint)
+            {
+                float along = Vector3.Dot(_rb.position - _surfacePoint, up);
+                float error = _bodyOffset - along;
+                if (Mathf.Abs(error) > 0.002f)
+                    _rb.position += up * Mathf.Clamp(error, -0.08f, 0.08f) * 0.35f;
+            }
         }
         else if (_isGrounded)
         {

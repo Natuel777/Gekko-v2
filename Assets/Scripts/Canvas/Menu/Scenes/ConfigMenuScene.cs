@@ -10,7 +10,7 @@ public class ConfigMenuScene : MonoBehaviour
     }
     public void BTN_Options()
     {
-        ScreenManager.Instance.ButtonSound.Play();
+        AudioManager.instance.Play(SoundNames.UiButton);
         ScreenManager.Instance.Push("Canvas_Options");
     }
 }

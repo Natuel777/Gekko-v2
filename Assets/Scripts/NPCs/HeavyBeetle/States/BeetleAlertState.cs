@@ -16,7 +16,7 @@ public class BeetleAlertState : IState
     public void Enter()
     {
         Debug.Log($"[{_beetle}] entered alert state.");
-        _beetle.SetAngry(true);
+        _beetle.view.SetAngry(true);
         _beetle.lookAt.StartLooking(_beetle.playerTransform);
     }
 

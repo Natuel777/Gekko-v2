@@ -48,16 +48,35 @@ public class GeckoRigSetup : MonoBehaviour
         bone.localPosition *= factor;
     }
 
+    /// <summary>
+    /// Resuelve los huesos por JERARQUIA, no por nombre.
+    ///
+    /// El FBX tiene nombres duplicados: la rodilla delantera derecha se llama
+    /// "Gecko_Knee_B_L" igual que la trasera izquierda, y no existe ningun
+    /// "Gecko_Knee_F_R". Buscando por nombre, esta clase estiraba dos veces la misma
+    /// pata y dejaba otras dos sin tocar, y el bicho quedaba asimetrico.
+    ///
+    /// Los muslos SI tienen nombre unico, asi que se arranca de ahi y se baja por el
+    /// primer hijo: muslo -> rodilla -> tobillo.
+    /// </summary>
     private void AutoFill()
     {
-        if (_kneeFL == null) _kneeFL = Find("Gecko_Knee_F_L");
-        if (_ankleFL == null) _ankleFL = Find("Gecko_Ankle_F_L");
-        if (_kneeFR == null) _kneeFR = Find("Gecko_Knee_F_R");
-        if (_ankleFR == null) _ankleFR = Find("Gecko_Ankle_F_R");
-        if (_kneeBL == null) _kneeBL = Find("Gecko_Knee_B_L");
-        if (_ankleBL == null) _ankleBL = Find("Gecko_Ankle_B_L");
-        if (_kneeBR == null) _kneeBR = Find("Gecko_Knee_B_R");
-        if (_ankleBR == null) _ankleBR = Find("Gecko_Ankle_B_R");
+        ResolveLeg("Gecko_Thigh_F_L", ref _kneeFL, ref _ankleFL);
+        ResolveLeg("Gecko_Thigh_F_R", ref _kneeFR, ref _ankleFR);
+        ResolveLeg("Gecko_Thigh_B_L", ref _kneeBL, ref _ankleBL);
+        ResolveLeg("Gecko_Thigh_B_R", ref _kneeBR, ref _ankleBR);
+    }
+
+    private void ResolveLeg(string thighName, ref Transform knee, ref Transform ankle)
+    {
+        if (knee != null && ankle != null) return;
+
+        Transform thigh = Find(thighName);
+        if (thigh == null || thigh.childCount == 0) return;
+
+        Transform k = thigh.GetChild(0);
+        if (knee == null) knee = k;
+        if (ankle == null && k.childCount > 0) ankle = k.GetChild(0);
     }
 
     private Transform Find(string boneName)

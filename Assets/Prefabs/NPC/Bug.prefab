@@ -87,6 +87,7 @@ Transform:
   m_Children:
   - {fileID: 6705636544405268448}
   - {fileID: 1733342053599474029}
+  - {fileID: 2929528702956682585}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &6085707740866760981
@@ -105,6 +106,10 @@ MonoBehaviour:
   PlayerTransform: {fileID: 1653657111739483301, guid: 106ed7b9804b9944e9a8b2138fe30004, type: 3}
   _isFlyingBug: 0
   _bulletPrefab: {fileID: 3838639594894576204, guid: 6f442b8c9ddb239458baa2d4f654b9ab, type: 3}
+  _detectGroundPosition: {fileID: 2929528702956682585}
+  _groundMask:
+    serializedVersion: 2
+    m_Bits: 193
 --- !u!135 &721418983776612732
 SphereCollider:
   m_ObjectHideFlags: 0
@@ -147,6 +152,37 @@ SphereCollider:
   serializedVersion: 3
   m_Radius: 0.89
   m_Center: {x: 0, y: 0.24, z: 0}
+--- !u!1 &7950415220492218143
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2929528702956682585}
+  m_Layer: 9
+  m_Name: GroundDetector
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2929528702956682585
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7950415220492218143}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 1.662}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 3134376422225530244}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &6522775309636993035
 PrefabInstance:
   m_ObjectHideFlags: 0

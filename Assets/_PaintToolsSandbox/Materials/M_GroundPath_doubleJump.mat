@@ -1,0 +1,57 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: M_GroundPath_doubleJump
+  m_Shader: {fileID: 4800000, guid: 444b63e791e025e479705f6942c06f73, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 1
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _BaseTex:
+        m_Texture: {fileID: 2800000, guid: 36b7b28e95e914f4ebb1e1f2ebef5181, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _PathMask:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _PathTex:
+        m_Texture: {fileID: 2800000, guid: c8f1a24eaa458d048a7c83c84bcf4422, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _BandSmooth: 0.25
+    - _BaseTiling: 0.28
+    - _EdgeNoiseScale: 3.5
+    - _EdgeNoiseStrength: 0.4
+    - _EdgeSharpness: 0.72
+    - _LightWrap: 0.4
+    - _PathTiling: 0.5
+    - _TintStrength: 1
+    - _Triplanar: 0
+    - _TriplanarSharpness: 5
+    m_Colors:
+    - _BaseColor: {r: 0.46, g: 0.56, b: 0.34, a: 1}
+    - _PathCanvasMin: {r: 0, g: 0, b: 0, a: 0}
+    - _PathCanvasSize: {r: 1, g: 1, b: 0, a: 0}
+    - _PathColor: {r: 0.72, g: 0.6, b: 0.42, a: 1}
+    - _ShadowTint: {r: 0.34, g: 0.42, b: 0.55, a: 1}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1
