@@ -27,16 +27,28 @@ public class GeckoMover : MonoBehaviour
     [SerializeField] private Transform _camTransform;
 
     [Header("Movimiento")]
-    [SerializeField] private float _speed = 1.6f;
+    [SerializeField] private float _speed = 1.8f;
     [Tooltip("Que tan rapido el cuerpo gira hacia la direccion de movimiento y se alinea a " +
              "la superficie. Por debajo de ~6 el bicho tarda demasiado en acomodarse a una " +
              "pared y da la sensacion de que no puede trepar.")]
-    [SerializeField] private float _rotationSpeed = 12f;
+    [SerializeField] private float _rotationSpeed = 14f;
     [SerializeField] private float _jumpForce = 2.6f;
     [Tooltip("Suavizado del input de movimiento (segundos).")]
-    [SerializeField] private float _inputSmoothing = 0.12f;
+    [SerializeField] private float _inputSmoothing = 0.10f;
     [Tooltip("Cuánto controla el jugador el movimiento mientras está en el aire.")]
     [SerializeField] private float _airControl = 6f;
+
+    [Header("Aceleración (feel)")]
+    [Tooltip("m/s de velocidad planar que gana por segundo al arrancar. Alto = respuesta " +
+             "instantánea (arcade); bajo = arranque con peso. Para un plataformero rápido va " +
+             "alto pero no infinito, así el paso procedural no 'salta'.")]
+    [SerializeField] private float _acceleration = 14f;
+    [Tooltip("m/s que pierde por segundo al soltar el stick. Un poco más alto que la " +
+             "aceleración para que frene firme sin patinar.")]
+    [SerializeField] private float _deceleration = 20f;
+    [Tooltip("Aceleración planar mientras trepa una pared. Suele querer ser más baja que en " +
+             "piso para que el agarre se vea seguro.")]
+    [SerializeField] private float _climbAcceleration = 10f;
 
     [Header("Gravedad / adherencia")]
     [SerializeField] private float _gravity = 9.81f;
@@ -74,6 +86,7 @@ public class GeckoMover : MonoBehaviour
     private Vector2 _smoothInput;
     private Vector2 _smoothInputVel;
     private Vector3 _lastDir;
+    private Vector3 _planarVel;   // velocidad planar suavizada (accel/decel) — el "feel"
 
     private bool _isSurface;   // tocando cualquier superficie
     private bool _isGround;    // la superficie actual es piso
@@ -95,6 +108,50 @@ public class GeckoMover : MonoBehaviour
     public bool Grounded => _isGrounded;
     public bool IsMoving => _isMoving;
     public Vector3 Velocity => _rb != null ? _rb.linearVelocity : Vector3.zero;
+    /// <summary> True cuando la superficie actual es pared / techo (no piso). </summary>
+    public bool IsClimbing => _isClimbing;
+    /// <summary> True mientras toca cualquier superficie (piso, pared o techo). </summary>
+    public bool OnSurface => _isSurface;
+    /// <summary> Normal de la superficie que está pisando ahora (o Vector3.up en el aire). </summary>
+    public Vector3 SurfaceNormal => _surfaceNormal;
+
+    /// <summary> True mientras GeckoTongue tiene al gecko colgando de la soga. </summary>
+    public bool Tethered => _tethered;
+    /// <summary> Input de movimiento ya suavizado (stick/teclas), para que el tongue timonee el balanceo. </summary>
+    public Vector2 SmoothInput => _smoothInput;
+    /// <summary> Rigidbody del cuerpo (lo comparte con GeckoTongue para resolver la soga). </summary>
+    public Rigidbody Body => _rb;
+    /// <summary> Cámara de referencia para movimiento relativo. </summary>
+    public Transform CamTransform => _camTransform;
+    /// <summary> Gravedad configurada (m/s²), para que el tongue use la misma al colgar. </summary>
+    public float GravityMagnitude => _gravity;
+    private bool _tethered;
+
+    /// <summary>
+    /// Lo llama GeckoTongue al enganchar / soltar la soga. Con la soga activa, GeckoMover
+    /// deja de tocar el Rigidbody y el tongue maneja gravedad + restricción + balanceo.
+    /// </summary>
+    public void SetTethered(bool active)
+    {
+        _tethered = active;
+        _rb.useGravity = false;
+        if (!active)
+            _planarVel = Vector3.ProjectOnPlane(_rb.linearVelocity, Vector3.up);
+    }
+
+    /// <summary>
+    /// Salto desde la soga: suelta el tether y arranca en el aire con la velocidad dada
+    /// (normalmente la del balanceo + un empujón). Deja ventana de jumpGrace para despegar.
+    /// </summary>
+    public void LaunchFromTether(Vector3 velocity)
+    {
+        _tethered = false;
+        _isSurface = _isGround = _isClimbing = _isGrounded = false;
+        _coyoteTimer = 0f;
+        _jumpGrace = 0.25f;
+        _rb.linearVelocity = velocity;
+        _planarVel = Vector3.ProjectOnPlane(velocity, Vector3.up);
+    }
     #endregion
 
     private void Awake()
@@ -121,6 +178,16 @@ public class GeckoMover : MonoBehaviour
     {
         float dt = Time.fixedDeltaTime;
         if (_jumpGrace > 0f) _jumpGrace -= dt;
+
+        // Mientras cuelga de la lengua-soga, GeckoTongue maneja TODA la física del
+        // cuerpo (gravedad, restricción de soga, balanceo, lanzamiento). Acá solo se
+        // sigue leyendo input (en Update) para que el tongue lo use como timón.
+        if (_tethered)
+        {
+            _isSurface = _isGround = _isClimbing = _isGrounded = false;
+            _jumpQueued = false;
+            return;
+        }
 
         DetectSurface(dt);
 
@@ -281,11 +348,18 @@ public class GeckoMover : MonoBehaviour
         _isMoving = wish.sqrMagnitude > 0.0025f;
         if (_isMoving) _lastDir = wish.normalized;
 
-        Vector3 planarVel = Vector3.ClampMagnitude(wish, 1f) * _speed;
+        // --- velocidad planar con aceleración / desaceleración: el corazón del "feel".
+        //     Antes la velocidad se seteaba de golpe (0 -> tope en un frame) y el paso
+        //     procedural no llegaba a acompañar el arranque: se veía un tirón y las patas
+        //     patinaban. Ahora sube y baja suave y el gait la sigue parejo. ---
+        Vector3 targetPlanar = Vector3.ClampMagnitude(wish, 1f) * _speed;
+        bool speedingUp = targetPlanar.sqrMagnitude >= _planarVel.sqrMagnitude;
+        float accelRate = _isClimbing ? _climbAcceleration : (speedingUp ? _acceleration : _deceleration);
+        _planarVel = Vector3.MoveTowards(_planarVel, targetPlanar, accelRate * dt);
 
         if (_isClimbing)
         {
-            _rb.linearVelocity = planarVel;
+            _rb.linearVelocity = _planarVel;
             _rb.AddForce(-up * _stickForce, ForceMode.Acceleration);
 
             // Se mantiene una separacion fija de la pared. Sin esto, en la transicion
@@ -302,7 +376,7 @@ public class GeckoMover : MonoBehaviour
         else if (_isGrounded)
         {
             float downV = Mathf.Min(Vector3.Dot(_rb.linearVelocity, up), 0f);
-            _rb.linearVelocity = planarVel + up * downV;
+            _rb.linearVelocity = _planarVel + up * downV;
             _rb.AddForce(-up * (_gravity * 0.5f), ForceMode.Acceleration); // mantiene contacto
         }
         else
@@ -312,10 +386,11 @@ public class GeckoMover : MonoBehaviour
 
             Vector3 vertical = Vector3.Project(_rb.linearVelocity, Vector3.up);
             Vector3 horizontal = _rb.linearVelocity - vertical;
-            horizontal = Vector3.Lerp(horizontal, planarVel, _airControl * dt);
+            horizontal = Vector3.Lerp(horizontal, targetPlanar, _airControl * dt);
 
             _rb.linearVelocity = horizontal + vertical;
             _rb.AddForce(Vector3.down * g, ForceMode.Acceleration);
+            _planarVel = horizontal; // al reaterrizar, el arranque no pega un salto
         }
 
         // Red de seguridad: la depenetración de colliders convexos en esquinas

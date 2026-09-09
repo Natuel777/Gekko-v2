@@ -25,8 +25,13 @@ public class GeckoAnimation : MonoBehaviour
     [Header("Cuerpo")]
     [Tooltip("Transform del cuerpo. Si se deja vacío, usa este mismo transform.")]
     [SerializeField] private Transform _body;
-    [Tooltip("Suavizado de la velocidad medida. Más alto = más suave pero con más retraso.")]
-    [SerializeField] private float _velocitySmoothing = 0.1f;
+    [Tooltip("Suavizado de la velocidad medida, EN SEGUNDOS. Más alto = más suave pero con " +
+             "más retraso. Por encima de ~0.15 las patas se enteran tarde de que el cuerpo " +
+             "arrancó o frenó y el paso se descoordina. 0.05–0.08 es lo sano.")]
+    [SerializeField] private float _velocitySmoothing = 0.06f;
+    [Tooltip("Si está en el mismo GameObject, se usa su velocidad real en vez de medirla por " +
+             "diferencia de posición: señal más limpia para el gait. Se engancha solo.")]
+    [SerializeField] private GeckoMover _mover;
 
     [Header("Cadencia del paso")]
     [Tooltip("Desacopla el ritmo de las patas de la velocidad real del cuerpo. " +
@@ -40,12 +45,19 @@ public class GeckoAnimation : MonoBehaviour
              "Apagalo solo si queres el deslizamiento a proposito.")]
     [SerializeField] private bool _compensateStride = true;
 
+    [Tooltip("Sesgo de alternancia (metros). Al par que pisó último se le descuenta esta " +
+             "urgencia para que el otro par tome el turno: da el trote parejo A-B-A-B en vez " +
+             "de que un par acapare los pasos y el bicho renguee. 0 = elección pura por " +
+             "urgencia. ~0.015 anda bien para este tamaño.")]
+    [SerializeField] private float _alternationBias = 0.015f;
+
     private GeckoLeg[] _diagonalA;   // FL + BR
     private GeckoLeg[] _diagonalB;   // FR + BL
 
     private Vector3 _lastBodyPos;
     private Vector3 _velocity;
     private Vector3 _velocitySmoothVel;
+    private int _lastPair = -1;      // 0 = A, 1 = B. Para alternar parejo y que un par no acapare.
     #endregion
 
     /// <summary>
@@ -62,6 +74,7 @@ public class GeckoAnimation : MonoBehaviour
     private void Awake()
     {
         if (_body == null) _body = transform;
+        if (_mover == null) _mover = GetComponent<GeckoMover>();
 
         _diagonalA = new[] { _frontLeft, _backRight };
         _diagonalB = new[] { _frontRight, _backLeft };
@@ -71,8 +84,12 @@ public class GeckoAnimation : MonoBehaviour
 
     private void Update()
     {
-        // 1. Velocidad del cuerpo (sirve con cualquier sistema de movimiento).
-        Vector3 rawVelocity = (_body.position - _lastBodyPos) / Mathf.Max(Time.deltaTime, 0.0001f);
+        // 1. Velocidad del cuerpo. Si hay GeckoMover se usa su velocidad real (señal
+        //    limpia); si no, se mide por diferencia de posición (sirve con cualquier
+        //    sistema de movimiento).
+        Vector3 rawVelocity = _mover != null
+            ? _mover.Velocity
+            : (_body.position - _lastBodyPos) / Mathf.Max(Time.deltaTime, 0.0001f);
         _lastBodyPos = _body.position;
         _velocity = Vector3.SmoothDamp(_velocity, rawVelocity, ref _velocitySmoothVel, _velocitySmoothing);
 
@@ -96,8 +113,17 @@ public class GeckoAnimation : MonoBehaviour
             float aUrgency = PairUrgency(_diagonalA);
             float bUrgency = PairUrgency(_diagonalB);
 
+            // Sesgo de alternancia: al par que pisó último se le descuenta urgencia para
+            // que el otro tome el turno. Trote parejo A-B-A-B en vez de renguera.
+            if (_lastPair == 0) aUrgency -= _alternationBias;
+            else if (_lastPair == 1) bUrgency -= _alternationBias;
+
             if (aUrgency > 0f || bUrgency > 0f)
-                StepPair(aUrgency >= bUrgency ? _diagonalA : _diagonalB);
+            {
+                bool stepA = aUrgency >= bUrgency;
+                StepPair(stepA ? _diagonalA : _diagonalB);
+                _lastPair = stepA ? 0 : 1;
+            }
         }
     }
 
