@@ -10,8 +10,9 @@ public class PlayerInputs
     private CameraFollow _cam;
     private InteractionManager _pjInteract;
     private Player _pj;
+    private GekkoSwinging _swinging;
 
-    public PlayerInputs(PlayerController controller, TongueManager tongue, AimManager aim, CameraFollow cam, InteractionManager interact, Player pj)
+    public PlayerInputs(PlayerController controller, TongueManager tongue, AimManager aim, CameraFollow cam, InteractionManager interact, Player pj, GekkoSwinging swinging)
     {
         pjController = controller;
         _input = new CharacterInput();
@@ -20,7 +21,9 @@ public class PlayerInputs
         _cam = cam;
         _pjInteract = interact;
         _pj = pj;
+        _swinging = swinging;
     }
+
     public void ArtificialEnable()
     {
         _input.Enable();
@@ -31,12 +34,14 @@ public class PlayerInputs
         _input.Character.Tongue.performed += TongueInput;
         _input.Character.Restart.performed += Respawn;
         _input.Character.Pause.performed += PauseInput;
-        _input.Character.Lock.performed += LockInput;
+        // _input.Character.Lock.performed += LockInput; // Lock ya no existe en el action asset
         _input.Character.ChangeTarget.performed += ChangeTarget;
         _input.Character.Debug.performed += ChangeValues;
         _input.Character.Rotation.performed += RotateInput;
         _input.Character.Rotation.canceled += RotateCancel;
         _input.Character.Interact.performed += InteractInput;
+        _input.Character.TongueAttach.performed += TongueAttachInput;
+        _input.Character.TongueAttach.canceled += TongueAttachCancel;
     }
 
     public void ArtificialDisable()
@@ -49,43 +54,44 @@ public class PlayerInputs
         _input.Character.Tongue.performed -= TongueInput;
         _input.Character.Restart.performed -= Respawn;
         _input.Character.Pause.performed -= PauseInput;
-        _input.Character.Lock.performed -= LockInput;
+        // _input.Character.Lock.performed -= LockInput; // Lock ya no existe en el action asset
         _input.Character.ChangeTarget.performed -= ChangeTarget;
         _input.Character.Debug.performed -= ChangeValues;
         _input.Character.Rotation.performed -= RotateInput;
         _input.Character.Rotation.canceled -= RotateCancel;
         _input.Character.Interact.performed -= InteractInput;
+        _input.Character.TongueAttach.performed -= TongueAttachInput;
     }
+
     public void DeactivatePlayerInputs()
     {
         _input.Character.Jump.performed -= JumpInput;
         _input.Character.Jump.canceled -= JumpCancel;
         _input.Character.Movement.performed -= MoveInput;
         _input.Character.Movement.canceled -= MoveCancel;
-        _input.Character.Lock.performed -= LockInput;
+        // _input.Character.Lock.performed -= LockInput; // Lock ya no existe en el action asset
         _input.Character.ChangeTarget.performed -= ChangeTarget;
         _input.Character.Debug.performed -= ChangeValues;
         _input.Character.Rotation.performed -= RotateInput;
         _input.Character.Rotation.canceled -= RotateCancel;
     }
+
     public void ReactivatePlayerInputs()
     {
         _input.Character.Jump.performed += JumpInput;
         _input.Character.Jump.canceled += JumpCancel;
         _input.Character.Movement.performed += MoveInput;
         _input.Character.Movement.canceled += MoveCancel;
-        _input.Character.Lock.performed += LockInput;
+        // _input.Character.Lock.performed += LockInput; // Lock ya no existe en el action asset
         _input.Character.ChangeTarget.performed += ChangeTarget;
         _input.Character.Debug.performed += ChangeValues;
         _input.Character.Rotation.performed += RotateInput;
         _input.Character.Rotation.canceled += RotateCancel;
     }
+
     private bool DialogueActive => UIManager.Instance != null && UIManager.Instance.HasActiveDialogue();
 
-    private void MoveInput(InputAction.CallbackContext value)
-    {
-        pjController.RawInput = value.ReadValue<Vector2>();
-    }
+    private void MoveInput(InputAction.CallbackContext value) => pjController.RawInput = value.ReadValue<Vector2>();
 
     private void MoveCancel(InputAction.CallbackContext value)
     {
@@ -93,21 +99,16 @@ public class PlayerInputs
         pjController.CancelMovement();
     }
 
-    private void RotateInput(InputAction.CallbackContext value)
-    {
-        _cam.MovingCamera = true;
-    }
+    private void RotateInput(InputAction.CallbackContext value) => _cam.MovingCamera = true;
 
-    private void RotateCancel(InputAction.CallbackContext value) {_cam.MovingCamera = false;}
+    private void RotateCancel(InputAction.CallbackContext value) => _cam.MovingCamera = false;
 
-    private void JumpInput(InputAction.CallbackContext value)
-    {
-        pjController.JumpPressed = true;
-    }
+    private void JumpInput(InputAction.CallbackContext value) => pjController.JumpPressed = true;
 
     private void InteractInput(InputAction.CallbackContext value)
     {
-        if (DialogueActive) { UIManager.Instance.AdvanceDialogue(); return; }
+        if(DialogueActive) { UIManager.Instance.AdvanceDialogue(); return; }
+        
         _pj.Interactor?.TryInteract();
         _pjInteract.Interact();
     }
@@ -121,8 +122,9 @@ public class PlayerInputs
     private void TongueInput(InputAction.CallbackContext value)
     {
         // Durante el diálogo, Click avanza la frase en vez de sacar la lengua.
-        if (DialogueActive) { UIManager.Instance.AdvanceDialogue(); return; }
-        if (!pjController.TongueOut || _tongue.IsAttached)
+        if(DialogueActive) { UIManager.Instance.AdvanceDialogue(); return; }
+        
+        if(!pjController.TongueOut || _tongue.IsAttached)
             _tongue.ShootTongue();
     }
     public void Respawn(InputAction.CallbackContext value) {GameManager.Instance.Respawn();}
@@ -131,18 +133,24 @@ public class PlayerInputs
 
     private void PauseInput(InputAction.CallbackContext value)
     {
-        if (ScreenManager.Instance != null)
-            if (ScreenManager.Instance.CanPause)
+        if(ScreenManager.Instance != null)
+            
+            if(ScreenManager.Instance.CanPause)
             {
                 GameManager.Instance.Pause();
                 Cursor.lockState = CursorLockMode.Confined;
             }
     }
 
-    private void LockInput(InputAction.CallbackContext value) { _aimM.ToggleLock(); }
+    // private void LockInput(InputAction.CallbackContext value) { _aimM.ToggleLock(); } // Lock ya no existe en el action asset
 
     private void ChangeTarget(InputAction.CallbackContext value) {_aimM.SwitchTarget(value.ReadValue<Vector2>()); }
 
     private void ChangeValues(InputAction.CallbackContext value) { _pj.ChangeVariables(); }
+
+    private void TongueAttachInput(InputAction.CallbackContext value) => _swinging.StartGrapple();
+
+    private void TongueAttachCancel(InputAction.CallbackContext value) => _swinging.StopGrapple();
+
 }
 

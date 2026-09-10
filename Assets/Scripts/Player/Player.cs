@@ -13,6 +13,7 @@ public class Player : MonoBehaviour
     private DialogueInteractor _interactor;
     private DebugController _debugController;
     private BlueberryComboTracker _blueberryCombo;
+    private GekkoSwinging _swinging;
 
     [Header("Health")]
     [SerializeField] private HealthBar _healthBar;
@@ -33,7 +34,11 @@ public class Player : MonoBehaviour
     [SerializeField] private float _interactReach = 3f;
     [SerializeField] private float _interactOriginY = 1f;
     [SerializeField] private LayerMask _dialogueLayer;
+
+    [Header("Swinging")]
+    [SerializeField] private LayerMask _grappableLayers;
     #endregion
+
     #region Properties
     public PlayerController PjController {get{return _pjController;}}
     public TongueManager PjTongue => _pjTongue;
@@ -89,9 +94,9 @@ public class Player : MonoBehaviour
         CameraFollow cam = camTransform.GetComponent<CameraFollow>();
 
         cam.SetPJC(_pjController);
+        _swinging = new GekkoSwinging(_tongue, _grappableLayers, transform, GetComponentInChildren<LineRenderer>(), Camera.main.transform);
 
-
-        _pjInputs = new PlayerInputs(_pjController, _pjTongue, _aimM,cam, _interactM, this);
+        _pjInputs = new PlayerInputs(_pjController, _pjTongue, _aimM,cam, _interactM, this, _swinging);
         _blueberryCombo = new BlueberryComboTracker(_pjController, health, _blueberry, _pjViewer);
         _blueberryCombo.ArtificialOnEnable();
         UIManager.Instance.notifications.OnBlueberryWindowClosed += _blueberryCombo.ResetCombo;
@@ -125,9 +130,11 @@ public class Player : MonoBehaviour
     {
         _pjController.ArtificialFixedUpdate();
     }
+
     private void LateUpdate()
     {
         _pjController.ArtificialLateUpdate();
+        _swinging.ArtificialLateUpdate();
     }
 
     private void OnDisable()

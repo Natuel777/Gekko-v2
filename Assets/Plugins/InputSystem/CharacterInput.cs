@@ -147,7 +147,7 @@ public partial class @CharacterInput: IInputActionCollection2, IDisposable
                     ""initialStateCheck"": false
                 },
                 {
-                    ""name"": ""Lock"",
+                    ""name"": ""TongueAttach"",
                     ""type"": ""Button"",
                     ""id"": ""1f1b4d67-5e3d-4be4-a421-1c5e33b963b5"",
                     ""expectedControlType"": """",
@@ -345,7 +345,7 @@ public partial class @CharacterInput: IInputActionCollection2, IDisposable
                     ""interactions"": """",
                     ""processors"": """",
                     ""groups"": """",
-                    ""action"": ""Lock"",
+                    ""action"": ""TongueAttach"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
                 },
@@ -395,7 +395,7 @@ public partial class @CharacterInput: IInputActionCollection2, IDisposable
         m_Character_Tongue = m_Character.FindAction("Tongue", throwIfNotFound: true);
         m_Character_Restart = m_Character.FindAction("Restart", throwIfNotFound: true);
         m_Character_Pause = m_Character.FindAction("Pause", throwIfNotFound: true);
-        m_Character_Lock = m_Character.FindAction("Lock", throwIfNotFound: true);
+        m_Character_TongueAttach = m_Character.FindAction("TongueAttach", throwIfNotFound: true);
         m_Character_ChangeTarget = m_Character.FindAction("ChangeTarget", throwIfNotFound: true);
         m_Character_Debug = m_Character.FindAction("Debug", throwIfNotFound: true);
         m_Character_Interact = m_Character.FindAction("Interact", throwIfNotFound: true);
@@ -485,7 +485,7 @@ public partial class @CharacterInput: IInputActionCollection2, IDisposable
     private readonly InputAction m_Character_Tongue;
     private readonly InputAction m_Character_Restart;
     private readonly InputAction m_Character_Pause;
-    private readonly InputAction m_Character_Lock;
+    private readonly InputAction m_Character_TongueAttach;
     private readonly InputAction m_Character_ChangeTarget;
     private readonly InputAction m_Character_Debug;
     private readonly InputAction m_Character_Interact;
@@ -525,9 +525,9 @@ public partial class @CharacterInput: IInputActionCollection2, IDisposable
         /// </summary>
         public InputAction @Pause => m_Wrapper.m_Character_Pause;
         /// <summary>
-        /// Provides access to the underlying input action "Character/Lock".
+        /// Provides access to the underlying input action "Character/TongueAttach".
         /// </summary>
-        public InputAction @Lock => m_Wrapper.m_Character_Lock;
+        public InputAction @TongueAttach => m_Wrapper.m_Character_TongueAttach;
         /// <summary>
         /// Provides access to the underlying input action "Character/ChangeTarget".
         /// </summary>
@@ -584,9 +584,9 @@ public partial class @CharacterInput: IInputActionCollection2, IDisposable
             @Pause.started += instance.OnPause;
             @Pause.performed += instance.OnPause;
             @Pause.canceled += instance.OnPause;
-            @Lock.started += instance.OnLock;
-            @Lock.performed += instance.OnLock;
-            @Lock.canceled += instance.OnLock;
+            @TongueAttach.started += instance.OnTongueAttach;
+            @TongueAttach.performed += instance.OnTongueAttach;
+            @TongueAttach.canceled += instance.OnTongueAttach;
             @ChangeTarget.started += instance.OnChangeTarget;
             @ChangeTarget.performed += instance.OnChangeTarget;
             @ChangeTarget.canceled += instance.OnChangeTarget;
@@ -625,9 +625,9 @@ public partial class @CharacterInput: IInputActionCollection2, IDisposable
             @Pause.started -= instance.OnPause;
             @Pause.performed -= instance.OnPause;
             @Pause.canceled -= instance.OnPause;
-            @Lock.started -= instance.OnLock;
-            @Lock.performed -= instance.OnLock;
-            @Lock.canceled -= instance.OnLock;
+            @TongueAttach.started -= instance.OnTongueAttach;
+            @TongueAttach.performed -= instance.OnTongueAttach;
+            @TongueAttach.canceled -= instance.OnTongueAttach;
             @ChangeTarget.started -= instance.OnChangeTarget;
             @ChangeTarget.performed -= instance.OnChangeTarget;
             @ChangeTarget.canceled -= instance.OnChangeTarget;
@@ -720,12 +720,12 @@ public partial class @CharacterInput: IInputActionCollection2, IDisposable
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnPause(InputAction.CallbackContext context);
         /// <summary>
-        /// Method invoked when associated input action "Lock" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// Method invoked when associated input action "TongueAttach" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
         /// </summary>
         /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
-        void OnLock(InputAction.CallbackContext context);
+        void OnTongueAttach(InputAction.CallbackContext context);
         /// <summary>
         /// Method invoked when associated input action "ChangeTarget" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
         /// </summary>
