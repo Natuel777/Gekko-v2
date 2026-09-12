@@ -95,7 +95,6 @@ public class PuzzleBeaver : MonoBehaviour, IInteractable, IDialogueable
         _exclamation.enabled = false;
         if (UIManager.Instance == null || UIManager.Instance.HasActiveDialogue()) return;
         UIManager.Instance.StartDialogue(this);
-
     }
 
     private void BridgeFinished()

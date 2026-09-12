@@ -110,7 +110,7 @@ public class PlayerInputs
     {
         if(DialogueActive) { UIManager.Instance.AdvanceDialogue(); return; }
         
-        _pj.Interactor?.TryInteract();
+        //_pj.Interactor?.TryInteract();
         _pjInteract.Interact();
     }
 

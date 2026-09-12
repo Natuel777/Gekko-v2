@@ -1,7 +1,4 @@
-﻿using System;
-using System.Runtime.CompilerServices;
-using Unity.Cinemachine;
-using UnityEngine;
+﻿using UnityEngine;
 
 public class PlayerController
 {

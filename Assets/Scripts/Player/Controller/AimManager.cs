@@ -1,8 +1,5 @@
 using System.Collections.Generic;
-using System.IO.Pipes;
-using Unity.Cinemachine;
 using UnityEngine;
-using UnityEngine.Animations.Rigging;
 
 public class AimManager : MonoBehaviour
 {
@@ -34,7 +31,7 @@ public class AimManager : MonoBehaviour
             _switchTimer -= Time.deltaTime;
             _pointToLook.position = _target.position;
             _tongue.LookAt(_target.position);
-            if (!InFOV(transform, _target.position, _viewRange, _viewAngle))
+            if (!StaticMethods.InFOV(transform, _target.position, _viewRange, _viewAngle, _obstacle))
                 TargetNull();
         }
         else
@@ -48,21 +45,6 @@ public class AimManager : MonoBehaviour
     {
         _pjController = pjC;
         _camTransform = camera;
-    }
-    public bool InFOV(Transform startPos, Vector3 endPos, float viewRange, float viewAngle)
-    {
-        Vector3 dir = endPos - startPos.position;
-        if (!InLOS(startPos.position, endPos)) return false;
-        if (dir.magnitude > viewRange) return false;
-        if (Vector3.Angle(startPos.forward, dir) > viewAngle / 2) return false;
-        return true;
-    }
-
-    bool InLOS(Vector3 start, Vector3 end)
-    {
-        Vector3 dir = end - start;
-
-        return !Physics.Raycast(start, dir.normalized, dir.magnitude, _obstacle, QueryTriggerInteraction.Ignore);
     }
     public void ToggleLock()
     {
@@ -103,7 +85,7 @@ public class AimManager : MonoBehaviour
 
             if (hit.TryGetComponent(out IParticleSystemTarget pst) && !pst.CanBeTargeted) continue;
 
-            if(InFOV(transform, hit.transform.position, _viewRange, _viewAngle))
+            if(StaticMethods.InFOV(transform, hit.transform.position, _viewRange, _viewAngle, _obstacle))
                 targets.Add(hit.transform);
         }
 
