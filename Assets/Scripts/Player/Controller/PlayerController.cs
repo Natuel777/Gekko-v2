@@ -116,6 +116,7 @@ public class PlayerController
         if (_isSurface && !_wasSurface)
         {
             _pjViewer.LandingSoundPlay();
+            CancelJump();
         }
         _wasSurface = _isSurface;
 
