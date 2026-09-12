@@ -96,8 +96,8 @@ public class PlayerController
     }
     public void ArtificialLateUpdate()
     {
-        if (_tongueM != null && _tongueM.IsAttached)
-            _tongueM.MoveObject();
+       // if (_tongueM != null && _tongueM.IsAttached)
+       //     _tongueM.MoveObject();
     }
     public void ArtificialFixedUpdate()
     {
@@ -169,24 +169,25 @@ public class PlayerController
                     Quaternion targetRot = Quaternion.LookRotation(projectedForward, _currentUp);
                     Quaternion newRot = Quaternion.Slerp(_pjTransform.rotation, targetRot, 5f * Time.deltaTime);
 
-                    if (_tongueM != null && _tongueM.IsAttached)
-                    {
-                        Vector3 newForward = newRot * Vector3.forward;
-                        Vector3 desiredObjPos = _tongueM.MouthPos + newForward * (_tongueM.ObjectRadius + 0.5f);
-                        LayerMask blockMask = ~(1 << _pjTransform.gameObject.layer) & ~(1 << _tongueM.ObjectLayer);
-                        Vector3 halfExtents = _tongueM.ObjectExtents * 0.9f;
-                        Vector3 moveDir = desiredObjPos - _tongueM.ObjectPosition;
-                        float moveDist = moveDir.magnitude;
-                        if (moveDist > 0.001f && Physics.BoxCast(_tongueM.ObjectPosition, halfExtents, moveDir.normalized, out RaycastHit boxHit, newRot, moveDist, blockMask, QueryTriggerInteraction.Ignore))
-                        {
-                            if (boxHit.distance < moveDist)
-                                return; // bloqueado, no rotar
-                        }
-                    }
-                    else
-                    {
-                        _pjTransform.rotation = newRot;
-                    }  
+                    //if (_tongueM != null && _tongueM.IsAttached)
+                    //{
+                    //    Vector3 newForward = newRot * Vector3.forward;
+                    //    Vector3 desiredObjPos = _tongueM.MouthPos + newForward * (_tongueM.ObjectRadius + 0.5f);
+                    //    LayerMask blockMask = ~(1 << _pjTransform.gameObject.layer) & ~(1 << _tongueM.ObjectLayer);
+                    //    Vector3 halfExtents = _tongueM.ObjectExtents * 0.9f;
+                    //    Vector3 moveDir = desiredObjPos - _tongueM.ObjectPosition;
+                    //    float moveDist = moveDir.magnitude;
+                    //    if (moveDist > 0.001f && Physics.BoxCast(_tongueM.ObjectPosition, halfExtents, moveDir.normalized, out RaycastHit boxHit, newRot, moveDist, blockMask, QueryTriggerInteraction.Ignore))
+                    //    {
+                    //        if (boxHit.distance < moveDist)
+                    //            return; // bloqueado, no rotar
+                    //    }
+                    //}
+                    //else
+                    //{
+                    //    _pjTransform.rotation = newRot;
+                    //}  
+                    _pjTransform.rotation = newRot;
                 }
             }
         }
@@ -240,48 +241,48 @@ public class PlayerController
             toTarget = Vector3.ProjectOnPlane(toTarget, _currentUp);
             targetPos = _rb.position + toTarget;
         }
-        if (_tongueM != null && _tongueM.IsAttached)
-        {
-            Vector3 currentObjPos = _tongueM.ObjectPosition;
-            Vector3 desiredObjPos = currentObjPos + (targetPos - _rb.position);
-            Vector3 moveDir = (desiredObjPos - currentObjPos);
-            float moveDist = moveDir.magnitude;
-            LayerMask moveMask = ~(1 << _pjTransform.gameObject.layer) & ~(1 << _tongueM.ObjectLayer);
-            Vector3 halfExtents = _tongueM.ObjectExtents * 0.9f;
-
-            if (moveDist > 0.001f)
-            {
-                if (Physics.BoxCast(currentObjPos, halfExtents, moveDir.normalized,
-                    out RaycastHit boxHit, _pjTransform.rotation, moveDist, moveMask, QueryTriggerInteraction.Ignore))
-                {
-                    // Choca en el camino, proyectar
-                    targetPos = _rb.position + Vector3.ProjectOnPlane(targetPos - _rb.position, boxHit.normal);
-                }
-            }
-
-            // Chequeo de penetración actual (por si ya está adentro)
-            Collider[] currentOverlaps = Physics.OverlapBox(
-                currentObjPos, halfExtents,
-                _pjTransform.rotation, moveMask, QueryTriggerInteraction.Ignore);
-
-            if (currentOverlaps.Length > 0)
-            {
-                foreach (var col in currentOverlaps)
-                {
-                    if (Physics.ComputePenetration(
-                        _tongueM.HeldCollider, currentObjPos, _pjTransform.rotation,
-                        col, col.transform.position, col.transform.rotation,
-                        out Vector3 exitDir, out float exitDist))
-                    {
-                        if (exitDist > 0.01f)
-                        {
-                            targetPos = _rb.position + exitDir * exitDist;
-                            break;
-                        }
-                    }
-                }
-            }
-        }
+        //if (_tongueM != null && _tongueM.IsAttached)
+        //{
+        //    Vector3 currentObjPos = _tongueM.ObjectPosition;
+        //    Vector3 desiredObjPos = currentObjPos + (targetPos - _rb.position);
+        //    Vector3 moveDir = (desiredObjPos - currentObjPos);
+        //    float moveDist = moveDir.magnitude;
+        //    LayerMask moveMask = ~(1 << _pjTransform.gameObject.layer) & ~(1 << _tongueM.ObjectLayer);
+        //    Vector3 halfExtents = _tongueM.ObjectExtents * 0.9f;
+        //
+        //    if (moveDist > 0.001f)
+        //    {
+        //        if (Physics.BoxCast(currentObjPos, halfExtents, moveDir.normalized,
+        //            out RaycastHit boxHit, _pjTransform.rotation, moveDist, moveMask, QueryTriggerInteraction.Ignore))
+        //        {
+        //            // Choca en el camino, proyectar
+        //            targetPos = _rb.position + Vector3.ProjectOnPlane(targetPos - _rb.position, boxHit.normal);
+        //        }
+        //    }
+        //
+        //    // Chequeo de penetración actual (por si ya está adentro)
+        //    Collider[] currentOverlaps = Physics.OverlapBox(
+        //        currentObjPos, halfExtents,
+        //        _pjTransform.rotation, moveMask, QueryTriggerInteraction.Ignore);
+        //
+        //    if (currentOverlaps.Length > 0)
+        //    {
+        //        foreach (var col in currentOverlaps)
+        //        {
+        //            if (Physics.ComputePenetration(
+        //                _tongueM.HeldCollider, currentObjPos, _pjTransform.rotation,
+        //                col, col.transform.position, col.transform.rotation,
+        //                out Vector3 exitDir, out float exitDist))
+        //            {
+        //                if (exitDist > 0.01f)
+        //                {
+        //                    targetPos = _rb.position + exitDir * exitDist;
+        //                    break;
+        //                }
+        //            }
+        //        }
+        //    }
+        //}
         Vector3 moveVel = (targetPos - _rb.position) / Time.fixedDeltaTime;
 
         if (_isIcySurface && input.magnitude > 0.01f)
@@ -352,24 +353,24 @@ public class PlayerController
 
             Quaternion newRot = Quaternion.Slerp(_pjTransform.rotation, rot, rotSpeed);
 
-            if (_tongueM != null && _tongueM.IsAttached)
-            {
-                Vector3 newForward = newRot * Vector3.forward;
-                Vector3 currentObjPos = _tongueM.ObjectPosition;
-                Vector3 desiredObjPos = _tongueM.MouthPos + newForward * (_tongueM.ObjectRadius + 0.5f);
-                Vector3 moveDir = desiredObjPos - currentObjPos;
-                float moveDist = moveDir.magnitude;
-                LayerMask blockMask = ~(1 << _pjTransform.gameObject.layer) & ~(1 << _tongueM.ObjectLayer);
-                Vector3 halfExtents = _tongueM.ObjectExtents * 0.9f;
-
-                if (moveDist > 0.001f && Physics.BoxCast(
-                    currentObjPos, halfExtents, moveDir.normalized,
-                    out RaycastHit boxHit, newRot, moveDist, blockMask, QueryTriggerInteraction.Ignore))
-                {
-                    if (boxHit.distance < moveDist)
-                        return; 
-                }
-            }
+            //if (_tongueM != null && _tongueM.IsAttached)
+            //{
+            //    Vector3 newForward = newRot * Vector3.forward;
+            //    Vector3 currentObjPos = _tongueM.ObjectPosition;
+            //    Vector3 desiredObjPos = _tongueM.MouthPos + newForward * (_tongueM.ObjectRadius + 0.5f);
+            //    Vector3 moveDir = desiredObjPos - currentObjPos;
+            //    float moveDist = moveDir.magnitude;
+            //    LayerMask blockMask = ~(1 << _pjTransform.gameObject.layer) & ~(1 << _tongueM.ObjectLayer);
+            //    Vector3 halfExtents = _tongueM.ObjectExtents * 0.9f;
+            //
+            //    if (moveDist > 0.001f && Physics.BoxCast(
+            //        currentObjPos, halfExtents, moveDir.normalized,
+            //        out RaycastHit boxHit, newRot, moveDist, blockMask, QueryTriggerInteraction.Ignore))
+            //    {
+            //        if (boxHit.distance < moveDist)
+            //            return; 
+            //    }
+            //}
 
              _pjTransform.rotation = newRot;
         }

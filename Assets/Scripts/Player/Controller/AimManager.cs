@@ -155,7 +155,6 @@ public class AimManager : MonoBehaviour
     private List<Transform> GetOrderedTargets()
     {
         List<Transform> targets = GetTargets();
-
         Vector3 camForward = Vector3.ProjectOnPlane(_camTransform.forward, _pjController.CurrentUp);
 
         targets.Sort((a, b) =>

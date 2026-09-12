@@ -13,7 +13,10 @@ public class LevelOneManager : MonoBehaviour
     {
         Instance = this;
     }
-
+    private void Start()
+    {
+        if (AudioManager.instance) AudioManager.instance.Play(SoundNames.LvlOne,true);
+    }
     public void BridgeFinish() => OnBridgeConstructed?.Invoke();
     public void BeaverMissionTaken() => OnBeaverMission?.Invoke();
 }

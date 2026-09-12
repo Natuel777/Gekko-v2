@@ -57,10 +57,11 @@ public class TongueManager : MonoBehaviour
     {
         if (_attached && _object != null)
         {
-            _object.position = transform.position + new Vector3(0, 1, 0) + _pj.forward * (_objectRadius + 0.5f);
-            transform.LookAt(_object.position);
-            _currentPos = _object.position;
-            _startPos = transform.position;
+             _object.position = transform.position + new Vector3(0, 1, 0) + _pj.forward * (_objectRadius + 0.5f);
+             transform.LookAt(_object.position);
+             _currentPos = _object.position;
+             _startPos = transform.position;
+
         }
     }
     private void TongueBehaviour()
@@ -117,6 +118,19 @@ public class TongueManager : MonoBehaviour
                         _object.rotation = _mouthTransform.rotation;
                         _object.SetParent(_mouthTransform, true);
                         _object.localPosition = Vector3.zero;
+                    }
+                    else if (_object.TryGetComponent(out CarriableObject carryObj))
+                    {
+                        carryObj.Grab();
+                        _object.SetParent(_pj, false);
+                        Vector3 localHoldPos = new Vector3(0, 0.9f, -0.8f);
+                        //Vector3 grabLocalOffset = _object.InverseTransformPoint(carryObj.GrabbedPoint.position) - _object.localPosition;
+
+                        _object.localPosition = localHoldPos;
+                        _object.localRotation = Quaternion.identity;
+                        _pjViewer.Mouth(false);
+                        //_object.localPosition = Vector3.zero;
+                        _attached = true;
                     }
                     else if (_object.TryGetComponent(out BringgableObject bringgable))
                     {
@@ -250,6 +264,12 @@ public class TongueManager : MonoBehaviour
             grabObj.Drop();
             _object = null;
         }
+        else if (_object.TryGetComponent(out CarriableObject carryObj))
+        {
+            carryObj.Drop();
+            _attached = false;
+            _object = null;
+        }
         else if (_object.TryGetComponent(out BringgableObject bringgable))
         {
             bringgable.Drop();
@@ -284,6 +304,12 @@ public class TongueManager : MonoBehaviour
         {
             _object.position = _currentPos;
         }
+    }
+    public InteractableObject GetObject()
+    {
+        InteractableObject o = null;
+        if (_object != null) o = _object.GetComponent<InteractableObject>();
+        return o;
     }
     public void GetPlayerController(PlayerController pjC)
     {

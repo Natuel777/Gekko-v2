@@ -1,15 +1,13 @@
 using UnityEngine;
 
-public class BeaverBridge_Plank : BringgableObject, IRespawneable
+public class BeaverBridge_Plank : CarriableObject, IRespawneable
 {
     private Vector3 _respawnPoint;
     private Quaternion _respawnRot;
     private MeshRenderer _mesh;
-    private Collider _col;
     private void Start()
     {
         _mesh = GetComponentInChildren<MeshRenderer>();
-        _col = GetComponent<Collider>();
         _respawnPoint = transform.position;
         _respawnRot = transform.rotation;
         LevelOneManager.Instance.OnBeaverMission += Activate;

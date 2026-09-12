@@ -89,6 +89,7 @@ public class GameManager : MonoBehaviour
 
         ScreenManager.Instance.Push(_screenPause);
         List<SoundNames> soundsToNotPause = new List<SoundNames>{ SoundNames.Menu, SoundNames.LvlOne};
+        if(AudioManager.instance)
         AudioManager.instance.PauseAll(soundsToNotPause);
         EventManager.Trigger("PauseEvent");
         IsPause = true;

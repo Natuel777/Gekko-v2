@@ -17,8 +17,6 @@ public class BeaverBridge : MonoBehaviour
     [SerializeField] private TextMeshProUGUI _textCount;
     [SerializeField] private ParticleSystem _particlePlankSetted;
     [SerializeField] private GameObject _particleCompleted;
-    [SerializeField] private AudioSource _plankSound;
-    [SerializeField] private AudioSource _completedSound;
     [SerializeField] private GameObject _beaverAnimation;
     [SerializeField] private GameObject _hammerAnimation;
     [SerializeField] private CinemachineCamera _camFinish;
@@ -38,7 +36,7 @@ public class BeaverBridge : MonoBehaviour
     private void PlankPositioned()
     {
         _currentPlanks++;
-        _plankSound.Play();
+        if (AudioManager.instance) AudioManager.instance.Play(SoundNames.PlankPlaced);
         _particlePlankSetted.Play();
         _beaverAnimation.SetActive(true);
         _hammerAnimation.SetActive(true);
@@ -55,7 +53,7 @@ public class BeaverBridge : MonoBehaviour
     {
         _camFinish.Priority = 30;
         GameManager.Instance.Pj.Inputs(false);
-        _completedSound.Play();
+        if (AudioManager.instance) AudioManager.instance.Play(SoundNames.FinishPuzzle);
         _particleCompleted.SetActive(true);
 
         ParticleSystem[] particleSystems = _particleCompleted.GetComponentsInChildren<ParticleSystem>();
@@ -99,6 +97,19 @@ public class BeaverBridge : MonoBehaviour
             GameManager.Instance.Pj.PjTongue.ObjectLost();
             plank.Positioned();
             PlankPositioned();
+        }
+        if(other.TryGetComponent(out Player pj))
+        {
+            if(pj.PjTongue.IsAttached)
+            {
+                InteractableObject obj = pj.PjTongue.GetObject();
+                if (obj is BeaverBridge_Plank plan)
+                {
+                    pj.PjTongue.ObjectLost();
+                    plan.Positioned();
+                    PlankPositioned();
+                }
+            }
         }
     }
     private void OnDisable()

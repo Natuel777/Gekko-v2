@@ -61,6 +61,7 @@ public class PlayerInputs
         _input.Character.Rotation.canceled -= RotateCancel;
         _input.Character.Interact.performed -= InteractInput;
         _input.Character.TongueAttach.performed -= TongueAttachInput;
+        _input.Character.TongueAttach.canceled -= TongueAttachCancel;
     }
 
     public void DeactivatePlayerInputs()
