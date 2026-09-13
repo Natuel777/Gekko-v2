@@ -45,6 +45,18 @@ public class GeckoAnimation : MonoBehaviour
              "Apagalo solo si queres el deslizamiento a proposito.")]
     [SerializeField] private bool _compensateStride = true;
 
+    [Tooltip("Si es MAYOR A 0, esta es la velocidad (m/s) que usan las patas para TODA la marcha " +
+             "adaptativa de GeckoLeg (duración del paso, largo de zancada, cuánto se adelanta el " +
+             "pie) EN VEZ de la velocidad real del cuerpo. La DIRECCIÓN sigue siendo la real (el pie " +
+             "pisa para el lado correcto); solo se reemplaza el módulo. \n" +
+             "Para qué sirve: GeckoMover.Speed es la velocidad de gameplay; si la subís, _stepDistance/" +
+             "_maxLead/etc. de cada pata (calibrados para una velocidad más baja) se saturan contra " +
+             "sus topes y las patas dan 'micro pasos' cortos y apurados en vez de zancadas largas. " +
+             "En lugar de retocar esos topes por pata, dejás GeckoMover.Speed en el valor real del " +
+             "juego y ajustás ESTO a mano a la velocidad 'de mentira' con la que la marcha se veía " +
+             "bien. 0 = desactivado, usa la velocidad real (comportamiento de siempre).")]
+    [SerializeField] private float _gaitApparentSpeed = 0f;
+
     [Tooltip("Sesgo de alternancia (metros). Al par que pisó último se le descuenta esta " +
              "urgencia para que el otro par tome el turno: da el trote parejo A-B-A-B en vez " +
              "de que un par acapare los pasos y el bicho renguee. 0 = elección pura por " +
@@ -71,6 +83,16 @@ public class GeckoAnimation : MonoBehaviour
         set => _gaitSpeedScale = Mathf.Clamp(value, 0.2f, 3f);
     }
 
+    /// <summary>
+    /// Velocidad "de mentira" (m/s) para la marcha adaptativa de las patas. 0 = usa la
+    /// velocidad real del cuerpo. Ver el tooltip del campo para el motivo de que exista.
+    /// </summary>
+    public float GaitApparentSpeed
+    {
+        get => _gaitApparentSpeed;
+        set => _gaitApparentSpeed = Mathf.Max(0f, value);
+    }
+
     private void Awake()
     {
         if (_body == null) _body = transform;
@@ -93,14 +115,21 @@ public class GeckoAnimation : MonoBehaviour
         _lastBodyPos = _body.position;
         _velocity = Vector3.SmoothDamp(_velocity, rawVelocity, ref _velocitySmoothVel, _velocitySmoothing);
 
+        // La marcha ADAPTATIVA puede recibir una velocidad "de mentira" en vez de la real
+        // (ver _gaitApparentSpeed). La dirección sigue siendo la real; solo se pisa el módulo,
+        // así el pie siempre avanza para el lado correcto aunque la magnitud sea otra.
+        Vector3 gaitVelocity = _velocity;
+        if (_gaitApparentSpeed > 0f && _velocity.sqrMagnitude > 0.0001f)
+            gaitVelocity = _velocity.normalized * _gaitApparentSpeed;
+
         // 2. Cada pata recalcula su punto ideal y avanza el paso en curso.
         //    La cadencia se empuja cada frame para poder cambiarla en vivo.
         PushGait(_frontLeft); PushGait(_frontRight); PushGait(_backLeft); PushGait(_backRight);
 
-        _frontLeft.ArtificialUpdate(_velocity);
-        _frontRight.ArtificialUpdate(_velocity);
-        _backLeft.ArtificialUpdate(_velocity);
-        _backRight.ArtificialUpdate(_velocity);
+        _frontLeft.ArtificialUpdate(gaitVelocity);
+        _frontRight.ArtificialUpdate(gaitVelocity);
+        _backLeft.ArtificialUpdate(gaitVelocity);
+        _backRight.ArtificialUpdate(gaitVelocity);
 
         // 3. Si ningún par está en movimiento, arranca el que MÁS lo necesita.
         //    Elegir por urgencia (y no "siempre A primero") evita que un par
