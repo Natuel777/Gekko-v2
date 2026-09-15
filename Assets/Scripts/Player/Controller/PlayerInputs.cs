@@ -92,19 +92,29 @@ public class PlayerInputs
 
     private bool DialogueActive => UIManager.Instance != null && UIManager.Instance.HasActiveDialogue();
 
-    private void MoveInput(InputAction.CallbackContext value) => pjController.RawInput = value.ReadValue<Vector2>();
+    private void MoveInput(InputAction.CallbackContext value)
+    {
+        Vector2 move = value.ReadValue<Vector2>();
+        pjController.RawInput = move;
+        _swinging.ThrustInput = move;
+    }
 
     private void MoveCancel(InputAction.CallbackContext value)
     {
         pjController.RawInput = Vector2.zero;
         pjController.CancelMovement();
+        _swinging.ThrustInput = Vector2.zero;
     }
 
     private void RotateInput(InputAction.CallbackContext value) => _cam.MovingCamera = true;
 
     private void RotateCancel(InputAction.CallbackContext value) => _cam.MovingCamera = false;
 
-    private void JumpInput(InputAction.CallbackContext value) => pjController.JumpPressed = true;
+    private void JumpInput(InputAction.CallbackContext value)
+    {
+        pjController.JumpPressed = true;
+        _swinging.ShortenCablePressed = true;
+    }
 
     private void InteractInput(InputAction.CallbackContext value)
     {
@@ -114,10 +124,11 @@ public class PlayerInputs
         _pjInteract.Interact();
     }
 
-    private void JumpCancel(InputAction.CallbackContext value) 
+    private void JumpCancel(InputAction.CallbackContext value)
     {
         pjController.JumpPressed = false;
         pjController.CancelJump();
+        _swinging.ShortenCablePressed = false;
     }
 
     private void TongueInput(InputAction.CallbackContext value)

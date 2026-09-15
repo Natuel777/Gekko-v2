@@ -37,6 +37,12 @@ public class Player : MonoBehaviour
 
     [Header("Swinging")]
     [SerializeField] private LayerMask _grappableLayers;
+    [SerializeField] private float _forwardThrustForce = 15f;
+    [SerializeField] private float _horizontalThrustForce = 10f;
+    [SerializeField] private float _extendCableSpeed = 5f;
+    [SerializeField] private Transform _predictionPoint;
+    [SerializeField] private float _predictionSphereRadius = 0.5f;
+    [SerializeField] private float _maxTongueDistance = 100f;
     #endregion
 
     #region Properties
@@ -94,7 +100,9 @@ public class Player : MonoBehaviour
         CameraFollow cam = camTransform.GetComponent<CameraFollow>();
 
         cam.SetPJC(_pjController);
-        _swinging = new GekkoSwinging(_tongue, _grappableLayers, transform, GetComponentInChildren<LineRenderer>(), Camera.main.transform);
+        _swinging = new GekkoSwinging(_tongue, _grappableLayers, transform, GetComponentInChildren<LineRenderer>(), Camera.main.transform,
+                        _forwardThrustForce, _horizontalThrustForce, _extendCableSpeed,
+                        _predictionPoint, _predictionSphereRadius, _maxTongueDistance);
         _pjController.GetSwinging(_swinging);
 
         _pjInputs = new PlayerInputs(_pjController, _pjTongue, _aimM,cam, _interactM, this, _swinging);
@@ -182,6 +190,19 @@ public class Player : MonoBehaviour
         Gizmos.color = Color.cyan;
         Gizmos.DrawRay(origin, transform.forward * _interactReach);
         Gizmos.DrawWireSphere(origin + transform.forward * _interactReach, 0.15f);
+
+        DrawSwingSphereCastGizmo();
+    }
+
+    private void DrawSwingSphereCastGizmo()
+    {
+        bool didHit = Physics.SphereCast(transform.position, _predictionSphereRadius, transform.forward, out RaycastHit hit, _maxTongueDistance, _grappableLayers);
+        Vector3 endPoint = didHit ? hit.point : transform.position + transform.forward * _maxTongueDistance;
+
+        Gizmos.color = didHit ? Color.green : Color.red;
+        Gizmos.DrawLine(transform.position, endPoint);
+        Gizmos.DrawWireSphere(transform.position, _predictionSphereRadius);
+        Gizmos.DrawWireSphere(endPoint, _predictionSphereRadius);
     }
     private void OnTriggerEnter(Collider other)
     {
