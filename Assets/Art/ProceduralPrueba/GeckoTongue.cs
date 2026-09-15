@@ -30,6 +30,9 @@ public class GeckoTongue : MonoBehaviour
 {
     private enum State { Idle, Reaching, Eating, Attached, Retracting }
 
+    /// <summary> A qué le está apuntando la lengua AHORA MISMO, sin disparar — para la retícula. </summary>
+    public enum AimTargetKind { None, Edible, GrapplePoint, InvalidSurface }
+
     [Serializable] public class GameObjectEvent : UnityEvent<GameObject> { }
 
     #region Inspector
@@ -140,6 +143,12 @@ public class GeckoTongue : MonoBehaviour
     public bool Busy => _state != State.Idle;
     public bool IsGrappling => _state == State.Attached;
 
+    private AimTargetKind _currentAimTarget = AimTargetKind.None;
+    /// <summary> A qué apunta la lengua en este instante (para la retícula de UI). Solo tiene
+    /// sentido mientras <see cref="Busy"/> es false — apuntar mientras la lengua ya está en uso
+    /// no tiene efecto en el disparo, así que se reporta None. </summary>
+    public AimTargetKind CurrentAimTarget => _currentAimTarget;
+
     private void Awake()
     {
         if (_mover == null) _mover = GetComponent<GeckoMover>();
@@ -200,6 +209,8 @@ public class GeckoTongue : MonoBehaviour
         ReadInput();
 
         if (_cooldownTimer > 0f) _cooldownTimer -= Time.deltaTime;
+
+        _currentAimTarget = _state == State.Idle ? PeekAimTarget() : AimTargetKind.None;
 
         switch (_state)
         {
@@ -280,6 +291,7 @@ public class GeckoTongue : MonoBehaviour
         }
 
         _state = State.Reaching;
+        if (AudioManager.instance != null) AudioManager.instance.Play(SoundNames.PlayerTongueOut);
     }
 
     private void TickReaching()
@@ -310,6 +322,7 @@ public class GeckoTongue : MonoBehaviour
             GameObject go = _edibleTf.gameObject;
             _edible = null; _edibleTf = null;
             e.Eat();
+            if (AudioManager.instance != null) AudioManager.instance.Play(SoundNames.PlayerSlurp);
             OnAte?.Invoke(go);
             _state = State.Retracting;
         }
@@ -414,6 +427,7 @@ public class GeckoTongue : MonoBehaviour
         _attachedTimer = 0f;
         _state = State.Attached;
         _mover.SetTethered(true);
+        AnchorGrapplePoint()?.FlashAttach();
         OnGrappleAttached?.Invoke();
     }
 
@@ -422,6 +436,7 @@ public class GeckoTongue : MonoBehaviour
         if (_state == State.Attached)
         {
             _mover.SetTethered(false);
+            AnchorGrapplePoint()?.FlashRelease();
             OnGrappleReleased?.Invoke();
         }
         _state = State.Retracting;
@@ -434,8 +449,15 @@ public class GeckoTongue : MonoBehaviour
         Vector3 boost = Vector3.up * _launchUp;
         if (v.sqrMagnitude > 0.05f) boost += v.normalized * _launchForward;
         _mover.LaunchFromTether(v + boost);
+        AnchorGrapplePoint()?.FlashRelease();
         OnGrappleReleased?.Invoke();
         _state = State.Retracting;
+    }
+
+    /// <summary> El GeckoGrapplePoint del ancla actual, si tiene uno (para el destello de feedback). </summary>
+    private GeckoGrapplePoint AnchorGrapplePoint()
+    {
+        return _anchorTf != null ? _anchorTf.GetComponentInParent<GeckoGrapplePoint>() : null;
     }
 
     private Vector3 CurrentAnchor()
@@ -493,6 +515,34 @@ public class GeckoTongue : MonoBehaviour
             : (gp != null ? gp.transform : hit.collider.transform);
         _hadAnchor = true;
         return true;
+    }
+
+    /// <summary>
+    /// Misma lógica de validación que TryAim(), pero de SOLO LECTURA — no toca _hadAnchor ni
+    /// ningún otro estado. Se llama todos los frames (mientras Idle) para que la retícula de
+    /// UI sepa a qué le estás apuntando ANTES de que dispares.
+    /// </summary>
+    private AimTargetKind PeekAimTarget()
+    {
+        Ray ray = AimRay();
+        if (!Physics.Raycast(ray, out RaycastHit hit, _maxDistance * 4f, _aimMask, QueryTriggerInteraction.Collide))
+            return AimTargetKind.None;
+
+        Vector3 mouth = MouthPos();
+        if (Vector3.Distance(mouth, hit.point) > _maxDistance) return AimTargetKind.None;
+
+        var e = hit.collider.GetComponentInParent<IGeckoEdible>();
+        if (e == null) e = hit.collider.GetComponent<IGeckoEdible>();
+        bool edibleByMask = (_edibleMask.value & (1 << hit.collider.gameObject.layer)) != 0;
+        if ((e != null && e.CanBeEaten) || edibleByMask)
+            return AimTargetKind.Edible;
+
+        var gp = hit.collider.GetComponentInParent<GeckoGrapplePoint>();
+        bool maskOk = (_grappleMask.value & (1 << hit.collider.gameObject.layer)) != 0;
+        if ((_requireGrapplePoint && gp == null) || (!_requireGrapplePoint && !maskOk && gp == null))
+            return AimTargetKind.InvalidSurface;
+
+        return AimTargetKind.GrapplePoint;
     }
 
     // ---------------------------------------------------------------- VISUAL

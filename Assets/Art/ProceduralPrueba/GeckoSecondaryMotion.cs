@@ -125,6 +125,7 @@ public class GeckoSecondaryMotion : MonoBehaviour
     private Vector3 _pitchAxis = Vector3.right;   // derivados en Awake
     private Vector3 _yawAxis = Vector3.up;
     private float _conformAngle;
+    private float _inclineSmoothed;   // ver MeasureIncline: filtra el ruido del pie en pleno paso
     private float _tailSwayPhase;
     private float _headYaw, _headPitch;
     private bool _ready;
@@ -192,7 +193,16 @@ public class GeckoSecondaryMotion : MonoBehaviour
         float conformTarget = 0f;
         if (_conformEnabled)
         {
-            float measured = MeasureIncline() * _conformGain;
+            // MeasureIncline() mide con la posición ACTUAL de los pies, y un pie en pleno
+            // paso está en el aire, a mitad de camino de su arco — la lectura cruda salta
+            // fuerte cada vez que una pata pisa. La suavizamos ANTES de decidir el signo del
+            // boost de trepada: sin esto, un salto de ruido momentáneo hacía que el boost
+            // "confirmara" la dirección equivocada y la columna se iba de -20° a +10° en
+            // menos de un segundo trepando derecho por una pared plana.
+            float rawIncline = MeasureIncline();
+            _inclineSmoothed = Mathf.Lerp(_inclineSmoothed, rawIncline, 1f - Mathf.Exp(-6f * dt));
+
+            float measured = _inclineSmoothed * _conformGain;
             // Empujón extra al trepar: curva la mitad delantera hacia la pared aunque las
             // patas todavía no hayan mandado el desnivel. Sigue el signo de la lectura de
             // patas si ya hay una; si no, asume "subiendo" (frente para arriba).
@@ -256,7 +266,14 @@ public class GeckoSecondaryMotion : MonoBehaviour
 
         if (_hips)
         {
-            _hips.localPosition = _hipsRestPos + Vector3.up * bobY;
+            // Bob relativo al 'arriba' ACTUAL del cuerpo, no al de mundo. Con Vector3.up de
+            // mundo, al trepar una pared (donde el 'arriba' del cuerpo está rotado 90°) el
+            // mismo bob "vertical" empuja las caderas de costado/adelante en vez de hacia
+            // afuera de la pared — se veía como un saltito en cada paso.
+            Vector3 bobDir = _hips.parent != null
+                ? _hips.parent.InverseTransformDirection(transform.up)
+                : Vector3.up;
+            _hips.localPosition = _hipsRestPos + bobDir * bobY;
             _hips.localRotation = _hipsRest * Quaternion.Euler(0f, 0f, roll);
         }
         if (_spine1 && Mathf.Abs(breath) > 0.0001f)
