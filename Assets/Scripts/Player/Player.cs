@@ -95,6 +95,7 @@ public class Player : MonoBehaviour
 
         cam.SetPJC(_pjController);
         _swinging = new GekkoSwinging(_tongue, _grappableLayers, transform, GetComponentInChildren<LineRenderer>(), Camera.main.transform);
+        _pjController.GetSwinging(_swinging);
 
         _pjInputs = new PlayerInputs(_pjController, _pjTongue, _aimM,cam, _interactM, this, _swinging);
         _blueberryCombo = new BlueberryComboTracker(_pjController, health, _blueberry, _pjViewer);

@@ -9,8 +9,10 @@ public class GekkoSwinging
     private Vector3 _grapplePoint = Vector3.zero;
     private SpringJoint _joint;
 
+    public bool IsSwinging { get; private set; }
+
     public GekkoSwinging(Transform tongue, LayerMask layers, Transform transform, LineRenderer lineRenderer, Transform cam)
-    {    
+    {
         _lineRenderer = lineRenderer;
         _tongueTip = tongue;
         _grappableLayers = layers;
@@ -24,6 +26,7 @@ public class GekkoSwinging
 
         if(Physics.Raycast(_camera.position, _camera.forward, out hit, _maxTongueDistance, _grappableLayers))
         {
+            IsSwinging = true;
             _grapplePoint = hit.point;
             _joint = _transform.gameObject.AddComponent<SpringJoint>();
             _joint.autoConfigureConnectedAnchor = false;
@@ -56,6 +59,7 @@ public class GekkoSwinging
     //Requiere muchísima optimización
     public void StopGrapple()
     {
+        IsSwinging = false;
         _lineRenderer.positionCount = 0;
         Object.Destroy(_joint);
     }
