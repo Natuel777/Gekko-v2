@@ -101,11 +101,18 @@ Shader "Gekko/Path Blend"
             #pragma multi_compile_fog
             #pragma multi_compile_instancing
 
+            // Sin esto el piso queda ciego a los Decal Projector: el renderer feature
+            // pinta los decals en el DBuffer ANTES de este pase, pero si el shader no
+            // declara estas variantes ni lo lee, esa informacion se descarta entera.
+            // Es exactamente lo que le pasaba al material de caminos.
+            #pragma multi_compile_fragment _ _DBUFFER_MRT1 _DBUFFER_MRT2 _DBUFFER_MRT3
+
             // Local y solo de fragment: un material plano no paga por las variantes
             // triplanar, y no se generan combinaciones con el resto de keywords.
             #pragma shader_feature_local_fragment _TRIPLANAR_ON
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DBuffer.hlsl"
 
             TEXTURE2D(_BaseTex);   SAMPLER(sampler_BaseTex);
             TEXTURE2D(_PathTex);   SAMPLER(sampler_PathTex);
@@ -214,6 +221,18 @@ Shader "Gekko/Path Blend"
                 pathColor *= lerp(1.0, mask.rgb * 2.0, _TintStrength);
 
                 float3 albedo = lerp(baseColor, pathColor, coverage);
+
+                // Prioridad al decal: se aplica DESPUES de mezclar base+camino, asi que
+                // un Decal Projector (flores, huellas, lo que sea) se ve arriba del
+                // camino pintado en vez de quedar tapado por el. Se toca tambien la
+                // normal para que la iluminacion de abajo reaccione al decal.
+            #if defined(_DBUFFER)
+                half3 decalAlbedo = albedo;
+                half3 decalNormalWS = N;
+                ApplyDecalToBaseColorAndNormal(IN.positionCS, decalAlbedo, decalNormalWS);
+                albedo = decalAlbedo;
+                N = normalize(decalNormalWS);
+            #endif
 
                 float4 shadowCoord = TransformWorldToShadowCoord(IN.positionWS);
                 Light mainLight = GetMainLight(shadowCoord);

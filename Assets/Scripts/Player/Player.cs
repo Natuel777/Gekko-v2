@@ -13,6 +13,7 @@ public class Player : MonoBehaviour
     private DialogueInteractor _interactor;
     private DebugController _debugController;
     private BlueberryComboTracker _blueberryCombo;
+    private GekkoSwinging _swinging;
 
     [Header("Health")]
     [SerializeField] private HealthBar _healthBar;
@@ -33,7 +34,17 @@ public class Player : MonoBehaviour
     [SerializeField] private float _interactReach = 3f;
     [SerializeField] private float _interactOriginY = 1f;
     [SerializeField] private LayerMask _dialogueLayer;
+
+    [Header("Swinging")]
+    [SerializeField] private LayerMask _grappableLayers;
+    [SerializeField] private float _forwardThrustForce = 15f;
+    [SerializeField] private float _horizontalThrustForce = 10f;
+    [SerializeField] private float _extendCableSpeed = 5f;
+    [SerializeField] private Transform _predictionPoint;
+    [SerializeField] private float _predictionSphereRadius = 0.5f;
+    [SerializeField] private float _maxTongueDistance = 100f;
     #endregion
+
     #region Properties
     public PlayerController PjController {get{return _pjController;}}
     public TongueManager PjTongue => _pjTongue;
@@ -89,9 +100,12 @@ public class Player : MonoBehaviour
         CameraFollow cam = camTransform.GetComponent<CameraFollow>();
 
         cam.SetPJC(_pjController);
+        _swinging = new GekkoSwinging(_tongue, _grappableLayers, transform, GetComponentInChildren<LineRenderer>(), Camera.main.transform,
+                        _forwardThrustForce, _horizontalThrustForce, _extendCableSpeed,
+                        _predictionPoint, _predictionSphereRadius, _maxTongueDistance);
+        _pjController.GetSwinging(_swinging);
 
-
-        _pjInputs = new PlayerInputs(_pjController, _pjTongue, _aimM,cam, _interactM, this);
+        _pjInputs = new PlayerInputs(_pjController, _pjTongue, _aimM,cam, _interactM, this, _swinging);
         _blueberryCombo = new BlueberryComboTracker(_pjController, health, _blueberry, _pjViewer);
         _blueberryCombo.ArtificialOnEnable();
         UIManager.Instance.notifications.OnBlueberryWindowClosed += _blueberryCombo.ResetCombo;
@@ -112,6 +126,7 @@ public class Player : MonoBehaviour
         health?.ArtificialUpdate();
         _debugController.ArtificialUpdate();
         _blueberryCombo?.ArtificialUpdate();
+        _swinging.ArtificialUpdate();
 
         if (_comboUI != null && _blueberryCombo != null)
             _comboUI.UpdateCombo(_blueberryCombo.ComboCount, _blueberryCombo.BoostActive);
@@ -125,6 +140,7 @@ public class Player : MonoBehaviour
     {
         _pjController.ArtificialFixedUpdate();
     }
+
     private void LateUpdate()
     {
         _pjController.ArtificialLateUpdate();
@@ -134,7 +150,8 @@ public class Player : MonoBehaviour
     {
         _pjInputs?.ArtificialDisable();
         health?.ArtificialOnDisable();
-        if (UIManager.Instance != null && _blueberryCombo != null)
+        
+        if(UIManager.Instance != null && _blueberryCombo != null)
             UIManager.Instance.notifications.OnBlueberryWindowClosed -= _blueberryCombo.ResetCombo;
     }
 
@@ -142,10 +159,12 @@ public class Player : MonoBehaviour
     {
         _blueberryCombo?.ArtificialOnDisable();
     }
+
     public void ActivateInputs()
     {
         _pjInputs.ArtificialEnable();
     }
+
     // Bloqueo de control durante el diálogo. El gateo de cada input (mover/lengua/cámara/
     // salto) vive en PlayerInputs vía UIManager.HasActiveDialogue(); acá solo se frena el
     // movimiento residual y la rotación.
@@ -157,38 +176,57 @@ public class Player : MonoBehaviour
         _pjController.Talking = true;
         _pjInputs.DeactivatePlayerInputs();
     }
+
     private void EnablePlayerControl()
     {
         _pjController.CanRotate = true;
         _pjController.Talking = false;
         _pjInputs.ReactivatePlayerInputs();
     }
+
     public void Inputs(bool active)
     {
         if (active) EnablePlayerControl();
         else DisablePlayerControl();
     }
+
     private void OnDrawGizmosSelected()
     {
         Vector3 origin = transform.position + Vector3.up * _interactOriginY;
         Gizmos.color = Color.cyan;
         Gizmos.DrawRay(origin, transform.forward * _interactReach);
         Gizmos.DrawWireSphere(origin + transform.forward * _interactReach, 0.15f);
+
+        DrawSwingSphereCastGizmo();
     }
+
+    private void DrawSwingSphereCastGizmo()
+    {
+        bool didHit = Physics.SphereCast(transform.position, _predictionSphereRadius, transform.forward, out RaycastHit hit, _maxTongueDistance, _grappableLayers);
+        Vector3 endPoint = didHit ? hit.point : transform.position + transform.forward * _maxTongueDistance;
+
+        Gizmos.color = didHit ? Color.green : Color.red;
+        Gizmos.DrawLine(transform.position, endPoint);
+        Gizmos.DrawWireSphere(endPoint, _predictionSphereRadius);
+    }
+
     private void OnTriggerEnter(Collider other)
     {
         _collision.ArtificialOnTriggerEnter(other);
     }
+
     private void OnTriggerExit(Collider other)
     {
         _collision.ArtificialOnTriggerExit(other);
     }
+
     private void OnTriggerStay(Collider other) {_collision.ArtificialOnTriggerStay(other);}
 
     public void ChangeAim()
     {
         _aimM.SwitchTarget(new Vector2(0,1));
     }
+
     public void ChangeVariables()
     {
         _pjController.ChangeValues(speed, jumpForce, _rotationSpeed, fallMultiplier, lowJumpMultiplier);
@@ -196,5 +234,6 @@ public class Player : MonoBehaviour
         health?.ArtificialOnDisable();
         Debug.Log("god Mode");
     }
+
     public void OnBlueberryCollected() => _blueberryCombo?.OnCollect();
 }

@@ -602,6 +602,10 @@ namespace Gekko.PaintTools.EditorTools
             EditorUtility.SetDirty(mask);
         }
 
+        // Se guarda como PNG y no como Texture2D nativo (AssetDatabase.CreateAsset)
+        // porque ese formato demostro perder datos (a veces el archivo entero, guid
+        // incluido) en un reimport. Ver AUDITORIA.md, seccion "Persistencia". Un PNG es
+        // un archivo comun que el importer de Unity maneja de forma robusta.
         private void SaveMask(PathCanvas canvas)
         {
             if (canvas.Mask == null)
@@ -609,8 +613,16 @@ namespace Gekko.PaintTools.EditorTools
                 return;
             }
 
-            EditorUtility.SetDirty(canvas.Mask);
-            AssetDatabase.SaveAssets();
+            string path = AssetDatabase.GetAssetPath(canvas.Mask);
+            if (string.IsNullOrEmpty(path))
+            {
+                Debug.LogError("[PathCanvas] La máscara no tiene un archivo en disco asociado; no se pudo guardar.", canvas.Mask);
+                return;
+            }
+
+            WritePng(canvas.Mask, path);
+            AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate);
+
             Debug.Log("[PathCanvas] Máscara guardada.", canvas.Mask);
         }
 
@@ -622,13 +634,45 @@ namespace Gekko.PaintTools.EditorTools
                 AssetDatabase.Refresh();
             }
 
-            var mask = new Texture2D(resolution, resolution, TextureFormat.RGBA32, false, true)
+            Scene scene = canvas.gameObject.scene;
+            string sceneName = string.IsNullOrEmpty(scene.name) ? "Untitled" : scene.name;
+
+            // Nombre canonico, sin GenerateUniqueAssetPath todavia: si ya existe un
+            // archivo ahi Y ningun OTRO PathCanvas de la escena lo tiene asignado, es un
+            // huerfano (tipico cuando la referencia se rompio y alguien le pega otra vez
+            // a "Crear mascara") y se reusa en vez de parir uno nuevo. Si en cambio SI
+            // pertenece a otro canvas vivo, es una segunda zona con el mismo nombre de
+            // GameObject — un caso legitimo — y ahi si hace falta un sufijo.
+            string path = $"{DataFolder}/{sceneName}_{canvas.name}_PathMask.png";
+
+            if (File.Exists(path))
             {
-                name = "PathMask",
-                // Clamp: fuera de la zona no tiene que repetirse el camino.
-                wrapMode = TextureWrapMode.Clamp,
-                filterMode = FilterMode.Bilinear,
-            };
+                var existing = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+                if (existing != null && !IsMaskOwnedByAnotherCanvas(existing, canvas))
+                {
+                    ConfigureMaskImporter(path);
+                    Undo.RecordObject(canvas, "Asignar máscara existente");
+                    canvas.SetMask(existing);
+                    EditorUtility.SetDirty(canvas);
+
+                    _cachedMask = null;
+                    _pixels = null;
+
+                    Debug.LogWarning(
+                        $"[PathCanvas] Ya había una máscara huérfana en {path} (ningún PathCanvas de la escena la " +
+                        "tenía asignada). Se reasignó esa en vez de crear un archivo nuevo.",
+                        existing);
+                    return;
+                }
+
+                if (existing != null)
+                {
+                    // Nombre en uso por OTRA zona: no pisarla. Mismo criterio que antes
+                    // usaba GenerateUniqueAssetPath (sufijo " 1", " 2", ...), pero ahora
+                    // solo se dispara cuando de verdad hace falta.
+                    path = AssetDatabase.GenerateUniqueAssetPath(path);
+                }
+            }
 
             var neutral = new Color32(128, 128, 128, 0);
             var pixels = new Color32[resolution * resolution];
@@ -637,15 +681,17 @@ namespace Gekko.PaintTools.EditorTools
                 pixels[i] = neutral;
             }
 
-            mask.SetPixels32(pixels);
-            mask.Apply(false);
+            var scratch = new Texture2D(resolution, resolution, TextureFormat.RGBA32, false, true);
+            scratch.SetPixels32(pixels);
+            scratch.Apply(false);
 
-            Scene scene = canvas.gameObject.scene;
-            string sceneName = string.IsNullOrEmpty(scene.name) ? "Untitled" : scene.name;
-            string path = AssetDatabase.GenerateUniqueAssetPath($"{DataFolder}/{sceneName}_{canvas.name}_PathMask.asset");
+            WritePng(scratch, path);
+            UnityEngine.Object.DestroyImmediate(scratch);
 
-            AssetDatabase.CreateAsset(mask, path);
-            AssetDatabase.SaveAssets();
+            AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceSynchronousImport);
+            ConfigureMaskImporter(path);
+
+            var mask = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
 
             Undo.RecordObject(canvas, "Crear máscara de camino");
             canvas.SetMask(mask);
@@ -655,6 +701,57 @@ namespace Gekko.PaintTools.EditorTools
             _pixels = null;
 
             Debug.Log($"[PathCanvas] Máscara creada en {path}.", mask);
+        }
+
+        private static void WritePng(Texture2D texture, string assetPath)
+        {
+            File.WriteAllBytes(assetPath, texture.EncodeToPNG());
+        }
+
+        // Distingue un archivo huerfano (reusable) de uno que es la mascara real de otra
+        // zona con el mismo nombre de GameObject (NO reusable). Sin este chequeo, dos
+        // canvases rotos con el mismo nombre terminan apuntando los dos al mismo archivo
+        // la segunda vez que se les da a "Crear mascara" — las dos zonas quedan
+        // compartiendo pintura sin que nadie lo pida.
+        private static bool IsMaskOwnedByAnotherCanvas(Texture2D mask, PathCanvas self)
+        {
+            var canvases = UnityEngine.Object.FindObjectsByType<PathCanvas>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            foreach (PathCanvas other in canvases)
+            {
+                if (other == self)
+                {
+                    continue;
+                }
+
+                if (other.Mask == mask)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        // RGBA32 sin mips, sin sRGB (es una mascara de datos, no color) y readable para
+        // que el pincel la pueda leer por CPU. Mismos valores que tenia el Texture2D
+        // creado a mano, ahora aplicados al importer del PNG.
+        private static void ConfigureMaskImporter(string assetPath)
+        {
+            if (AssetImporter.GetAtPath(assetPath) is not TextureImporter importer)
+            {
+                return;
+            }
+
+            importer.textureType = TextureImporterType.Default;
+            importer.sRGBTexture = false;
+            importer.mipmapEnabled = false;
+            importer.wrapMode = TextureWrapMode.Clamp;
+            importer.filterMode = FilterMode.Bilinear;
+            importer.isReadable = true;
+            importer.textureCompression = TextureImporterCompression.Uncompressed;
+            importer.alphaSource = TextureImporterAlphaSource.FromInput;
+            importer.alphaIsTransparency = false;
+            importer.SaveAndReimport();
         }
 
         private static void MakeReadable(Texture2D texture)

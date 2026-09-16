@@ -37,7 +37,7 @@ public class TeeterTotterPlatform : MonoBehaviour
             _currentAngle = targetAngle;
         _platformMesh.localRotation = Quaternion.Euler(0f, 0f, -_currentAngle);
     }
-    private void OnDrawGizmos()
+    private void OnDrawGizmosSelected()
     {
         Gizmos.color = Color.red;
         Gizmos.DrawLine(transform.position - new Vector3(_maxDistance,-0.25f,0), transform.position + new Vector3(_maxDistance, 0.25f, 0));

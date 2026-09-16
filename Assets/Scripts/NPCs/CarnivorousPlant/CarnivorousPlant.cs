@@ -190,7 +190,7 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable
         if(_purifiedSound != null) _purifiedSound.Play();
     }
 
-    private void OnDrawGizmos()
+    private void OnDrawGizmosSelected()
     {
         if(data == null) return;
 
