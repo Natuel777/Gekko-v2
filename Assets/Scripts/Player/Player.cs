@@ -126,6 +126,7 @@ public class Player : MonoBehaviour
         health?.ArtificialUpdate();
         _debugController.ArtificialUpdate();
         _blueberryCombo?.ArtificialUpdate();
+        _swinging.ArtificialUpdate();
 
         if (_comboUI != null && _blueberryCombo != null)
             _comboUI.UpdateCombo(_blueberryCombo.ComboCount, _blueberryCombo.BoostActive);
@@ -143,14 +144,14 @@ public class Player : MonoBehaviour
     private void LateUpdate()
     {
         _pjController.ArtificialLateUpdate();
-        _swinging.ArtificialLateUpdate();
     }
 
     private void OnDisable()
     {
         _pjInputs?.ArtificialDisable();
         health?.ArtificialOnDisable();
-        if (UIManager.Instance != null && _blueberryCombo != null)
+        
+        if(UIManager.Instance != null && _blueberryCombo != null)
             UIManager.Instance.notifications.OnBlueberryWindowClosed -= _blueberryCombo.ResetCombo;
     }
 
@@ -158,10 +159,12 @@ public class Player : MonoBehaviour
     {
         _blueberryCombo?.ArtificialOnDisable();
     }
+
     public void ActivateInputs()
     {
         _pjInputs.ArtificialEnable();
     }
+
     // Bloqueo de control durante el diálogo. El gateo de cada input (mover/lengua/cámara/
     // salto) vive en PlayerInputs vía UIManager.HasActiveDialogue(); acá solo se frena el
     // movimiento residual y la rotación.
@@ -173,17 +176,20 @@ public class Player : MonoBehaviour
         _pjController.Talking = true;
         _pjInputs.DeactivatePlayerInputs();
     }
+
     private void EnablePlayerControl()
     {
         _pjController.CanRotate = true;
         _pjController.Talking = false;
         _pjInputs.ReactivatePlayerInputs();
     }
+
     public void Inputs(bool active)
     {
         if (active) EnablePlayerControl();
         else DisablePlayerControl();
     }
+
     private void OnDrawGizmosSelected()
     {
         Vector3 origin = transform.position + Vector3.up * _interactOriginY;
@@ -201,23 +207,26 @@ public class Player : MonoBehaviour
 
         Gizmos.color = didHit ? Color.green : Color.red;
         Gizmos.DrawLine(transform.position, endPoint);
-        Gizmos.DrawWireSphere(transform.position, _predictionSphereRadius);
         Gizmos.DrawWireSphere(endPoint, _predictionSphereRadius);
     }
+
     private void OnTriggerEnter(Collider other)
     {
         _collision.ArtificialOnTriggerEnter(other);
     }
+
     private void OnTriggerExit(Collider other)
     {
         _collision.ArtificialOnTriggerExit(other);
     }
+
     private void OnTriggerStay(Collider other) {_collision.ArtificialOnTriggerStay(other);}
 
     public void ChangeAim()
     {
         _aimM.SwitchTarget(new Vector2(0,1));
     }
+
     public void ChangeVariables()
     {
         _pjController.ChangeValues(speed, jumpForce, _rotationSpeed, fallMultiplier, lowJumpMultiplier);
@@ -225,5 +234,6 @@ public class Player : MonoBehaviour
         health?.ArtificialOnDisable();
         Debug.Log("god Mode");
     }
+
     public void OnBlueberryCollected() => _blueberryCombo?.OnCollect();
 }

@@ -15,12 +15,11 @@ public class GekkoSwinging
     private Vector2 _thrustInput;
     private bool _shortenCablePressed;
     private RaycastHit _predictionHit;
-    private bool _hasSwingPoint;
-    private bool _hadSwingPointLastCheck;
     private float _predictionSphereRadius;
     private Transform _predictionPoint;
-    private float _predictionInterval = 0.05f; //~20 chequeos/seg, sólo para el indicador visual
-    private float _predictionTimer;
+    private Vector3 _previousHitPosition;
+    private Transform _lastHitObject;
+    private Transform _cachedGrapplePoint;
     #region Properties
     public bool IsSwinging { get; private set; }
     public Vector2 ThrustInput { set { _thrustInput = value; } }
@@ -49,8 +48,12 @@ public class GekkoSwinging
     {
         if(!TryFindSwingPoint(out RaycastHit hit)) return;
 
+        Transform grapplePointTransform = GetGrapplePoint(hit.transform);
+
+        if(grapplePointTransform == null) return;
+
         IsSwinging = true;
-        _grapplePoint = hit.point;
+        _grapplePoint = grapplePointTransform.position;
         _joint = _transform.gameObject.AddComponent<SpringJoint>();
         _joint.autoConfigureConnectedAnchor = false;
         _joint.connectedAnchor = _grapplePoint;
@@ -64,7 +67,7 @@ public class GekkoSwinging
         _lineRenderer.positionCount = 2;
     }
 
-    public void ArtificialLateUpdate()
+    public void ArtificialUpdate()
     {
         CheckForSwingPoints();
         
@@ -116,28 +119,43 @@ public class GekkoSwinging
 
     private void CheckForSwingPoints()
     {
-        _predictionTimer -= Time.deltaTime;
-        if(_predictionTimer > 0f) return;
-        _predictionTimer = _predictionInterval;
-
         bool foundPoint = TryFindSwingPoint(out RaycastHit hit);
 
-        // Sólo lockea _predictionHit (y de ahí el indicador) al entrar en hit (flanco de
-        // subida); mientras el hit se mantiene entre chequeos consecutivos, ninguno de los
-        // dos se reasigna, quedan fijos en el primero.
-        if(foundPoint && !_hadSwingPointLastCheck)
+        if(!foundPoint)
         {
-            _predictionHit = hit;
-            if(_predictionPoint != null)
-                _predictionPoint.position = hit.point;
+            _predictionPoint.gameObject.SetActive(false);
+            return;
         }
 
-        _hasSwingPoint = foundPoint;
-        _hadSwingPointLastCheck = foundPoint;
+        Transform hitTransform = GetGrapplePoint(hit.transform);
+
+        if(hitTransform == null)
+        {
+            _predictionPoint.gameObject.SetActive(false);
+            return;
+        }
+
+        _predictionPoint.gameObject.SetActive(true);
+
+        if(hitTransform.position != _previousHitPosition)
+            _predictionPoint.position = hitTransform.position;
+
+        _previousHitPosition = hitTransform.position;
+    }
+
+    // Cachea el hijo "GrapplePoint" del último collider golpeado para no repetir el Find()
+    // (búsqueda por string) todos los frames mientras se sigue apuntando al mismo objeto.
+    private Transform GetGrapplePoint(Transform hitObject)
+    {
+        if(hitObject == _lastHitObject) return _cachedGrapplePoint;
+
+        _lastHitObject = hitObject;
+        _cachedGrapplePoint = hitObject.Find("GrapplePoint");
+        return _cachedGrapplePoint;
     }
 
     private bool TryFindSwingPoint(out RaycastHit hit)
     {
-        return Physics.SphereCast(_transform.position, _predictionSphereRadius, _transform.forward, out hit, _maxTongueDistance, _grappableLayers);
+        return Physics.SphereCast(_camera.position, _predictionSphereRadius, _camera.forward, out hit, _maxTongueDistance, _grappableLayers);
     }
 }
