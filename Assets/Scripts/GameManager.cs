@@ -59,7 +59,12 @@ public class GameManager : MonoBehaviour
         DontDestroyOnLoad(_screenPause.gameObject);
     }
 
-    public void Respawn() {checkpointManager.Respawn();}
+    public void Respawn() 
+    {
+        if(AudioManager.instance)
+        AudioManager.instance.ResetAudio();
+        checkpointManager.Respawn();
+    }
 
     public void RespawnAt(int index) {checkpointManager.RespawnAt(index);}
 
@@ -76,6 +81,8 @@ public class GameManager : MonoBehaviour
 
     public void RestartLvl()
     {
+        if (AudioManager.instance)
+            AudioManager.instance.ResetAudio();
         CollectiblesRegister.Clear();
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
