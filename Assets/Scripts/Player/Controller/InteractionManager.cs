@@ -21,7 +21,6 @@ public class InteractionManager : MonoBehaviour
             return;
         }
         Transform target = GetBestTarget(transform, _interactionRange, _interactionAngle, _interactable, _obstacle);
-        Debug.Log(target);
         if (target != null && target.TryGetComponent(out IInteractable interactable))
         {
             Debug.Log(interactable);
