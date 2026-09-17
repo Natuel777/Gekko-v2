@@ -25,8 +25,13 @@ public class GeckoAnimation : MonoBehaviour
     [Header("Cuerpo")]
     [Tooltip("Transform del cuerpo. Si se deja vacío, usa este mismo transform.")]
     [SerializeField] private Transform _body;
-    [Tooltip("Suavizado de la velocidad medida. Más alto = más suave pero con más retraso.")]
-    [SerializeField] private float _velocitySmoothing = 0.1f;
+    [Tooltip("Suavizado de la velocidad medida, EN SEGUNDOS. Más alto = más suave pero con " +
+             "más retraso. Por encima de ~0.15 las patas se enteran tarde de que el cuerpo " +
+             "arrancó o frenó y el paso se descoordina. 0.05–0.08 es lo sano.")]
+    [SerializeField] private float _velocitySmoothing = 0.06f;
+    [Tooltip("Si está en el mismo GameObject, se usa su velocidad real en vez de medirla por " +
+             "diferencia de posición: señal más limpia para el gait. Se engancha solo.")]
+    [SerializeField] private GeckoMover _mover;
 
     [Header("Cadencia del paso")]
     [Tooltip("Desacopla el ritmo de las patas de la velocidad real del cuerpo. " +
@@ -40,12 +45,31 @@ public class GeckoAnimation : MonoBehaviour
              "Apagalo solo si queres el deslizamiento a proposito.")]
     [SerializeField] private bool _compensateStride = true;
 
+    [Tooltip("Si es MAYOR A 0, esta es la velocidad (m/s) que usan las patas para TODA la marcha " +
+             "adaptativa de GeckoLeg (duración del paso, largo de zancada, cuánto se adelanta el " +
+             "pie) EN VEZ de la velocidad real del cuerpo. La DIRECCIÓN sigue siendo la real (el pie " +
+             "pisa para el lado correcto); solo se reemplaza el módulo. \n" +
+             "Para qué sirve: GeckoMover.Speed es la velocidad de gameplay; si la subís, _stepDistance/" +
+             "_maxLead/etc. de cada pata (calibrados para una velocidad más baja) se saturan contra " +
+             "sus topes y las patas dan 'micro pasos' cortos y apurados en vez de zancadas largas. " +
+             "En lugar de retocar esos topes por pata, dejás GeckoMover.Speed en el valor real del " +
+             "juego y ajustás ESTO a mano a la velocidad 'de mentira' con la que la marcha se veía " +
+             "bien. 0 = desactivado, usa la velocidad real (comportamiento de siempre).")]
+    [SerializeField] private float _gaitApparentSpeed = 0f;
+
+    [Tooltip("Sesgo de alternancia (metros). Al par que pisó último se le descuenta esta " +
+             "urgencia para que el otro par tome el turno: da el trote parejo A-B-A-B en vez " +
+             "de que un par acapare los pasos y el bicho renguee. 0 = elección pura por " +
+             "urgencia. ~0.015 anda bien para este tamaño.")]
+    [SerializeField] private float _alternationBias = 0.015f;
+
     private GeckoLeg[] _diagonalA;   // FL + BR
     private GeckoLeg[] _diagonalB;   // FR + BL
 
     private Vector3 _lastBodyPos;
     private Vector3 _velocity;
     private Vector3 _velocitySmoothVel;
+    private int _lastPair = -1;      // 0 = A, 1 = B. Para alternar parejo y que un par no acapare.
     #endregion
 
     /// <summary>
@@ -59,9 +83,20 @@ public class GeckoAnimation : MonoBehaviour
         set => _gaitSpeedScale = Mathf.Clamp(value, 0.2f, 3f);
     }
 
+    /// <summary>
+    /// Velocidad "de mentira" (m/s) para la marcha adaptativa de las patas. 0 = usa la
+    /// velocidad real del cuerpo. Ver el tooltip del campo para el motivo de que exista.
+    /// </summary>
+    public float GaitApparentSpeed
+    {
+        get => _gaitApparentSpeed;
+        set => _gaitApparentSpeed = Mathf.Max(0f, value);
+    }
+
     private void Awake()
     {
         if (_body == null) _body = transform;
+        if (_mover == null) _mover = GetComponent<GeckoMover>();
 
         _diagonalA = new[] { _frontLeft, _backRight };
         _diagonalB = new[] { _frontRight, _backLeft };
@@ -71,19 +106,30 @@ public class GeckoAnimation : MonoBehaviour
 
     private void Update()
     {
-        // 1. Velocidad del cuerpo (sirve con cualquier sistema de movimiento).
-        Vector3 rawVelocity = (_body.position - _lastBodyPos) / Mathf.Max(Time.deltaTime, 0.0001f);
+        // 1. Velocidad del cuerpo. Si hay GeckoMover se usa su velocidad real (señal
+        //    limpia); si no, se mide por diferencia de posición (sirve con cualquier
+        //    sistema de movimiento).
+        Vector3 rawVelocity = _mover != null
+            ? _mover.Velocity
+            : (_body.position - _lastBodyPos) / Mathf.Max(Time.deltaTime, 0.0001f);
         _lastBodyPos = _body.position;
         _velocity = Vector3.SmoothDamp(_velocity, rawVelocity, ref _velocitySmoothVel, _velocitySmoothing);
+
+        // La marcha ADAPTATIVA puede recibir una velocidad "de mentira" en vez de la real
+        // (ver _gaitApparentSpeed). La dirección sigue siendo la real; solo se pisa el módulo,
+        // así el pie siempre avanza para el lado correcto aunque la magnitud sea otra.
+        Vector3 gaitVelocity = _velocity;
+        if (_gaitApparentSpeed > 0f && _velocity.sqrMagnitude > 0.0001f)
+            gaitVelocity = _velocity.normalized * _gaitApparentSpeed;
 
         // 2. Cada pata recalcula su punto ideal y avanza el paso en curso.
         //    La cadencia se empuja cada frame para poder cambiarla en vivo.
         PushGait(_frontLeft); PushGait(_frontRight); PushGait(_backLeft); PushGait(_backRight);
 
-        _frontLeft.ArtificialUpdate(_velocity);
-        _frontRight.ArtificialUpdate(_velocity);
-        _backLeft.ArtificialUpdate(_velocity);
-        _backRight.ArtificialUpdate(_velocity);
+        _frontLeft.ArtificialUpdate(gaitVelocity);
+        _frontRight.ArtificialUpdate(gaitVelocity);
+        _backLeft.ArtificialUpdate(gaitVelocity);
+        _backRight.ArtificialUpdate(gaitVelocity);
 
         // 3. Si ningún par está en movimiento, arranca el que MÁS lo necesita.
         //    Elegir por urgencia (y no "siempre A primero") evita que un par
@@ -96,8 +142,17 @@ public class GeckoAnimation : MonoBehaviour
             float aUrgency = PairUrgency(_diagonalA);
             float bUrgency = PairUrgency(_diagonalB);
 
+            // Sesgo de alternancia: al par que pisó último se le descuenta urgencia para
+            // que el otro tome el turno. Trote parejo A-B-A-B en vez de renguera.
+            if (_lastPair == 0) aUrgency -= _alternationBias;
+            else if (_lastPair == 1) bUrgency -= _alternationBias;
+
             if (aUrgency > 0f || bUrgency > 0f)
-                StepPair(aUrgency >= bUrgency ? _diagonalA : _diagonalB);
+            {
+                bool stepA = aUrgency >= bUrgency;
+                StepPair(stepA ? _diagonalA : _diagonalB);
+                _lastPair = stepA ? 0 : 1;
+            }
         }
     }
 

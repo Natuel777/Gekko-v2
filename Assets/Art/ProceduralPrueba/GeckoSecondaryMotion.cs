@@ -24,6 +24,9 @@ public class GeckoSecondaryMotion : MonoBehaviour
     [SerializeField] private Transform _neck;
     [SerializeField] private Transform[] _tail;              // Gecko_Tail1 .. Tail4
     [SerializeField] private Rigidbody _bodyRb;              // opcional, solo para robustez
+    [Tooltip("Opcional. Si está, se usa para saber cuándo está trepando y curvar la columna " +
+             "un poco de más en la transición piso->pared. Se engancha solo.")]
+    [SerializeField] private GeckoMover _mover;
 
     [Header("Cola — inercia / latigazo")]
     [SerializeField] private bool _tailEnabled = true;
@@ -67,11 +70,17 @@ public class GeckoSecondaryMotion : MonoBehaviour
     [Tooltip("Las 4 patas. Se usan las posiciones de los pies para medir la inclinacion real " +
              "del terreno bajo el cuerpo.")]
     [SerializeField] private GeckoLeg _legFL, _legFR, _legBL, _legBR;
-    [Tooltip("Tope de cuanto se dobla el cuerpo, en grados repartidos por toda la columna.")]
-    [SerializeField] private float _conformMaxDeg = 45f;
+    [Tooltip("Tope de cuanto se dobla el cuerpo, en grados repartidos por toda la columna. " +
+             "Para trepar paredes de 90° la mitad delantera necesita levantarse bastante " +
+             "mientras la trasera sigue en el piso: ~55 deja hacer esa forma sin romper el mesh.")]
+    [SerializeField] private float _conformMaxDeg = 55f;
     [Tooltip("Grados de doblado por cada grado de desnivel medido entre patas.")]
-    [SerializeField] private float _conformGain = 1f;
-    [SerializeField] private float _conformResponse = 8f;
+    [SerializeField] private float _conformGain = 1.1f;
+    [SerializeField] private float _conformResponse = 7f;
+    [Tooltip("Grados extra de curva hacia la pared cuando GeckoMover dice que está trepando. " +
+             "Rellena el instante en que el cuerpo ya encaró la pared pero las patas todavía " +
+             "no mandaron su lectura de desnivel. 0 = solo lectura de patas.")]
+    [SerializeField] private float _climbConformBoostDeg = 10f;
     [Tooltip("Eje local sobre el que se dobla la columna. Se deriva en Awake.")]
     [SerializeField] private bool _deriveSpineAxis = true;
     [SerializeField] private Vector3 _spinePitchAxis = Vector3.right;
@@ -116,6 +125,7 @@ public class GeckoSecondaryMotion : MonoBehaviour
     private Vector3 _pitchAxis = Vector3.right;   // derivados en Awake
     private Vector3 _yawAxis = Vector3.up;
     private float _conformAngle;
+    private float _inclineSmoothed;   // ver MeasureIncline: filtra el ruido del pie en pleno paso
     private float _tailSwayPhase;
     private float _headYaw, _headPitch;
     private bool _ready;
@@ -181,7 +191,28 @@ public class GeckoSecondaryMotion : MonoBehaviour
         // ejemplo empezando a subir un bloque), el cuerpo se dobla para acompanar en vez
         // de quedar rigido y tener que treparse de una pieza.
         float conformTarget = 0f;
-        if (_conformEnabled) conformTarget = Mathf.Clamp(MeasureIncline() * _conformGain, -_conformMaxDeg, _conformMaxDeg);
+        if (_conformEnabled)
+        {
+            // MeasureIncline() mide con la posición ACTUAL de los pies, y un pie en pleno
+            // paso está en el aire, a mitad de camino de su arco — la lectura cruda salta
+            // fuerte cada vez que una pata pisa. La suavizamos ANTES de decidir el signo del
+            // boost de trepada: sin esto, un salto de ruido momentáneo hacía que el boost
+            // "confirmara" la dirección equivocada y la columna se iba de -20° a +10° en
+            // menos de un segundo trepando derecho por una pared plana.
+            float rawIncline = MeasureIncline();
+            _inclineSmoothed = Mathf.Lerp(_inclineSmoothed, rawIncline, 1f - Mathf.Exp(-6f * dt));
+
+            float measured = _inclineSmoothed * _conformGain;
+            // Empujón extra al trepar: curva la mitad delantera hacia la pared aunque las
+            // patas todavía no hayan mandado el desnivel. Sigue el signo de la lectura de
+            // patas si ya hay una; si no, asume "subiendo" (frente para arriba).
+            if (_mover != null && _mover.IsClimbing && _climbConformBoostDeg > 0f)
+            {
+                float sign = Mathf.Abs(measured) > 0.5f ? Mathf.Sign(measured) : 1f;
+                measured += sign * _climbConformBoostDeg;
+            }
+            conformTarget = Mathf.Clamp(measured, -_conformMaxDeg, _conformMaxDeg);
+        }
         _conformAngle = Mathf.Lerp(_conformAngle, conformTarget, 1f - Mathf.Exp(-_conformResponse * dt));
 
         if (_spineChain == null || _spineChain.Length == 0) return;
@@ -235,7 +266,14 @@ public class GeckoSecondaryMotion : MonoBehaviour
 
         if (_hips)
         {
-            _hips.localPosition = _hipsRestPos + Vector3.up * bobY;
+            // Bob relativo al 'arriba' ACTUAL del cuerpo, no al de mundo. Con Vector3.up de
+            // mundo, al trepar una pared (donde el 'arriba' del cuerpo está rotado 90°) el
+            // mismo bob "vertical" empuja las caderas de costado/adelante en vez de hacia
+            // afuera de la pared — se veía como un saltito en cada paso.
+            Vector3 bobDir = _hips.parent != null
+                ? _hips.parent.InverseTransformDirection(transform.up)
+                : Vector3.up;
+            _hips.localPosition = _hipsRestPos + bobDir * bobY;
             _hips.localRotation = _hipsRest * Quaternion.Euler(0f, 0f, roll);
         }
         if (_spine1 && Mathf.Abs(breath) > 0.0001f)
@@ -332,6 +370,7 @@ public class GeckoSecondaryMotion : MonoBehaviour
         if (_spine2 == null) _spine2 = Find(all, "Gecko_Spine2");
         if (_neck == null)   _neck   = Find(all, "Gecko_Neck");
         if (_bodyRb == null) _bodyRb = GetComponent<Rigidbody>();
+        if (_mover == null)  _mover  = GetComponent<GeckoMover>();
 
         if (_tail == null || _tail.Length == 0)
         {
