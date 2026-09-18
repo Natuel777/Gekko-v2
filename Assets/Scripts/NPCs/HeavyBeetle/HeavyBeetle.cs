@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class HeavyBeetle : MonoBehaviour, IDamageable, IParticleSystemTarget
+public class HeavyBeetle : MonoBehaviour, IDamageable, IParticleSystemTarget, IPurifiable
 {
     public HeavyBeetledataSO data;
     public Transform playerTransform;
@@ -17,6 +17,8 @@ public class HeavyBeetle : MonoBehaviour, IDamageable, IParticleSystemTarget
 
     public ParticleSystem Indicator => _indicator;
     public bool CanBeTargeted => !IsPurified;
+
+    public event System.Action<IPurifiable> PurifiedChanged;
 
     [Header("Ground Check")]
     [SerializeField] private Transform _detectGroundPosition;
@@ -156,12 +158,25 @@ public class HeavyBeetle : MonoBehaviour, IDamageable, IParticleSystemTarget
     
     public void SetPurified(bool v)
     {
+        if(IsPurified == v) return;
+
         IsPurified = v;
 
-        if(v == true)
+        // Solo un desafío de purificación revierte (re-corrompe); el resto de los escarabajos nunca pasa por acá.
+        if(!v)
+        {
+            view.RestoreCorruptedMaterial();
+            _playerInRange = false;
+            SetDazed(false);
+            SetState(PatrolState);
+            PurifiedChanged?.Invoke(this);
+        }
+        else
         {
             SetState(PatrolState);
             view.ApplyPurifiedMaterial();
+            if(_purifiedParticle != null) _purifiedParticle.Play();
+            PurifiedChanged?.Invoke(this);
         }
     }
 
@@ -191,8 +206,7 @@ public class HeavyBeetle : MonoBehaviour, IDamageable, IParticleSystemTarget
     {
         if(IsDazed)
         {
-            //View
-            _purifiedParticle.Play();
+            //La partícula se reproduce dentro de SetPurified(true).
             SetPurified(true);
         } 
     }

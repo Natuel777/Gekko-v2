@@ -89,6 +89,9 @@ public class GekkoSwinging
         IsSwinging = false;
         _lineRenderer.positionCount = 0;
         Object.Destroy(_joint);
+        // Destroy es diferido (fin de frame): sin esto el guard de ArtificialUpdate sigue viendo el joint
+        // vivo ese frame y dibuja la lengua sobre un LineRenderer que ya quedó con 0 posiciones.
+        _joint = null;
     }
 
     private void ODMGearMovement()
