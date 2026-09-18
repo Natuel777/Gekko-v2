@@ -234,12 +234,17 @@ public class PlayerController
 
         LayerMask blockMask = ~(1 << _pjTransform.gameObject.layer);
 
-       
-        if (Physics.SphereCast(_rb.position, 0.3f, dir, out RaycastHit hit, currentSpeed * Time.fixedDeltaTime + 0.1f, blockMask, QueryTriggerInteraction.Ignore))
-        {
-            Vector3 slideDir = Vector3.ProjectOnPlane(dir, hit.normal).normalized;
-            targetPos = _rb.position + slideDir * currentSpeed * Time.fixedDeltaTime;
-        }
+        float scale = _pjTransform.lossyScale.x;
+        float sweepRadius = 0.3f * scale;
+        //if (Physics.SphereCast(_rb.position, sweepRadius, dir, out RaycastHit hit, currentSpeed * Time.fixedDeltaTime + 0.1f * scale, blockMask, QueryTriggerInteraction.Ignore))
+        //{
+        //    float wallness = Vector3.Dot(hit.normal, _currentUp);
+        //    if (wallness < 0.5f)
+        //    {
+        //        Vector3 slideDir = Vector3.ProjectOnPlane(dir, hit.normal).normalized;
+        //        targetPos = _rb.position + slideDir * currentSpeed * Time.fixedDeltaTime;
+        //    }
+        //}
 
         if (_isGrounded && !_isClimbing)
         {
@@ -458,7 +463,7 @@ public class PlayerController
                     if (_isClimbing && !_nearGround && normalUpDot > 0.7f)
                         groundBonus = 0.5f;
                     float distScore = 1f - (hit.distance / castDist);
-                    float farPenalty = castDist > 0.6f * scale ? hit.distance * 0.3f * scale : 0f ;
+                    float farPenalty = castDist > 0.6f * scale ? hit.distance * 0.3f : 0f ;
                     float downPenalty = Mathf.Clamp01(normalUpDot);
                     float forwardBonus = Vector3.Dot(hit.normal, -_pjTransform.forward) > 0.5f ? 0.3f: 0f;
                     float score = distScore - downPenalty * 0.3f + groundBonus - farPenalty + forwardBonus;
@@ -487,7 +492,7 @@ public class PlayerController
             if (Physics.SphereCast(headPos, _collider.radius * 0.4f * scale, forwardDown,
                 out RaycastHit hitDown, 4f * scale, _surfaces, QueryTriggerInteraction.Ignore))
             {
-                float distScore = 1f - (hitDown.distance / 4f);
+                float distScore = 1f - (hitDown.distance / (4f* scale));
                 float score = distScore - Mathf.Clamp01(Vector3.Dot(hitDown.normal, Vector3.up)) * 0.3f + 0.4f ;
 
                 if (score > bestScore)
