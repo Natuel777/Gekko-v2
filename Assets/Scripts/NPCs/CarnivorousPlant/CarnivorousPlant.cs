@@ -2,7 +2,7 @@ using System.Collections;
 using UnityEngine;
 
 [RequireComponent(typeof(Collider))]
-public class CarnivorousPlant : MonoBehaviour, IDamageable
+public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick
 {
     public CarnivorousPlantDataSO data;
     public Transform playerTransform;
@@ -19,6 +19,15 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable
 
     private bool _playerInRange = false;
     private bool _purified = false;
+    private int _hits;
+    private float _staggerUntil;
+    private bool _hasHurtTrigger;
+
+    public bool IsPurified => _purified;
+    public bool IsShielded { get; private set; }
+    // (golpes recibidos, golpes necesarios)
+    public event System.Action<int, int> Hit;
+    public event System.Action Purified;
 
     #region FSM
     public PlantSpitBehaviour spitBehaviour;
@@ -44,6 +53,7 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable
     private void Awake()
     {
         _eventFSM = new StateMachine();
+        CacheHurtTrigger();
 
         IdleState = new PlantIdleState(this);
         AlertState = new PlantAlertState(this);
@@ -75,6 +85,8 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable
     {
         if(_purified) return;
 
+        if(Time.time < _staggerUntil) return;
+
         _eventFSM.UpdateState();
         UpdateDetection();
     }
@@ -104,15 +116,35 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable
     {
         if(_purified) return;
 
+        if(IsShielded) return;
+
+        int hitsNeeded = Mathf.Max(1, data.hitsToPurify);
+        _hits++;
+        Hit?.Invoke(_hits, hitsNeeded);
+
+        if(_hits < hitsNeeded)
+        {
+            if(data.hitHealthCost > 0f)
+                EventManager.Trigger<float>("OnPlayerDamaged", data.hitHealthCost);
+
+            PlayHurt();
+
+            if(data.hurtStaggerSeconds > 0f)
+                _staggerUntil = Time.time + data.hurtStaggerSeconds;
+
+            return;
+        }
+
         _purified = true;
         EventManager.Trigger<float>("OnPlayerDamaged", data.purifyHealthCost);
         SetState(PurifiedState);
+        Purified?.Invoke();
     }
 
     // Lanza la embestida del head. Solo el _head se mueve; la base queda quieta.
     public void Bite()
     {
-        if(_head == null || _isLunging) return;
+        if(_purified || _head == null || _isLunging) return;
         StartCoroutine(BiteLungeRoutine());
         _animatorCarnivorousPlant.SetTrigger("nibble");
     }
@@ -173,7 +205,7 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable
     private void ApplyBiteHit()
     {
         Player player = GameManager.Instance.Pj;
-        if(player == null) return;
+        if(_purified || player == null) return;
 
         if(player.TryGetComponent(out Rigidbody rb))
         {
@@ -182,6 +214,29 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable
         }
 
         EventManager.Trigger<float>("OnPlayerDamaged", data.biteDamage);
+    }
+
+    // El escudo del desafío de purificación bloquea los golpes hasta que se rompen todos los núcleos.
+    public void SetShielded(bool shielded) => IsShielded = shielded;
+
+    // El Animator original solo tiene "nibble": el trigger "hurt" es opcional.
+    private void CacheHurtTrigger()
+    {
+        if(_animatorCarnivorousPlant == null || _animatorCarnivorousPlant.runtimeAnimatorController == null) return;
+
+        foreach(AnimatorControllerParameter p in _animatorCarnivorousPlant.parameters)
+        {
+            if(p.name == "hurt" && p.type == AnimatorControllerParameterType.Trigger)
+            {
+                _hasHurtTrigger = true;
+                return;
+            }
+        }
+    }
+
+    private void PlayHurt()
+    {
+        if(_hasHurtTrigger) _animatorCarnivorousPlant.SetTrigger("hurt");
     }
 
     public void PlayPurifiedFeedback()

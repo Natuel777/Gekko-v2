@@ -23,6 +23,9 @@ public class TongueManager : MonoBehaviour
     private float _stopDist;
 
     private bool _canUseTongue = true;
+    // Un IDamageable recibe Damage(1) en la punta y otra vez al terminar la retracción;
+    // este flag evita el segundo golpe solo para los IHitOncePerLick (el resto conserva el doble llamado histórico).
+    private bool _damageApplied;
     public bool IsAttached => _attached;
     public Vector3 MouthPos => transform.position + new Vector3(0,1,0);
     public Vector3 ObjectExtents => _object != null
@@ -91,7 +94,7 @@ public class TongueManager : MonoBehaviour
                         _pjViewer.SlurpSoundPlay();
                     }
                     else if (_object.TryGetComponent(out IDamageable damageableObj))
-                        damageableObj.Damage(1);
+                        ApplyTipDamage(damageableObj);
                 }
             }
         }
@@ -145,7 +148,7 @@ public class TongueManager : MonoBehaviour
                     }
                     else if (_object.TryGetComponent(out IDamageable damaggeable))
                     {
-                        damaggeable.Damage(1);
+                        if(!_damageApplied) damaggeable.Damage(1);
                         _object = null;
                     }
                     else if (_object.TryGetComponent(out Collectible coll))
@@ -161,10 +164,17 @@ public class TongueManager : MonoBehaviour
             }
         }
     }
+    private void ApplyTipDamage(IDamageable target)
+    {
+        _damageApplied = target is IHitOncePerLick;
+        target.Damage(1);
+    }
+
     public void ShootTongue()
     {
         if (!_canUseTongue) return;
         if (_extending || _retracting) return;
+        _damageApplied = false;
         _pjController.TongueOut = true;
         if (_object != null)
         {
