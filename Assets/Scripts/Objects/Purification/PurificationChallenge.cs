@@ -140,6 +140,8 @@ public class PurificationChallenge : MonoBehaviour
 
         foreach(HeavyBeetle enemy in _allEnemies)
         {
+            if(enemy == null) continue;
+
             enemy.PurifiedChanged += OnEnemyPurifiedChanged;
 
             // Si el controlador se reactiva y algún escarabajo quedó purificado, retoma su cuenta regresiva.
@@ -208,7 +210,7 @@ public class PurificationChallenge : MonoBehaviour
     private void OnRecorruptElapsed(HeavyBeetle beetle)
     {
         // Carrera con el golpe final: si la planta ya murió (o el desafío cerró) no se re-corrompe nada.
-        if(State == ChallengeState.Completed || _plant.IsPurified) return;
+        if(State == ChallengeState.Completed || _plant == null || _plant.IsPurified) return;
 
         beetle.SetPurified(false);
     }
@@ -233,7 +235,7 @@ public class PurificationChallenge : MonoBehaviour
         State = ChallengeState.ShieldDown;
 
         if(_shield != null) _shield.Drop();
-        _plant.SetShielded(false);
+        if(_plant != null) _plant.SetShielded(false);
 
         ShieldDropped?.Invoke();
     }

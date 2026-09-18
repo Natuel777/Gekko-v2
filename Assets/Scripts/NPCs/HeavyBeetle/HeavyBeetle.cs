@@ -90,12 +90,12 @@ public class HeavyBeetle : MonoBehaviour, IDamageable, IParticleSystemTarget, IP
 
     private void OnEnable()
     {
-        group?.Register(this);
+        if(group != null) group.Register(this);
     }
 
     private void OnDisable()
     {
-        group?.Unregister(this);
+        if(group != null) group.Unregister(this);
     }
 
     private void Start()
@@ -125,7 +125,7 @@ public class HeavyBeetle : MonoBehaviour, IDamageable, IParticleSystemTarget, IP
         if(inRange && !_playerInRange)
         {
             _playerInRange = true;
-            group?.AlertAll(this, playerTransform);
+            if(group != null) group.AlertAll(this, playerTransform);
             SendEvent(CreatureEvent.GekkoEnter);
         }
 

@@ -60,10 +60,10 @@ public class HeavyBeetleView
 
     public void ApplyPurifiedMaterial()
     {
-        if(_purifiedMat == null || _skinnedMeshRenderers.Length == 0)  return;
+        if(_purifiedMat == null || _skinnedMeshRenderers == null || _skinnedMeshRenderers.Length == 0)  return;
 
         foreach(SkinnedMeshRenderer skinnedMesh in _skinnedMeshRenderers)
-            skinnedMesh.sharedMaterial = _purifiedMat;
+            if(skinnedMesh != null) skinnedMesh.sharedMaterial = _purifiedMat;
     }
 
     // Guarda los materiales de origen (corrompidos) para poder revertir la purificación.
@@ -74,15 +74,21 @@ public class HeavyBeetleView
         _originalMaterials = new Material[_skinnedMeshRenderers.Length][];
 
         for(int i = 0; i < _skinnedMeshRenderers.Length; i++)
-            _originalMaterials[i] = _skinnedMeshRenderers[i].sharedMaterials;
+        {
+            if(_skinnedMeshRenderers[i] != null)
+                _originalMaterials[i] = _skinnedMeshRenderers[i].sharedMaterials;
+        }
     }
 
     public void RestoreCorruptedMaterial()
     {
-        if(_originalMaterials == null) return;
+        if(_originalMaterials == null || _skinnedMeshRenderers == null) return;
 
         for(int i = 0; i < _skinnedMeshRenderers.Length; i++)
-            _skinnedMeshRenderers[i].sharedMaterials = _originalMaterials[i];
+        {
+            if(_skinnedMeshRenderers[i] != null && _originalMaterials[i] != null)
+                _skinnedMeshRenderers[i].sharedMaterials = _originalMaterials[i];
+        }
     }
 
     public void SetAngry(bool value)
@@ -108,6 +114,6 @@ public class HeavyBeetleView
     {
         //De ser necesario, escalar a un método genérico que consulte una colección de PS
         //Y ejecute aquel que coincida con la KEY pasada por parametro.
-        _purifiedPS?.Play();
+        if(_purifiedPS != null) _purifiedPS.Play();
     }
 }

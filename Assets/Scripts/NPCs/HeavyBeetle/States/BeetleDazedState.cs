@@ -21,7 +21,7 @@ public class BeetleDazedState : IState
         _beetle.dazedFlip.StartFlip();
         _dazeTimer = _beetle.data.dazeDuration;
         _recovering = false;
-        _collisionParticle.Play();
+        if(_collisionParticle != null) _collisionParticle.Play();
     }
 
     public void Exit()
