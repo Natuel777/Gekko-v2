@@ -57,6 +57,13 @@ public class GeckoAnimation : MonoBehaviour
              "bien. 0 = desactivado, usa la velocidad real (comportamiento de siempre).")]
     [SerializeField] private float _gaitApparentSpeed = 0f;
 
+    [Tooltip("Tope (m/s) de la velocidad que ven las patas. Por debajo del tope la marcha escala " +
+             "normal con la velocidad; por encima SE QUEDA como está: la cadencia y la zancada dejan " +
+             "de crecer y el bicho se ve igual de caminando que a mayor velocidad, en vez de dar " +
+             "pasos cada vez más largos y apurados. GeckoMover.Speed no se toca. 0 = sin tope. " +
+             "Ideal: la velocidad a la que la marcha se ve bien (ver _referenceSpeed de cada pata).")]
+    [SerializeField] private float _gaitSpeedCap = 0f;
+
     [Tooltip("Sesgo de alternancia (metros). Al par que pisó último se le descuenta esta " +
              "urgencia para que el otro par tome el turno: da el trote parejo A-B-A-B en vez " +
              "de que un par acapare los pasos y el bicho renguee. 0 = elección pura por " +
@@ -93,6 +100,13 @@ public class GeckoAnimation : MonoBehaviour
         set => _gaitApparentSpeed = Mathf.Max(0f, value);
     }
 
+    /// <summary> Tope de velocidad (m/s) que ven las patas. 0 = sin tope. </summary>
+    public float GaitSpeedCap
+    {
+        get => _gaitSpeedCap;
+        set => _gaitSpeedCap = Mathf.Max(0f, value);
+    }
+
     private void Awake()
     {
         if (_body == null) _body = transform;
@@ -121,6 +135,8 @@ public class GeckoAnimation : MonoBehaviour
         Vector3 gaitVelocity = _velocity;
         if (_gaitApparentSpeed > 0f && _velocity.sqrMagnitude > 0.0001f)
             gaitVelocity = _velocity.normalized * _gaitApparentSpeed;
+        else if (_gaitSpeedCap > 0f)
+            gaitVelocity = Vector3.ClampMagnitude(_velocity, _gaitSpeedCap);
 
         // 2. Cada pata recalcula su punto ideal y avanza el paso en curso.
         //    La cadencia se empuja cada frame para poder cambiarla en vivo.

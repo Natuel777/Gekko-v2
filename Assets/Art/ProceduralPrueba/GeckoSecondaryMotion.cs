@@ -62,6 +62,31 @@ public class GeckoSecondaryMotion : MonoBehaviour
     [Tooltip("Qué tan rápido la columna llega a la curva objetivo y vuelve a la recta.")]
     [SerializeField] private float _spineResponse = 9f;
 
+    [Header("Ondulación al paso (sigue a las patas REALES)")]
+    [Tooltip("La columna hace una S al caminar, en fase con los pasos: la cintura delantera gira hacia " +
+             "la pata delantera que va adelante y la cadera gira al revés (marcha diagonal de lagarto). " +
+             "Se calcula con la posición real de los pies respecto de su Home, no con un reloj: si el " +
+             "bicho frena, la S frena con él. Usa las 4 patas de 'Columna — conformado al trepar'.")]
+    [SerializeField] private bool _gaitUndulation = true;
+    [Tooltip("Amplitud de la S en grados: giro acumulado de la columna entre la cadera y los hombros.")]
+    [SerializeField] private float _gaitBendDeg = 12f;
+    [Tooltip("Cuánto se separan (metros, a lo largo del cuerpo) el pie izquierdo y el derecho para llegar " +
+             "a la amplitud completa. Si la S nunca llega a su máximo bajalo; si siempre está al tope, subilo. " +
+             "Tiene que andar por la mitad del alcance real de las patas.")]
+    [SerializeField] private float _gaitStride = 0.05f;
+    [Tooltip("Velocidad (m/s) a partir de la cual la S tiene su amplitud completa. Parado no hay S, " +
+             "aunque los pies hayan quedado uno más adelante que el otro.")]
+    [SerializeField] private float _gaitFullSpeed = 0.35f;
+    [Tooltip("Qué tan rápido la columna sigue a los pies. Más alto = más pegada a cada paso.")]
+    [SerializeField] private float _gaitResponse = 14f;
+    [Tooltip("Cuánto de la S se compensa en el cuello para que la cabeza no baile con el cuerpo. 1 = la " +
+             "cabeza queda totalmente firme; 0 = acompaña la S entera.")]
+    [Range(0f, 1.2f)]
+    [SerializeField] private float _headCounter = 0.7f;
+    [Tooltip("La cola barre de lado al ritmo de los pasos (en fase con la cadera) en vez de por " +
+             "metros recorridos. Usa la amplitud de 'Vaivén lateral al caminar'.")]
+    [SerializeField] private bool _tailFollowsGait = true;
+
     [Header("Columna — conformado al trepar")]
     [Tooltip("Dobla el cuerpo entero cuando las patas de adelante y las de atras estan en " +
              "superficies distintas (por ejemplo al empezar a subir un bloque). Sin esto el " +
@@ -129,7 +154,17 @@ public class GeckoSecondaryMotion : MonoBehaviour
     private float _tailSwayPhase;
     private float _headYaw, _headPitch;
     private bool _ready;
+
+    // Ondulación al paso: señales normalizadas [-1,1] de cada cintura (ya suavizadas).
+    private float _gaitFront, _gaitBack;
+    private float _gaitNetYaw;                 // giro acumulado hasta el último hueso de la columna
+    private Vector3 _neckYawAxis = Vector3.up;
     #endregion
+
+    /// <summary> Señal de la cintura delantera: +1 = pata izquierda al máximo adelante de la derecha. </summary>
+    public float GaitFrontSignal => _gaitFront;
+    /// <summary> Igual para la cadera (patas traseras). En marcha diagonal sale opuesta a la delantera. </summary>
+    public float GaitBackSignal => _gaitBack;
 
     private void Awake()
     {
@@ -175,6 +210,7 @@ public class GeckoSecondaryMotion : MonoBehaviour
         float yawRate = Mathf.DeltaAngle(_lastYaw, yaw) * Mathf.Deg2Rad / dt; // rad/s
         _lastYaw = yaw;
 
+        UpdateGait(dt, planarSpeed);
         if (_spineEnabled) UpdateSpine(dt, yawRate);
         if (_bobEnabled)   UpdateBob(dt, planarSpeed);
         if (_headEnabled)  UpdateHead(dt, vel, planarSpeed);
@@ -182,6 +218,42 @@ public class GeckoSecondaryMotion : MonoBehaviour
     }
 
     // -------------------------------------------------------------------------
+    private bool GaitLegsReady => _legFL != null && _legFR != null && _legBL != null && _legBR != null;
+
+    /// <summary>
+    /// Saca de los pies REALES la fase del paso. Para cada pata se mide cuánto se adelantó su pie
+    /// respecto de su Home a lo largo del cuerpo; la diferencia izquierda-derecha de cada par es
+    /// la señal de esa cintura. En marcha diagonal (FL+BR, después FR+BL) las dos señales salen
+    /// opuestas, y eso es exactamente la S de un lagarto: hombros y cadera giran en sentidos
+    /// contrarios, en fase con los pasos y a cualquier velocidad.
+    /// </summary>
+    private void UpdateGait(float dt, float planarSpeed)
+    {
+        float front = 0f, back = 0f;
+
+        if (_gaitUndulation && GaitLegsReady)
+        {
+            Vector3 fwd = Vector3.ProjectOnPlane(transform.forward, transform.up);
+            if (fwd.sqrMagnitude > 1e-6f)
+            {
+                fwd.Normalize();
+                float sFL = Vector3.Dot(_legFL.CurrentPosition - _legFL.HomePosition, fwd);
+                float sFR = Vector3.Dot(_legFR.CurrentPosition - _legFR.HomePosition, fwd);
+                float sBL = Vector3.Dot(_legBL.CurrentPosition - _legBL.HomePosition, fwd);
+                float sBR = Vector3.Dot(_legBR.CurrentPosition - _legBR.HomePosition, fwd);
+
+                float amount = Mathf.Clamp01(planarSpeed / Mathf.Max(_gaitFullSpeed, 0.01f));
+                float norm = 1f / Mathf.Max(2f * _gaitStride, 0.001f);
+                front = Mathf.Clamp((sFL - sFR) * norm, -1f, 1f) * amount;
+                back = Mathf.Clamp((sBL - sBR) * norm, -1f, 1f) * amount;
+            }
+        }
+
+        float k = 1f - Mathf.Exp(-_gaitResponse * dt);
+        _gaitFront = Mathf.Lerp(_gaitFront, front, k);
+        _gaitBack = Mathf.Lerp(_gaitBack, back, k);
+    }
+
     private void UpdateSpine(float dt, float yawRate)
     {
         float target = Mathf.Clamp(-yawRate * _spineBendPerTurn, -_spineMaxBendDeg, _spineMaxBendDeg);
@@ -219,15 +291,31 @@ public class GeckoSecondaryMotion : MonoBehaviour
 
         // Se reparte entre TODOS los huesos de la columna: el cuerpo se curva parejo en
         // vez de quebrarse en una sola articulacion.
-        float yawPer = _spineBend / _spineChain.Length;
-        float pitchPer = _conformAngle / _spineChain.Length;
+        int count = _spineChain.Length;
+        float yawPer = _spineBend / count;
+        float pitchPer = _conformAngle / count;
 
-        Quaternion yaw = Quaternion.AngleAxis(yawPer, _yawAxis);
         Quaternion pitch = Quaternion.AngleAxis(pitchPer, _pitchAxis);
 
-        for (int i = 0; i < _spineChain.Length; i++)
+        // S de la marcha: el giro ACUMULADO va de la señal de la cadera (Spine1) a la de los
+        // hombros (Spine N). Cada hueso aporta solo la diferencia con el anterior, así el
+        // cuerpo se curva parejo en vez de quebrarse en una articulación.
+        float previousCumulative = 0f;
+        for (int i = 0; i < count; i++)
         {
             if (_spineChain[i] == null) continue;
+
+            float cumulative = 0f;
+            if (_gaitUndulation && GaitLegsReady)
+            {
+                float t = (i + 1f) / count;
+                cumulative = _gaitBendDeg * (_gaitBack * (1f - t) + _gaitFront * t);
+            }
+
+            Quaternion yaw = Quaternion.AngleAxis(yawPer + (cumulative - previousCumulative), _yawAxis);
+            previousCumulative = cumulative;
+            _gaitNetYaw = cumulative;
+
             _spineChain[i].localRotation = _spineChainRest[i] * yaw * pitch;
         }
     }
@@ -304,7 +392,10 @@ public class GeckoSecondaryMotion : MonoBehaviour
         _headYaw   = Mathf.Lerp(_headYaw, targetYaw, k);
         _headPitch = Mathf.Lerp(_headPitch, targetPitch, k);
 
-        _neck.localRotation = _neckRest * Quaternion.Euler(_headPitch, _headYaw, 0f);
+        // Contra-giro: la S de la columna arrastra al cuello; se le resta para que la cabeza no
+        // baile con el cuerpo (más firme = más lagarto).
+        Quaternion counter = Quaternion.AngleAxis(-_gaitNetYaw * _headCounter, _neckYawAxis);
+        _neck.localRotation = _neckRest * counter * Quaternion.Euler(_headPitch, _headYaw, 0f);
     }
 
     private void UpdateTail(float dt, float yawRate, float planarSpeed)
@@ -320,8 +411,16 @@ public class GeckoSecondaryMotion : MonoBehaviour
         float walkSway = 0f;
         if (_tailWalkSwayDeg > 0f)
         {
-            _tailSwayPhase += planarSpeed * _tailWalkSwayCyclesPerMeter * Mathf.PI * 2f * dt;
-            walkSway = Mathf.Sin(_tailSwayPhase) * _tailWalkSwayDeg;
+            if (_gaitUndulation && _tailFollowsGait && GaitLegsReady)
+            {
+                // En fase con los pasos: la cola barre al lado contrario del que gira la cadera.
+                walkSway = -_gaitBack * _tailWalkSwayDeg;
+            }
+            else
+            {
+                _tailSwayPhase += planarSpeed * _tailWalkSwayCyclesPerMeter * Mathf.PI * 2f * dt;
+                walkSway = Mathf.Sin(_tailSwayPhase) * _tailWalkSwayDeg;
+            }
         }
 
         for (int i = 0; i < _tail.Length; i++)
@@ -427,6 +526,9 @@ public class GeckoSecondaryMotion : MonoBehaviour
             _yawAxis = Vector3.up;
             _pitchAxis = _spinePitchAxis.normalized;
         }
+
+        if (_neck != null)
+            _neckYawAxis = _neck.InverseTransformDirection(transform.up).normalized;
 
         if (_deriveTailAxes && _tail != null && _tail.Length > 0 && _tail[0] != null)
         {

@@ -33,8 +33,13 @@ public class CameraFollow : MonoBehaviour
 
     private void Start()
     {
-        _pj = GameManager.Instance.Pj.transform;
-        _obstacle = GameManager.Instance.Surfaces;
+        // En escenas sin el PJ real (sandbox del gecko procedural) no hay GameManager.Pj: se
+        // conserva el _pj serializado y la cámara sigue andando sin el PlayerController.
+        if (GameManager.Instance != null)
+        {
+            if (GameManager.Instance.Pj != null) _pj = GameManager.Instance.Pj.transform;
+            _obstacle = GameManager.Instance.Surfaces;
+        }
         _baseRadius = _camera.Radius;
         _input = GetComponent<CinemachineInputAxisController>();
 
@@ -68,6 +73,9 @@ public class CameraFollow : MonoBehaviour
     }
     private void SmoothCameraUp()
     {
+        // _pjC lo asigna Player.Start() vía SetPJC. Sin PJ real en escena queda null.
+        if (_pjC == null) return;
+
         Vector3 targetUp = _pjC.CurrentUp;
 
         float angleDiff = Vector3.Angle(Vector3.up, targetUp);
@@ -134,6 +142,8 @@ public class CameraFollow : MonoBehaviour
     //}
     private void PushCameraFromGeometry()
     {
+        if (_pj == null) return;
+
         Vector3 dirToCamera = (_camera.transform.position - _pj.position).normalized;
 
         if (Physics.SphereCast(_pj.position, 0.3f, dirToCamera,
@@ -150,6 +160,8 @@ public class CameraFollow : MonoBehaviour
     }
     private void UpdateVerticalRange()
     {
+        if (_pjC == null) return;
+
         float alignment = Vector3.Dot(_pjC.CurrentUp.normalized, Vector3.up);
 
         if (alignment >= _upThreshold || _pjC.Grounded)

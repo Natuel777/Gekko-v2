@@ -123,6 +123,8 @@ public class GeckoLeg : MonoBehaviour
     public bool IsStepping => _stepLerp < 1f;
     public bool HasGround => _hasGround;
     public Vector3 CurrentPosition => _currentPos;
+    /// <summary> Punto de reposo (Home) de la pata, en mundo. Se mueve con el cuerpo. </summary>
+    public Vector3 HomePosition => transform.position;
 
     /// <summary> True si el pie está lejos del punto ideal y conviene dar un paso. </summary>
     public bool WantsToStep

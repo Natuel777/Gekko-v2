@@ -6,6 +6,12 @@ public class LevelCheckpointRegistrar : MonoBehaviour
 
     private void Start()
     {
+        // Sin PJ real (escena sandbox del gecko) no hay a quién registrarle los checkpoints. Ojo:
+        // Pj puede estar asignado pero DESACTIVADO en escena, y entonces su Awake nunca creó
+        // 'health'. Por eso se chequea también health y no solo Pj.
+        if (GameManager.Instance == null || GameManager.Instance.Pj == null
+            || GameManager.Instance.Pj.health == null) return;
+
         float maxHealth = GameManager.Instance.Pj.health.MaxHealth;
         foreach (var cp in _checkpoints)
         {

@@ -90,6 +90,14 @@ public class GeckoMover : MonoBehaviour
              "pared, sube/baja en bucle con saltos de rotación en cada cambio. Con este bonus, " +
              "una superficie candidata nueva tiene que ganarle CLARO a la actual para reemplazarla.")]
     [SerializeField] private float _surfaceStickiness = 0.1f;
+    [Tooltip("Segundos que, tras pasar de PISO a PARED (o viceversa), se blinda ese tipo de " +
+             "superficie con un bonus extra que decae con el tiempo. _surfaceStickiness solo no " +
+             "alcanza justo en la esquina piso/pared: ahi los puntajes quedan tan empatados que " +
+             "el personaje cambia de tipo de superficie cada pocos frames (piso->pared->piso...), " +
+             "temblando y con la rotacion saltando en cada cambio. Con este tiempo, una vez que " +
+             "cambia de tipo se queda ahi un rato antes de poder volver a cambiar. 0 = desactivado " +
+             "(comportamiento viejo).")]
+    [SerializeField] private float _surfaceTypeLockTime = 0.25f;
 
     [Header("Detección de superficie")]
     [Tooltip("Capas que cuentan como PISO (gravedad normal).")]
@@ -156,6 +164,13 @@ public class GeckoMover : MonoBehaviour
     // perfectamente sincronizado, perdiendo un poco de momentum justo en la transición.
     private bool _prevIsClimbing;
     private bool _prevIsGrounded;
+
+    // Cuenta regresiva del "blindaje" de tipo de superficie (piso vs pared/techo). Se
+    // recarga a _surfaceTypeLockTime apenas _isClimbing cambia de valor; mientras esta
+    // arriba de cero, favorece con un bonus (que decae linealmente) a los candidatos del
+    // MISMO tipo que ya esta activo, para que la transicion no "cace" entre los dos cada
+    // pocos frames justo en la esquina piso/pared.
+    private float _surfaceTypeLockTimer;
 
     private float _coyoteTimer;
     private float _jumpBufferTimer;
@@ -352,12 +367,18 @@ public class GeckoMover : MonoBehaviour
 
     private void DetectSurface(float dt)
     {
+        // Se lee ANTES de tocar nada: es el tipo de superficie con el que arrancamos este
+        // frame, para blindarlo mientras el timer de abajo esta activo.
+        bool wasClimbing = _isClimbing;
+        _surfaceTypeLockTimer = Mathf.Max(0f, _surfaceTypeLockTimer - dt);
+
         // Justo después de saltar ignoramos las superficies para poder despegar.
         if (_jumpGrace > 0f)
         {
             _isSurface = _isGround = _isClimbing = _isGrounded = false;
             _hasSurfacePoint = false;
             _currentUp = Vector3.Slerp(_currentUp, Vector3.up, 1f - Mathf.Exp(-_alignSpeed * dt)).normalized;
+            if (_isClimbing != wasClimbing) _surfaceTypeLockTimer = _surfaceTypeLockTime;
             return;
         }
 
@@ -431,7 +452,20 @@ public class GeckoMover : MonoBehaviour
                     // evita la "caza" entre dos superficies con puntaje casi igual en una esquina.
                     float stickBonus = (_hasSurfacePoint && Vector3.Dot(hit.normal, _surfaceNormal) > 0.97f)
                         ? _surfaceStickiness : 0f;
-                    float score = distScore - downPenalty + alignBonus + intoBonus + stickBonus - farPenalty;
+
+                    // Blindaje temporal del TIPO de superficie (piso vs pared/techo) recien
+                    // cambiado: stickBonus solo no alcanza justo en la esquina piso/pared,
+                    // donde ambos tipos quedan con score casi empatado frame a frame. Decae
+                    // linealmente con _surfaceTypeLockTimer hasta 0, asi que no bloquea un
+                    // cambio de tipo genuino, solo frena la "caza" inmediata post-cambio.
+                    int hitLayerBit = 1 << hit.collider.gameObject.layer;
+                    bool hitIsGroundType = (_groundMask.value & hitLayerBit) != 0;
+                    bool hitMatchesCurrentType = hitIsGroundType == !wasClimbing;
+                    float lockBonus = (_surfaceTypeLockTimer > 0f && hitMatchesCurrentType)
+                        ? (_surfaceTypeLockTimer / _surfaceTypeLockTime) * _surfaceStickiness * 2f
+                        : 0f;
+
+                    float score = distScore - downPenalty + alignBonus + intoBonus + stickBonus + lockBonus - farPenalty;
 
                     if (score > bestScore)
                     {
@@ -475,6 +509,7 @@ public class GeckoMover : MonoBehaviour
             _isSurface = _isGround = _isClimbing = _isGrounded = false;
             _hasSurfacePoint = false;
             _currentUp = Vector3.Slerp(_currentUp, Vector3.up, 1f - Mathf.Exp(-_alignSpeed * dt)).normalized;
+            if (_isClimbing != wasClimbing) _surfaceTypeLockTimer = _surfaceTypeLockTime;
             return;
         }
 
@@ -486,6 +521,7 @@ public class GeckoMover : MonoBehaviour
         int layerBit = 1 << best.collider.gameObject.layer;
         _isGround = (_groundMask.value & layerBit) != 0;
         _isClimbing = !_isGround;
+        if (_isClimbing != wasClimbing) _surfaceTypeLockTimer = _surfaceTypeLockTime;
 
         _currentUp = Vector3.Slerp(_currentUp, _surfaceNormal, 1f - Mathf.Exp(-_alignSpeed * dt)).normalized;
 
@@ -519,9 +555,19 @@ public class GeckoMover : MonoBehaviour
         Vector3 up = _currentUp;
         Transform camRef = _camTransform != null ? _camTransform : transform;
 
-        Vector3 camForward = Vector3.ProjectOnPlane(camRef.forward, up).normalized;
-        if (camForward.sqrMagnitude < 0.0001f)
-            camForward = Vector3.ProjectOnPlane(camRef.up, up).normalized;
+        // OJO con el orden: el chequeo de magnitud tiene que hacerse sobre el vector SIN
+        // normalizar. Cuando camRef.forward queda casi paralelo a la normal de la
+        // superficie (exactamente lo que pasa al trepar mirando de frente a la pared que
+        // se quiere subir), la proyección da un vector chiquito dominado por ruido
+        // numérico — y "chiquito pero no cero" pasaba el viejo umbral de 0.0001 después
+        // de normalizar, así que .ToString() convertía ese ruido en una dirección de
+        // "adelante" a fuerza completa e inestable (cambiaba de frame a frame). Resultado:
+        // al trepar apuntando derecho a la pared, el empuje hacia arriba salía débil y
+        // errático, no llegaba a subir, y volvía a caer al piso en bucle.
+        Vector3 camForwardRaw = Vector3.ProjectOnPlane(camRef.forward, up);
+        Vector3 camForward = camForwardRaw.sqrMagnitude > 0.04f
+            ? camForwardRaw.normalized
+            : Vector3.ProjectOnPlane(camRef.up, up).normalized;
         Vector3 camRight = Vector3.Cross(up, camForward).normalized;
 
         Vector3 wish = camForward * _smoothInput.y + camRight * _smoothInput.x;

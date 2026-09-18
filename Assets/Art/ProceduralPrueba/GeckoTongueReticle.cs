@@ -47,7 +47,8 @@ public class GeckoTongueReticle : MonoBehaviour
         if (_image == null) return;
         switch (_tongue.CurrentAimTarget)
         {
-            case GeckoTongue.AimTargetKind.Edible: _image.color = _colorEdible; break;
+            case GeckoTongue.AimTargetKind.Edible:
+            case GeckoTongue.AimTargetKind.Interactable: _image.color = _colorEdible; break;
             case GeckoTongue.AimTargetKind.GrapplePoint: _image.color = _colorGrapplePoint; break;
             case GeckoTongue.AimTargetKind.InvalidSurface: _image.color = _colorInvalid; break;
             default: _image.color = _colorNone; break;
