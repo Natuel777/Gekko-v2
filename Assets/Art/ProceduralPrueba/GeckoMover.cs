@@ -19,6 +19,7 @@ using UnityEngine.InputSystem;
 /// por si más adelante se enchufan las cámaras del juego principal.
 /// </summary>
 [RequireComponent(typeof(Rigidbody))]
+[RequireComponent(typeof(CapsuleCollider))]
 public class GeckoMover : MonoBehaviour
 {
     #region Variables
@@ -34,7 +35,6 @@ public class GeckoMover : MonoBehaviour
              "la superficie. Por debajo de ~6 el bicho tarda demasiado en acomodarse a una " +
              "pared y da la sensacion de que no puede trepar.")]
     [SerializeField] private float _rotationSpeed = 14f;
-    [SerializeField] private float _jumpForce = 2.6f;
     [Tooltip("Suavizado del input de movimiento (segundos).")]
     [SerializeField] private float _inputSmoothing = 0.10f;
     [Tooltip("Cuánto controla el jugador el movimiento mientras está en el aire.")]
@@ -62,10 +62,24 @@ public class GeckoMover : MonoBehaviour
              "siendo más baja.")]
     [SerializeField] private float _climbSpeed = 0.65f;
 
+    [Header("Salto — diseño (altura/tiempo, no gravedad a mano)")]
+    [Tooltip("Altura deseada del salto, en metros. Junto con los dos tiempos de abajo reemplaza " +
+             "tener que tunear gravedad y fuerza de salto por separado a ojo: se calculan solos " +
+             "en Awake/OnValidate a partir de estos tres números 'de diseño'. Referencia: " +
+             "\"Math for Game Programmers: Building a Better Jump\" (GDC 2016, Kyle Pittman).")]
+    [SerializeField] private float _jumpHeight = 0.34f;
+    [Tooltip("Segundos hasta el punto más alto del salto. Más bajo = salto más 'snappy', menos hang time.")]
+    [SerializeField] private float _timeToApex = 0.26f;
+    [Tooltip("Segundos de caída desde el punto más alto hasta volver a la altura de despegue. " +
+             "Más corto que _timeToApex = cae más rápido de lo que sube (gravedad asimétrica, " +
+             "el 'peso' del salto sin perder hang time en el aire).")]
+    [SerializeField] private float _timeToFall = 0.18f;
+    [Tooltip("Si soltás el botón de salto mientras todavía está subiendo, la velocidad vertical " +
+             "que le queda se multiplica por esto (en vez de cortarse a cero, que se siente " +
+             "'roto'). 1 = deshabilitado, el salto siempre llega a la altura completa.")]
+    [SerializeField, Range(0f, 1f)] private float _shortHopMultiplier = 0.5f;
+
     [Header("Gravedad / adherencia")]
-    [SerializeField] private float _gravity = 9.81f;
-    [Tooltip("Multiplica la gravedad al caer para que el salto no se sienta flotante.")]
-    [SerializeField] private float _fallMultiplier = 2.2f;
     [Tooltip("Fuerza que mantiene al Gecko pegado a paredes y techo.")]
     [SerializeField] private float _stickForce = 18f;
     [Tooltip("Qué tan rápido gira el 'up' del cuerpo hacia la normal de la superficie.")]
@@ -88,8 +102,18 @@ public class GeckoMover : MonoBehaviour
     [SerializeField] private float _castDistance = 0.22f;
     [Tooltip("Offset del origen de los rayos sobre el pivote del Gecko.")]
     [SerializeField] private float _bodyOffset = 0.08f;
+    [Tooltip("Multiplica _castDistance para el rayo hacia ADELANTE cuando ya está trepando y " +
+             "lejos del piso. Sin esto, al trepar un tronco o una pared alta el cuerpo se puede " +
+             "separar un poco de la superficie por el vaivén de la física, y el rayo corto de " +
+             "siempre deja de tocarla: el gecko se suelta y cae aunque siga 'pegado' visualmente. " +
+             "Es la misma idea que usa PlayerController (el PJ real) para poder trepar sin problema.")]
+    [SerializeField] private float _climbReachMultiplier = 5f;
+    [Tooltip("Multiplica _castDistance para el rayo de emergencia que busca la CONTINUACIÓN de " +
+             "una superficie al llegar a un borde en el aire (coronar una pared, pasar a una " +
+             "rama). Sin esto el gecko se suelta apenas se termina la superficie actual.")]
+    [SerializeField] private float _ledgeReachMultiplier = 10f;
 
-    [Header("Salto")]
+    [Header("Salto — ventanas de input")]
     [Tooltip("Ventana tras dejar una superficie en la que todavía se puede saltar.")]
     [SerializeField] private float _coyoteTime = 0.15f;
     [Tooltip("Ventana ANTES de tocar superficie en la que un salto presionado queda guardado " +
@@ -98,9 +122,19 @@ public class GeckoMover : MonoBehaviour
     [SerializeField] private float _jumpBufferTime = 0.12f;
 
     private Rigidbody _rb;
+    private CapsuleCollider _collider;
     private LayerMask _surfaceMask;
     private Vector3 _surfacePoint;
     private bool _hasSurfacePoint;
+    private bool _nearGround;
+
+    // Derivados de _jumpHeight/_timeToApex/_timeToFall en DeriveJumpPhysics(). No se tocan
+    // a mano: son los que hacen que el salto se sienta "de diseño" y no de física cruda.
+    private float _jumpForce;   // velocidad vertical inicial del salto
+    private float _gravityUp;   // gravedad mientras sube (más floja = más hang time)
+    private float _gravityDown; // gravedad mientras cae (más fuerte = caída "con peso")
+    private bool _jumpHeld;
+    private bool _shortHopApplied;
 
     private Vector3 _currentUp = Vector3.up;
     private Vector3 _surfaceNormal = Vector3.up;
@@ -152,8 +186,8 @@ public class GeckoMover : MonoBehaviour
     public Rigidbody Body => _rb;
     /// <summary> Cámara de referencia para movimiento relativo. </summary>
     public Transform CamTransform => _camTransform;
-    /// <summary> Gravedad configurada (m/s²), para que el tongue use la misma al colgar. </summary>
-    public float GravityMagnitude => _gravity;
+    /// <summary> Gravedad configurada (m/s²) mientras sube, para que el tongue use la misma al colgar. </summary>
+    public float GravityMagnitude => _gravityUp;
     private bool _tethered;
 
     /// <summary> Multiplicador de velocidad en vivo (ej. GeckoBlueberryCombo). 1 = normal. </summary>
@@ -189,6 +223,7 @@ public class GeckoMover : MonoBehaviour
     private void Awake()
     {
         _rb = GetComponent<Rigidbody>();
+        _collider = GetComponent<CapsuleCollider>();
         _rb.useGravity = false;                 // la gravedad la manejamos nosotros
         _rb.constraints = RigidbodyConstraints.FreezeRotation;
         _rb.interpolation = RigidbodyInterpolation.Interpolate;
@@ -198,6 +233,30 @@ public class GeckoMover : MonoBehaviour
 
         if (_camTransform == null && Camera.main != null)
             _camTransform = Camera.main.transform;
+
+        DeriveJumpPhysics();
+    }
+
+    /// <summary>
+    /// Calcula gravedad de subida/bajada y velocidad inicial de salto a partir de
+    /// _jumpHeight/_timeToApex/_timeToFall (fórmulas de cinemática: h = 1/2 g t²). Así el
+    /// diseño se tunea en "cuánto sube y en cuánto tiempo", no jugando con la gravedad a
+    /// mano — ver "Math for Game Programmers: Building a Better Jump" (GDC 2016).
+    /// </summary>
+    private void DeriveJumpPhysics()
+    {
+        float apex = Mathf.Max(_timeToApex, 0.01f);
+        float fall = Mathf.Max(_timeToFall, 0.01f);
+        _gravityUp = (2f * _jumpHeight) / (apex * apex);
+        _gravityDown = (2f * _jumpHeight) / (fall * fall);
+        _jumpForce = _gravityUp * apex;
+    }
+
+    private void OnValidate()
+    {
+        // Recalcula en vivo al tocar los sliders en el inspector, para ver el efecto sin
+        // tener que entrar a Play. En Awake se vuelve a calcular igual por las dudas.
+        DeriveJumpPhysics();
     }
 
     private void Update()
@@ -262,8 +321,11 @@ public class GeckoMover : MonoBehaviour
         if (_useDebugInput)
         {
             _rawInput = Vector2.ClampMagnitude(_debugInput, 1f);
+            _jumpHeld = true; // no interferir con el salto corto durante pruebas automáticas
             return;
         }
+
+        _jumpHeld = false;
 
         Keyboard kb = Keyboard.current;
         if (kb != null)
@@ -273,6 +335,7 @@ public class GeckoMover : MonoBehaviour
             if (kb.dKey.isPressed || kb.rightArrowKey.isPressed) _rawInput.x += 1f;
             if (kb.aKey.isPressed || kb.leftArrowKey.isPressed) _rawInput.x -= 1f;
             if (kb.spaceKey.wasPressedThisFrame) _jumpBufferTimer = _jumpBufferTime;
+            if (kb.spaceKey.isPressed) _jumpHeld = true;
         }
 
         Gamepad gp = Gamepad.current;
@@ -281,6 +344,7 @@ public class GeckoMover : MonoBehaviour
             Vector2 ls = gp.leftStick.ReadValue();
             if (ls.sqrMagnitude > _rawInput.sqrMagnitude) _rawInput = ls;
             if (gp.buttonSouth.wasPressedThisFrame) _jumpBufferTimer = _jumpBufferTime;
+            if (gp.buttonSouth.isPressed) _jumpHeld = true;
         }
 
         if (_rawInput.sqrMagnitude > 1f) _rawInput.Normalize();
@@ -297,7 +361,15 @@ public class GeckoMover : MonoBehaviour
             return;
         }
 
-        Vector3 origin = transform.position + _currentUp * _bodyOffset;
+        // Tres orígenes a lo largo del cuerpo (frente/centro/cola), como el PJ real: con uno
+        // solo, un tronco o una pared angosta puede pasar justo entre los rayos y el gecko
+        // "no la ve" aunque la esté tocando con otra parte del cuerpo.
+        float half = Mathf.Max(0f, _collider.height * 0.5f - _collider.radius);
+        Vector3 center = transform.position + _currentUp * _bodyOffset;
+        Vector3 front = center + transform.forward * half;
+        Vector3 back = center - transform.forward * half;
+        Vector3[] origins = { front, center, back };
+
         Vector3[] dirs =
         {
             -_currentUp,
@@ -308,39 +380,91 @@ public class GeckoMover : MonoBehaviour
             -transform.right,
         };
 
+        // Si hay piso derecho abajo no hace falta "estirarse": evita que el alcance largo
+        // de trepada enganche el piso desde lejos y tire al gecko hacia abajo por error.
+        _nearGround = Physics.Raycast(transform.position, -_currentUp, 1f, _groundMask, QueryTriggerInteraction.Ignore);
+
         bool found = false;
         RaycastHit best = default;
         float bestScore = float.NegativeInfinity;
 
-        foreach (Vector3 d in dirs)
+        foreach (Vector3 origin in origins)
         {
-            if (Physics.SphereCast(origin, _castRadius, d, out RaycastHit hit,
-                    _castDistance, _surfaceMask, QueryTriggerInteraction.Ignore))
+            for (int d = 0; d < dirs.Length; d++)
             {
-                // Descarta caras vistas DESDE ATRAS. Si la normal no apunta hacia el
-                // origen del rayo, estamos del lado de adentro del collider; engancharse
-                // ahi es lo que mandaba al Gecko a la cara opuesta de la pared al llegar
-                // rapido y meterse en la geometria durante el giro.
-                if (Vector3.Dot(hit.normal, origin - hit.point) <= 0f) continue;
+                Vector3 dir = dirs[d];
+                float castDist = _castDistance;
 
-                float distScore = 1f - hit.distance / _castDistance;
-                float downPenalty = Mathf.Clamp01(Vector3.Dot(hit.normal, Vector3.up)) * 0.15f;
-                float alignBonus = Vector3.Dot(hit.normal, _currentUp) * 0.15f;
-                // superficie contra la que estamos caminando de frente (pared que se
-                // quiere trepar): su normal apunta hacia -forward. Le damos prioridad
-                // fuerte para que la transición piso -> pared no la gane siempre el piso.
-                float intoBonus = Mathf.Clamp01(Vector3.Dot(hit.normal, -transform.forward)) * 0.7f;
-                // Histéresis: si este candidato ES (aprox.) la superficie donde ya estábamos
-                // parados el frame pasado, le damos un empujón para que gane los empates —
-                // evita la "caza" entre dos superficies con puntaje casi igual en una esquina.
-                float stickBonus = (_hasSurfacePoint && Vector3.Dot(hit.normal, _surfaceNormal) > 0.97f)
-                    ? _surfaceStickiness : 0f;
-                float score = distScore - downPenalty + alignBonus + intoBonus + stickBonus;
+                // Ya trepando y lejos del piso: el rayo hacia ADELANTE (d == 2) se estira
+                // bastante para no perder una superficie grande (tronco, pared alta) si el
+                // cuerpo se separó un poco por el vaivén de la física; los demás rayos se
+                // estiran un poco menos, para poder doblar una esquina sin soltarse.
+                if (_isClimbing && !_nearGround)
+                {
+                    bool isForward = d == 2;
+                    castDist = isForward ? _castDistance * _climbReachMultiplier
+                                          : _castDistance * 1.5f;
+                }
 
+                if (Physics.SphereCast(origin, _castRadius, dir, out RaycastHit hit,
+                        castDist, _surfaceMask, QueryTriggerInteraction.Ignore))
+                {
+                    // Descarta caras vistas DESDE ATRAS. Si la normal no apunta hacia el
+                    // origen del rayo, estamos del lado de adentro del collider; engancharse
+                    // ahi es lo que mandaba al Gecko a la cara opuesta de la pared al llegar
+                    // rapido y meterse en la geometria durante el giro.
+                    if (Vector3.Dot(hit.normal, origin - hit.point) <= 0f) continue;
+
+                    float distScore = 1f - hit.distance / castDist;
+                    // Penaliza los hits encontrados solo gracias al alcance largo de trepada:
+                    // sin esto, cualquier superficie lejana ganaría por puro alcance aunque
+                    // haya una más cerca y más alineada.
+                    float farPenalty = castDist > _castDistance * 1.5f ? hit.distance * 0.3f : 0f;
+                    float downPenalty = Mathf.Clamp01(Vector3.Dot(hit.normal, Vector3.up)) * 0.15f;
+                    float alignBonus = Vector3.Dot(hit.normal, _currentUp) * 0.15f;
+                    // superficie contra la que estamos caminando de frente (pared que se
+                    // quiere trepar): su normal apunta hacia -forward. Le damos prioridad
+                    // fuerte para que la transición piso -> pared no la gane siempre el piso.
+                    float intoBonus = Mathf.Clamp01(Vector3.Dot(hit.normal, -transform.forward)) * 0.7f;
+                    // Histéresis: si este candidato ES (aprox.) la superficie donde ya estábamos
+                    // parados el frame pasado, le damos un empujón para que gane los empates —
+                    // evita la "caza" entre dos superficies con puntaje casi igual en una esquina.
+                    float stickBonus = (_hasSurfacePoint && Vector3.Dot(hit.normal, _surfaceNormal) > 0.97f)
+                        ? _surfaceStickiness : 0f;
+                    float score = distScore - downPenalty + alignBonus + intoBonus + stickBonus - farPenalty;
+
+                    if (score > bestScore)
+                    {
+                        bestScore = score;
+                        best = hit;
+                        found = true;
+                    }
+                }
+            }
+        }
+
+        // Alcance de emergencia para bordes: si venía trepando, no hay piso cerca y el rayo
+        // hacia adelante ya no toca nada (borde de la pared/rama), tira un último rayo largo
+        // en diagonal hacia abajo-adelante desde arriba del cuerpo. Es lo que deja coronar una
+        // pared o pasar a una rama en vez de soltarse en el aire apenas se acaba la superficie
+        // actual — la misma "red de seguridad" que ya tiene el PJ real para esto.
+        bool nearEdge = _isClimbing && !Physics.SphereCast(front, _castRadius, transform.forward,
+            out _, _castDistance, _surfaceMask, QueryTriggerInteraction.Ignore);
+
+        if (!_isGrounded && !_nearGround && nearEdge)
+        {
+            Vector3 headOrigin = front + _currentUp * _bodyOffset;
+            Vector3 forwardDown = (-transform.forward - _currentUp).normalized;
+            float reach = _castDistance * _ledgeReachMultiplier;
+
+            if (Physics.SphereCast(headOrigin, _castRadius, forwardDown, out RaycastHit ledgeHit,
+                    reach, _surfaceMask, QueryTriggerInteraction.Ignore))
+            {
+                float distScore = 1f - ledgeHit.distance / reach;
+                float score = distScore - Mathf.Clamp01(Vector3.Dot(ledgeHit.normal, Vector3.up)) * 0.3f + 0.4f;
                 if (score > bestScore)
                 {
-                    bestScore = score;
-                    best = hit;
+                    best = ledgeHit;
                     found = true;
                 }
             }
@@ -366,7 +490,7 @@ public class GeckoMover : MonoBehaviour
         _currentUp = Vector3.Slerp(_currentUp, _surfaceNormal, 1f - Mathf.Exp(-_alignSpeed * dt)).normalized;
 
         _isGrounded = _isGround && (best.distance < _castDistance * 0.85f ||
-            Physics.SphereCast(origin, _castRadius, -_currentUp, out _,
+            Physics.SphereCast(center, _castRadius, -_currentUp, out _,
                 _castDistance, _groundMask, QueryTriggerInteraction.Ignore));
     }
 
@@ -437,12 +561,25 @@ public class GeckoMover : MonoBehaviour
         {
             float downV = Mathf.Min(Vector3.Dot(_rb.linearVelocity, up), 0f);
             _rb.linearVelocity = _planarVel + up * downV;
-            _rb.AddForce(-up * (_gravity * 0.5f), ForceMode.Acceleration); // mantiene contacto
+            _rb.AddForce(-up * (_gravityUp * 0.5f), ForceMode.Acceleration); // mantiene contacto
         }
         else
         {
-            float g = _gravity;
-            if (Vector3.Dot(_rb.linearVelocity, Vector3.up) < 0f) g *= _fallMultiplier;
+            bool rising = Vector3.Dot(_rb.linearVelocity, Vector3.up) >= 0f;
+
+            // Salto corto: soltar el botón mientras todavía sube le corta la velocidad
+            // vertical (multiplicada, no a cero — cortarla del todo se siente "roto"). Se
+            // aplica una sola vez por salto, si no se iría comiendo la velocidad de a poco
+            // en cada FixedUpdate mientras el botón siga sin apretarse.
+            if (rising && !_jumpHeld && !_shortHopApplied)
+            {
+                Vector3 verticalCut = Vector3.Project(_rb.linearVelocity, Vector3.up);
+                _rb.linearVelocity -= verticalCut * (1f - _shortHopMultiplier);
+                _shortHopApplied = true;
+                rising = Vector3.Dot(_rb.linearVelocity, Vector3.up) >= 0f;
+            }
+
+            float g = rising ? _gravityUp : _gravityDown;
 
             Vector3 vertical = Vector3.Project(_rb.linearVelocity, Vector3.up);
             Vector3 horizontal = _rb.linearVelocity - vertical;
@@ -456,7 +593,7 @@ public class GeckoMover : MonoBehaviour
         // Red de seguridad: la depenetración de colliders convexos en esquinas
         // (sobre todo al coronar una pared) puede lanzar al Gecko. Nunca dejamos
         // que la velocidad supere un múltiplo razonable de la de movimiento.
-        float maxSpeed = Mathf.Max(_speed, _jumpForce) * 4f + _gravity;
+        float maxSpeed = Mathf.Max(_speed, _jumpForce) * 4f + Mathf.Max(_gravityUp, _gravityDown);
         if (_rb.linearVelocity.sqrMagnitude > maxSpeed * maxSpeed)
             _rb.linearVelocity = _rb.linearVelocity.normalized * maxSpeed;
     }
@@ -468,6 +605,7 @@ public class GeckoMover : MonoBehaviour
         _isGrounded = false;
         _coyoteTimer = 0f;
         _jumpGrace = 0.25f;
+        _shortHopApplied = false;
 
         Vector3 v = _rb.linearVelocity;
         v -= Vector3.Project(v, _currentUp);   // limpia la componente vertical previa
