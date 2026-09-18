@@ -6,7 +6,7 @@ public class GekkoSwinging
     private Transform _camera, _transform, _tongueTip;
     private LineRenderer _lineRenderer;
     private float _maxTongueDistance;
-    private Vector3 _grapplePoint = Vector3.zero, _previousHitPosition;
+    private Vector3 _grapplePoint = Vector3.zero, _previousHitPosition, _currentGrapplePoint;
     private SpringJoint _joint;
     private Rigidbody _rb;
     private float _forwardThrustForce;
@@ -17,6 +17,7 @@ public class GekkoSwinging
     private RaycastHit _predictionHit;
     private float _predictionSphereRadius;
     private Transform _lastHitObject, _cachedGrapplePoint, _predictionPoint;
+    private int _quality; 
     
     #region Properties
     public bool IsSwinging { get; private set; }
@@ -77,6 +78,7 @@ public class GekkoSwinging
 
     private void DrawTongue()
     {
+        _currentGrapplePoint = Vector3.Lerp(_currentGrapplePoint, _grapplePoint, Time.deltaTime * 8f);
         _lineRenderer.SetPosition(0, _tongueTip.position);
         _lineRenderer.SetPosition(1, _grapplePoint);
     }
