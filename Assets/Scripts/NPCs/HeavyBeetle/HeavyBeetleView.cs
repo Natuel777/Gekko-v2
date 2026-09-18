@@ -7,6 +7,7 @@ public class HeavyBeetleView
     private Transform _transform;
     private Material _purifiedMat;
     private SkinnedMeshRenderer[] _skinnedMeshRenderers;
+    private Material[][] _originalMaterials;
 
     public HeavyBeetleView(Transform transform)
     {
@@ -34,6 +35,7 @@ public class HeavyBeetleView
     public HeavyBeetleView SetMeshRenderers(SkinnedMeshRenderer[] skinnedMeshRenderers) 
     {
         _skinnedMeshRenderers = skinnedMeshRenderers;
+        CacheOriginalMaterials();
         return this;
     }
 
@@ -62,6 +64,25 @@ public class HeavyBeetleView
 
         foreach(SkinnedMeshRenderer skinnedMesh in _skinnedMeshRenderers)
             skinnedMesh.sharedMaterial = _purifiedMat;
+    }
+
+    // Guarda los materiales de origen (corrompidos) para poder revertir la purificación.
+    private void CacheOriginalMaterials()
+    {
+        if(_skinnedMeshRenderers == null) return;
+
+        _originalMaterials = new Material[_skinnedMeshRenderers.Length][];
+
+        for(int i = 0; i < _skinnedMeshRenderers.Length; i++)
+            _originalMaterials[i] = _skinnedMeshRenderers[i].sharedMaterials;
+    }
+
+    public void RestoreCorruptedMaterial()
+    {
+        if(_originalMaterials == null) return;
+
+        for(int i = 0; i < _skinnedMeshRenderers.Length; i++)
+            _skinnedMeshRenderers[i].sharedMaterials = _originalMaterials[i];
     }
 
     public void SetAngry(bool value)
