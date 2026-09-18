@@ -36,7 +36,7 @@ public class PlantSpitBehaviour
 
     public void ArtificialUpdate()
     {
-        if(_target == null) return;
+        if(_target == null || _firePoint == null) return;
 
         Vector3 toTarget = _target.position - _firePoint.position;
         Vector3 direction = toTarget.normalized;

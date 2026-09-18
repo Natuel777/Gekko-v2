@@ -17,7 +17,7 @@ public class PurificationBarrier : MonoBehaviour
     [SerializeField] private float _dissolveTo = 1f;
     [SerializeField] private float _dropDuration = 1f;
 
-    [Header("Feedback")]
+    [Header("Feedback (opcional)")]
     [SerializeField] private ParticleSystem _dropParticle;
     [SerializeField] private AudioSource _dropSound;
 
@@ -31,10 +31,18 @@ public class PurificationBarrier : MonoBehaviour
 
     private void Awake()
     {
-        _colliders = GetComponentsInChildren<Collider>();
+        EnsureInit();
+        SetDissolve(_dissolveFrom);
+    }
+
+    // Si la barrera arranca desactivada Awake no corre: se inicializa recién al bajarla.
+    private void EnsureInit()
+    {
+        if(_block != null) return;
+
+        _colliders = GetComponentsInChildren<Collider>(true);
         _block = new MaterialPropertyBlock();
         _dissolveId = Shader.PropertyToID(_dissolveProperty);
-        SetDissolve(_dissolveFrom);
     }
 
     public void Drop()
@@ -42,9 +50,18 @@ public class PurificationBarrier : MonoBehaviour
         if(_dropped) return;
         _dropped = true;
 
+        EnsureInit();
+
         // El collider se apaga al iniciar la caída para que la lengua y Gekko puedan pasar enseguida.
         foreach(Collider c in _colliders)
-            c.enabled = false;
+            if(c != null) c.enabled = false;
+
+        // Desactivada no puede correr la corrutina ni reproducir FX: pasa directo al estado final.
+        if(!gameObject.activeInHierarchy)
+        {
+            FinishDrop();
+            return;
+        }
 
         if(_dropParticle != null) _dropParticle.Play();
         if(_dropSound != null) _dropSound.Play();
@@ -63,6 +80,11 @@ public class PurificationBarrier : MonoBehaviour
             yield return null;
         }
 
+        FinishDrop();
+    }
+
+    private void FinishDrop()
+    {
         SetDissolve(_dissolveTo);
 
         // Solo se ocultan los renderers: el GameObject sigue activo para no cortar partículas/sonido.

@@ -6,7 +6,7 @@ public class GekkoSwinging
     private Transform _camera, _transform, _tongueTip;
     private LineRenderer _lineRenderer;
     private float _maxTongueDistance;
-    private Vector3 _grapplePoint = Vector3.zero;
+    private Vector3 _grapplePoint = Vector3.zero, _previousHitPosition;
     private SpringJoint _joint;
     private Rigidbody _rb;
     private float _forwardThrustForce;
@@ -16,10 +16,8 @@ public class GekkoSwinging
     private bool _shortenCablePressed;
     private RaycastHit _predictionHit;
     private float _predictionSphereRadius;
-    private Transform _predictionPoint;
-    private Vector3 _previousHitPosition;
-    private Transform _lastHitObject;
-    private Transform _cachedGrapplePoint;
+    private Transform _lastHitObject, _cachedGrapplePoint, _predictionPoint;
+    
     #region Properties
     public bool IsSwinging { get; private set; }
     public Vector2 ThrustInput { set { _thrustInput = value; } }

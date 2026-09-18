@@ -146,7 +146,7 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick
     {
         if(_purified || _head == null || _isLunging) return;
         StartCoroutine(BiteLungeRoutine());
-        _animatorCarnivorousPlant.SetTrigger("nibble");
+        if(_animatorCarnivorousPlant != null) _animatorCarnivorousPlant.SetTrigger("nibble");
     }
 
     private IEnumerator BiteLungeRoutine()

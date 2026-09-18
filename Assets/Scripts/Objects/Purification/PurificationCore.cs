@@ -10,10 +10,11 @@ public class PurificationCore : MonoBehaviour, IDamageable, IHitOncePerLick
     [Header("Config")]
     [SerializeField] private int _hitsToBreak = 1;
 
-    [Header("Feedback")]
+    [Header("Feedback (todo opcional)")]
     [SerializeField] private ParticleSystem _hitParticle;
     [Tooltip("No debe ser hijo de 'Visual': ese objeto se desactiva al romperse.")]
     [SerializeField] private ParticleSystem _breakParticle;
+    [Tooltip("No debe ser hijo de 'Visual': ese objeto se desactiva al romperse.")]
     [SerializeField] private AudioSource _breakSound;
     [Tooltip("Malla/objeto del núcleo que se oculta al romperse.")]
     [SerializeField] private GameObject _visual;
@@ -53,7 +54,7 @@ public class PurificationCore : MonoBehaviour, IDamageable, IHitOncePerLick
     private void Break()
     {
         IsBroken = true;
-        _collider.enabled = false;
+        if(_collider != null) _collider.enabled = false;
 
         if(_visual != null) _visual.SetActive(false);
         if(_breakParticle != null) _breakParticle.Play();
