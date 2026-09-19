@@ -51,7 +51,7 @@ public class TongueManager : MonoBehaviour
         if (_extending || _retracting)
         {
             float currentDist = Vector3.Distance(transform.position, _currentPos);
-            float blendValue = (currentDist / _maxDistance) * 100f;
+            float blendValue = (currentDist / _maxDistance) * 200f;
             _blend.SetBlendShapeWeight(0, blendValue);
         }
         
@@ -324,5 +324,9 @@ public class TongueManager : MonoBehaviour
     public void GetPlayerController(PlayerController pjC)
     {
         _pjController = pjC;
+    }
+    private void OnDrawGizmosSelected()
+    {
+        Gizmos.DrawLine(transform.position, transform.position + transform.forward * _maxDistance);
     }
 }
