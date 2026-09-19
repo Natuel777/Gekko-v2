@@ -49,7 +49,7 @@ public class PlayerController
     
     private Vector3 _lastValidDir = Vector3.zero;
     private float _jumpGraceTime = 0f;
-    private float _jumpGraceDuration = 0.4f;
+    private float _jumpGraceDuration = 0.1f;
 
 
     public bool JumpPressed { set { _jumpPressed = value; } }
@@ -148,7 +148,7 @@ public class PlayerController
                 if (rotDiff > 1f)
                 {
                     Quaternion targetRot = Quaternion.LookRotation(projectedForward, _currentUp);
-                    _pjTransform.rotation = Quaternion.Slerp(_pjTransform.rotation, targetRot, 8f * Time.deltaTime);
+                    _pjTransform.rotation = Quaternion.Slerp(_pjTransform.rotation, targetRot, 8f * Time.fixedDeltaTime);
                 }
             }
             if (!_nearGround && _jumpGraceTime <= 0f)
@@ -336,16 +336,24 @@ public class PlayerController
             }
             else
             {
-                float speed = _speed;
-                if (_isSlipperySurface) speed *= _slipperyForce;
-                float currentY = _wasClimbing && _jumpGraceTime <= 0 ? 0f : _rb.linearVelocity.y;
-                moveVel.y = currentY;
-                Vector3 horizontalVel = new Vector3(moveVel.x, 0, moveVel.z);
-                if (horizontalVel.magnitude > speed * _speedMultiplier)
-                    horizontalVel = horizontalVel.normalized * speed * _speedMultiplier;
-                moveVel.x = horizontalVel.x;
-                moveVel.z = horizontalVel.z;
-                _rb.linearVelocity = moveVel;
+                if (_jumpGraceTime > 0f)
+                {
+                    Vector3 airControl = new Vector3(dir.x, 0f, dir.z) * (_speed * _speedMultiplier * 0.3f);
+                    _rb.AddForce(airControl, ForceMode.Acceleration);
+                }
+                else
+                {
+                    float speed = _speed;
+                    if (_isSlipperySurface) speed *= _slipperyForce;
+                    float currentY = _wasClimbing && _jumpGraceTime <= 0 ? 0f : _rb.linearVelocity.y;
+                    moveVel.y = currentY;
+                    Vector3 horizontalVel = new Vector3(moveVel.x, 0, moveVel.z);
+                    if (horizontalVel.magnitude > speed * _speedMultiplier)
+                        horizontalVel = horizontalVel.normalized * speed * _speedMultiplier;
+                    moveVel.x = horizontalVel.x;
+                    moveVel.z = horizontalVel.z;
+                    _rb.linearVelocity = moveVel;
+                }
             }
         }
     }
@@ -520,7 +528,8 @@ public class PlayerController
             float angleDiff = Vector3.Angle(_currentUp, bestHit.normal);
             if (angleDiff > 0.5f)
             {
-                _currentUp = Vector3.Slerp(_currentUp, bestHit.normal, 5f * Time.deltaTime);
+                //_currentUp = bestHit.normal;
+                _currentUp = Vector3.Slerp(_currentUp, bestHit.normal, 15f * Time.fixedDeltaTime);
             }
 
             if (isGround)

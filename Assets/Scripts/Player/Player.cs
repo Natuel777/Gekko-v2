@@ -202,11 +202,12 @@ public class Player : MonoBehaviour
 
     private void DrawSwingSphereCastGizmo()
     {
-        bool didHit = Physics.SphereCast(transform.position, _predictionSphereRadius, transform.forward, out RaycastHit hit, _maxTongueDistance, _grappableLayers);
-        Vector3 endPoint = didHit ? hit.point : transform.position + transform.forward * _maxTongueDistance;
+        Transform cam = Camera.main.transform;
+        bool didHit = Physics.SphereCast(cam.position, _predictionSphereRadius, cam.forward, out RaycastHit hit, _maxTongueDistance, _grappableLayers);
+        Vector3 endPoint = didHit ? hit.point : cam.position + cam.forward * _maxTongueDistance;
 
         Gizmos.color = didHit ? Color.green : Color.red;
-        Gizmos.DrawLine(transform.position, endPoint);
+        Gizmos.DrawLine(cam.position, endPoint);
         Gizmos.DrawWireSphere(endPoint, _predictionSphereRadius);
     }
 
