@@ -15,8 +15,12 @@ public class LevelOneManager : MonoBehaviour
     }
     private void Start()
     {
-        if (AudioManager.instance) AudioManager.instance.Play(SoundNames.LvlOne,true);
+        StartSong();
     }
     public void BridgeFinish() => OnBridgeConstructed?.Invoke();
     public void BeaverMissionTaken() => OnBeaverMission?.Invoke();
+    public void StartSong()
+    {
+        if (AudioManager.instance) AudioManager.instance.Play(SoundNames.LvlOne, true);
+    }
 }
