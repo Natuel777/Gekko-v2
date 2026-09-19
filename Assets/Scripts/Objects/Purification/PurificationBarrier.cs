@@ -7,7 +7,7 @@ using UnityEngine;
 // rebota contra la barrera y los escarabajos la esquivan/se aturden (capa Obstacle).
 public class PurificationBarrier : MonoBehaviour
 {
-    [Header("Disolvido")]
+    [Header("Dissolve")]
     [SerializeField] private Renderer[] _renderers;
     [Tooltip("Propiedad expuesta del shader (Swirl.shadergraph usa _DissolveAmount).")]
     [SerializeField] private string _dissolveProperty = "_DissolveAmount";
@@ -17,7 +17,7 @@ public class PurificationBarrier : MonoBehaviour
     [SerializeField] private float _dissolveTo = 1f;
     [SerializeField] private float _dropDuration = 1f;
 
-    [Header("Feedback (opcional)")]
+    [Header("Feedback (optional)")]
     [SerializeField] private ParticleSystem _dropParticle;
     [SerializeField] private AudioSource _dropSound;
 

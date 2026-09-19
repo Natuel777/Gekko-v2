@@ -12,7 +12,7 @@ public class CarnivorousPlantDataSO : ScriptableObject
     [Header("Purify")]
     public float purifyHealthCost = 20f;
 
-    [Header("Jefe (desafío de purificación)")]
+    [Header("Boss (purification challenge)")]
     [Tooltip("Golpes de lengua para purificarla. 1 = comportamiento original de las plantas chicas.")]
     public int hitsToPurify = 1;
     [Tooltip("Daño al player en los golpes NO finales (el golpe final cobra Purify Health Cost).")]
