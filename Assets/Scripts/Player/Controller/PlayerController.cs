@@ -454,7 +454,12 @@ public class PlayerController
             for (int d = 0; d < directions.Length; d++)
             {
                 Vector3 dir = directions[d];
-                float castDist = 0.4f * scale;
+                float castDist = 0.4f * scale; 
+
+                bool isDown = dir == Vector3.down;
+                if (isDown)
+                    castDist = 1f * scale;
+
                 if (_isClimbing && !_nearGround)
                 {
                     float upDot = Vector3.Dot(dir, -_currentUp);
