@@ -19,22 +19,22 @@ public class PurificationChallenge : MonoBehaviour
     [Header("Data")]
     [SerializeField] private PurificationChallengeDataSO _data;
 
-    [Header("Planta y núcleos")]
+    [Header("Plant & Cores")]
     [SerializeField] private CarnivorousPlant _plant;
     [SerializeField] private PurificationCore[] _cores;
 
-    [Header("Barreras")]
+    [Header("Barriers")]
     [Tooltip("Barrera alrededor de la planta: cae al romper todos los núcleos.")]
     [SerializeField] private PurificationBarrier _shield;
     [Tooltip("Barrera que tapa el camino: cae al purificar la planta.")]
     [SerializeField] private PurificationBarrier _pathBarrier;
 
-    [Header("Enemigos que se re-corrompen")]
+    [Header("Re-corrupting Enemies")]
     [Tooltip("Opcional: se toman todos los HeavyBeetle hijos de este Transform.")]
     [SerializeField] private Transform _enemiesRoot;
     [SerializeField] private HeavyBeetle[] _enemies;
 
-    [Header("Arte")]
+    [Header("Art")]
     [Tooltip("Se apagan al completar el desafío (zona corrompida). No pueden ser este objeto ni un ancestro.")]
     [SerializeField] private GameObject[] _corruptedVisuals;
     [Tooltip("Se prenden al completar el desafío (zona purificada).")]
@@ -44,7 +44,7 @@ public class PurificationChallenge : MonoBehaviour
     [SerializeField] private Transform _canvas;
     [SerializeField] private TextMeshProUGUI _textCount;
 
-    [Header("Cierre")]
+    [Header("Finish")]
     [SerializeField] private CinemachineCamera _camFinish;
 
     private readonly List<HeavyBeetle> _allEnemies = new();
