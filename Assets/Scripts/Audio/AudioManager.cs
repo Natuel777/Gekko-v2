@@ -11,6 +11,8 @@ public class AudioManager : MonoBehaviour, ISaveLoad
     public float masterValue = 1;
     public float musicValue = 1;
     public float sfxValue = 1;
+    public bool musicEnabled = true;
+    private const float MutedDb = -80f;
 
     [SerializeField] private Sounds[] sounds;
     private List<AudioSource> _sources;
@@ -166,8 +168,15 @@ public class AudioManager : MonoBehaviour, ISaveLoad
     public void SetMusicVolume(float value)
     {
         value = Mathf.Clamp(value, 0.0001f, 1);
-        audioMixer.SetFloat("MusicVolume", Mathf.Log10(value) * 20);
         musicValue = value;
+        audioMixer.SetFloat("MusicVolume", musicEnabled ? Mathf.Log10(value) * 20 : MutedDb);
+    }
+
+    public void SetMusicEnabled(bool enabled)
+    {
+        musicEnabled = enabled;
+        PlayerPrefs.SetInt(PlayerPrefsKeys.musicEnabledKey, enabled ? 1 : 0);
+        audioMixer.SetFloat("MusicVolume", enabled ? Mathf.Log10(Mathf.Clamp(musicValue, 0.0001f, 1)) * 20 : MutedDb);
     }
 
     public void SetSFXVolume(float value)
@@ -181,6 +190,7 @@ public class AudioManager : MonoBehaviour, ISaveLoad
         PlayerPrefs.SetFloat(PlayerPrefsKeys.masterValueKey, masterValue);
         PlayerPrefs.SetFloat(PlayerPrefsKeys.musicValueKey, musicValue);
         PlayerPrefs.SetFloat(PlayerPrefsKeys.sfxValueKey, sfxValue);
+        PlayerPrefs.SetInt(PlayerPrefsKeys.musicEnabledKey, musicEnabled ? 1 : 0);
     }
 
     public void LoadGame()
@@ -188,12 +198,13 @@ public class AudioManager : MonoBehaviour, ISaveLoad
         masterValue = PlayerPrefs.GetFloat(PlayerPrefsKeys.masterValueKey, masterValue);
         musicValue = PlayerPrefs.GetFloat(PlayerPrefsKeys.musicValueKey, musicValue);
         sfxValue = PlayerPrefs.GetFloat(PlayerPrefsKeys.sfxValueKey, sfxValue);
+        musicEnabled = PlayerPrefs.GetInt(PlayerPrefsKeys.musicEnabledKey, 1) == 1;
         LoadVolume();
     }
     void LoadVolume()
     {
         audioMixer.SetFloat("MasterVolume", Mathf.Log10(PlayerPrefs.GetFloat(PlayerPrefsKeys.masterValueKey, masterValue)) * 20);
-        audioMixer.SetFloat("MusicVolume", Mathf.Log10(PlayerPrefs.GetFloat(PlayerPrefsKeys.musicValueKey, musicValue)) * 20);
+        audioMixer.SetFloat("MusicVolume", musicEnabled ? Mathf.Log10(PlayerPrefs.GetFloat(PlayerPrefsKeys.musicValueKey, musicValue)) * 20 : MutedDb);
         audioMixer.SetFloat("SFXVolume", Mathf.Log10(PlayerPrefs.GetFloat(PlayerPrefsKeys.sfxValueKey, sfxValue)) * 20);
     }
 }
