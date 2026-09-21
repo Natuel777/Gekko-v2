@@ -16,6 +16,7 @@ public class PlayerInputs
     {
         pjController = controller;
         _input = new CharacterInput();
+        InputRebindStore.ApplySaved(_input.asset);
         _tongue = tongue;
         _aimM = aim;
         _cam = cam;
@@ -24,8 +25,12 @@ public class PlayerInputs
         _swinging = swinging;
     }
 
+    private void ReloadBindings() => InputRebindStore.ApplySaved(_input.asset);
+
     public void ArtificialEnable()
     {
+        InputRebindStore.OnChanged -= ReloadBindings;
+        InputRebindStore.OnChanged += ReloadBindings;
         _input.Enable();
         _input.Character.Jump.performed += JumpInput;
         _input.Character.Jump.canceled += JumpCancel;
@@ -46,6 +51,7 @@ public class PlayerInputs
 
     public void ArtificialDisable()
     {
+        InputRebindStore.OnChanged -= ReloadBindings;
         _input.Disable();
         _input.Character.Jump.performed -= JumpInput;
         _input.Character.Jump.canceled -= JumpCancel;

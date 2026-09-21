@@ -19,16 +19,30 @@ public class MainMenuManager : MonoBehaviour
 
     private MenuState currentState = MenuState.Intro;
     public float creditsDelay = 2f;
+
+    [Header("Press Any Key")]
+    [SerializeField] private float _pressAnyKeyDelay = 3f;
+    private bool _inputBlocked = true;
+
     private void Start()
     {
         if (AudioManager.instance) AudioManager.instance.Play(SoundNames.Menu, true);
 
         ScreenManager.Instance.Push(new ScreenGO(transform));
+
+        _inputBlocked = true;
+        StartCoroutine(UnblockPressAnyKey());
+    }
+
+    IEnumerator UnblockPressAnyKey()
+    {
+        yield return new WaitForSeconds(_pressAnyKeyDelay);
+        _inputBlocked = false;
     }
 
     void Update()
     {
-        if (currentState == MenuState.Intro && Input.anyKeyDown)
+        if (currentState == MenuState.Intro && !_inputBlocked && Input.anyKeyDown)
             GoToMainMenu();
     }
 

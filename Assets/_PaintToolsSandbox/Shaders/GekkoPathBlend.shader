@@ -398,6 +398,11 @@ Shader "Gekko/Path Blend"
             #pragma target 3.0
             #pragma multi_compile_instancing
 
+            // Con Decal Layers activo, el proyector descarta el pixel si el layer de la
+            // superficie (escrito en este pase, SV_Target1) no coincide con el suyo. Sin
+            // esta variante el piso deja el layer en 0 y el decal se recorta entero.
+            #include_with_pragmas "Packages/com.unity.render-pipelines.universal/ShaderLibrary/RenderingLayers.hlsl"
+
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
 
             struct DepthNormalsAttributes
@@ -424,9 +429,17 @@ Shader "Gekko/Path Blend"
                 return OUT;
             }
 
-            half4 DepthNormalsFragment(DepthNormalsVaryings IN) : SV_Target
+            void DepthNormalsFragment(DepthNormalsVaryings IN
+                , out half4 outNormalWS : SV_Target0
+            #ifdef _WRITE_RENDERING_LAYERS
+                , out float4 outRenderingLayers : SV_Target1
+            #endif
+            )
             {
-                return half4(NormalizeNormalPerPixel(IN.normalWS), 0.0);
+                outNormalWS = half4(NormalizeNormalPerPixel(IN.normalWS), 0.0);
+            #ifdef _WRITE_RENDERING_LAYERS
+                outRenderingLayers = float4(EncodeMeshRenderingLayer(GetMeshRenderingLayer()), 0, 0, 0);
+            #endif
             }
             ENDHLSL
         }
