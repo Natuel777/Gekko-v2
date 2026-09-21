@@ -5,6 +5,12 @@ public enum ScenesNames
     Level1,
     Intentocin
 }
+public enum ReafirmCanvas
+{
+    ExitGame,
+    RestartLevel,
+    GoToMenu
+}
 
 public enum SoundNames
 {
