@@ -46,5 +46,11 @@ public class ScreenManager : MonoBehaviour
 
         Push(go.GetComponent<IScreen>());
     }
-  
+    public IScreen PushAndGet(string resource)
+    {
+        var go = Instantiate(Resources.Load<Screens>(resource));
+        Push(go.GetComponent<IScreen>());
+        return go.GetComponent<IScreen>();
+    }
+
 }

@@ -73,8 +73,10 @@ public class ScreenOptions : Screens
 
     public void BTN_Restart()
     {
-        if (GameManager.Instance)
-            GameManager.Instance.RestartLvl();
+        AudioManager.instance.Play(SoundNames.UiButton);
+        IScreen screen = ScreenManager.Instance.PushAndGet("Canvas_Reafirm");
+        if (screen is ScreenReafirm reafirm)
+            reafirm.SetValues(ReafirmCanvas.RestartLevel);
     }
 
     private void ShowGame() => Select(_gamePanel, _gameTab);

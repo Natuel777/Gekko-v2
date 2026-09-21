@@ -11,7 +11,9 @@ public class ScreenPause : Screens
     public void BTN_Menu()
     {
         AudioManager.instance.Play(SoundNames.UiButton);
-        ScreenManager.Instance.Push("Canvas_Reafirm");
+        IScreen screen = ScreenManager.Instance.PushAndGet("Canvas_Reafirm");
+        if (screen is ScreenReafirm reafirm)
+            reafirm.SetValues(ReafirmCanvas.GoToMenu);
     }
 
     public void BTN_Options()

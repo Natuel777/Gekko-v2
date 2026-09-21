@@ -1,6 +1,5 @@
 using System.Collections;
 using Unity.Cinemachine;
-using UnityEditor;
 using UnityEngine;
 
 public class MainMenuManager : MonoBehaviour
@@ -98,12 +97,10 @@ public class MainMenuManager : MonoBehaviour
     }
     public void OnExitPressed()
     {
-        SaveManager.Instance.SaveGame();
-#if UNITY_EDITOR
-        EditorApplication.ExitPlaymode();
-#else
-        Application.Quit();
-#endif
+        AudioManager.instance.Play(SoundNames.UiButton);
+        IScreen screen = ScreenManager.Instance.PushAndGet("Canvas_Reafirm");
+        if (screen is ScreenReafirm reafirm)
+            reafirm.SetValues(ReafirmCanvas.ExitGame);
     }
 }
 public enum MenuState { Intro, MainMenu, Credits }
