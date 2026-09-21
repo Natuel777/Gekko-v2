@@ -315,8 +315,14 @@ namespace Gekko.PaintTools
         /// transform raiz (p. ej. localScale 0.01 sobre una malla exportada en cm). Si se
         /// tomara solo `root.worldToLocalMatrix * filter.localToWorldMatrix`, para una
         /// malla que cuelga de la raiz eso da identidad y el 0.01 se pierde: el prop se
-        /// dibuja al tamano crudo de la malla (decenas de metros). Por eso se antepone el
-        /// TRS local de la raiz.
+        /// dibuja al tamano crudo de la malla (decenas de metros). Por eso se antepone la
+        /// ESCALA local de la raiz.
+        ///
+        /// Solo la escala: la posicion y la rotacion de la raiz del prefab NO se usan.
+        /// Muchos prefabs guardan la raiz en el lugar donde se acomodaron en alguna escena
+        /// (p. ej. Bush_1 en (9.7, -1.9, 10.8)); al instanciar un prefab en un punto esa
+        /// posicion se pisa, asi que aca tambien. Si se sumara, cada prop se dibujaria
+        /// corrido decenas de metros de donde se pinto.
         /// </summary>
         private static List<List<MeshPart>> CollectPrototypeParts(List<GameObject> prototypes)
         {
@@ -329,8 +335,7 @@ namespace Gekko.PaintTools
                 if (prototype != null)
                 {
                     Transform root = prototype.transform;
-                    Matrix4x4 rootLocal = Matrix4x4.TRS(
-                        root.localPosition, root.localRotation, root.localScale);
+                    Matrix4x4 rootLocal = Matrix4x4.Scale(root.localScale);
 
                     foreach (MeshFilter filter in prototype.GetComponentsInChildren<MeshFilter>(false))
                     {

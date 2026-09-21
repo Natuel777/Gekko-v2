@@ -459,7 +459,8 @@ namespace Gekko.PaintTools.EditorTools
                 var spawned = (GameObject)PrefabUtility.InstantiatePrefab(prototype, parent.transform);
                 spawned.transform.localPosition = instance.Position;
                 spawned.transform.localRotation = instance.Rotation;
-                spawned.transform.localScale = instance.Scale;
+                // Igual que ScatterField: la escala de la instancia multiplica la de la raiz del prefab.
+                spawned.transform.localScale = Vector3.Scale(prototype.transform.localScale, instance.Scale);
             }
 
             Undo.RecordObject(data, "Materializar props");
