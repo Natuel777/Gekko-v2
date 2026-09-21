@@ -10,6 +10,7 @@ public class PlayerController
     private CapsuleCollider _collider;
     private PlayerViewer _pjViewer;
     private TongueManager _tongueM;
+    private GekkoSwinging _swinging;
     private Transform _pjTransform;
     private Transform _camTransform;
     private Transform _head;
@@ -101,6 +102,13 @@ public class PlayerController
     }
     public void ArtificialFixedUpdate()
     {
+        if (_swinging != null && _swinging.IsSwinging)
+        {
+            _isClimbing = false;
+            _rb.useGravity = true;
+            return;
+        }
+
         if (_jumpGraceTime > 0f)
             _jumpGraceTime -= Time.fixedDeltaTime;
 
@@ -573,6 +581,7 @@ public class PlayerController
         if (_pjViewer.IsTrailPlaying()) _pjViewer.StopTrail();
     }
     public void GetTongueManager(TongueManager tongue) { _tongueM = tongue; }
+    public void GetSwinging(GekkoSwinging swinging) { _swinging = swinging; }
     public void SetSpeedMultiplier(float speed) => _speedMultiplier = speed;
 
 }
