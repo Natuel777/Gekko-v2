@@ -40,6 +40,8 @@ public class TeeterTotterPlatform : MonoBehaviour
     private void OnDrawGizmosSelected()
     {
         Gizmos.color = Color.red;
-        Gizmos.DrawLine(transform.position - new Vector3(_maxDistance,-0.25f,0), transform.position + new Vector3(_maxDistance, 0.25f, 0));
+        Vector3 pointA = transform.position - transform.right * _maxDistance + transform.up * 0.25f;
+        Vector3 pointB = transform.position + transform.right * _maxDistance + transform.up * 0.25f;
+        Gizmos.DrawLine(pointA, pointB);
     }
 }
