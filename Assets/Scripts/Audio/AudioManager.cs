@@ -14,10 +14,11 @@ public class AudioManager : MonoBehaviour, ISaveLoad
     public bool musicEnabled = true;
     private const float MutedDb = -80f;
 
+    [SerializeField] private int _minPoolSize = 5;
     [SerializeField] private Sounds[] sounds;
     private List<AudioSource> _sources;
     private List<AudioSource> _pausedSources;
-    private float _timePerCheck = 5;
+    private Dictionary<SoundNames, List<AudioSource>> _activeSourcesByName = new();
 
     private void Awake()
     {
@@ -26,8 +27,9 @@ public class AudioManager : MonoBehaviour, ISaveLoad
 
         DontDestroyOnLoad(gameObject);
         _sources = new();
-        _pausedSources = new();
-        StartCoroutine(CheckStatus());
+        _pausedSources = new(); 
+        _activeSourcesByName = new();
+        CreatePool(_minPoolSize);
 
         if (SaveManager.Instance != null)
         {
@@ -39,45 +41,39 @@ public class AudioManager : MonoBehaviour, ISaveLoad
     {
         LoadGame();
     }
-    private IEnumerator CheckStatus()
+    private void CreatePool(int amount)
     {
-        while (true)
+        for (int i = 0; i < amount ; i++)
         {
-            if (_sources.Count <= 0) yield return new WaitForSeconds(_timePerCheck);
-            AudioSource[] sources = _sources.ToArray();
-            for (int i = 0; i < sources.Length; i++)
-            {
-                if (_pausedSources.Count >0 && _pausedSources.Contains(sources[i])) continue;
-                if (!sources[i].isPlaying)
-                {
-                    _sources.Remove(sources[i]);
-                    Destroy(sources[i]);
-                }
-            };
-                yield return new WaitForSeconds(_timePerCheck);
+            AudioSource source = gameObject.AddComponent<AudioSource>();
+            _sources.Add(source);
         }
     }
-    private void Set(Sounds sound)
+    private AudioSource GetAvailableSource()
     {
-        AudioSource source = gameObject.AddComponent<AudioSource>();
-        _sources.Add(source);
-        sound.source = source;
-        sound.source.clip = sound.soundClip;
-        sound.source.outputAudioMixerGroup = sound.audioMixer;
-        sound.source.volume = sound.volume;
-        sound.source.pitch = sound.pitch;
-        sound.source.loop = sound.loop;
-    }
-    public bool IsPlaying(SoundNames name)
-    {
-        Sounds sound = FindSound(name);
+        foreach (var kvp in _activeSourcesByName)
+        {
+            kvp.Value.RemoveAll(s => s == null || (!s.isPlaying && !_pausedSources.Contains(s)));
+        }
+        foreach (var source in _sources)
+        {
+            bool isPaused = _pausedSources.Contains(source);
+            if (!source.isPlaying && !isPaused)
+                return source;
+        }
 
-        if (sound == null)
-        {
-            Debug.Log("no se encontro el sonido");
-        }
-        if(sound.source.isPlaying) return true;
-        return false;
+        AudioSource newSource = gameObject.AddComponent<AudioSource>();
+        _sources.Add(newSource);
+        return newSource;
+    }
+    private void Set(Sounds sound, out AudioSource source)
+    {
+        source = GetAvailableSource();
+        source.clip = sound.soundClip;
+        source.outputAudioMixerGroup = sound.audioMixer;
+        source.volume = sound.volume;
+        source.pitch = sound.pitch;
+        source.loop = sound.loop;
     }
     public void Play(SoundNames name, bool loop = false)
     {
@@ -88,59 +84,76 @@ public class AudioManager : MonoBehaviour, ISaveLoad
             Debug.Log("no se encontro el sonido");
             return;
         }
-        Set(sound);
-        sound.source.loop = loop;
-        sound.source.Play();
+        Set(sound, out AudioSource source);
+        source.loop = loop;
+        source.Play();
+
+        if (!_activeSourcesByName.TryGetValue(name, out var list))
+        {
+            list = new List<AudioSource>();
+            _activeSourcesByName[name] = list;
+        }
+        list.Add(source);
     }
 
     public void Pause(SoundNames name)
     {
-        Sounds sound = FindSound(name);
-        if (sound == null)
+        if (!_activeSourcesByName.TryGetValue(name, out var list)) return;
+
+        foreach (var source in list)
         {
-            Debug.Log("no se encontro el sonido");
-            return;
-        }
-        if(sound.source != null)
-        {
-            _pausedSources.Add(sound.source);
-            sound.source.Pause();
+            if (source == null) continue;
+            _pausedSources.Add(source);
+            source.Pause();
         }
     }
     public void UnPause(SoundNames name)
     {
-        Sounds sound = FindSound(name);
-        if (sound == null)
+        if (!_activeSourcesByName.TryGetValue(name, out var list)) return;
+
+        foreach (var source in list)
         {
-            Debug.Log("no se encontro el sonido");
-            return;
-        }
-        if (sound.source != null)
-        {
-            sound.source.UnPause();
-            _pausedSources.Remove(sound.source);
+            if (source == null) continue;
+            source.UnPause();
+            _pausedSources.Remove(source);
         }
     }
+    public bool IsPlaying(SoundNames name)
+    {
+        if (!_activeSourcesByName.TryGetValue(name, out var list)) return false;
 
+        foreach (var source in list)
+        {
+            if (source != null && source.isPlaying) return true;
+        }
+        return false;
+    }
     public void PauseAll(List<SoundNames> notToPauseSounds = null)
     {
-        foreach (var sound in sounds)
+        foreach (var kvp in _activeSourcesByName)
         {
-            if (sound.source == null) continue;
-            if (notToPauseSounds != null && notToPauseSounds.Contains(sound._name)) continue;
-            sound.source.Pause(); 
+            if (notToPauseSounds != null && notToPauseSounds.Contains(kvp.Key)) continue;
+
+            foreach (var source in kvp.Value)
+            {
+                if (source == null) continue;
+                source.Pause();
+                if (!_pausedSources.Contains(source))
+                    _pausedSources.Add(source);
+            }
         }
-        _pausedSources = _sources;
     }
     public void UnPauseAll()
     {
-        foreach (var sound in sounds)
+        foreach (var kvp in _activeSourcesByName)
         {
-            if (sound.source == null) continue;
-            sound.source.UnPause();
+            foreach (var source in kvp.Value)
+            {
+                if (source == null) continue;
+                source.UnPause();
+            }
         }
         _pausedSources.Clear();
-        StartCoroutine(CheckStatus());
     }
     public void ResetAudio()
     {
@@ -148,6 +161,20 @@ public class AudioManager : MonoBehaviour, ISaveLoad
         {
             if(source.isPlaying)
             source.Stop();
+        }
+        _pausedSources.Clear();
+        _activeSourcesByName.Clear();
+
+        if (_sources.Count > _minPoolSize)
+        {
+            int excess = _sources.Count - _minPoolSize;
+            for (int i = 0; i < excess; i++)
+            {
+                int lastIndex = _sources.Count - 1;
+                AudioSource toRemove = _sources[lastIndex];
+                _sources.RemoveAt(lastIndex);
+                Destroy(toRemove);
+            }
         }
     }
     private Sounds FindSound(SoundNames name)
