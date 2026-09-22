@@ -25,6 +25,10 @@ public enum SoundNames
     PlayerWalk,
     PlayerTongueOut,
     PlankPlaced,
+    PlayerSwingAttach,
+    PlayerSwing,
     BeaverVoice,
     Duck,
+    MushroomBoing,
+
 }
