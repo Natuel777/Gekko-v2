@@ -17,8 +17,11 @@ public class GekkoSwinging
     private RaycastHit _predictionHit;
     private float _predictionSphereRadius;
     private Transform _lastHitObject, _cachedGrapplePoint, _predictionPoint;
-    private int _quality; 
-    
+    private int _quality;
+    private float _lastVerticalVelocity = 0f;
+    private bool _whooshPlayedThisFall = false;
+    [SerializeField] private float _whooshVelocityThreshold = 4.55f;
+
     #region Properties
     public bool IsSwinging { get; private set; }
     public Vector2 ThrustInput { set { _thrustInput = value; } }
@@ -64,6 +67,7 @@ public class GekkoSwinging
         _joint.damper = 7f; //Consultar motivo del valor
         _joint.massScale = 4.5f; //Consultar motivo del valor
         _lineRenderer.positionCount = 2;
+        if (AudioManager.instance) AudioManager.instance.Play(SoundNames.PlayerSwingAttach);
     }
 
     public void ArtificialUpdate()
@@ -118,6 +122,18 @@ public class GekkoSwinging
             _joint.maxDistance = extendedDistanceFromPoint * 0.8f;
             _joint.minDistance = extendedDistanceFromPoint * 0.25f;
         }
+        float currentVerticalVelocity = _rb.linearVelocity.y;
+        //Debug.Log(currentVerticalVelocity);
+        if (_lastVerticalVelocity >= 0f && currentVerticalVelocity < 0f)
+        {
+            _whooshPlayedThisFall = false;
+        }
+        if (currentVerticalVelocity < -_whooshVelocityThreshold && !_whooshPlayedThisFall)
+        {
+            AudioManager.instance.Play(SoundNames.PlayerSwing); 
+            _whooshPlayedThisFall = true;
+        }
+        _lastVerticalVelocity = currentVerticalVelocity;
     }
 
     private void CheckForSwingPoints()

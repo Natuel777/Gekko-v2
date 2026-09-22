@@ -16,6 +16,7 @@ public class AudioManager : MonoBehaviour, ISaveLoad
 
     [SerializeField] private int _minPoolSize = 5;
     [SerializeField] private Sounds[] sounds;
+    [SerializeField] private float _minPitch, _maxPitch;
     private List<AudioSource> _sources;
     private List<AudioSource> _pausedSources;
     private Dictionary<SoundNames, List<AudioSource>> _activeSourcesByName = new();
@@ -66,16 +67,21 @@ public class AudioManager : MonoBehaviour, ISaveLoad
         _sources.Add(newSource);
         return newSource;
     }
-    private void Set(Sounds sound, out AudioSource source)
+    private void Set(Sounds sound, out AudioSource source, bool pitch)
     {
         source = GetAvailableSource();
         source.clip = sound.soundClip;
         source.outputAudioMixerGroup = sound.audioMixer;
         source.volume = sound.volume;
-        source.pitch = sound.pitch;
+        if(pitch)
+        {
+            float pi = Random.Range(_minPitch,_maxPitch);
+            source.pitch = pi;
+        }
+        else source.pitch = sound.pitch;
         source.loop = sound.loop;
     }
-    public void Play(SoundNames name, bool loop = false)
+    public void Play(SoundNames name, bool loop = false, bool pitch = false)
     {
         Sounds sound = FindSound(name);
 
@@ -84,7 +90,7 @@ public class AudioManager : MonoBehaviour, ISaveLoad
             Debug.Log("no se encontro el sonido");
             return;
         }
-        Set(sound, out AudioSource source);
+        Set(sound, out AudioSource source, pitch);
         source.loop = loop;
         source.Play();
 
