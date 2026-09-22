@@ -5,6 +5,7 @@ public class StrawBerry : Collectible
     private StrawBerryView _sv;
     [SerializeField] private GameObject mainStar;
     [SerializeField] private GameObject starParticles;
+    private bool grabbed = false;
 
     private void Start()
     {
@@ -20,6 +21,8 @@ public class StrawBerry : Collectible
     }
     public override void Grab()
     {
+        if (grabbed) return;
+        grabbed = true;
         GetComponent<Collider>().enabled = false;
         CollectiblesRegister.RegisterCollectible(_notificationData.Name);
         int count = CollectiblesRegister.GetCollectibleCount(_notificationData.Name);

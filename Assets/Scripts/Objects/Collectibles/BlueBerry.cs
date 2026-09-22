@@ -4,6 +4,8 @@ public class Blueberry : Collectible
 {
     private BlueberryView _bv;
     [SerializeField] private Transform _transform;
+    private bool grabbed = false;
+    [SerializeField] private Collider _col2;
     private void Start()
     {
         _bv = new BlueberryView(GetComponentInChildren<Renderer>(), transform,this);
@@ -15,7 +17,10 @@ public class Blueberry : Collectible
 
     public override void Grab()
     {
+        if (grabbed) return;
+        grabbed = true;
         GetComponent<Collider>().enabled = false;
+        _col2.enabled = false;
         GameManager.Instance.Pj.OnBlueberryCollected();
         _bv.Collect();
     }

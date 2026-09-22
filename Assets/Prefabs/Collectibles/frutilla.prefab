@@ -108,8 +108,8 @@ SphereCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Radius: 1.1324425
-  m_Center: {x: 0, y: 0.4368391, z: 0}
+  m_Radius: 0.38
+  m_Center: {x: 0, y: 0.19, z: 0}
 --- !u!114 &8318737712773213438
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -125,6 +125,7 @@ MonoBehaviour:
   _notificationData: {fileID: 11400000, guid: 9c7ccc1837183d043bad6f610aa15911, type: 2}
   mainStar: {fileID: 2496923471493927180, guid: 35f496b74e43757419d6b044018fab8b, type: 3}
   starParticles: {fileID: 4553819216237639698, guid: bd5effcf595d8f445968b43932f3904f, type: 3}
+  _col2: {fileID: 8724169948856505928}
 --- !u!1 &7126071966866188932
 GameObject:
   m_ObjectHideFlags: 0
@@ -152,7 +153,7 @@ Transform:
   m_GameObject: {fileID: 7126071966866188932}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -8.93, y: -0.48, z: -0.86}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
