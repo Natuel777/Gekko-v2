@@ -76,7 +76,7 @@ public class GameManager : MonoBehaviour
             Debug.LogWarning($"Índice de nivel {index} fuera de rango.");
             return;
         }
-
+        if (AudioManager.instance) AudioManager.instance.ResetAudio();
         checkpointManager.LoadDebugLevel(index);
     }
 
@@ -84,7 +84,7 @@ public class GameManager : MonoBehaviour
     {
         if (AudioManager.instance) AudioManager.instance.ResetAudio();
         CollectiblesRegister.Clear();
-        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+        SceneManager.LoadScene(ScenesDictionary.SceneName[ScenesNames.LoadScene]);
     }
 
     public void Pause()

@@ -457,7 +457,7 @@ public class PlayerController
                 float castDist = 0.4f * scale; 
 
                 bool isDown = dir == Vector3.down;
-                if (isDown)
+                if (isDown && !_jumpPressed)
                     castDist = 1f * scale;
 
                 if (_isClimbing && !_nearGround)
