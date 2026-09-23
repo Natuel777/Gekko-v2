@@ -48,6 +48,7 @@ public class RecorruptScheduler
             }
 
             entry.timer -= dt;
+            
             if(entry.timer > 0f) continue;
 
             // Se saca antes de avisar: el callback re-corrompe y el controlador vuelve a llamar a Cancel.

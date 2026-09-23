@@ -62,7 +62,6 @@ public class StrawBerryView : CollectableView
     public override void Collect()
     {
         _timerCollected = _maxTimeCollected;
-        if (AudioManager.instance != null) AudioManager.instance.Play(SoundNames.PlayerSlurp);
         isMoving = false;
         isShrinking = true;
         StrawBerry a = _collectible as StrawBerry;

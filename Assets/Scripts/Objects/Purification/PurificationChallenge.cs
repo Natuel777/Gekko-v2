@@ -51,11 +51,8 @@ public class PurificationChallenge : MonoBehaviour
     private readonly HashSet<HeavyBeetle> _enemySet = new();
     private RecorruptScheduler _scheduler;
     private Camera _mainCamera;
-    private int _total;
-    private int _remaining;
-    private bool _beatActive;
-    private bool _inputLocked;
-    private bool _subscribed;
+    private int _total, _remaining;
+    private bool _beatActive, _inputLocked, _subscribed;
 
     public ChallengeState State { get; private set; } = ChallengeState.Active;
 
