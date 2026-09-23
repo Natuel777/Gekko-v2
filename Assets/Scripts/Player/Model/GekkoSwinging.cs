@@ -8,6 +8,7 @@ public class GekkoSwinging
     private float _maxTongueDistance;
     private Vector3 _grapplePoint = Vector3.zero, _previousHitPosition, _currentGrapplePoint;
     private SpringJoint _joint;
+    private Spring _spring;
     private Rigidbody _rb;
     private float _forwardThrustForce;
     private float _horizontalThrustForce;
@@ -17,7 +18,9 @@ public class GekkoSwinging
     private RaycastHit _predictionHit;
     private float _predictionSphereRadius;
     private Transform _lastHitObject, _cachedGrapplePoint, _predictionPoint;
-    private int _quality; 
+    private int _quality;
+    private float _springDamper, _springStrength, _springVelocity, _waveCount, _waveHeight;
+    private AnimationCurve _waveAffectCurve;
     
     #region Properties
     public bool IsSwinging { get; private set; }
@@ -27,7 +30,9 @@ public class GekkoSwinging
 
     public GekkoSwinging(Transform tongue, LayerMask layers, Transform transform, LineRenderer lineRenderer, Transform cam,
                         float forwardThrustForce, float horizontalThrustForce, float extendCableSpeed,
-                        Transform predictionPoint, float predictionSphereRadius, float maxTongueDistance)
+                        Transform predictionPoint, float predictionSphereRadius, float maxTongueDistance,
+                        int quality, float springDamper, float springStrength, float springVelocity,
+                        float waveCount, float waveHeight, AnimationCurve waveAffectCurve)
     {
         _lineRenderer = lineRenderer;
         _tongueTip = tongue;
@@ -41,6 +46,17 @@ public class GekkoSwinging
         _predictionPoint = predictionPoint;
         _predictionSphereRadius = predictionSphereRadius;
         _maxTongueDistance = maxTongueDistance;
+
+        // Mathf.Max evita división por cero en el loop de DrawTongue (delta = i / _quality).
+        _quality = Mathf.Max(1, quality);
+        _springDamper = springDamper;
+        _springStrength = springStrength;
+        _springVelocity = springVelocity;
+        _waveCount = waveCount;
+        _waveHeight = waveHeight;
+        _waveAffectCurve = waveAffectCurve;
+        _spring = new Spring();
+        _spring.SetTarget(0);
     }
 
     public void StartGrapple()
@@ -63,7 +79,12 @@ public class GekkoSwinging
         _joint.spring = 4.5f; //Consultar motivo del valor
         _joint.damper = 7f; //Consultar motivo del valor
         _joint.massScale = 4.5f; //Consultar motivo del valor
-        _lineRenderer.positionCount = 2;
+
+        // La cuerda "arranca colapsada" en la punta y el spring recibe el empujón inicial del latigazo.
+        _currentGrapplePoint = _tongueTip.position;
+        _spring.SetVelocity(_springVelocity);
+        _lineRenderer.positionCount = _quality + 1;
+        DrawTongue(); // primer frame ya coherente, sin depender de si esto corrió antes o después de ArtificialUpdate
     }
 
     public void ArtificialUpdate()
@@ -78,9 +99,27 @@ public class GekkoSwinging
 
     private void DrawTongue()
     {
+        _spring.SetDamper(_springDamper);
+        _spring.SetStrength(_springStrength);
+        _spring.Update(Time.deltaTime);
+
+        Vector3 tongueTipPos = _tongueTip.position;
         _currentGrapplePoint = Vector3.Lerp(_currentGrapplePoint, _grapplePoint, Time.deltaTime * 8f);
-        _lineRenderer.SetPosition(0, _tongueTip.position);
-        _lineRenderer.SetPosition(1, _grapplePoint);
+
+        // 'up' sale de _grapplePoint crudo, NUNCA de _currentGrapplePoint: en el primer frame de cada
+        // enganche _currentGrapplePoint todavía es igual a tongueTipPos (recién seteado en StartGrapple),
+        // lo que forzaría el caso degenerado de LookRotation(Vector3.zero) en cada enganche.
+        Vector3 ropeDir = _grapplePoint - tongueTipPos;
+        Vector3 up = ropeDir.sqrMagnitude > 0.0001f
+            ? Quaternion.LookRotation(ropeDir.normalized) * Vector3.up
+            : Vector3.up;
+
+        for(int i = 0; i <= _quality; i++)
+        {
+            float delta = i / (float)_quality;
+            Vector3 offset = up * _waveHeight * Mathf.Sin(delta * _waveCount * Mathf.PI) * _spring.Value * _waveAffectCurve.Evaluate(delta);
+            _lineRenderer.SetPosition(i, Vector3.Lerp(tongueTipPos, _currentGrapplePoint, delta) + offset);
+        }
     }
 
     //Requiere muchísima optimización
@@ -88,6 +127,7 @@ public class GekkoSwinging
     {
         IsSwinging = false;
         _lineRenderer.positionCount = 0;
+        _spring.Reset();
         Object.Destroy(_joint);
         // Destroy es diferido (fin de frame): sin esto el guard de ArtificialUpdate sigue viendo el joint
         // vivo ese frame y dibuja la lengua sobre un LineRenderer que ya quedó con 0 posiciones.

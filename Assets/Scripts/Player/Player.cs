@@ -43,6 +43,23 @@ public class Player : MonoBehaviour
     [SerializeField] private Transform _predictionPoint;
     [SerializeField] private float _predictionSphereRadius = 0.5f;
     [SerializeField] private float _maxTongueDistance = 100f;
+
+    [Header("Rope Visual (Wave)")]
+    [Tooltip("Cantidad de segmentos de la cuerda (LineRenderer tendrá quality+1 puntos).")]
+    [SerializeField] private int _quality = 10;
+    [Tooltip("Qué tan fuerte 'tira' el spring hacia 0. Sube = oscilación más rápida.")]
+    [SerializeField] private float _springStrength = 400f;
+    [Tooltip("Cuánto se frena la oscilación. Sube = se asienta más rápido, menos rebote.")]
+    [SerializeField] private float _springDamper = 6f;
+    [Tooltip("Empujón inicial de velocidad al enganchar (dispara la primera oscilación).")]
+    [SerializeField] private float _springVelocity = 15f;
+    [Tooltip("Cantidad de crestas de la onda a lo largo de la cuerda.")]
+    [SerializeField] private float _waveCount = 2f;
+    [Tooltip("Amplitud máxima de la onda, en unidades de mundo.")]
+    [SerializeField] private float _waveHeight = 0.35f;
+    [Tooltip("Atenúa la onda cerca de los anchors (debe valer 0 en t=0 y t=1 para que la cuerda quede clavada en ambos extremos).")]
+    [SerializeField] private AnimationCurve _waveAffectCurve = new AnimationCurve(
+        new Keyframe(0f, 0f), new Keyframe(0.5f, 1f), new Keyframe(1f, 0f));
     #endregion
 
     #region Properties
@@ -102,7 +119,9 @@ public class Player : MonoBehaviour
         cam.SetPJC(_pjController);
         _swinging = new GekkoSwinging(_tongue, _grappableLayers, transform, GetComponentInChildren<LineRenderer>(), Camera.main.transform,
                         _forwardThrustForce, _horizontalThrustForce, _extendCableSpeed,
-                        _predictionPoint, _predictionSphereRadius, _maxTongueDistance);
+                        _predictionPoint, _predictionSphereRadius, _maxTongueDistance,
+                        quality: _quality, springDamper: _springDamper, springStrength: _springStrength, springVelocity: _springVelocity,
+                        waveCount: _waveCount, waveHeight: _waveHeight, waveAffectCurve: _waveAffectCurve);
         _pjController.GetSwinging(_swinging);
 
         _pjInputs = new PlayerInputs(_pjController, _pjTongue, _aimM,cam, _interactM, this, _swinging);
