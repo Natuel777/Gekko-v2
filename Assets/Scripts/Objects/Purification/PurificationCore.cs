@@ -57,6 +57,7 @@ public class PurificationCore : MonoBehaviour, IDamageable, IHitOncePerLick
     private void Break()
     {
         IsBroken = true;
+
         if(_collider != null) _collider.enabled = false;
 
         if(_visual != null)
@@ -68,11 +69,11 @@ public class PurificationCore : MonoBehaviour, IDamageable, IHitOncePerLick
         }
 
         if(_breakParticle != null) _breakParticle.Play();
+        
         if(_breakSound != null) _breakSound.Play();
 
         SetActiveAll(_activeWhileIntact, false);
         SetActiveAll(_activeWhenBroken, true);
-
         Broken?.Invoke(this);
     }
 
