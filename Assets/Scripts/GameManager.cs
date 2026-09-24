@@ -84,7 +84,9 @@ public class GameManager : MonoBehaviour
     {
         if (AudioManager.instance) AudioManager.instance.ResetAudio();
         CollectiblesRegister.Clear();
-        SceneManager.LoadScene(ScenesDictionary.SceneName[ScenesNames.LoadScene]);
+
+        if(AsyncLoader.sceneToLoad == ScenesNames.LoadScene) SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+        else SceneManager.LoadScene(ScenesDictionary.SceneName[ScenesNames.LoadScene]);
     }
 
     public void Pause()

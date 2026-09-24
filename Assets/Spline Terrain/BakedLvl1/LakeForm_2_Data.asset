@@ -1,0 +1,91 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 484fdb49fc0d47e4592c3574f0ba0cc4, type: 3}
+  m_Name: LakeForm_2_Data
+  m_EditorClassIdentifier: 
+  settings:
+    mode: 2
+    segmentsPerSpline: 14
+    colliderMatchesVisual: 1
+    colliderSimplify: 0
+    colliderSplit: 0
+    separateVisualMeshes: 0
+    floorGrid: 0
+    floorGridStyle: 0
+    floorCellSize: 1
+    splineSmoothing: 0
+    splineSmoothingIterations: 2
+    topOffset: {x: 0, y: 1.099319, z: 0}
+    topEuler: {x: -0, y: 0, z: 0}
+    topScale: 1.2226294
+    wallHeightSegments: 6
+    wallCurvature: 0
+    smoothWalls: 1
+    bevelFloorEdges: 0
+    bevelSize: 0.1
+    bevelSegments: 2
+    bevelCurvature: 0
+    roadWidth: 2
+    outwardDistance: 4
+    noiseAmplitude: 1
+    noiseFrequency: 0.2
+    noiseSeed: 0
+    externalInnerWall: 1
+    floorUvScale: 1
+    wallUvScale: 1
+  knots:
+  - position: {x: 18.900002, y: 0.01999998, z: 2.7999992}
+    tangentIn: {x: -0, y: -0, z: -2.2134962}
+    tangentOut: {x: 0, y: 0, z: 2.1370063}
+    rotation: {x: -0.000019091602, y: -0.15549374, z: -0.00030869196, w: 0.9878368}
+  - position: {x: 14.5, y: 0.01999998, z: 8}
+    tangentIn: {x: -0, y: -0, z: -2.344778}
+    tangentOut: {x: 0, y: 0, z: 2.6548023}
+    rotation: {x: 0.00002297352, y: -0.23122531, z: -0.00009666303, w: 0.9729002}
+  - position: {x: 12.5, y: 0.01999998, z: 16.5}
+    tangentIn: {x: -0, y: -0, z: -2.1515772}
+    tangentOut: {x: 0, y: 0, z: 1.4461037}
+    rotation: {x: 0.00008510498, y: -0.31223127, z: -0.00025894344, w: 0.9500061}
+  - position: {x: 9.099998, y: 0.01999998, z: 18.5}
+    tangentIn: {x: -0, y: -0, z: -1.3889337}
+    tangentOut: {x: 0, y: 0, z: 2.547569}
+    rotation: {x: -0.00054429367, y: 0.7363121, z: -0.00012680654, w: -0.67664176}
+  - position: {x: -1.0452851, y: 0, z: 9.945219}
+    tangentIn: {x: -0, y: -0, z: -2.9057584}
+    tangentOut: {x: 0, y: 0, z: 1.428181}
+    rotation: {x: -0.00031075958, y: 0.9232322, z: 0.0001222123, w: -0.3842425}
+  - position: {x: -3.1283875, y: 0.0047473907, z: 7.5084076}
+    tangentIn: {x: -0, y: -0, z: -1.3058058}
+    tangentOut: {x: 0, y: 0, z: 2.1239672}
+    rotation: {x: 0.00020508551, y: 0.90663356, z: 0.00031844093, w: -0.4219188}
+  - position: {x: -10.421173, y: 0.0047473907, z: 3.1778793}
+    tangentIn: {x: -0, y: -0, z: -2.3769422}
+    tangentOut: {x: 0, y: 0, z: 2.4754782}
+    rotation: {x: 0.000021348667, y: 0.9766996, z: -0.000004690966, w: -0.21461092}
+  - position: {x: -8.866905, y: 0.0047473907, z: -5.8892975}
+    tangentIn: {x: -0, y: -0, z: -3.1520796}
+    tangentOut: {x: 0, y: 0, z: 3.933124}
+    rotation: {x: -0.000029616145, y: 0.96143115, z: -0.000008472564, w: 0.27504575}
+  - position: {x: 2.740219, y: 0.0047473907, z: -14.28157}
+    tangentIn: {x: -0, y: -0, z: -4.2062755}
+    tangentOut: {x: 0, y: 0, z: 4.7692347}
+    rotation: {x: 0.000011282694, y: 0.7185195, z: 0.00031737002, w: 0.69550675}
+  - position: {x: 18.332382, y: 0.018192291, z: -4.4860344}
+    tangentIn: {x: -0, y: -0, z: -4.2385583}
+    tangentOut: {x: 0, y: 0, z: 2.6702318}
+    rotation: {x: -0.000250582, y: 0.26856747, z: 0.000119809236, w: 0.96326077}
+  closed: 1
+  visualMesh: {fileID: 4300000, guid: 23c13c51a73cf8b42a95e931ce1f7157, type: 2}
+  colliderMesh: {fileID: 4300000, guid: 9b237d3f7baafe44d8d654c124faec89, type: 2}
+  floorMaterial: {fileID: 2100000, guid: 27ad1aedd0309e94c943147d28aff92e, type: 2}
+  wallMaterial: {fileID: 6879442876786769686, guid: 999dc7b6c328d9b4d8f1d511e90e7bed, type: 3}
+  edgeMaterial: {fileID: 2100000, guid: 27ad1aedd0309e94c943147d28aff92e, type: 2}
