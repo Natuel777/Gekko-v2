@@ -67999,7 +67999,7 @@ MonoBehaviour:
   _predictionPoint: {fileID: 0}
   _predictionSphereRadius: 0.5
   _maxTongueDistance: 100
-  _quality: 10
+  _quality: 20
   _springStrength: 400
   _springDamper: 6
   _springVelocity: 15
@@ -68038,6 +68038,10 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+  _ropeGravity: 9.81
+  _ropeDamping: 0.99
+  _ropeIterations: 8
+  _ropeSlack: 0.05
 --- !u!114 &3432168389014509898
 MonoBehaviour:
   m_ObjectHideFlags: 0

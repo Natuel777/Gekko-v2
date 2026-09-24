@@ -60,6 +60,17 @@ public class Player : MonoBehaviour
     [Tooltip("Atenúa la onda cerca de los anchors (debe valer 0 en t=0 y t=1 para que la cuerda quede clavada en ambos extremos).")]
     [SerializeField] private AnimationCurve _waveAffectCurve = new AnimationCurve(
         new Keyframe(0f, 0f), new Keyframe(0.5f, 1f), new Keyframe(1f, 0f));
+
+    [Header("Rope Physics (Verlet)")]
+    [Tooltip("Qué tan pesada se siente la soga: aceleración hacia abajo en m/s². Menos = más liviana, como una lengua; más = cuelga y cae más rápido.")]
+    [SerializeField] private float _ropeGravity = 9.81f;
+    [Tooltip("Energía que conserva la soga por cada 1/60 de segundo (se ajusta sola a cualquier framerate). 1 = no pierde nunca, menos = se frena antes.")]
+    [Range(0.9f, 1f)]
+    [SerializeField] private float _ropeDamping = 0.99f;
+    [Tooltip("Pasadas del solver de distancias por paso. Más = soga más rígida y precisa; menos = más elástica.")]
+    [SerializeField] private int _ropeIterations = 8;
+    [Tooltip("Largo extra de la soga sobre la distancia real entre sus puntas (0.05 = 5%). Más = cuelga y ondula más; 0 = recta y sin movimiento.")]
+    [SerializeField] private float _ropeSlack = 0.05f;
     #endregion
 
     #region Properties
@@ -122,7 +133,8 @@ public class Player : MonoBehaviour
                         _forwardThrustForce, _horizontalThrustForce, _extendCableSpeed,
                         _predictionPoint, _predictionSphereRadius, _maxTongueDistance,
                         quality: _quality, springDamper: _springDamper, springStrength: _springStrength, springVelocity: _springVelocity,
-                        waveCount: _waveCount, waveHeight: _waveHeight, waveAffectCurve: _waveAffectCurve);
+                        waveCount: _waveCount, waveHeight: _waveHeight, waveAffectCurve: _waveAffectCurve,
+                        ropeGravity: _ropeGravity, ropeDamping: _ropeDamping, ropeIterations: _ropeIterations, ropeSlack: _ropeSlack);
         _pjController.GetSwinging(_swinging);
 
         _pjInputs = new PlayerInputs(_pjController, _pjTongue, _aimM,cam, _interactM, this, _swinging);
@@ -165,6 +177,8 @@ public class Player : MonoBehaviour
     private void LateUpdate()
     {
         _pjController.ArtificialLateUpdate();
+        // La soga de la lengua se simula y se dibuja en LateUpdate, cuando la lengua ya tiene su posición final del frame.
+        _swinging.ArtificialLateUpdate();
     }
 
     private void OnDisable()

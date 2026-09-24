@@ -9,7 +9,6 @@ public class Spring
     private float _target;
     private float _velocity;
     private float _value;
-
     public float Value => _value;
 
     public void Update(float deltaTime)
