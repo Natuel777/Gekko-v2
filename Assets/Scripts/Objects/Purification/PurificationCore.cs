@@ -6,7 +6,7 @@ using UnityEngine;
 // tener la referencia hasta terminar de retraerse); se apaga el collider y el visual, o el visual pasa
 // al material purificado si hay uno asignado.
 [RequireComponent(typeof(Collider))]
-public class PurificationCore : MonoBehaviour, IDamageable, IHitOncePerLick
+public class PurificationCore : MonoBehaviour, IDamageable, IHitOncePerLick, IParticleSystemTarget
 {
     [Header("Config")]
     [SerializeField] private int _hitsToBreak = 1;
@@ -21,6 +21,9 @@ public class PurificationCore : MonoBehaviour, IDamageable, IHitOncePerLick
     [SerializeField] private GameObject _visual;
     [Tooltip("Material que recibe la malla de 'Visual' al romperse. Si está asignado, la malla queda visible con este material en vez de ocultarse.")]
     [SerializeField] private Material _purifiedMaterial;
+    [SerializeField] private ParticleSystem _indicator;
+    public bool CanBeTargeted => !IsBroken;
+    public ParticleSystem Indicator => _indicator;
 
     [Header("Veins / Vines Art (optional)")]
     [SerializeField] private GameObject[] _activeWhileIntact;
@@ -65,6 +68,7 @@ public class PurificationCore : MonoBehaviour, IDamageable, IHitOncePerLick
             Renderer mesh = _purifiedMaterial != null ? _visual.GetComponentInChildren<Renderer>(true) : null;
 
             if(mesh != null) mesh.sharedMaterial = _purifiedMaterial;
+            
             else _visual.SetActive(false);
         }
 

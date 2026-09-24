@@ -62,8 +62,7 @@ public class AimManager : MonoBehaviour
 
             if (_target != null)
             {
-                var renderer = _target.GetComponentInChildren<MeshRenderer>();
-                if (renderer != null) renderer.material.color = Color.red;
+                SetTint(_target, Color.red);
                 ShowIndicator(_target);
                 _lockedIn = true;
             }
@@ -81,7 +80,7 @@ public class AimManager : MonoBehaviour
 
         foreach (var hit in hits)
         {
-            if (hit.GetComponentInChildren<MeshRenderer>() == null) continue;
+            if (!HasMesh(hit)) continue;
 
             if (hit.TryGetComponent(out IParticleSystemTarget pst) && !pst.CanBeTargeted) continue;
 
@@ -91,6 +90,7 @@ public class AimManager : MonoBehaviour
 
         return targets;
     }
+    
     public void SwitchTarget(Vector2 scroll)
     {
         if (_pjController.TongueOut) return;
@@ -126,12 +126,12 @@ public class AimManager : MonoBehaviour
         }
         if (_target != null)
         {
-            _target.GetComponentInChildren<MeshRenderer>().material.color = Color.white;
+            SetTint(_target, Color.white);
             HideIndicator(_target);
         }
 
         _target = _orderedTargets[_currentIndex];
-        _target.GetComponentInChildren<MeshRenderer>().material.color = Color.red;
+        SetTint(_target, Color.red);
         ShowIndicator(_target);
     }
     private List<Transform> GetOrderedTargets()
@@ -156,7 +156,7 @@ public class AimManager : MonoBehaviour
     {
         if (_target != null)
         {
-            _target.GetComponentInChildren<MeshRenderer>().material.color = Color.white;
+            SetTint(_target, Color.white);
             HideIndicator(_target);
         }
         _target = null;
@@ -178,6 +178,21 @@ public class AimManager : MonoBehaviour
     }
 
     Vector3 GetAngleFromDir(float angleInDegrees) => new Vector3(Mathf.Sin(angleInDegrees * Mathf.Deg2Rad), 0, Mathf.Cos(angleInDegrees * Mathf.Deg2Rad));
+
+    // MeshRenderer y SkinnedMeshRenderer son clases hermanas (ambas heredan de Renderer): buscar solo MeshRenderer
+    // descartaba como target a los NPCs riggeados que solo tienen SkinnedMeshRenderer (ej. CarnivorousPlant).
+    private static bool HasMesh(Component target)
+    {
+        return target.GetComponentInChildren<MeshRenderer>() != null
+            || target.GetComponentInChildren<SkinnedMeshRenderer>() != null;
+    }
+
+    // El tinte solo aplica a targets con MeshRenderer; los skinned se marcan con su Indicator (IParticleSystemTarget).
+    private static void SetTint(Transform target, Color color)
+    {
+        MeshRenderer renderer = target.GetComponentInChildren<MeshRenderer>();
+        if (renderer != null) renderer.material.color = color;
+    }
 
     private void ShowIndicator(Transform target)
     {

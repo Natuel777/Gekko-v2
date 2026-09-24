@@ -2,7 +2,7 @@ using System.Collections;
 using UnityEngine;
 
 [RequireComponent(typeof(Collider))]
-public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick
+public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IParticleSystemTarget
 {
     public CarnivorousPlantDataSO data;
     public Transform playerTransform;
@@ -16,6 +16,11 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick
     [SerializeField] private ParticleSystem _purifiedParticle;
     [SerializeField] private AudioSource _purifiedSound;
     [SerializeField] private Animator _animatorCarnivorousPlant;
+
+    [Tooltip("The reference for the 'Selected' Particle System. Variable inherited by IParticleSystemTarget")]
+    [SerializeField] private ParticleSystem _indicator;
+    public bool CanBeTargeted => !IsPurified;
+    public ParticleSystem Indicator => _indicator;
 
     private bool _playerInRange = false;
     private bool _purified = false;
