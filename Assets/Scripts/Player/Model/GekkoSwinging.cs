@@ -17,17 +17,32 @@ public class GekkoSwinging
                     _camera, _transform, _tongueTip;
     
     #region Tongue Visual
-    // Latigazo al enganchar: un oscilador amortiguado (Spring) que curva la soga con una onda senoidal y se apaga solo.
-    // _quality es la cantidad de hilos de la soga: el LineRenderer y la simulación tienen _quality + 1 puntos.
+    // Cómo se dibuja la lengua: dos efectos que se SUMAN.
+    //   1) LA SOGA FÍSICA (RopeSimulation): decide la forma base. Cuelga por su peso, se queda atrás cuando Gekko se
+    //      mueve y rebota al frenar. La explicación completa está arriba de esa clase.
+    //   2) EL LATIGAZO (Spring + onda senoidal): una ondulación "artística" que aparece al enganchar y se apaga sola.
+    // La física manda y el latigazo se le suma por encima recién al dibujar (ver UpdateLineRenderer).
+
+    // Cantidad de hilos de la soga. La simulación y el LineRenderer tienen _quality + 1 puntos.
     private int _quality;
+
+    // Parámetros del latigazo (llegan desde el Inspector de Player):
+    //   _springStrength : qué tan rápido oscila.       _springDamper : qué tan rápido se apaga.
+    //   _springVelocity : empujón inicial al enganchar.  _waveCount    : cantidad de crestas de la onda.
+    //   _waveHeight     : altura máxima de la onda.      _waveAffectCurve : cuánto se nota la onda en cada punto de la
+    //                     soga (tiene que valer 0 en las dos puntas para que la lengua y el ancla no se despeguen).
     private float _springDamper, _springStrength, _springVelocity, _waveCount, _waveHeight;
     private AnimationCurve _waveAffectCurve;
 
-    // Soga física: RopeSimulation (Verlet) calcula la forma y el movimiento; el latigazo se suma recién al dibujar.
+    // La simulación de la soga (ver RopeSimulation.cs).
     private RopeSimulation _rope;
-    // Buffer de dibujo (puntos de la simulación + latigazo). Se crea una sola vez y se reusa en cada frame: sin GC.
+
+    // Lista de puntos que se le entrega al LineRenderer (puntos de la soga + latigazo). Se crea una sola vez y se
+    // reutiliza en cada frame, así dibujar no genera basura (GC).
     private Vector3[] _ropePoints;
-    // Largo extra de la soga sobre la distancia real entre sus puntas (0.05 = 5%). Es lo que la hace colgar.
+
+    // Soga de sobra respecto de la distancia real entre sus puntas (0.05 = 5% más larga). Es lo que hace que cuelgue:
+    // con 0 la soga quedaría recta como una barra y sin movimiento.
     private float _ropeSlack;
     #endregion
     
@@ -60,7 +75,7 @@ public class GekkoSwinging
         _predictionSphereRadius = predictionSphereRadius;
         _maxTongueDistance = maxTongueDistance;
 
-        // Mathf.Max evita división por cero en el loop de UpdateLineRenderer (delta = i / _quality).
+        // Mathf.Max(1, ...) garantiza al menos un hilo y evita dividir por cero en UpdateLineRenderer (delta = i / _quality).
         _quality = Mathf.Max(1, quality);
         _springDamper = springDamper;
         _springStrength = springStrength;
@@ -69,18 +84,20 @@ public class GekkoSwinging
         _waveHeight = waveHeight;
         _waveAffectCurve = waveAffectCurve;
 
-        // El spring del latigazo se configura una sola vez: estos valores no cambian mientras se juega.
+        // El Spring del latigazo se configura una sola vez, porque estos valores no cambian mientras se juega.
+        // Su "target" es 0: siempre quiere volver a "sin onda", por eso el latigazo se apaga solo.
         _spring = new Spring();
         _spring.SetTarget(0);
         _spring.SetDamper(_springDamper);
         _spring.SetStrength(_springStrength);
 
-        // La soga tiene un punto más que hilos (el mismo conteo que el LineRenderer). El buffer de dibujo se
-        // reserva acá para no crear un array nuevo en cada frame.
+        // Se crean, una sola vez, la simulación de la soga y la lista de puntos para dibujar. Los dos tienen
+        // _quality + 1 puntos (siempre uno más que hilos). Se reservan acá para no crear arrays nuevos en cada frame.
         _rope = new RopeSimulation(_quality, ropeDamping, ropeGravity, ropeIterations);
         _ropePoints = new Vector3[_quality + 1];
 
-        // Un slack negativo dejaría la soga más corta que la distancia entre sus puntas: quedaría siempre estirada.
+        // El sobrante de soga no puede ser negativo: una soga más corta que la distancia entre sus puntas quedaría
+        // siempre estirada, sin colgar.
         _ropeSlack = Mathf.Max(0f, ropeSlack);
 
         _gekkoRotation = new RotateGekkoWhileSwingin(this, _rb);
@@ -107,20 +124,22 @@ public class GekkoSwinging
         _joint.damper = 7f; //Consultar motivo del valor
         _joint.massScale = 4.5f; //Consultar motivo del valor
 
-        // Cada enganche arranca de cero, sin "memoria" del anterior:
-        //  - La punta de la soga (_currentGrapplePoint) sale desde la lengua y después viaja hasta el ancla.
-        //  - La soga arranca colapsada en la lengua y sin velocidad: sin el Reset heredaría la forma y el movimiento
-        //    del enganche anterior. Al viajar la punta, la soga se desenrolla sola detrás de ella.
-        //  - El spring recibe el empujón inicial que dispara el latigazo.
+        // ---- Arranque de la soga visual ----
+        // Cada enganche empieza de cero, sin "memoria" del anterior:
+        //  1) _currentGrapplePoint (la punta de la soga que viaja hacia el ancla) sale desde la lengua.
+        //  2) Reset(): toda la soga arranca colapsada en la lengua y quieta. Sin esto heredaría la forma y el
+        //     movimiento del enganche anterior. Después, mientras la punta viaja hacia el ancla (ver DrawTongue), la
+        //     soga se va desenrollando detrás de ella.
+        //  3) El Spring recibe su empujón inicial: es lo que dispara el latigazo.
         _currentGrapplePoint = _tongueTip.position;
         _rope.Reset(_currentGrapplePoint);
         _spring.SetVelocity(_springVelocity);
 
-        // El LineRenderer tiene que tener un punto por cada punto de la soga (hilos + 1) antes de escribirle posiciones.
+        // El LineRenderer necesita tener un punto por cada punto de la soga (hilos + 1) antes de recibir posiciones.
         _lineRenderer.positionCount = _quality + 1;
 
-        // Se vuelca la soga ya en este momento (solo la pose, sin avanzar la simulación) para que el primer frame
-        // sea coherente, sin depender de si esto corrió antes o después de ArtificialLateUpdate.
+        // Se dibuja ya la pose inicial (sin avanzar la simulación) para que el primer frame se vea bien, aunque este
+        // método corra antes o después de ArtificialLateUpdate.
         UpdateLineRenderer();
     }
 
@@ -130,18 +149,19 @@ public class GekkoSwinging
 
         if(!_joint) return;
 
-        // Acá solo va la parte que empuja a Gekko. La soga (simulación + dibujo) corre en ArtificialLateUpdate.
+        // Acá queda solo lo que EMPUJA a Gekko (la física real del swing). Simular y dibujar la soga se hace en
+        // ArtificialLateUpdate.
         ODMGearMovement();
     }
 
-    // Lo llama Player.LateUpdate. La soga se simula y se dibuja acá y no en ArtificialUpdate por dos motivos:
-    //  - En LateUpdate la lengua ya tiene su posición final del frame: el Rigidbody de Gekko está interpolado y, si la
-    //    lengua es un hueso animado, el Animator recién la actualiza después de Update. Leerla en Update dejaría
-    //    la punta de la soga un frame atrasada respecto de la boca y se vería temblar.
-    //  - Es lo último que ocurre antes de renderizar, así que se dibuja exactamente lo que se acaba de simular.
+    // Lo llama Player.LateUpdate() una vez por frame. La soga se simula y se dibuja acá y no en ArtificialUpdate porque:
+    //  1) LateUpdate corre cuando todo ya se movió en este frame (el Rigidbody interpolado, las animaciones). Así se
+    //     lee la posición FINAL de la lengua. Si se leyera antes, la punta de la soga iría un frame atrasada respecto
+    //     de la boca y se vería temblar.
+    //  2) Es lo último que pasa antes de dibujar la pantalla, así que se muestra exactamente lo que se acaba de simular.
     public void ArtificialLateUpdate()
     {
-        // Mismo guard que ArtificialUpdate: sin joint no hay soga (StopGrapple pone _joint = null).
+        // Sin joint no hay soga (StopGrapple pone _joint = null). Es el mismo guard que usa ArtificialUpdate.
         if(!_joint) return;
 
         DrawTongue();
@@ -154,48 +174,54 @@ public class GekkoSwinging
         _gekkoRotation.ArtificialFixedUpdate();
     }
 
-    // Un frame de la lengua: avanza el latigazo, simula la soga y la vuelca al LineRenderer.
+    // Un frame de la lengua. Son 5 pasos, siempre en este orden:
+    //   1) avanza el latigazo   2) se ubican las dos puntas   3) se calcula el largo de la soga
+    //   4) avanza la simulación   5) se dibuja
     private void DrawTongue()
     {
         float deltaTime = Time.deltaTime;
 
-        // 1) Latigazo: hace decaer la oscilación que StartGrapple disparó con SetVelocity().
+        // PASO 1 - El latigazo avanza un poquito: el Spring va perdiendo fuerza y la onda se achica hasta desaparecer.
+        // (StartGrapple le dio el empujón inicial con SetVelocity.)
         _spring.Update(deltaTime);
 
-        // 2) Las dos puntas de la soga:
-        //  - Boca: la posición real de la lengua de Gekko en este frame. Se mueve con él (y con su balanceo).
-        //  - Ancla: no salta directo al objetivo. _currentGrapplePoint viaja desde la lengua hasta _grapplePoint
-        //    (Lerp, ~8 por segundo), lo que da el efecto de lengua "disparada" mientras la soga se desenrolla tras ella.
+        // PASO 2 - ¿Dónde están las dos puntas de la soga?
+        //  - La boca: la posición real de la lengua de Gekko en este frame. Se mueve con él, incluso cuando se balancea.
+        //  - El ancla: no salta de golpe al objetivo. _currentGrapplePoint arranca en la lengua y se acerca a
+        //    _grapplePoint (el punto de enganche real) un poco en cada frame (Lerp, unas 8 veces por segundo). Da el
+        //    efecto de lengua "disparada", y la soga se va desenrollando detrás.
         Vector3 tongueTipPos = _tongueTip.position;
         _currentGrapplePoint = Vector3.Lerp(_currentGrapplePoint, _grapplePoint, deltaTime * 8f);
 
-        // 3) Largo de la soga en reposo: la distancia visible entre sus puntas más un pequeño sobrante (_ropeSlack).
-        //  - El sobrante es lo que la hace colgar y ondular. Con 0 quedaría recta como una barra, sin movimiento.
-        //  - NO se ata a _joint.maxDistance: el joint se configura en 0.8 x la distancia inicial, o sea MÁS CORTO que
-        //    el hueco real entre las puntas. Una soga de ese largo estaría estirada y recta casi todo el swing, y no
-        //    se vería el efecto.
-        //  - Como sigue a la distancia actual, acortar o alargar el cable (ODMGearMovement) no necesita ningún caso especial.
+        // PASO 3 - ¿Cuánto mide la soga? La distancia entre sus puntas más un sobrante (_ropeSlack).
+        //  - Ese sobrante es lo que la hace colgar y ondular. Ejemplo: puntas a 5 m y slack 0.05 -> la soga mide 5.25 m.
+        //  - NO se usa _joint.maxDistance: el joint se configura en 0.8 x la distancia inicial, o sea MÁS CORTO que el
+        //    hueco real entre las puntas. Una soga de ese largo estaría siempre estirada y recta, y no se vería el efecto.
+        //  - Como sigue a la distancia actual, acortar o alargar el cable (ODMGearMovement) no necesita ningún caso
+        //    especial: la soga se acomoda sola.
         float visibleDistance = Vector3.Distance(tongueTipPos, _currentGrapplePoint);
         float restLength = visibleDistance * (1f + _ropeSlack);
 
-        // 4) Simulación Verlet: mueve los puntos de en medio por inercia y gravedad y mantiene el largo de los hilos.
+        // PASO 4 - La simulación avanza: los puntos de en medio se mueven por inercia y gravedad, y los hilos
+        // conservan su largo (el detalle está explicado arriba de RopeSimulation).
         _rope.Simulate(deltaTime, tongueTipPos, _currentGrapplePoint, restLength);
 
-        // 5) Se vuelca al LineRenderer, con el latigazo encima.
+        // PASO 5 - Se dibuja: se copian los puntos al LineRenderer sumándoles el latigazo.
         UpdateLineRenderer();
     }
 
-    // Copia la soga simulada al LineRenderer sumándole el latigazo del Spring. No avanza ninguna simulación:
-    // solo dibuja el estado actual (por eso también lo puede usar StartGrapple para la pose inicial).
+    // Copia los puntos de la soga al LineRenderer y les suma el latigazo. No hace avanzar nada: solo dibuja el estado
+    // actual (por eso StartGrapple también lo puede usar para mostrar la pose inicial).
     private void UpdateLineRenderer()
     {
+        // Los puntos que calculó la simulación: el 0 es la lengua y el último es el ancla.
         Vector3[] simulated = _rope.Points;
 
-        // Dirección 'up' perpendicular a la soga: hacia ahí se curva el latigazo.
-        // Sale de _grapplePoint crudo, NUNCA de _currentGrapplePoint: en el primer frame de cada
-        // enganche _currentGrapplePoint todavía es igual a la lengua (recién seteado en StartGrapple),
-        // lo que forzaría el caso degenerado de LookRotation(Vector3.zero) en cada enganche.
-        // simulated[0] es la lengua: es la punta clavada de la soga.
+        // Hacia dónde se curva el latigazo: una dirección "arriba" que sea perpendicular a la soga. Se obtiene girando
+        // un "arriba" común para que mire a lo largo de la soga (LookRotation).
+        // La dirección de la soga se calcula con _grapplePoint (el ancla real) y NUNCA con _currentGrapplePoint: en el
+        // primer frame de cada enganche _currentGrapplePoint es igual a la lengua, la dirección daría vector cero y
+        // LookRotation(Vector3.zero) tira un warning. El if es una red de seguridad por si lengua y ancla coinciden.
         Vector3 ropeDir = _grapplePoint - simulated[0];
         Vector3 up = ropeDir.sqrMagnitude > 0.0001f
             ? Quaternion.LookRotation(ropeDir.normalized) * Vector3.up
@@ -203,21 +229,22 @@ public class GekkoSwinging
 
         for(int i = 0; i <= _quality; i++)
         {
-            // delta = 0 en la lengua, 1 en el ancla, y crece parejo entre los puntos.
+            // Posición relativa del punto dentro de la soga: 0 en la lengua, 0.5 en el medio, 1 en el ancla.
             float delta = i / (float)_quality;
 
-            // Latigazo: una onda senoidal (_waveCount crestas) multiplicada por el valor actual del spring, que
-            // arranca alto al enganchar y se apaga solo. La curva vale 0 en delta = 0 y en delta = 1, así que las
-            // puntas quedan clavadas aunque la onda esté al máximo.
+            // El latigazo en este punto = altura * onda * fuerza actual del spring * curva de atenuación:
+            //  - onda senoidal: sube y baja _waveCount veces a lo largo de la soga.
+            //  - _spring.Value: arranca alto al enganchar y se apaga solo (por eso el latigazo desaparece).
+            //  - curva: vale 0 en las dos puntas, así la lengua y el ancla no se despegan aunque la onda esté al máximo.
             Vector3 whip = up * _waveHeight * Mathf.Sin(delta * _waveCount * Mathf.PI) * _spring.Value * _waveAffectCurve.Evaluate(delta);
 
-            // El latigazo se suma solo acá, al dibujar, y NO dentro de la simulación: si entrara ahí la soga lo trataría
-            // como movimiento real y lo arrastraría consigo. Así el spring sigue siendo un efecto artístico
-            // controlable y la física aporta la parte orgánica.
+            // Punto final = punto de la simulación + latigazo. El latigazo se suma recién acá, al dibujar, y NO dentro
+            // de la simulación: si entrara ahí, la soga lo trataría como movimiento real y lo arrastraría consigo. Así
+            // el latigazo sigue siendo un efecto controlable y la física aporta el movimiento natural.
             _ropePoints[i] = simulated[i] + whip;
         }
 
-        // Una sola llamada para todos los puntos (en vez de un SetPosition por punto).
+        // Se entregan todos los puntos al LineRenderer de una sola vez (más barato que un SetPosition por punto).
         _lineRenderer.SetPositions(_ropePoints);
     }
 
@@ -226,11 +253,12 @@ public class GekkoSwinging
     {
         IsSwinging = false;
         _lineRenderer.positionCount = 0;
-        // La soga no se resetea acá: cada enganche nuevo arranca con _rope.Reset() en StartGrapple.
+        // La soga no hace falta resetearla acá: cada enganche nuevo empieza con _rope.Reset() en StartGrapple.
         _spring.Reset();
         Object.Destroy(_joint);
-        // Destroy es diferido (fin de frame): sin esto los guards de ArtificialUpdate y ArtificialLateUpdate siguen
-        // viendo el joint vivo ese frame y dibujan la lengua sobre un LineRenderer que ya quedó con 0 posiciones.
+        // Destroy es diferido (se ejecuta al final del frame): sin esta línea, ArtificialUpdate y ArtificialLateUpdate
+        // seguirían viendo el joint "vivo" durante el resto de este frame y dibujarían la lengua sobre un LineRenderer
+        // que ya quedó con 0 puntos.
         _joint = null;
     }
 
