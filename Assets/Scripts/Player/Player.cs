@@ -68,6 +68,7 @@ public class Player : MonoBehaviour
     public DialogueInteractor Interactor => _interactor;
     public PlayerViewer PjViewer => _pjViewer;
     public BlueberryComboTracker BlueberryTracker => _blueberryCombo;
+    public GekkoSwinging Swinging => _swinging;
     #endregion
 
 
@@ -158,6 +159,7 @@ public class Player : MonoBehaviour
     private void FixedUpdate()
     {
         _pjController.ArtificialFixedUpdate();
+        _swinging.ArtificialFixedUpdate();
     }
 
     private void LateUpdate()

@@ -67996,6 +67996,48 @@ MonoBehaviour:
   _forwardThrustForce: 150
   _horizontalThrustForce: 100
   _extendCableSpeed: 50
+  _predictionPoint: {fileID: 0}
+  _predictionSphereRadius: 0.5
+  _maxTongueDistance: 100
+  _quality: 10
+  _springStrength: 400
+  _springDamper: 6
+  _springVelocity: 15
+  _waveCount: 4
+  _waveHeight: 1
+  _waveAffectCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 0.5
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
 --- !u!114 &3432168389014509898
 MonoBehaviour:
   m_ObjectHideFlags: 0

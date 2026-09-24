@@ -3,29 +3,32 @@ using UnityEngine;
 public class GekkoSwinging
 {
     private LayerMask _grappableLayers;
-    private Transform _camera, _transform, _tongueTip;
     private LineRenderer _lineRenderer;
-    private float _maxTongueDistance;
     private Vector3 _grapplePoint = Vector3.zero, _previousHitPosition, _currentGrapplePoint;
     private SpringJoint _joint;
     private Spring _spring;
     private Rigidbody _rb;
-    private float _forwardThrustForce;
-    private float _horizontalThrustForce;
-    private float _extendCableSpeed;
+    private float _forwardThrustForce, _predictionSphereRadius, _horizontalThrustForce,
+                _extendCableSpeed, _maxTongueDistance;
     private Vector2 _thrustInput;
     private bool _shortenCablePressed;
     private RaycastHit _predictionHit;
-    private float _predictionSphereRadius;
-    private Transform _lastHitObject, _cachedGrapplePoint, _predictionPoint;
+    private Transform _lastHitObject, _cachedGrapplePoint, _predictionPoint,
+                    _camera, _transform, _tongueTip;
+    
+    #region Tongue Visual
     private int _quality;
     private float _springDamper, _springStrength, _springVelocity, _waveCount, _waveHeight;
     private AnimationCurve _waveAffectCurve;
+    #endregion
+    
+    private RotateGekkoWhileSwingin _gekkoRotation;
     
     #region Properties
     public bool IsSwinging { get; private set; }
     public Vector2 ThrustInput { set { _thrustInput = value; } }
     public bool ShortenCablePressed { set { _shortenCablePressed = value; } }
+    public Vector3 GrapplePoint => _grapplePoint;
     #endregion
 
     public GekkoSwinging(Transform tongue, LayerMask layers, Transform transform, LineRenderer lineRenderer, Transform cam,
@@ -57,6 +60,8 @@ public class GekkoSwinging
         _waveAffectCurve = waveAffectCurve;
         _spring = new Spring();
         _spring.SetTarget(0);
+
+        _gekkoRotation = new RotateGekkoWhileSwingin(this, _rb);
     }
 
     public void StartGrapple()
@@ -95,6 +100,13 @@ public class GekkoSwinging
         
         ODMGearMovement();
         DrawTongue();
+    }
+
+    public void ArtificialFixedUpdate()
+    {
+        if(!_joint) return;
+
+        _gekkoRotation.ArtificialFixedUpdate();
     }
 
     private void DrawTongue()

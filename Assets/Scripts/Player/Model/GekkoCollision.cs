@@ -15,6 +15,8 @@ public class GekkoCollision
 
     public void ArtificialOnTriggerEnter(Collider other)
     {
+        if(_owner.Swinging.IsSwinging) _owner.Swinging.StopGrapple();
+
         if(other.TryGetComponent(out Collectible collectible))
         {
             collectible.Grab();
@@ -46,6 +48,8 @@ public class GekkoCollision
 
     public void ArtificialOnTriggerStay(Collider other)
     {
+        if(_owner.Swinging.IsSwinging) _owner.Swinging.StopGrapple();
+
         if(other.CompareTag("Lava"))
         {
             _damageTimer += Time.deltaTime;
