@@ -10,7 +10,7 @@ public class MomDuck : MonoBehaviour
     {
         _anim = GetComponent<Animator>();
         _anim.SetBool("DuckisWalk", false);
-        LevelOneManager.Instance.OnBridgeConstructed += StartChildrenMove;
+        //LevelOneManager.Instance.OnBridgeConstructed += StartChildrenMove;
     }
 
     private void StartChildrenMove()
@@ -42,6 +42,6 @@ public class MomDuck : MonoBehaviour
     }
     private void OnDisable()
     {
-        LevelOneManager.Instance.OnBridgeConstructed -= StartChildrenMove;
+        //LevelOneManager.Instance.OnBridgeConstructed -= StartChildrenMove;
     }
 }

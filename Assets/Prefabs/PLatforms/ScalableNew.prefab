@@ -1,0 +1,550 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &16817911534930481
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4135708555730478495}
+  - component: {fileID: 2541130108209825989}
+  m_Layer: 7
+  m_Name: Pata
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &4135708555730478495
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 16817911534930481}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0.055845365, y: -0.9619756, z: 0.08130658, w: 0.25470278}
+  m_LocalPosition: {x: -1.1156873, y: 0.39514524, z: 1.1298063}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2650081181885986624}
+  m_LocalEulerAnglesHint: {x: 10.654, y: -150.699, z: -3.852}
+--- !u!114 &2541130108209825989
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 16817911534930481}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0777d029ed3dffa4692f417d4aba19ca, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Material: {fileID: 2100000, guid: 111edf118d0ba7b4cad5f40005a1a5ec, type: 2}
+  m_DrawDistance: 1000
+  m_FadeScale: 0.9
+  m_StartAngleFade: 180
+  m_EndAngleFade: 180
+  m_UVScale: {x: 1, y: 1}
+  m_UVBias: {x: 0, y: 0}
+  m_DecalLayerMask: 256
+  m_ScaleMode: 0
+  m_Offset: {x: 0, y: 0, z: 2.5}
+  m_Size: {x: 1.5, y: 1.5, z: 5}
+  m_FadeFactor: 1
+--- !u!1 &1228441880381769545
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 6009736269027902733}
+  m_Layer: 7
+  m_Name: Patita (1)
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &6009736269027902733
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1228441880381769545}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: 0.9155737, w: 0.40215027}
+  m_LocalPosition: {x: 2.53, y: -5.07, z: 0.39}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 7095642357891149966}
+  - {fileID: 2430118199562463191}
+  m_Father: {fileID: 4646374357249216888}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 132.575}
+--- !u!1 &2132174349943736122
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2430118199562463191}
+  - component: {fileID: 3069583869834148218}
+  m_Layer: 7
+  m_Name: PataNormal
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2430118199562463191
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2132174349943736122}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0.79287463, y: -0.569316, z: 0.20263897, w: 0.07852714}
+  m_LocalPosition: {x: 1.6900101, y: -0.38000202, z: 0.5200043}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 6009736269027902733}
+  m_LocalEulerAnglesHint: {x: 6.097, y: -155.601, z: 109.96}
+--- !u!114 &3069583869834148218
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2132174349943736122}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0777d029ed3dffa4692f417d4aba19ca, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Material: {fileID: 2100000, guid: 165b1272c7305884f819cfec762a3eb7, type: 2}
+  m_DrawDistance: 1000
+  m_FadeScale: 0.9
+  m_StartAngleFade: 180
+  m_EndAngleFade: 180
+  m_UVScale: {x: 1, y: 1}
+  m_UVBias: {x: 0, y: 0}
+  m_DecalLayerMask: 256
+  m_ScaleMode: 0
+  m_Offset: {x: 0, y: 0, z: 2.5}
+  m_Size: {x: 1.5, y: 1.5, z: 5}
+  m_FadeFactor: 1
+--- !u!1 &3312344062381596764
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3502736862242418152}
+  - component: {fileID: 4377335782484582328}
+  m_Layer: 7
+  m_Name: PataNormal
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &3502736862242418152
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3312344062381596764}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0.055845365, y: -0.9619756, z: 0.08130658, w: 0.25470278}
+  m_LocalPosition: {x: -1.1156873, y: 0.39514524, z: 1.1298063}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2650081181885986624}
+  m_LocalEulerAnglesHint: {x: 10.654, y: -150.699, z: -3.852}
+--- !u!114 &4377335782484582328
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3312344062381596764}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0777d029ed3dffa4692f417d4aba19ca, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Material: {fileID: 2100000, guid: 165b1272c7305884f819cfec762a3eb7, type: 2}
+  m_DrawDistance: 1000
+  m_FadeScale: 0.9
+  m_StartAngleFade: 180
+  m_EndAngleFade: 180
+  m_UVScale: {x: 1, y: 1}
+  m_UVBias: {x: 0, y: 0}
+  m_DecalLayerMask: 256
+  m_ScaleMode: 0
+  m_Offset: {x: 0, y: 0, z: 2.5}
+  m_Size: {x: 1.5, y: 1.5, z: 5}
+  m_FadeFactor: 1
+--- !u!1 &3431796346377960216
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4646374357249216888}
+  - component: {fileID: 8023177282734208114}
+  m_Layer: 7
+  m_Name: ScalableNew
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &4646374357249216888
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3431796346377960216}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0.7572288, z: 0, w: 0.6531498}
+  m_LocalPosition: {x: 27.74, y: 18.27, z: 17.94}
+  m_LocalScale: {x: 0.33347479, y: 0.33347484, z: 0.33347484}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 202476673513098233}
+  - {fileID: 6176708177275142366}
+  - {fileID: 6009736269027902733}
+  - {fileID: 2650081181885986624}
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 98.441, z: 0}
+--- !u!65 &8023177282734208114
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3431796346377960216}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 11.550261, y: 9.137695, z: 0.8575494}
+  m_Center: {x: 0.2072687, y: -2.065178, z: 0.071224965}
+--- !u!1 &4446512328668625450
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 8216289491379511393}
+  - component: {fileID: 3290352589773123786}
+  m_Layer: 7
+  m_Name: PataNormal
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &8216289491379511393
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4446512328668625450}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0.12147795, y: 0.9920894, z: -0.031185819, w: -0.005395322}
+  m_LocalPosition: {x: -1.2099991, y: -1.2700014, z: 0.27000427}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 6176708177275142366}
+  m_LocalEulerAnglesHint: {x: 3.472, y: 181.049, z: 13.994}
+--- !u!114 &3290352589773123786
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4446512328668625450}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0777d029ed3dffa4692f417d4aba19ca, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Material: {fileID: 2100000, guid: 165b1272c7305884f819cfec762a3eb7, type: 2}
+  m_DrawDistance: 1000
+  m_FadeScale: 0.9
+  m_StartAngleFade: 180
+  m_EndAngleFade: 180
+  m_UVScale: {x: 1, y: 1}
+  m_UVBias: {x: 0, y: 0}
+  m_DecalLayerMask: 256
+  m_ScaleMode: 0
+  m_Offset: {x: 0, y: 0, z: 2.5}
+  m_Size: {x: 1.5, y: 1.5, z: 5}
+  m_FadeFactor: 1
+--- !u!1 &4932175441976742760
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2650081181885986624}
+  m_Layer: 7
+  m_Name: Patita (2)
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2650081181885986624
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4932175441976742760}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0.0587448, y: -0.12177749, z: -0.072053984, w: 0.9881941}
+  m_LocalPosition: {x: 0.68, y: -0.42, z: 0.13}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 4135708555730478495}
+  - {fileID: 3502736862242418152}
+  m_Father: {fileID: 4646374357249216888}
+  m_LocalEulerAnglesHint: {x: 5.656, y: -14.499, z: -9.061}
+--- !u!1 &5090388706699891229
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7095642357891149966}
+  - component: {fileID: 3466324353002698374}
+  m_Layer: 7
+  m_Name: Pata
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &7095642357891149966
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5090388706699891229}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0.79287463, y: -0.569316, z: 0.20263897, w: 0.07852714}
+  m_LocalPosition: {x: 1.69, y: -0.38, z: 0.52}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 6009736269027902733}
+  m_LocalEulerAnglesHint: {x: 6.097, y: -155.601, z: 109.96}
+--- !u!114 &3466324353002698374
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5090388706699891229}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0777d029ed3dffa4692f417d4aba19ca, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Material: {fileID: 2100000, guid: 111edf118d0ba7b4cad5f40005a1a5ec, type: 2}
+  m_DrawDistance: 1000
+  m_FadeScale: 0.9
+  m_StartAngleFade: 180
+  m_EndAngleFade: 180
+  m_UVScale: {x: 1, y: 1}
+  m_UVBias: {x: 0, y: 0}
+  m_DecalLayerMask: 256
+  m_ScaleMode: 0
+  m_Offset: {x: 0, y: 0, z: 2.5}
+  m_Size: {x: 1.5, y: 1.5, z: 5}
+  m_FadeFactor: 1
+--- !u!1 &5309043223192333401
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4802287478804198718}
+  - component: {fileID: 1617752205757235132}
+  m_Layer: 7
+  m_Name: Pata
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &4802287478804198718
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5309043223192333401}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0.12147795, y: 0.9920894, z: -0.031185819, w: -0.005395322}
+  m_LocalPosition: {x: -1.2099991, y: -1.2700014, z: 0.27000427}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 6176708177275142366}
+  m_LocalEulerAnglesHint: {x: 3.472, y: 181.049, z: 13.994}
+--- !u!114 &1617752205757235132
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5309043223192333401}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0777d029ed3dffa4692f417d4aba19ca, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Material: {fileID: 2100000, guid: 111edf118d0ba7b4cad5f40005a1a5ec, type: 2}
+  m_DrawDistance: 1000
+  m_FadeScale: 0.9
+  m_StartAngleFade: 180
+  m_EndAngleFade: 180
+  m_UVScale: {x: 1, y: 1}
+  m_UVBias: {x: 0, y: 0}
+  m_DecalLayerMask: 256
+  m_ScaleMode: 0
+  m_Offset: {x: 0, y: 0, z: 2.5}
+  m_Size: {x: 1.5, y: 1.5, z: 5}
+  m_FadeFactor: 1
+--- !u!1 &7032225256086828692
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 6176708177275142366}
+  m_Layer: 7
+  m_Name: Patita
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 0
+--- !u!4 &6176708177275142366
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7032225256086828692}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0.3, y: -2.88, z: 0.86}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 4802287478804198718}
+  - {fileID: 8216289491379511393}
+  m_Father: {fileID: 4646374357249216888}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &8817882154417630779
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 202476673513098233}
+  - component: {fileID: 4151116268169853758}
+  m_Layer: 7
+  m_Name: Scalable
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &202476673513098233
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8817882154417630779}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0.9999855, z: -0, w: 0.0053908504}
+  m_LocalPosition: {x: 0.05, y: -1.9799995, z: 3.72}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 4646374357249216888}
+  m_LocalEulerAnglesHint: {x: 0, y: -179.382, z: 0}
+--- !u!114 &4151116268169853758
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8817882154417630779}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0777d029ed3dffa4692f417d4aba19ca, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Material: {fileID: 2100000, guid: f7c12dd6deb0a9c4eb24e17d431765fa, type: 2}
+  m_DrawDistance: 1000
+  m_FadeScale: 1
+  m_StartAngleFade: 180
+  m_EndAngleFade: 180
+  m_UVScale: {x: 1, y: 1}
+  m_UVBias: {x: 0, y: 0}
+  m_DecalLayerMask: 256
+  m_ScaleMode: 0
+  m_Offset: {x: 0, y: 0, z: 0.66}
+  m_Size: {x: 4.95, y: 3.84, z: 1.9}
+  m_FadeFactor: 1
