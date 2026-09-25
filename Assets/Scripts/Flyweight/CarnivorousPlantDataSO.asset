@@ -12,10 +12,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8146be3ed23a149468def4b1af839b86, type: 3}
   m_Name: CarnivorousPlantDataSO
   m_EditorClassIdentifier: 
-  reactionDelay: 0.25
   detectionRange: 15
   shootInterval: 1.5
   purifyHealthCost: 20
+  hitsToPurify: 1
+  hitHealthCost: 0
+  hurtStaggerSeconds: 0
   rotateToPlayer: 1
   rotationSpeed: 5
   biteRange: 4.58
@@ -24,3 +26,4 @@ MonoBehaviour:
   biteKnockbackForce: 8
   biteLungeDistance: 0.6
   biteLungeDuration: 0.2
+  purifiedMaterial: {fileID: 2100000, guid: c5d377be30a4f8a4083da1893809b662, type: 2}

@@ -27,6 +27,7 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
     private int _hits;
     private float _staggerUntil;
     private bool _hasHurtTrigger;
+    private SkinnedMeshRenderer[] _skinnedMeshRenderers;
 
     public bool IsPurified => _purified;
     public bool IsShielded { get; private set; }
@@ -59,6 +60,7 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
     {
         _eventFSM = new StateMachine();
         CacheHurtTrigger();
+        _skinnedMeshRenderers = GetComponentsInChildren<SkinnedMeshRenderer>();
 
         IdleState = new PlantIdleState(this);
         AlertState = new PlantAlertState(this);
@@ -248,6 +250,16 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
     {
         if(_purifiedParticle != null) _purifiedParticle.Play();
         if(_purifiedSound != null) _purifiedSound.Play();
+        ApplyPurifiedMaterial();
+    }
+
+    // Cambio de material unidireccional: la purificación de la planta es un estado terminal, no se revierte.
+    private void ApplyPurifiedMaterial()
+    {
+        if(data.purifiedMaterial == null || _skinnedMeshRenderers == null) return;
+
+        foreach(SkinnedMeshRenderer skinnedMesh in _skinnedMeshRenderers)
+            if(skinnedMesh != null) skinnedMesh.sharedMaterial = data.purifiedMaterial;
     }
 
     private void OnDrawGizmosSelected()

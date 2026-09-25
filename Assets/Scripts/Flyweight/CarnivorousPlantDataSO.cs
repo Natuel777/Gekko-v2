@@ -31,4 +31,7 @@ public class CarnivorousPlantDataSO : ScriptableObject
     public float biteKnockbackForce = 8f;
     public float biteLungeDistance = 0.6f;
     public float biteLungeDuration = 0.2f;
+
+    [Header("Purified")]
+    public Material purifiedMaterial;
 }
