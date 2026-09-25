@@ -30,8 +30,7 @@ public class PurificationChallenge : MonoBehaviour
     [SerializeField] private PurificationBarrier _pathBarrier;
 
     [Header("Re-corrupting Enemies")]
-    [Tooltip("Opcional: se toman todos los HeavyBeetle hijos de este Transform.")]
-    [SerializeField] private Transform _enemiesRoot;
+    private Transform _enemiesRoot;
     [SerializeField] private HeavyBeetle[] _enemies;
 
     [Header("Art")]
