@@ -271,8 +271,8 @@ public class Player : MonoBehaviour
     public void ChangeVariables()
     {
         _pjController.ChangeValues(speed, jumpForce, _rotationSpeed, fallMultiplier, lowJumpMultiplier);
-        health.SetHealth(health.MaxHealth);
-        health?.ArtificialOnDisable();
+        //health.SetHealth(health.MaxHealth);
+        //health?.ArtificialOnDisable();
         Debug.Log("god Mode");
     }
 

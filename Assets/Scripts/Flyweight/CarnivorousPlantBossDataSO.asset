@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8146be3ed23a149468def4b1af839b86, type: 3}
   m_Name: CarnivorousPlantBossDataSO
   m_EditorClassIdentifier: 
-  detectionRange: 15
+  detectionRange: 4
   shootInterval: 1.5
   purifyHealthCost: 20
   hitsToPurify: 3
@@ -20,9 +20,10 @@ MonoBehaviour:
   hurtStaggerSeconds: 0
   rotateToPlayer: 1
   rotationSpeed: 5
-  biteRange: 4.58
-  biteDamage: 8
+  biteRange: 2
+  biteDamage: 5
   biteInterval: 1.2
   biteKnockbackForce: 8
   biteLungeDistance: 0.6
   biteLungeDuration: 0.2
+  purifiedMaterial: {fileID: 2100000, guid: c5d377be30a4f8a4083da1893809b662, type: 2}
