@@ -73,6 +73,7 @@ public class PurificationChallenge : MonoBehaviour
             if(core == null) continue;
 
             _total++;
+            
             if(!core.IsBroken) _remaining++;
         }
     }
