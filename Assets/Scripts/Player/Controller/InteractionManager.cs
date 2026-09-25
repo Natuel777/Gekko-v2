@@ -39,17 +39,14 @@ public class InteractionManager : MonoBehaviour
 
         foreach (var hit in hits)
         {
-            Debug.Log("hit");
             if (!StaticMethods.InFOV(startPos, hit.transform.position, viewRange, viewAngle, obstacle))
                 continue;
-            Debug.Log("infov");
 
             float angle = Vector3.Angle(startPos.forward, hit.transform.position - startPos.position);
             if (angle < bestAngle)
             {
                 bestAngle = angle;
                 best = hit.transform;
-                Debug.Log(best);
 
             }
         }
