@@ -425,13 +425,15 @@ public class PlayerController
         float scale = _pjTransform.lossyScale.x;
         float half = ((_collider.height / 2f) - _collider.radius) * scale;
         Vector3 center = _pjTransform.TransformPoint(_collider.center);
+        Vector3 realCenter = _pjTransform.TransformPoint(_collider.center) - new Vector3(0, 0, -0.3f * scale);
+
         Vector3 front = center + _pjTransform.forward * half;
         Vector3 back = center - _pjTransform.forward * half;
         float dist = 0.15f * scale;
         float radius = _collider.radius * 0.9f * scale;
 
         bool g1 = Physics.SphereCast(front, radius, -_currentUp, out RaycastHit h1, dist, _groundRayMask, QueryTriggerInteraction.Ignore);
-        bool g2 = Physics.SphereCast(center, radius, -_currentUp, out RaycastHit h2, dist, _groundRayMask, QueryTriggerInteraction.Ignore);
+        bool g2 = Physics.SphereCast(realCenter, radius, -_currentUp, out RaycastHit h2, dist, _groundRayMask, QueryTriggerInteraction.Ignore);
         bool g3 = Physics.SphereCast(back, radius, -_currentUp, out RaycastHit h3, dist, _groundRayMask, QueryTriggerInteraction.Ignore);
 
         if (!g1 && !g2 && !g3) return false;
@@ -485,10 +487,12 @@ public class PlayerController
 
         float half = ((_collider.height / 2f) - _collider.radius) * scale;
         Vector3 center = _pjTransform.TransformPoint(_collider.center);
+        Vector3 realCenter = _pjTransform.TransformPoint(_collider.center) - new Vector3(0, 0, -0.3f * scale);
+
         Vector3 front = center + _pjTransform.forward * half;
         Vector3 back = center - _pjTransform.forward * half;
 
-        Vector3[] origins = { front, center, back };
+        Vector3[] origins = { front, realCenter, back };
         _nearGround = Physics.Raycast(_pjTransform.position, Vector3.down, 1f * scale, _groundRayMask, QueryTriggerInteraction.Ignore);
         foreach (var origin in origins)
         {

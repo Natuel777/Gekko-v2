@@ -233,6 +233,15 @@ public class Player : MonoBehaviour
         Gizmos.DrawWireSphere(origin + transform.forward * _interactReach, 0.15f);
 
         DrawSwingSphereCastGizmo();
+
+        CapsuleCollider col = GetComponent<CapsuleCollider>();
+        Gizmos.color = Color.magenta;
+        float scale = transform.lossyScale.x;
+
+        float half = ((col.height / 2f) - col.radius) * scale;
+        Vector3 center = transform.TransformPoint(col.center) - new Vector3 (0,0, -0.3f * scale);
+
+        Gizmos.DrawLine(center, center + transform.up* 2);
     }
 
     private void DrawSwingSphereCastGizmo()
