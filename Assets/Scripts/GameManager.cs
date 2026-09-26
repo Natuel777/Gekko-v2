@@ -9,6 +9,7 @@ public class GameManager : MonoBehaviour
     public LayerMask GroundLayer;
     public LayerMask ClimbLayer;
     public LayerMask Surfaces;
+    public LayerMask Obstacle;
     public bool IsPause;
     public CheckpointManager checkpointManager;
 
