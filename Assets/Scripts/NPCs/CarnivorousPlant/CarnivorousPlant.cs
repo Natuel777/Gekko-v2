@@ -262,6 +262,7 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
             if(skinnedMesh != null) skinnedMesh.sharedMaterial = data.purifiedMaterial;
     }
 
+    #if UNITY_EDITOR
     private void OnDrawGizmosSelected()
     {
         if(data == null) return;
@@ -272,4 +273,5 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
         Gizmos.color = Color.red;
         Gizmos.DrawWireSphere(transform.position, data.biteRange);
     }
+    #endif
 }
