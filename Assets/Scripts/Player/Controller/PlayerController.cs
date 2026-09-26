@@ -1,4 +1,7 @@
-﻿using UnityEngine;
+﻿using Unity.Mathematics;
+using UnityEngine;
+using UnityEngine.UIElements;
+using static UnityEngine.UI.Image;
 
 public class PlayerController
 {
@@ -15,6 +18,7 @@ public class PlayerController
     private LayerMask _groundRayMask;
     private LayerMask _climbRayMask;
     private LayerMask _surfaces;
+    private LayerMask _obstacles;
 
     private float _speed = 11f;
     private float _jumpForce = 6f;
@@ -71,6 +75,7 @@ public class PlayerController
         _camTransform = camTransform;
         _groundRayMask = GameManager.Instance.GroundLayer;
         _climbRayMask = GameManager.Instance.ClimbLayer;
+        _obstacles = GameManager.Instance.Obstacle;
         _collider = col;
         _currentUp = Vector3.up;
         _head = head;
@@ -235,7 +240,7 @@ public class PlayerController
         LayerMask blockMask = ~(1 << _pjTransform.gameObject.layer);
 
         float scale = _pjTransform.lossyScale.x;
-        float sweepRadius = 0.3f * scale;
+        //float sweepRadius = 0.3f * scale;
         //if (Physics.SphereCast(_rb.position, sweepRadius, dir, out RaycastHit hit, currentSpeed * Time.fixedDeltaTime + 0.1f * scale, blockMask, QueryTriggerInteraction.Ignore))
         //{
         //    float wallness = Vector3.Dot(hit.normal, _currentUp);
@@ -344,12 +349,22 @@ public class PlayerController
                 else
                 {
                     float speed = _speed;
+                    bool againstWall = WallOnAir(out Vector3 wallNormal);
                     if (_isSlipperySurface) speed *= _slipperyForce;
                     float currentY = _wasClimbing && _jumpGraceTime <= 0 ? 0f : _rb.linearVelocity.y;
                     moveVel.y = currentY;
                     Vector3 horizontalVel = new Vector3(moveVel.x, 0, moveVel.z);
+
+                    if (againstWall)
+                    {
+                        float into = Vector3.Dot(horizontalVel, -wallNormal);
+                        if (into > 0f)
+                            horizontalVel += wallNormal * into;
+                    }
+
                     if (horizontalVel.magnitude > speed * _speedMultiplier)
                         horizontalVel = horizontalVel.normalized * speed * _speedMultiplier;
+
                     moveVel.x = horizontalVel.x;
                     moveVel.z = horizontalVel.z;
                     _rb.linearVelocity = moveVel;
@@ -424,6 +439,32 @@ public class PlayerController
         RaycastHit validHit = g2 ? h2 : (g1 ? h1 : h3);
         float angle = Vector3.Angle(validHit.normal, Vector3.up);
         return angle < 60f;
+    }
+    private bool WallOnAir(out Vector3 wallNormal)
+    {
+        wallNormal = Vector3.zero;
+        float scale = _pjTransform.lossyScale.x;
+        float half = ((_collider.height / 2f) - _collider.radius) * scale;
+        Vector3 center = _pjTransform.TransformPoint(_collider.center);
+
+        if (Physics.SphereCast(center, _collider.radius * 0.4f * scale, -_currentUp, out RaycastHit hit, 1f * scale, _surfaces, QueryTriggerInteraction.Ignore))
+            return false;
+
+        float[] angles = { 0f, -30f, 30f, -60f, 60f };
+
+        foreach (float angle in angles)
+        {
+            Vector3 castDir = Quaternion.AngleAxis(angle, _currentUp) * _pjTransform.forward;
+            Vector3 front = center + castDir * half;
+
+            if (Physics.SphereCast(front, _collider.radius * 0.4f * scale, castDir, out RaycastHit hite, 0.4f * scale, _obstacles, QueryTriggerInteraction.Ignore))
+            {
+                wallNormal = hite.normal;
+                return true;
+            }
+        }
+
+        return false;
     }
     private void DetectSurface()
     {
