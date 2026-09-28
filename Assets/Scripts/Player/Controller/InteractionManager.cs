@@ -23,7 +23,6 @@ public class InteractionManager : MonoBehaviour
         Transform target = GetBestTarget(transform, _interactionRange, _interactionAngle, _interactable, _obstacle);
         if (target != null && target.TryGetComponent(out IInteractable interactable))
         {
-            Debug.Log(interactable);
             _currentInteractable = interactable;
             _currentInteractable.ShowInteractUI();
             return;

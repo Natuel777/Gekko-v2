@@ -8,6 +8,7 @@ public class LazyLadybug : MonoBehaviour, IDialogueable, IInteractable
     [SerializeField] private float _speed;
     [SerializeField] private float _rotationSpeed = 5f;
     [SerializeField] private Transform _finalPos;
+    [SerializeField] private Transform _model;
     [Header("Canvas")]
     [SerializeField] Dialogue _dialogue;
     [SerializeField] Sprite _imagedialogue;
@@ -30,14 +31,18 @@ public class LazyLadybug : MonoBehaviour, IDialogueable, IInteractable
         _playerTransform = GameManager.Instance.Pj.transform;
         _EIndicator.enabled = false;
         _cam = CameraStateManager.Instance.CurrentCamera.transform;
-        _lookAtPlayer = new LookAtTarget(_rotationSpeed, transform, lockYAxis: true);
+        _lookAtPlayer = new LookAtTarget(_rotationSpeed, _model, lockYAxis: true);
 
     }
     private void Update()
     {
         if (_EIndicator.enabled) FollowPlayer();
 
-       if(_interacted) _lookAtPlayer.StartLooking(_playerTransform);
+        if (_interacted)
+        {
+            _lookAtPlayer.ArtificialUpdate();
+            _lookAtPlayer.StartLooking(_playerTransform);
+        }
 
     }
     private void FollowPlayer()
@@ -77,18 +82,23 @@ public class LazyLadybug : MonoBehaviour, IDialogueable, IInteractable
     {
         GameManager.Instance.Pj.Inputs(false);
         _lookAtPlayer.StartLooking(_finalPos);
-
-        var dir = _finalPos.position - transform.position;
-
-        transform.position += dir.normalized * _speed * Time.deltaTime;
-
-        if (dir.magnitude < 0.25f)
+        while (true)
         {
-            GameManager.Instance.Pj.Inputs(true);
-            _bugCam.Priority = 0;
-            Destroy(this);
+            _lookAtPlayer.ArtificialUpdate();
+            var dir = _finalPos.position - transform.position;
+
+            transform.position += dir.normalized * _speed * Time.deltaTime;
+
+            if (dir.magnitude < 0.25f)
+            {
+                GameManager.Instance.Pj.Inputs(true);
+                _bugCam.Priority = 0;
+                gameObject.layer = 16;
+                Destroy(this);
+            }
+            yield return new WaitForEndOfFrame();
         }
-        yield return new WaitForEndOfFrame();
+       
         
     }
 }
