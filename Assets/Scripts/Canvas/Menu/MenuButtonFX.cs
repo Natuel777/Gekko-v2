@@ -29,6 +29,8 @@ public class MenuButtonFX : MonoBehaviour, IPointerEnterHandler, IPointerExitHan
     [Header("Emisivo")]
     [SerializeField, Range(0f, 1f)] private float _idleEmission = 0.2f;
     [SerializeField] private Color _glowColor = new Color(1f, 0.72f, 0.28f, 1f);
+    [Tooltip("Si está apagado, el componente no toca el color del texto (lo controla otro script, ej. OptionsTab).")]
+    [SerializeField] private bool _tintLabel = true;
     [SerializeField, Range(0f, 1f)] private float _hotColorBlend = 0.55f;
     [SerializeField, Range(0f, 1f)] private float _haloMaxAlpha = 0.4f;
 
@@ -43,6 +45,8 @@ public class MenuButtonFX : MonoBehaviour, IPointerEnterHandler, IPointerExitHan
 
     public UnityEvent OnConfirmed => _onConfirmed;
 
+    private Button _button;
+    private bool _wasInteractable = true;
     private RectTransform _labelRect;
     private Material _mat;
     private Vector2 _baseLabelPos;
@@ -63,6 +67,7 @@ public class MenuButtonFX : MonoBehaviour, IPointerEnterHandler, IPointerExitHan
 
     private void Awake()
     {
+        _button = GetComponent<Button>();
         if (!_label) _label = GetComponentInChildren<TMP_Text>(true);
 
         _labelRect = _label.rectTransform;
@@ -78,11 +83,19 @@ public class MenuButtonFX : MonoBehaviour, IPointerEnterHandler, IPointerExitHan
         _mat.SetFloat(ShaderUtilities.ID_GlowOuter, 0.6f);
         _mat.SetFloat(ShaderUtilities.ID_GlowPower, 0.8f);
         _label.UpdateMeshPadding();
+
+        if (_halo)
+        {
+            // anchors en el centro para poder fijar posición/tamaño a mano (ver FitHalo)
+            RectTransform hr = _halo.rectTransform;
+            hr.anchorMin = hr.anchorMax = hr.pivot = new Vector2(0.5f, 0.5f);
+        }
     }
 
     private void OnEnable()
     {
         ResetState();
+        _wasInteractable = _button.IsInteractable();
     }
 
     private void OnDisable()
@@ -125,7 +138,16 @@ public class MenuButtonFX : MonoBehaviour, IPointerEnterHandler, IPointerExitHan
     {
         float dt = Time.unscaledDeltaTime;
 
-        bool lit = (_hovered || _selected) && !_dimmed;
+        // Las pantallas tipo Screens (Pause/Options) no desactivan el botón al tapar la pantalla, solo lo dejan
+        // no-interactuable. Al volver a serlo (Screens.Activate) el efecto arranca limpio.
+        bool interactable = _button.IsInteractable();
+        if (interactable != _wasInteractable)
+        {
+            _wasInteractable = interactable;
+            if (interactable) ResetState();
+        }
+
+        bool lit = (_hovered || _selected) && !_dimmed && interactable;
         _hover = Mathf.MoveTowards(_hover, lit ? 1f : 0f, dt * _hoverSpeed);
         _alpha = Mathf.MoveTowards(_alpha, _dimmed ? _dimAlpha : 1f, dt * 6f);
 
@@ -169,9 +191,12 @@ public class MenuButtonFX : MonoBehaviour, IPointerEnterHandler, IPointerExitHan
         // Emisivo
         float emission = Mathf.Clamp01(_idleEmission + (1f - _idleEmission) * _hover + 0.5f * flash) * _alpha;
 
-        Color c = Color.Lerp(_baseColor, _hotColor, Mathf.Clamp01(_hover + flash));
-        c.a = _baseColor.a * _alpha;
-        _label.color = c;
+        if (_tintLabel)
+        {
+            Color c = Color.Lerp(_baseColor, _hotColor, Mathf.Clamp01(_hover + flash));
+            c.a = _baseColor.a * _alpha;
+            _label.color = c;
+        }
 
         Color glow = _glowColor;
         glow.a = emission;
@@ -179,11 +204,24 @@ public class MenuButtonFX : MonoBehaviour, IPointerEnterHandler, IPointerExitHan
 
         if (_halo)
         {
+            // el halo solo aparece con hover/click (en reposo no se ve)
+            float haloEmission = Mathf.Clamp01(_hover + 0.5f * flash) * _alpha;
             Color h = _glowColor;
-            h.a = _haloMaxAlpha * emission * emission;
+            h.a = _haloMaxAlpha * haloEmission * haloEmission;
             _halo.color = h;
+
+            if (h.a > 0.001f) FitHalo();
             _halo.rectTransform.localScale = Vector3.one * (1f + 0.04f * _hover * Mathf.Sin(Time.unscaledTime * 5f));
         }
+    }
+
+    // El halo sigue al texto y no al rect del botón (hay botones que ocupan todo el ancho de la pantalla)
+    private void FitHalo()
+    {
+        Bounds b = _label.textBounds;
+        RectTransform hr = _halo.rectTransform;
+        hr.position = _labelRect.TransformPoint(b.center);
+        hr.sizeDelta = new Vector2(b.size.x * 1.4f + 60f, b.size.y * 2.2f + 40f);
     }
 
     private void ResetState()
@@ -198,28 +236,23 @@ public class MenuButtonFX : MonoBehaviour, IPointerEnterHandler, IPointerExitHan
         if (_label && _mat) Apply(0f, 0f, 0f);
     }
 
+    // Todos los botones con efecto de la misma pantalla (solo los activos)
+    private MenuButtonFX[] GetGroup()
+    {
+        var canvas = GetComponentInParent<Canvas>();
+        return canvas ? canvas.rootCanvas.GetComponentsInChildren<MenuButtonFX>() : System.Array.Empty<MenuButtonFX>();
+    }
+
     private bool SiblingConfirming()
     {
-        Transform parent = transform.parent;
-        if (!parent) return false;
-
-        for (int i = 0; i < parent.childCount; i++)
-        {
-            var other = parent.GetChild(i).GetComponent<MenuButtonFX>();
-            if (other && other != this && other._confirming) return true;
-        }
+        foreach (var other in GetGroup())
+            if (other != this && other._confirming) return true;
         return false;
     }
 
     private void SetSiblingsDimmed(bool dimmed)
     {
-        Transform parent = transform.parent;
-        if (!parent) return;
-
-        for (int i = 0; i < parent.childCount; i++)
-        {
-            var other = parent.GetChild(i).GetComponent<MenuButtonFX>();
-            if (other && other != this) other._dimmed = dimmed;
-        }
+        foreach (var other in GetGroup())
+            if (other != this) other._dimmed = dimmed;
     }
 }
