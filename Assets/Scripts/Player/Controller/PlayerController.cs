@@ -19,6 +19,7 @@ public class PlayerController
     private LayerMask _climbRayMask;
     private LayerMask _surfaces;
     private LayerMask _obstacles;
+    private LayerMask _blockMask;
 
     private float _speed = 11f;
     private float _jumpForce = 6f;
@@ -75,7 +76,8 @@ public class PlayerController
         _camTransform = camTransform;
         _groundRayMask = GameManager.Instance.GroundLayer;
         _climbRayMask = GameManager.Instance.ClimbLayer;
-        _obstacles = GameManager.Instance.Obstacle;
+        _obstacles = GameManager.Instance.Obstacle; 
+        _blockMask = ~(1 << _pjTransform.gameObject.layer);
         _collider = col;
         _currentUp = Vector3.up;
         _head = head;
@@ -432,9 +434,9 @@ public class PlayerController
         float dist = 0.15f * scale;
         float radius = _collider.radius * 0.9f * scale;
 
-        bool g1 = Physics.SphereCast(front, radius, -_currentUp, out RaycastHit h1, dist, _groundRayMask, QueryTriggerInteraction.Ignore);
-        bool g2 = Physics.SphereCast(realCenter, radius, -_currentUp, out RaycastHit h2, dist, _groundRayMask, QueryTriggerInteraction.Ignore);
-        bool g3 = Physics.SphereCast(back, radius, -_currentUp, out RaycastHit h3, dist, _groundRayMask, QueryTriggerInteraction.Ignore);
+        bool g1 = CastSurface(front, radius, -_currentUp, dist, _groundRayMask, out RaycastHit h1);
+        bool g2 = CastSurface(center, radius, -_currentUp, dist, _groundRayMask, out RaycastHit h2);
+        bool g3 = CastSurface(back, radius, -_currentUp, dist, _groundRayMask, out RaycastHit h3);
 
         if (!g1 && !g2 && !g3) return false;
 
@@ -468,6 +470,15 @@ public class PlayerController
 
         return false;
     }
+    private bool CastSurface(Vector3 origin, float radius, Vector3 dir, float dist, LayerMask validMask, out RaycastHit hit)
+    {
+        if (Physics.SphereCast(origin, radius, dir, out hit, dist, _blockMask, QueryTriggerInteraction.Ignore))
+        {
+            // Solo cuenta si lo PRIMERO que golpeó es una superficie válida
+            return (validMask.value & (1 << hit.collider.gameObject.layer)) != 0;
+        }
+        return false;
+    }
     private void DetectSurface()
     {
             Vector3[] directions =
@@ -493,7 +504,8 @@ public class PlayerController
         Vector3 back = center - _pjTransform.forward * half;
 
         Vector3[] origins = { front, realCenter, back };
-        _nearGround = Physics.Raycast(_pjTransform.position, Vector3.down, 1f * scale, _groundRayMask, QueryTriggerInteraction.Ignore);
+        _nearGround = Physics.Raycast(_pjTransform.position, Vector3.down, out RaycastHit nearHit, 1f * scale, _blockMask, QueryTriggerInteraction.Ignore)
+    && (_groundRayMask.value & (1 << nearHit.collider.gameObject.layer)) != 0;
         foreach (var origin in origins)
         {
             for (int d = 0; d < directions.Length; d++)
@@ -514,7 +526,7 @@ public class PlayerController
                         castDist = (isLongDir ? 2f : 0.6f) * scale;
                     }
                 }
-                if (Physics.SphereCast(origin, _collider.radius * 0.4f * scale, dir, out RaycastHit hit, castDist, _surfaces, QueryTriggerInteraction.Ignore))
+                if (CastSurface(origin, _collider.radius * 0.4f * scale, dir, castDist, _surfaces, out RaycastHit hit))
                 {
                     float normalUpDot = Vector3.Dot(hit.normal, Vector3.up);
                     float groundBonus = 0f;
@@ -531,6 +543,7 @@ public class PlayerController
                         bestScore = score;
                         bestHit = hit;
                         found = true;
+
                     }
                 }
             }
@@ -538,8 +551,7 @@ public class PlayerController
         bool nearEdge = false;
         if (_isClimbing)
         {
-            nearEdge = !Physics.SphereCast(front, _collider.radius * 0.4f * scale,
-                _pjTransform.forward, out _, 0.4f * scale, _surfaces, QueryTriggerInteraction.Ignore);
+            nearEdge = !CastSurface(front, _collider.radius * 0.4f * scale, _pjTransform.forward, 0.4f * scale, _surfaces, out _);
         }
         if (!_isGrounded && !_nearGround && nearEdge)
         {
@@ -547,8 +559,7 @@ public class PlayerController
 
             Vector3 forwardDown = (-_pjTransform.forward - _currentUp).normalized;
 
-            if (Physics.SphereCast(headPos, _collider.radius * 0.4f * scale, forwardDown,
-                out RaycastHit hitDown, 4f * scale, _surfaces, QueryTriggerInteraction.Ignore))
+            if (CastSurface(headPos, _collider.radius * 0.4f * scale, forwardDown, 4f * scale, _surfaces, out RaycastHit hitDown))
             {
                 float distScore = 1f - (hitDown.distance / (4f* scale));
                 float score = distScore - Mathf.Clamp01(Vector3.Dot(hitDown.normal, Vector3.up)) * 0.3f + 0.4f ;
