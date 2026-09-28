@@ -20,14 +20,25 @@ public class MainMenuManager : MonoBehaviour
     public float creditsDelay = 2f;
 
     [Header("Press Any Key")]
+    [Tooltip("Segundos desde que aparece el título hasta que se muestra el texto y se acepta la entrada.")]
     [SerializeField] private float _pressAnyKeyDelay = 3f;
+    [SerializeField] private float _pressAnyKeyFadeIn = 0.6f;
     private bool _inputBlocked = true;
+    private CanvasGroup _pressAnyKeyGroup;
 
     private void Start()
     {
         if (AudioManager.instance) AudioManager.instance.Play(SoundNames.Menu, true);
 
         ScreenManager.Instance.Push(new ScreenGO(transform));
+
+        // El texto arranca oculto y aparece recién cuando se cumple el delay
+        if (ButtonsPressAnyKey)
+        {
+            if (!ButtonsPressAnyKey.TryGetComponent(out _pressAnyKeyGroup))
+                _pressAnyKeyGroup = ButtonsPressAnyKey.AddComponent<CanvasGroup>();
+            _pressAnyKeyGroup.alpha = 0f;
+        }
 
         _inputBlocked = true;
         StartCoroutine(UnblockPressAnyKey());
@@ -37,6 +48,15 @@ public class MainMenuManager : MonoBehaviour
     {
         yield return new WaitForSeconds(_pressAnyKeyDelay);
         _inputBlocked = false;
+
+        if (!_pressAnyKeyGroup) yield break;
+
+        for (float t = 0f; t < _pressAnyKeyFadeIn; t += Time.deltaTime)
+        {
+            _pressAnyKeyGroup.alpha = t / _pressAnyKeyFadeIn;
+            yield return null;
+        }
+        _pressAnyKeyGroup.alpha = 1f;
     }
 
     void Update()

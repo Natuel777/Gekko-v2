@@ -11,7 +11,8 @@ public class AsyncLoader : MonoBehaviour
     [SerializeField] private string _sceneName = default;
     [SerializeField] private Slider _progressBar = default;
     [SerializeField] private TextMeshProUGUI _percentage = default;
-    [SerializeField] private float _minLoadDuration = 3f;
+    [Tooltip("Segundos mínimos que dura la barra de 0 a 100 %, aunque la carga real sea más rápida.")]
+    [SerializeField] private float _minLoadDuration = 10f;
     [SerializeField] private float _displaySpeed = 0.6f;
 
     public static void SetSceneToLoad(ScenesNames scene)
@@ -53,7 +54,8 @@ public class AsyncLoader : MonoBehaviour
         // Retenemos la activación para poder mostrar una barra de progreso
         // gradual (0->100%) en vez de que salte casi al instante.
         async.allowSceneActivation = false;
-        Application.backgroundLoadingPriority = ThreadPriority.High;
+        // Normal (y no High) para que el fondo animado en 3D no se trabe mientras se carga la escena.
+        Application.backgroundLoadingPriority = ThreadPriority.Normal;
         StartCoroutine(ChargeSceneCorrutine(async));
     }
 
@@ -84,13 +86,16 @@ public class AsyncLoader : MonoBehaviour
         }
 
         UpdateBar(1f);
+        Application.backgroundLoadingPriority = ThreadPriority.Low; // valor por defecto de Unity
         async.allowSceneActivation = true;
     }
 
     private void UpdateBar(float t01)
     {
         if (!_progressBar || !_percentage) return;
-        _progressBar.value = t01 * 100f;
+        // normalizedValue respeta el min/max del Slider (antes se asignaba t01 * 100 a un slider de 0-1
+        // y la barra quedaba llena con apenas el 1 %).
+        _progressBar.normalizedValue = t01;
         _percentage.text = $"{Mathf.Round(t01 * 100f)} %";
     }
 }
