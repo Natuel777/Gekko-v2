@@ -68,6 +68,12 @@ Shader "Gekko/Path Blend"
         [HideInInspector] _TintMask       ("Tint mask", 2D) = "black" {}
         [HideInInspector] _PathCanvasMin  ("Min del canvas (xz)", Vector) = (0, 0, 0, 0)
         [HideInInspector] _PathCanvasSize ("Tamano del canvas (xz)", Vector) = (1, 1, 0, 0)
+
+        // Mascaras de costados (paredes): atlas de 4 cuadrantes +X, -X, +Z, -Z, mismo
+        // formato que las de arriba. Las setea PathCanvas solo si las tiene.
+        [HideInInspector] _SideMask              ("Splat mask costados", 2D) = "black" {}
+        [HideInInspector] _SideTintMask          ("Tint mask costados", 2D) = "black" {}
+        [HideInInspector] _PathCanvasSideEnabled ("Costados activos", Float) = 0
     }
 
     SubShader
@@ -110,6 +116,7 @@ Shader "Gekko/Path Blend"
             float  _NormalMapping;
             float  _BaseNormalStrength;
             float  _Tex1NormalStrength;
+            float  _PathCanvasSideEnabled;
         CBUFFER_END
 
         float PathHash21(float2 p)
@@ -178,6 +185,11 @@ Shader "Gekko/Path Blend"
             TEXTURE2D(_Tex1);       SAMPLER(sampler_Tex1);
             TEXTURE2D(_SplatMask);  SAMPLER(sampler_SplatMask);
             TEXTURE2D(_TintMask);   SAMPLER(sampler_TintMask);
+
+            // Las de costados reusan el sampler de la splat mask (mismo clamp + bilinear):
+            // no suman samplers al limite de target 3.0.
+            TEXTURE2D(_SideMask);
+            TEXTURE2D(_SideTintMask);
 
         #if defined(_TEX2_ON)
             TEXTURE2D(_Tex2); SAMPLER(sampler_Tex2);
@@ -264,6 +276,89 @@ Shader "Gekko/Path Blend"
             }
         #endif
 
+            float3 TriplanarWeights(float3 normalWS)
+            {
+                float3 blend = pow(abs(normalWS), _TriplanarSharpness);
+                return blend / max(blend.x + blend.y + blend.z, 1e-4);
+            }
+
+            // UV dentro del atlas de costados. Se recorta un poco el borde del cuadrante
+            // para que el bilinear no mezcle con el cuadrante vecino.
+            float2 SideAtlasUV(float2 local, float quadrant)
+            {
+                local = clamp(local, 0.002, 0.998);
+                float2 origin = float2(fmod(quadrant, 2.0), floor(quadrant * 0.5)) * 0.5;
+                return origin + local * 0.5;
+            }
+
+            // Mascaras del pixel: splat (RGBA = peso de Tex1..4) y tinte (RGB = color,
+            // A = fuerza). Arriba se proyectan desde arriba; en las paredes, con las
+            // mascaras de costados, desde el costado. Sin mascaras de costados se
+            // comporta exactamente como antes (solo cenital).
+            void SamplePathMasks(float3 positionWS, float3 normalWS, out float4 splat, out float4 tint)
+            {
+                float2 canvasUV = (positionWS.xz - _PathCanvasMin.xy) / max(_PathCanvasSize.xy, 1e-4);
+
+                // Fuera del canvas no hay nada pintado. Se resuelve sin branch.
+                float2 insideAxis = step(0.0, canvasUV) * step(canvasUV, 1.0);
+                float inside = insideAxis.x * insideAxis.y;
+
+                splat = SAMPLE_TEXTURE2D(_SplatMask, sampler_SplatMask, canvasUV) * inside;
+                tint = SAMPLE_TEXTURE2D(_TintMask, sampler_TintMask, canvasUV);
+                tint.a *= inside;
+
+                // Uniforme por renderer: todos los pixeles toman la misma rama.
+                if (_PathCanvasSideEnabled > 0.5)
+                {
+                    float3 blend = TriplanarWeights(normalWS);
+                    float v = (positionWS.y - _PathCanvasMin.z) / max(_PathCanvasSize.z, 1e-4);
+
+                    // Caras X: proyeccion (z, y). Caras Z: proyeccion (x, y). El signo de la
+                    // normal elige el cuadrante, asi paredes opuestas no se pisan.
+                    float2 localX = float2(canvasUV.y, v);
+                    float2 localZ = float2(canvasUV.x, v);
+                    float2 inX2 = step(0.0, localX) * step(localX, 1.0);
+                    float2 inZ2 = step(0.0, localZ) * step(localZ, 1.0);
+                    float insideX = inX2.x * inX2.y;
+                    float insideZ = inZ2.x * inZ2.y;
+
+                    float2 uvX = SideAtlasUV(localX, normalWS.x >= 0.0 ? 0.0 : 1.0);
+                    float2 uvZ = SideAtlasUV(localZ, normalWS.z >= 0.0 ? 2.0 : 3.0);
+
+                    float4 splatX = SAMPLE_TEXTURE2D(_SideMask, sampler_SplatMask, uvX) * insideX;
+                    float4 splatZ = SAMPLE_TEXTURE2D(_SideMask, sampler_SplatMask, uvZ) * insideZ;
+                    float4 tintX = SAMPLE_TEXTURE2D(_SideTintMask, sampler_SplatMask, uvX);
+                    float4 tintZ = SAMPLE_TEXTURE2D(_SideTintMask, sampler_SplatMask, uvZ);
+
+                    splat = splat * blend.y + splatX * blend.x + splatZ * blend.z;
+
+                    // El tinte se mezcla premultiplicado por su fuerza: si no, el gris
+                    // neutro de una proyeccion sin pintar lavaria el color de la otra.
+                    float wTop = tint.a * blend.y;
+                    float wX = tintX.a * insideX * blend.x;
+                    float wZ = tintZ.a * insideZ * blend.z;
+                    float wSum = wTop + wX + wZ;
+                    float3 rgb = (tint.rgb * wTop + tintX.rgb * wX + tintZ.rgb * wZ) / max(wSum, 1e-4);
+                    tint = float4(wSum > 1e-4 ? rgb : float3(0.5, 0.5, 0.5), wSum);
+                }
+            }
+
+            // Ruido del borde. Con costados, en triplanar: en proyeccion cenital, en una
+            // pared el ruido tambien quedaria estirado en rayas verticales.
+            float PathEdgeNoise(float3 positionWS, float3 normalWS)
+            {
+                float top = PathNoise21(positionWS.xz * _EdgeNoiseScale);
+                if (_PathCanvasSideEnabled < 0.5)
+                {
+                    return top;
+                }
+
+                float3 blend = TriplanarWeights(normalWS);
+                return top * blend.y
+                     + PathNoise21(positionWS.zy * _EdgeNoiseScale) * blend.x
+                     + PathNoise21(positionWS.xy * _EdgeNoiseScale) * blend.z;
+            }
+
             // Reparte el peso que le "sobra" a las texturas apagadas hacia la base, sin
             // branch: un canal de un slot desactivado se fuerza a 0 antes de sumar, asi
             // que ese peso queda disponible para _baseWeight_ como si nunca se hubiera
@@ -324,30 +419,28 @@ Shader "Gekko/Path Blend"
                 // Todas las capas se muestrean por posicion de MUNDO, no por UV de la
                 // malla. Por eso el sistema no depende ni de la cantidad de vertices ni
                 // de que la malla tenga UVs limpias.
-                float2 worldUV = IN.positionWS.xz;
                 float3 N = normalize(IN.normalWS);
 
-                // Las MASCARAS siguen siendo cenitales aunque las capas sean triplanar,
-                // y es a proposito: se pintan mirando desde arriba, igual que un
-                // splatmap de terrain. En una pendiente se comprimen por el coseno, que
-                // es la proyeccion correcta de lo que se dibujo en planta.
-                float2 canvasUV = (worldUV - _PathCanvasMin.xy) / max(_PathCanvasSize.xy, 1e-4);
-
-                // Fuera del canvas no hay nada pintado. Se resuelve sin branch.
-                float2 insideAxis = step(0.0, canvasUV) * step(canvasUV, 1.0);
-                float inside = insideAxis.x * insideAxis.y;
+                // Las MASCARAS de arriba siguen siendo cenitales aunque las capas sean
+                // triplanar, y es a proposito: se pintan mirando desde arriba, igual que
+                // un splatmap de terrain. En una pendiente se comprimen por el coseno, que
+                // es la proyeccion correcta de lo que se dibujo en planta. Las paredes,
+                // donde eso degenera en rayas, usan las mascaras de costados.
+                float4 splatSample;
+                float4 tintSample;
+                SamplePathMasks(IN.positionWS, N, splatSample, tintSample);
 
                 // _SplatMask: RGBA = cuanto de Tex1/Tex2/Tex3/Tex4 hay en este pixel.
                 // No es tinte, es "que textura se ve" — el equivalente pintable a un
                 // splatmap de terreno con hasta 4 capas.
-                float4 rawWeights = MaskEnabledChannels(SAMPLE_TEXTURE2D(_SplatMask, sampler_SplatMask, canvasUV) * inside);
+                float4 rawWeights = MaskEnabledChannels(splatSample);
                 float rawTotal = min(rawWeights.r + rawWeights.g + rawWeights.b + rawWeights.a, 1.0);
 
                 // El mismo truco de borde estilizado que antes (ruido + corte duro),
                 // ahora sobre el TOTAL pintado en vez de un unico canal de cobertura.
                 // Es lo que permite pintar con una mascara de baja resolucion y que
                 // igual se vea un borde dibujado a mano en vez de un degrade borroso.
-                float noise = PathNoise21(worldUV * _EdgeNoiseScale);
+                float noise = PathEdgeNoise(IN.positionWS, N);
                 float sharpTotal = saturate(rawTotal + (noise - 0.5) * _EdgeNoiseStrength);
                 float width = lerp(0.45, 0.02, _EdgeSharpness);
                 sharpTotal = smoothstep(0.5 - width, 0.5 + width, sharpTotal);
@@ -385,8 +478,7 @@ Shader "Gekko/Path Blend"
                 // canales. RGB = tinte (centrado en 0.5 = neutro), A = cuanto de ese
                 // tinte se aplica ahi. Se pinta encima de lo que sea que ya se mezclo
                 // arriba (base o cualquiera de las 4 texturas).
-                float4 tintSample = SAMPLE_TEXTURE2D(_TintMask, sampler_TintMask, canvasUV);
-                float tintAmount = tintSample.a * inside;
+                float tintAmount = tintSample.a;
                 albedo *= lerp(1.0, tintSample.rgb * 2.0, tintAmount * _TintStrength);
 
                 // Normal maps opcionales: se mezclan con el mismo peso que el albedo de

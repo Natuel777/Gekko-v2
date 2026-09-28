@@ -13,6 +13,7 @@ Material:
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords:
   - _TEX2_ON
+  - _TRIPLANAR_ON
   m_InvalidKeywords: []
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
@@ -30,6 +31,14 @@ Material:
         m_Offset: {x: 0, y: 0}
     - _BaseTex:
         m_Texture: {fileID: 2800000, guid: 94a7c9792134389468b25c4e698053d1, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _SideMask:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _SideTintMask:
+        m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _SplatMask:
@@ -70,6 +79,7 @@ Material:
     - _EdgeSharpness: 0.72
     - _LightWrap: 0.4
     - _NormalMapping: 0
+    - _PathCanvasSideEnabled: 0
     - _Tex1NormalStrength: 1
     - _Tex1Tiling: 0.25
     - _Tex2Enabled: 1
@@ -79,7 +89,7 @@ Material:
     - _Tex4Enabled: 0
     - _Tex4Tiling: 0.25
     - _TintStrength: 1
-    - _Triplanar: 0
+    - _Triplanar: 1
     - _TriplanarSharpness: 5
     m_Colors:
     - _BaseColor: {r: 0.36445355, g: 0.8490566, b: 0.55291027, a: 1}

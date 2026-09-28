@@ -58,26 +58,42 @@ namespace Gekko.PaintTools.EditorTools
         private static int _selectedBrush;
         private static int _newMaskResolution = 1024;
 
-        // Cache de pixeles: pintar leyendo y escribiendo la textura entera en cada
-        // pincelada es inviable, asi que se mantiene una copia en RAM y solo se sube a
-        // la GPU el rectangulo tocado. Es de la mascara ACTIVA (splat o tinte, la que
-        // corresponda a _paintTarget) — pintar la otra invalida el cache.
-        private Color32[] _pixels;
-        private Texture2D _cachedMask;
+        // Con que inclinacion de la normal un golpe pinta tambien en una proyeccion. Con
+        // 0.3, una pared vertical solo pinta su costado, el piso solo arriba, y un bisel
+        // a 45 grados pinta los dos, que es justo donde el shader los mezcla.
+        private const float ProjectionThreshold = 0.3f;
 
-        // Snapshot para deshacer el ultimo trazo. Undo.RecordObject no sirve bien con
-        // datos de textura, asi que se guarda a mano al empezar cada trazo.
-        private Color32[] _strokeBackup;
+        /// <summary>
+        /// Cache de pixeles de UNA mascara: pintar leyendo y escribiendo la textura entera
+        /// en cada pincelada es inviable, asi que se mantiene una copia en RAM y solo se
+        /// sube a la GPU el rectangulo tocado.
+        /// </summary>
+        private sealed class MaskBuffer
+        {
+            public Texture2D Texture;
+            public Color32[] Pixels;
+
+            // Snapshot para deshacer el ultimo trazo. Undo.RecordObject no sirve bien con
+            // datos de textura, asi que se guarda a mano al empezar cada trazo.
+            public Color32[] Backup;
+
+            // Rectangulo tocado en los stamps del evento actual. Se sube a la GPU UNA vez
+            // por evento (no una por stamp): con interpolacion un evento puede traer varios.
+            public bool HasDirty;
+            public int DirtyMinX, DirtyMinY, DirtyMaxX, DirtyMaxY;
+
+            public int Width => Texture.width;
+        }
+
+        // Una para la mascara de arriba y otra para la de costados, las dos de la tab
+        // ACTIVA (splat o tinte, segun _paintTarget) — cambiar de tab invalida las dos.
+        private readonly MaskBuffer _topBuffer = new MaskBuffer();
+        private readonly MaskBuffer _sideBuffer = new MaskBuffer();
 
         private float[] _brushAlpha;
         private int _brushWidth;
         private int _brushHeight;
         private Texture2D _cachedBrushSource;
-
-        // Rectangulo tocado en los stamps del evento actual. Se sube a la GPU UNA vez por
-        // evento (no una por stamp): con interpolacion un evento puede traer varios stamps.
-        private bool _hasDirty;
-        private int _dirtyMinX, _dirtyMinY, _dirtyMaxX, _dirtyMaxY;
 
         private PathCanvas _filterCanvas;
         private GUIStyle _hudStyle;
@@ -97,6 +113,8 @@ namespace Gekko.PaintTools.EditorTools
             }
 
             DrawSummary(canvas);
+            DrawSideMasks(canvas);
+            PathCanvasChecks.DrawChecks(canvas);
             EditorGUILayout.Space();
 
             Brush.DrawToggleButton("Modo pintura: ACTIVO (Esc para salir)", "Activar modo pintura");
@@ -239,6 +257,40 @@ namespace Gekko.PaintTools.EditorTools
             }
         }
 
+        /// <summary>
+        /// Estado de las mascaras de costados. Sin ellas, pintar una pared escribe en la
+        /// mascara de arriba, que en vertical es una sola fila de pixeles para toda la
+        /// altura: sale una raya estirada de arriba a abajo.
+        /// </summary>
+        private void DrawSideMasks(PathCanvas canvas)
+        {
+            if (canvas.HasSideMasks)
+            {
+                RectInt quadrant = canvas.SideQuadrantPixels(PathCanvas.SideFace.PositiveX);
+                float horizontal = quadrant.width / Mathf.Max(canvas.Size.x, canvas.Size.y, 0.01f);
+                float vertical = quadrant.height / Mathf.Max(canvas.Height, 0.01f);
+                EditorGUILayout.HelpBox(
+                    $"Costados: {canvas.SideMask.width} x {canvas.SideMask.height} (4 caras), " +
+                    $"{horizontal:0.00} texels por unidad en horizontal y {vertical:0.00} en vertical.\n" +
+                    $"Cubren de Y {canvas.WorldMinY:0.0} a {canvas.WorldMinY + canvas.Height:0.0} (ajustalo con 'Height').",
+                    MessageType.None);
+                return;
+            }
+
+            EditorGUILayout.HelpBox(
+                "Sin máscaras de costados: pintar una pared la estira de arriba a abajo. " +
+                "Creálas para poder pintar los costados de la plataforma.",
+                MessageType.Warning);
+
+            if (GUILayout.Button("Crear máscaras de costados"))
+            {
+                // El doble que la de arriba: el atlas tiene 4 caras, cada una a un cuarto.
+                int resolution = Mathf.Min(4096, canvas.Mask.width * 2);
+                CreateSideMasks(canvas, resolution);
+                GUIUtility.ExitGUI();
+            }
+        }
+
         private void DrawMaskCreation(PathCanvas canvas)
         {
             EditorGUILayout.HelpBox("Esta zona todavía no tiene sus máscaras (splat + tinte).", MessageType.Warning);
@@ -291,9 +343,7 @@ namespace Gekko.PaintTools.EditorTools
             if (GUILayout.Toggle(isActive, label, style, GUILayout.Height(24f)) && !isActive)
             {
                 _paintTarget = tab;
-                _cachedMask = null;
-                _pixels = null;
-                _strokeBackup = null;
+                InvalidateBuffers();
             }
 
             GUI.backgroundColor = prevColor;
@@ -471,7 +521,7 @@ namespace Gekko.PaintTools.EditorTools
         {
             using (new EditorGUILayout.HorizontalScope())
             {
-                using (new EditorGUI.DisabledScope(_strokeBackup == null))
+                using (new EditorGUI.DisabledScope(_topBuffer.Backup == null && _sideBuffer.Backup == null))
                 {
                     if (GUILayout.Button("Deshacer trazo"))
                     {
@@ -483,7 +533,9 @@ namespace Gekko.PaintTools.EditorTools
                 {
                     SaveMask(canvas.Mask);
                     SaveMask(canvas.TintMask);
-                    Debug.Log("[PathCanvas] Splat mask y tint mask guardadas.", canvas);
+                    SaveMask(canvas.SideMask);
+                    SaveMask(canvas.SideTintMask);
+                    Debug.Log("[PathCanvas] Máscaras (arriba y costados) guardadas.", canvas);
                 }
             }
 
@@ -491,31 +543,50 @@ namespace Gekko.PaintTools.EditorTools
             {
                 if (GUILayout.Button("Desenfocar todo (activa)"))
                 {
-                    Texture2D active = ActiveMaskTexture(canvas);
-                    EnsurePixels(active);
+                    EnsureBuffers(canvas);
                     SnapshotStroke();
-                    BlurRegion(active.width, active.height, 0, 0, active.width, active.height, _blurRadius, 1f);
-                    UploadAll(active);
+
+                    MaskBuffer top = _topBuffer;
+                    BlurRegion(top, 0, 0, top.Width, top.Texture.height, _blurRadius, 1f);
+                    UploadAll(top);
+
+                    // Los costados, cuadrante por cuadrante: un blur del atlas entero
+                    // mezclaria en los bordes caras que no tienen nada que ver.
+                    if (_sideBuffer.Pixels != null)
+                    {
+                        for (int face = 0; face < 4; face++)
+                        {
+                            RectInt quadrant = canvas.SideQuadrantPixels((PathCanvas.SideFace)face);
+                            BlurRegion(_sideBuffer, quadrant.x, quadrant.y, quadrant.width, quadrant.height, _blurRadius, 1f);
+                        }
+                        UploadAll(_sideBuffer);
+                    }
                 }
 
                 string clearLabel = _paintTarget == PaintTarget.Textura ? "Limpiar textura" : "Limpiar tinte";
                 if (GUILayout.Button(clearLabel))
                 {
-                    Texture2D active = ActiveMaskTexture(canvas);
                     string what = _paintTarget == PaintTarget.Textura ? "toda la textura pintada" : "todo el tinte pintado";
-                    if (EditorUtility.DisplayDialog(clearLabel, $"Se borra {what} de esta zona.", "Limpiar", "Cancelar"))
+                    if (EditorUtility.DisplayDialog(clearLabel, $"Se borra {what} de esta zona (arriba y costados).", "Limpiar", "Cancelar"))
                     {
-                        EnsurePixels(active);
+                        EnsureBuffers(canvas);
                         SnapshotStroke();
                         // Splat neutro = 0,0,0,0 (todo base). Tinte neutro = 128,128,128,0 (sin cambio).
                         Color32 neutral = _paintTarget == PaintTarget.Textura
                             ? new Color32(0, 0, 0, 0)
                             : new Color32(128, 128, 128, 0);
-                        for (int i = 0; i < _pixels.Length; i++)
+                        foreach (MaskBuffer buffer in new[] { _topBuffer, _sideBuffer })
                         {
-                            _pixels[i] = neutral;
+                            if (buffer.Pixels == null)
+                            {
+                                continue;
+                            }
+                            for (int i = 0; i < buffer.Pixels.Length; i++)
+                            {
+                                buffer.Pixels[i] = neutral;
+                            }
+                            UploadAll(buffer);
                         }
-                        UploadAll(active);
                     }
                 }
             }
@@ -556,24 +627,28 @@ namespace Gekko.PaintTools.EditorTools
 
             if (wasStroking && Brush.Enabled)
             {
-                EnsurePixels(ActiveMaskTexture(canvas));
+                EnsureBuffers(canvas);
                 SnapshotStroke();
             }
 
             switch (action)
             {
                 case SceneBrush.Action.Paint:
-                    ApplyStroke(canvas, point, _mode == BrushMode.Borrar);
+                    ApplyStroke(canvas, point, normal, _mode == BrushMode.Borrar);
                     break;
 
                 case SceneBrush.Action.Erase:
-                    ApplyStroke(canvas, point, true);
+                    ApplyStroke(canvas, point, normal, true);
                     break;
 
                 case SceneBrush.Action.StrokeEnded:
-                    if (_cachedMask != null)
+                    if (_topBuffer.Texture != null)
                     {
-                        EditorUtility.SetDirty(_cachedMask);
+                        EditorUtility.SetDirty(_topBuffer.Texture);
+                    }
+                    if (_sideBuffer.Texture != null)
+                    {
+                        EditorUtility.SetDirty(_sideBuffer.Texture);
                     }
                     // Se reempuja al terminar el trazo: si el asset de alguna mascara se
                     // reimporto (cualquier Reimport, o un refresh forzado), la referencia
@@ -654,9 +729,7 @@ namespace Gekko.PaintTools.EditorTools
 
             _paintTarget = PaintTarget.Textura;
             _activeSlot = slot;
-            _cachedMask = null;
-            _pixels = null;
-            _strokeBackup = null;
+            InvalidateBuffers();
 
             e.Use();
             Repaint();
@@ -701,43 +774,86 @@ namespace Gekko.PaintTools.EditorTools
         /// Aplica todos los puntos del evento (con interpolacion pueden ser varios) y
         /// recien despues sube el rectangulo tocado a la GPU, una sola vez.
         /// </summary>
-        private void ApplyStroke(PathCanvas canvas, Vector3 fallbackPoint, bool erase)
+        private void ApplyStroke(PathCanvas canvas, Vector3 fallbackPoint, Vector3 normal, bool erase)
         {
-            Texture2D mask = ActiveMaskTexture(canvas);
-            EnsurePixels(mask);
-            _hasDirty = false;
+            EnsureBuffers(canvas);
+            _topBuffer.HasDirty = false;
+            _sideBuffer.HasDirty = false;
 
+            // Los puntos interpolados usan la normal del evento: son el tramo entre dos
+            // posiciones del cursor, casi siempre sobre la misma cara.
             if (Brush.StrokePoints.Count == 0)
             {
-                StampAt(canvas, mask, fallbackPoint, erase);
+                StampAt(canvas, fallbackPoint, normal, erase);
             }
             else
             {
                 foreach (Vector3 stampPoint in Brush.StrokePoints)
                 {
-                    StampAt(canvas, mask, stampPoint, erase);
+                    StampAt(canvas, stampPoint, normal, erase);
                 }
             }
 
-            FlushUpload(mask);
+            FlushUpload(_topBuffer);
+            FlushUpload(_sideBuffer);
         }
 
-        private void StampAt(PathCanvas canvas, Texture2D mask, Vector3 worldPoint, bool erase)
+        /// <summary>
+        /// Un stamp en cada proyeccion que "ve" la superficie golpeada, segun su normal:
+        /// arriba para el piso, la cara lateral que corresponda para una pared, y las
+        /// dos en un bisel. Sin mascaras de costados todo va a la de arriba, como antes.
+        /// </summary>
+        private void StampAt(PathCanvas canvas, Vector3 worldPoint, Vector3 normal, bool erase)
         {
-            // Dos radios: en una zona no cuadrada, un circulo del mundo es una elipse en
-            // pixeles. Con un solo radio el pincel sale deformado.
-            Vector2 radiusPx = canvas.WorldRadiusToPixels(Brush.Radius);
+            bool hasSide = _sideBuffer.Pixels != null;
+
+            if (!hasSide || Mathf.Abs(normal.y) >= ProjectionThreshold)
+            {
+                // Dos radios: en una zona no cuadrada, un circulo del mundo es una elipse
+                // en pixeles. Con un solo radio el pincel sale deformado.
+                canvas.TryWorldToPixel(worldPoint, out Vector2 center);
+                Vector2 radiusPx = canvas.WorldRadiusToPixels(Brush.Radius);
+                var whole = new RectInt(0, 0, _topBuffer.Width, _topBuffer.Texture.height);
+                StampProjection(canvas, _topBuffer, center, radiusPx, whole, erase);
+            }
+
+            if (!hasSide)
+            {
+                return;
+            }
+
+            if (Mathf.Abs(normal.x) >= ProjectionThreshold)
+            {
+                StampSide(canvas, worldPoint, normal.x >= 0f ? PathCanvas.SideFace.PositiveX : PathCanvas.SideFace.NegativeX, erase);
+            }
+
+            if (Mathf.Abs(normal.z) >= ProjectionThreshold)
+            {
+                StampSide(canvas, worldPoint, normal.z >= 0f ? PathCanvas.SideFace.PositiveZ : PathCanvas.SideFace.NegativeZ, erase);
+            }
+        }
+
+        private void StampSide(PathCanvas canvas, Vector3 worldPoint, PathCanvas.SideFace face, bool erase)
+        {
+            canvas.TryWorldToSidePixel(worldPoint, face, out Vector2 center);
+            Vector2 radiusPx = canvas.WorldRadiusToSidePixels(Brush.Radius, face);
+
+            // Recortado al cuadrante de la cara: un pincel cerca del borde no tiene que
+            // derramar pintura sobre la cara vecina del atlas.
+            StampProjection(canvas, _sideBuffer, center, radiusPx, canvas.SideQuadrantPixels(face), erase);
+        }
+
+        private void StampProjection(PathCanvas canvas, MaskBuffer buffer, Vector2 center, Vector2 radiusPx, RectInt clip, bool erase)
+        {
             if (radiusPx.x < 0.5f || radiusPx.y < 0.5f)
             {
                 return;
             }
 
-            canvas.TryWorldToPixel(worldPoint, out Vector2 center);
-
-            int minX = Mathf.Max(0, Mathf.FloorToInt(center.x - radiusPx.x));
-            int maxX = Mathf.Min(mask.width - 1, Mathf.CeilToInt(center.x + radiusPx.x));
-            int minY = Mathf.Max(0, Mathf.FloorToInt(center.y - radiusPx.y));
-            int maxY = Mathf.Min(mask.height - 1, Mathf.CeilToInt(center.y + radiusPx.y));
+            int minX = Mathf.Max(clip.xMin, Mathf.FloorToInt(center.x - radiusPx.x));
+            int maxX = Mathf.Min(clip.xMax - 1, Mathf.CeilToInt(center.x + radiusPx.x));
+            int minY = Mathf.Max(clip.yMin, Mathf.FloorToInt(center.y - radiusPx.y));
+            int maxY = Mathf.Min(clip.yMax - 1, Mathf.CeilToInt(center.y + radiusPx.y));
 
             if (minX > maxX || minY > maxY)
             {
@@ -746,47 +862,48 @@ namespace Gekko.PaintTools.EditorTools
 
             if (_mode == BrushMode.Desenfocar && !erase)
             {
-                BlurRegion(mask.width, mask.height, minX, minY, maxX - minX + 1, maxY - minY + 1, _blurRadius, _strength);
+                BlurRegion(buffer, minX, minY, maxX - minX + 1, maxY - minY + 1, _blurRadius, _strength);
             }
             else if (_paintTarget == PaintTarget.Textura)
             {
-                StampTextureRegion(canvas, center, radiusPx, minX, minY, maxX, maxY, erase);
+                StampTextureRegion(canvas, buffer, center, radiusPx, minX, minY, maxX, maxY, erase);
             }
             else
             {
-                StampTintRegion(canvas, center, radiusPx, minX, minY, maxX, maxY, erase);
+                StampTintRegion(canvas, buffer, center, radiusPx, minX, minY, maxX, maxY, erase);
             }
 
-            MarkDirty(minX, minY, maxX, maxY);
+            MarkDirty(buffer, minX, minY, maxX, maxY);
         }
 
-        private void MarkDirty(int minX, int minY, int maxX, int maxY)
+        private static void MarkDirty(MaskBuffer buffer, int minX, int minY, int maxX, int maxY)
         {
-            if (!_hasDirty)
+            if (!buffer.HasDirty)
             {
-                _dirtyMinX = minX;
-                _dirtyMinY = minY;
-                _dirtyMaxX = maxX;
-                _dirtyMaxY = maxY;
-                _hasDirty = true;
+                buffer.DirtyMinX = minX;
+                buffer.DirtyMinY = minY;
+                buffer.DirtyMaxX = maxX;
+                buffer.DirtyMaxY = maxY;
+                buffer.HasDirty = true;
                 return;
             }
 
-            _dirtyMinX = Mathf.Min(_dirtyMinX, minX);
-            _dirtyMinY = Mathf.Min(_dirtyMinY, minY);
-            _dirtyMaxX = Mathf.Max(_dirtyMaxX, maxX);
-            _dirtyMaxY = Mathf.Max(_dirtyMaxY, maxY);
+            buffer.DirtyMinX = Mathf.Min(buffer.DirtyMinX, minX);
+            buffer.DirtyMinY = Mathf.Min(buffer.DirtyMinY, minY);
+            buffer.DirtyMaxX = Mathf.Max(buffer.DirtyMaxX, maxX);
+            buffer.DirtyMaxY = Mathf.Max(buffer.DirtyMaxY, maxY);
         }
 
-        private void FlushUpload(Texture2D mask)
+        private void FlushUpload(MaskBuffer buffer)
         {
-            if (!_hasDirty)
+            if (!buffer.HasDirty)
             {
                 return;
             }
 
-            UploadRegion(mask, _dirtyMinX, _dirtyMinY, _dirtyMaxX - _dirtyMinX + 1, _dirtyMaxY - _dirtyMinY + 1);
-            _hasDirty = false;
+            UploadRegion(buffer, buffer.DirtyMinX, buffer.DirtyMinY,
+                buffer.DirtyMaxX - buffer.DirtyMinX + 1, buffer.DirtyMaxY - buffer.DirtyMinY + 1);
+            buffer.HasDirty = false;
         }
 
         /// <summary>
@@ -796,7 +913,7 @@ namespace Gekko.PaintTools.EditorTools
         /// terreno. Borrar solo baja el canal activo: lo que libera vuelve a la base.
         /// </summary>
         private void StampTextureRegion(
-            PathCanvas canvas, Vector2 center, Vector2 radiusPx,
+            PathCanvas canvas, MaskBuffer buffer, Vector2 center, Vector2 radiusPx,
             int minX, int minY, int maxX, int maxY, bool erase)
         {
             LoadBrush(canvas);
@@ -805,7 +922,8 @@ namespace Gekko.PaintTools.EditorTools
             float cos = Mathf.Cos(angle);
             float sin = Mathf.Sin(angle);
 
-            int width = canvas.Mask.width;
+            Color32[] pixels = buffer.Pixels;
+            int width = buffer.Width;
             int activeChannel = _activeSlot - 1;
 
             for (int y = minY; y <= maxY; y++)
@@ -827,7 +945,7 @@ namespace Gekko.PaintTools.EditorTools
                     amount *= _strength;
 
                     int index = y * width + x;
-                    Color32 current = _pixels[index];
+                    Color32 current = pixels[index];
 
                     // Vector4 (struct en stack) y no un float[4] por pixel: con radios
                     // grandes eran decenas de miles de arrays por stamp, y el GC
@@ -862,7 +980,7 @@ namespace Gekko.PaintTools.EditorTools
                         }
                     }
 
-                    _pixels[index] = new Color32(
+                    pixels[index] = new Color32(
                         (byte)Mathf.RoundToInt(Mathf.Clamp01(weights.x) * 255f),
                         (byte)Mathf.RoundToInt(Mathf.Clamp01(weights.y) * 255f),
                         (byte)Mathf.RoundToInt(Mathf.Clamp01(weights.z) * 255f),
@@ -873,7 +991,7 @@ namespace Gekko.PaintTools.EditorTools
 
         /// <summary>Pinta color + fuerza en la tint mask. Logica identica a la version anterior de un solo mask.</summary>
         private void StampTintRegion(
-            PathCanvas canvas, Vector2 center, Vector2 radiusPx,
+            PathCanvas canvas, MaskBuffer buffer, Vector2 center, Vector2 radiusPx,
             int minX, int minY, int maxX, int maxY, bool erase)
         {
             LoadBrush(canvas);
@@ -882,7 +1000,8 @@ namespace Gekko.PaintTools.EditorTools
             float cos = Mathf.Cos(angle);
             float sin = Mathf.Sin(angle);
 
-            int width = canvas.TintMask.width;
+            Color32[] pixels = buffer.Pixels;
+            int width = buffer.Width;
 
             // El tinte se guarda a la mitad: el shader lo multiplica por 2, asi blanco
             // vuelve a 1.0 y no cambia nada.
@@ -908,7 +1027,7 @@ namespace Gekko.PaintTools.EditorTools
                     amount *= _strength;
 
                     int index = y * width + x;
-                    Color32 current = _pixels[index];
+                    Color32 current = pixels[index];
 
                     float strength01 = current.a / 255f;
                     Color color = new Color(current.r / 255f, current.g / 255f, current.b / 255f);
@@ -924,7 +1043,7 @@ namespace Gekko.PaintTools.EditorTools
                         color = Color.Lerp(color, tint, amount);
                     }
 
-                    _pixels[index] = new Color32(
+                    pixels[index] = new Color32(
                         (byte)Mathf.RoundToInt(Mathf.Clamp01(color.r) * 255f),
                         (byte)Mathf.RoundToInt(Mathf.Clamp01(color.g) * 255f),
                         (byte)Mathf.RoundToInt(Mathf.Clamp01(color.b) * 255f),
@@ -938,14 +1057,17 @@ namespace Gekko.PaintTools.EditorTools
         /// desenfoque no se retroalimente con los pixeles ya procesados de la misma
         /// pasada, que es lo que produce el arrastre direccional tipico.
         /// </summary>
-        private void BlurRegion(int textureWidth, int textureHeight,
+        private static void BlurRegion(MaskBuffer buffer,
             int regionX, int regionY, int regionWidth, int regionHeight,
             int radius, float strength)
         {
+            Color32[] pixels = buffer.Pixels;
+            int textureWidth = buffer.Width;
+
             var source = new Color32[regionWidth * regionHeight];
             for (int y = 0; y < regionHeight; y++)
             {
-                Array.Copy(_pixels, (regionY + y) * textureWidth + regionX,
+                Array.Copy(pixels, (regionY + y) * textureWidth + regionX,
                     source, y * regionWidth, regionWidth);
             }
 
@@ -986,9 +1108,9 @@ namespace Gekko.PaintTools.EditorTools
                     }
 
                     int index = (regionY + y) * textureWidth + (regionX + x);
-                    Color32 original = _pixels[index];
+                    Color32 original = pixels[index];
 
-                    _pixels[index] = new Color32(
+                    pixels[index] = new Color32(
                         (byte)Mathf.Lerp(original.r, rSum / (float)samples, strength),
                         (byte)Mathf.Lerp(original.g, gSum / (float)samples, strength),
                         (byte)Mathf.Lerp(original.b, bSum / (float)samples, strength),
@@ -1084,42 +1206,82 @@ namespace Gekko.PaintTools.EditorTools
             return _paintTarget == PaintTarget.Textura ? canvas.Mask : canvas.TintMask;
         }
 
-        private void EnsurePixels(Texture2D activeMask)
+        /// <summary>La mascara de costados que corresponde a la tab activa, o null si el canvas no tiene.</summary>
+        private Texture2D ActiveSideMaskTexture(PathCanvas canvas)
         {
-            if (_cachedMask == activeMask && _pixels != null)
+            if (!canvas.HasSideMasks)
+            {
+                return null;
+            }
+            return _paintTarget == PaintTarget.Textura ? canvas.SideMask : canvas.SideTintMask;
+        }
+
+        private void EnsureBuffers(PathCanvas canvas)
+        {
+            EnsurePixels(_topBuffer, ActiveMaskTexture(canvas));
+            EnsurePixels(_sideBuffer, ActiveSideMaskTexture(canvas));
+        }
+
+        private static void EnsurePixels(MaskBuffer buffer, Texture2D mask)
+        {
+            if (buffer.Texture == mask && (mask == null || buffer.Pixels != null))
             {
                 return;
             }
 
-            _cachedMask = activeMask;
-            _pixels = activeMask != null ? activeMask.GetPixels32() : null;
-            _strokeBackup = null;
+            buffer.Texture = mask;
+            buffer.Pixels = mask != null ? mask.GetPixels32() : null;
+            buffer.Backup = null;
+            buffer.HasDirty = false;
+        }
+
+        private void InvalidateBuffers()
+        {
+            foreach (MaskBuffer buffer in new[] { _topBuffer, _sideBuffer })
+            {
+                buffer.Texture = null;
+                buffer.Pixels = null;
+                buffer.Backup = null;
+                buffer.HasDirty = false;
+            }
         }
 
         private void SnapshotStroke()
         {
-            if (_pixels == null)
+            foreach (MaskBuffer buffer in new[] { _topBuffer, _sideBuffer })
             {
-                return;
-            }
+                if (buffer.Pixels == null)
+                {
+                    continue;
+                }
 
-            _strokeBackup ??= new Color32[_pixels.Length];
-            Array.Copy(_pixels, _strokeBackup, _pixels.Length);
+                if (buffer.Backup == null || buffer.Backup.Length != buffer.Pixels.Length)
+                {
+                    buffer.Backup = new Color32[buffer.Pixels.Length];
+                }
+                Array.Copy(buffer.Pixels, buffer.Backup, buffer.Pixels.Length);
+            }
         }
 
         private void RestoreStrokeBackup()
         {
-            if (_strokeBackup == null || _pixels == null || _cachedMask == null)
+            foreach (MaskBuffer buffer in new[] { _topBuffer, _sideBuffer })
             {
-                return;
-            }
+                if (buffer.Backup == null || buffer.Pixels == null || buffer.Texture == null)
+                {
+                    continue;
+                }
 
-            Array.Copy(_strokeBackup, _pixels, _pixels.Length);
-            UploadAll(_cachedMask);
+                Array.Copy(buffer.Backup, buffer.Pixels, buffer.Pixels.Length);
+                UploadAll(buffer);
+            }
         }
 
-        private void UploadRegion(Texture2D mask, int x, int y, int width, int height)
+        private static void UploadRegion(MaskBuffer buffer, int x, int y, int width, int height)
         {
+            Texture2D mask = buffer.Texture;
+            Color32[] pixels = buffer.Pixels;
+
             if (mask.format == TextureFormat.RGBA32)
             {
                 // Escribe directo en la memoria CPU de la textura, fila por fila, sin el
@@ -1129,7 +1291,7 @@ namespace Gekko.PaintTools.EditorTools
                 for (int row = 0; row < height; row++)
                 {
                     int offset = (y + row) * mask.width + x;
-                    NativeArray<Color32>.Copy(_pixels, offset, raw, offset, width);
+                    NativeArray<Color32>.Copy(pixels, offset, raw, offset, width);
                 }
             }
             else
@@ -1137,7 +1299,7 @@ namespace Gekko.PaintTools.EditorTools
                 var block = new Color32[width * height];
                 for (int row = 0; row < height; row++)
                 {
-                    Array.Copy(_pixels, (y + row) * mask.width + x, block, row * width, width);
+                    Array.Copy(pixels, (y + row) * mask.width + x, block, row * width, width);
                 }
 
                 mask.SetPixels32(x, y, width, height, block);
@@ -1146,11 +1308,11 @@ namespace Gekko.PaintTools.EditorTools
             mask.Apply(false);
         }
 
-        private void UploadAll(Texture2D mask)
+        private static void UploadAll(MaskBuffer buffer)
         {
-            mask.SetPixels32(_pixels);
-            mask.Apply(false);
-            EditorUtility.SetDirty(mask);
+            buffer.Texture.SetPixels32(buffer.Pixels);
+            buffer.Texture.Apply(false);
+            EditorUtility.SetDirty(buffer.Texture);
         }
 
         // Se guarda como PNG y no como Texture2D nativo (AssetDatabase.CreateAsset)
@@ -1200,10 +1362,50 @@ namespace Gekko.PaintTools.EditorTools
             canvas.SetTintMask(tint);
             EditorUtility.SetDirty(canvas);
 
-            _cachedMask = null;
-            _pixels = null;
+            // Las de costados salen de una: sin ellas, pintar una pared la estira de arriba
+            // a abajo, y es facil no darse cuenta de que hay que crearlas aparte.
+            if (!canvas.HasSideMasks)
+            {
+                CreateSideMasks(canvas, Mathf.Min(4096, resolution * 2));
+            }
+
+            InvalidateBuffers();
 
             Debug.Log($"[PathCanvas] Máscaras creadas: splat en {AssetDatabase.GetAssetPath(splat)}, " +
+                      $"tinte en {AssetDatabase.GetAssetPath(tint)}.", canvas);
+        }
+
+        /// <summary>Crea el atlas de costados (splat + tinte), con los mismos neutros que las de arriba.</summary>
+        private void CreateSideMasks(PathCanvas canvas, int resolution)
+        {
+            if (!Directory.Exists(DataFolder))
+            {
+                Directory.CreateDirectory(DataFolder);
+                AssetDatabase.Refresh();
+            }
+
+            Scene scene = canvas.gameObject.scene;
+            string sceneName = string.IsNullOrEmpty(scene.name) ? "Untitled" : scene.name;
+
+            Texture2D splat = GetOrCreateMask(
+                canvas, $"{DataFolder}/{sceneName}_{canvas.name}_SideSplatMask.png", resolution,
+                new Color32(0, 0, 0, 0), m => m == canvas.SideMask);
+
+            Texture2D tint = GetOrCreateMask(
+                canvas, $"{DataFolder}/{sceneName}_{canvas.name}_SideTintMask.png", resolution,
+                new Color32(128, 128, 128, 0), m => m == canvas.SideTintMask);
+
+            Undo.RecordObject(canvas, "Crear máscaras de costados");
+            canvas.SetSideMasks(splat, tint);
+            EditorUtility.SetDirty(canvas);
+
+            // Sin esto, recien creadas ya estarian "rotas": el alto por defecto no tiene
+            // por que cubrir las paredes, y con triplanar apagado se ven estiradas igual.
+            PathCanvasChecks.PrepareForSides(canvas);
+
+            InvalidateBuffers();
+
+            Debug.Log($"[PathCanvas] Máscaras de costados creadas: splat en {AssetDatabase.GetAssetPath(splat)}, " +
                       $"tinte en {AssetDatabase.GetAssetPath(tint)}.", canvas);
         }
 
@@ -1265,7 +1467,7 @@ namespace Gekko.PaintTools.EditorTools
                     continue;
                 }
 
-                if (other.Mask == mask || other.TintMask == mask)
+                if (other.Mask == mask || other.TintMask == mask || other.SideMask == mask || other.SideTintMask == mask)
                 {
                     return true;
                 }

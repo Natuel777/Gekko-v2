@@ -16,6 +16,12 @@ namespace Gekko.PaintTools
     /// El precio: las mascaras son planas en XZ, asi que dos pisos apilados en la misma
     /// vertical las comparten. Para eso se usa UN CANVAS POR PISO, cada uno con su
     /// textura y sus renderers asignados.
+    ///
+    /// Costados: una proyeccion cenital en una pared vertical hace que TODA la altura
+    /// lea el mismo pixel, asi que pintar ahi deja rayas estiradas. Para las paredes hay
+    /// un segundo par de mascaras (splat + tinte de costados), proyectadas de lado, en
+    /// un atlas de 4 cuadrantes: +X, -X, +Z, -Z. Asi dos paredes opuestas no comparten
+    /// pintura. El shader mezcla la mascara de arriba y la de costados segun la normal.
     /// </summary>
     [ExecuteAlways]
     public class PathCanvas : MonoBehaviour
@@ -24,10 +30,25 @@ namespace Gekko.PaintTools
         private static readonly int TintMaskId = Shader.PropertyToID("_TintMask");
         private static readonly int CanvasMinId = Shader.PropertyToID("_PathCanvasMin");
         private static readonly int CanvasSizeId = Shader.PropertyToID("_PathCanvasSize");
+        private static readonly int SideMaskId = Shader.PropertyToID("_SideMask");
+        private static readonly int SideTintMaskId = Shader.PropertyToID("_SideTintMask");
+        private static readonly int SideEnabledId = Shader.PropertyToID("_PathCanvasSideEnabled");
+
+        /// <summary>Cuadrantes del atlas de costados, segun hacia donde mira la pared. Mismo orden que en el shader.</summary>
+        public enum SideFace
+        {
+            PositiveX = 0,
+            NegativeX = 1,
+            PositiveZ = 2,
+            NegativeZ = 3,
+        }
 
         [Header("Zona")]
         [Tooltip("Tamano de la zona pintable en X y Z, en unidades del mundo. El centro es este transform.")]
         [SerializeField] private Vector2 _size = new Vector2(60f, 60f);
+
+        [Tooltip("Alto de la zona para los costados, en unidades del mundo. Centrado en la Y de este transform: tiene que cubrir las paredes que se quieran pintar.")]
+        [SerializeField] private float _height = 30f;
 
         [Header("Mascaras")]
         [Tooltip("Splat mask: que textura se ve. RGBA = peso de Tex1/Tex2/Tex3/Tex4. La crea el editor si falta.")]
@@ -35,6 +56,12 @@ namespace Gekko.PaintTools
 
         [Tooltip("Tint mask: que tinte se pinta encima. RGB = color (neutro = mitad), A = fuerza. La crea el editor junto con la splat mask.")]
         [SerializeField] private Texture2D _tintMask;
+
+        [Tooltip("Splat mask de los costados (paredes). Atlas de 4 cuadrantes: +X, -X, +Z, -Z. Opcional: sin ella las paredes usan la mascara de arriba.")]
+        [SerializeField] private Texture2D _sideMask;
+
+        [Tooltip("Tint mask de los costados. Mismo atlas que la splat mask de costados.")]
+        [SerializeField] private Texture2D _sideTintMask;
 
         [Tooltip("Set de pinceles a usar al pintar. Es data de autoria: solo la lee el editor.")]
         [SerializeField] private PathBrushSet _brushSet;
@@ -49,13 +76,20 @@ namespace Gekko.PaintTools
         private bool _hasAppliedOnce;
         private int _appliedMaskId;
         private int _appliedTintMaskId;
+        private int _appliedSideMaskId;
+        private int _appliedSideTintMaskId;
         private int _appliedTargetCount;
         private Vector2 _appliedSize;
+        private float _appliedHeight;
         private Vector3 _appliedPosition;
 
         public Texture2D Mask => _mask;
         public Texture2D TintMask => _tintMask;
+        public Texture2D SideMask => _sideMask;
+        public Texture2D SideTintMask => _sideTintMask;
+        public bool HasSideMasks => _sideMask != null && _sideTintMask != null;
         public Vector2 Size => _size;
+        public float Height => _height;
         public PathBrushSet BrushSet => _brushSet;
         public Renderer[] TargetRenderers => _targetRenderers;
 
@@ -68,6 +102,9 @@ namespace Gekko.PaintTools
                 return new Vector2(center.x - _size.x * 0.5f, center.z - _size.y * 0.5f);
             }
         }
+
+        /// <summary>Y mas baja de la zona de costados.</summary>
+        public float WorldMinY => transform.position.y - _height * 0.5f;
 
         /// <summary>
         /// Texels por unidad del mundo en cada eje. Si la zona no es cuadrada, los dos
@@ -98,6 +135,13 @@ namespace Gekko.PaintTools
             Apply();
         }
 
+        public void SetSideMasks(Texture2D sideMask, Texture2D sideTintMask)
+        {
+            _sideMask = sideMask;
+            _sideTintMask = sideTintMask;
+            Apply();
+        }
+
         private void OnEnable()
         {
             Apply();
@@ -107,6 +151,7 @@ namespace Gekko.PaintTools
         {
             _size.x = Mathf.Max(1f, _size.x);
             _size.y = Mathf.Max(1f, _size.y);
+            _height = Mathf.Max(1f, _height);
             Apply();
         }
 
@@ -127,13 +172,18 @@ namespace Gekko.PaintTools
         {
             int maskId = _mask != null ? _mask.GetInstanceID() : 0;
             int tintMaskId = _tintMask != null ? _tintMask.GetInstanceID() : 0;
+            int sideMaskId = _sideMask != null ? _sideMask.GetInstanceID() : 0;
+            int sideTintMaskId = _sideTintMask != null ? _sideTintMask.GetInstanceID() : 0;
             int targetCount = _targetRenderers != null ? _targetRenderers.Length : 0;
 
             if (!_hasAppliedOnce
                 || maskId != _appliedMaskId
                 || tintMaskId != _appliedTintMaskId
+                || sideMaskId != _appliedSideMaskId
+                || sideTintMaskId != _appliedSideTintMaskId
                 || targetCount != _appliedTargetCount
                 || _appliedSize != _size
+                || _appliedHeight != _height
                 || _appliedPosition != transform.position)
             {
                 return true;
@@ -170,7 +220,10 @@ namespace Gekko.PaintTools
                 target.GetPropertyBlock(_propertyBlock);
                 bool splatDangling = _mask != null && _propertyBlock.GetTexture(SplatMaskId) == null;
                 bool tintDangling = _tintMask != null && _propertyBlock.GetTexture(TintMaskId) == null;
-                return splatDangling || tintDangling;
+                bool sideDangling = HasSideMasks
+                                    && (_propertyBlock.GetTexture(SideMaskId) == null
+                                        || _propertyBlock.GetTexture(SideTintMaskId) == null);
+                return splatDangling || tintDangling || sideDangling;
             }
 
             return false;
@@ -195,11 +248,15 @@ namespace Gekko.PaintTools
             _hasAppliedOnce = true;
             _appliedMaskId = _mask != null ? _mask.GetInstanceID() : 0;
             _appliedTintMaskId = _tintMask != null ? _tintMask.GetInstanceID() : 0;
+            _appliedSideMaskId = _sideMask != null ? _sideMask.GetInstanceID() : 0;
+            _appliedSideTintMaskId = _sideTintMask != null ? _sideTintMask.GetInstanceID() : 0;
             _appliedTargetCount = _targetRenderers.Length;
             _appliedSize = _size;
+            _appliedHeight = _height;
             _appliedPosition = transform.position;
 
             Vector2 min = WorldMin;
+            bool hasSide = HasSideMasks;
 
             foreach (Renderer target in _targetRenderers)
             {
@@ -217,8 +274,19 @@ namespace Gekko.PaintTools
                 {
                     _propertyBlock.SetTexture(TintMaskId, _tintMask);
                 }
-                _propertyBlock.SetVector(CanvasMinId, new Vector4(min.x, min.y, 0f, 0f));
-                _propertyBlock.SetVector(CanvasSizeId, new Vector4(_size.x, _size.y, 0f, 0f));
+                if (hasSide)
+                {
+                    _propertyBlock.SetTexture(SideMaskId, _sideMask);
+                    _propertyBlock.SetTexture(SideTintMaskId, _sideTintMask);
+                }
+                // El flag se escribe siempre y no solo cuando hay mascaras de costados: el
+                // MPB conserva lo que tenia, y si se sacaran las mascaras el shader
+                // seguiria leyendo las viejas.
+                _propertyBlock.SetFloat(SideEnabledId, hasSide ? 1f : 0f);
+
+                // z lleva el rango vertical, que solo usan los costados.
+                _propertyBlock.SetVector(CanvasMinId, new Vector4(min.x, min.y, WorldMinY, 0f));
+                _propertyBlock.SetVector(CanvasSizeId, new Vector4(_size.x, _size.y, _height, 0f));
                 target.SetPropertyBlock(_propertyBlock);
             }
         }
@@ -252,11 +320,71 @@ namespace Gekko.PaintTools
             return _mask == null ? Vector2.zero : worldRadius * TexelsPerUnit;
         }
 
+        /// <summary>Rectangulo en pixeles del cuadrante de una cara dentro del atlas de costados.</summary>
+        public RectInt SideQuadrantPixels(SideFace face)
+        {
+            if (_sideMask == null)
+            {
+                return new RectInt(0, 0, 0, 0);
+            }
+
+            int halfWidth = _sideMask.width / 2;
+            int halfHeight = _sideMask.height / 2;
+            int index = (int)face;
+            return new RectInt((index % 2) * halfWidth, (index / 2) * halfHeight, halfWidth, halfHeight);
+        }
+
+        /// <summary>
+        /// Convierte una posicion del mundo a pixel del atlas de costados, en la cara
+        /// dada. Las caras X usan (z, y) y las caras Z usan (x, y): la misma proyeccion
+        /// que hace el shader.
+        /// </summary>
+        public bool TryWorldToSidePixel(Vector3 worldPosition, SideFace face, out Vector2 pixel)
+        {
+            pixel = Vector2.zero;
+            if (_sideMask == null)
+            {
+                return false;
+            }
+
+            Vector2 min = WorldMin;
+            bool xFace = face == SideFace.PositiveX || face == SideFace.NegativeX;
+            float u = xFace
+                ? (worldPosition.z - min.y) / _size.y
+                : (worldPosition.x - min.x) / _size.x;
+            float v = (worldPosition.y - WorldMinY) / _height;
+
+            RectInt quadrant = SideQuadrantPixels(face);
+            pixel = new Vector2(quadrant.x + u * quadrant.width, quadrant.y + v * quadrant.height);
+            return u >= 0f && u <= 1f && v >= 0f && v <= 1f;
+        }
+
+        /// <summary>Como <see cref="WorldRadiusToPixels"/>, pero en un cuadrante del atlas de costados.</summary>
+        public Vector2 WorldRadiusToSidePixels(float worldRadius, SideFace face)
+        {
+            if (_sideMask == null)
+            {
+                return Vector2.zero;
+            }
+
+            RectInt quadrant = SideQuadrantPixels(face);
+            bool xFace = face == SideFace.PositiveX || face == SideFace.NegativeX;
+            float horizontal = xFace ? _size.y : _size.x;
+            return new Vector2(worldRadius * quadrant.width / horizontal, worldRadius * quadrant.height / _height);
+        }
+
         private void OnDrawGizmosSelected()
         {
             Vector3 center = transform.position;
             Gizmos.color = new Color(1f, 0.85f, 0.4f, 0.9f);
             Gizmos.DrawWireCube(center, new Vector3(_size.x, 0.05f, _size.y));
+
+            if (HasSideMasks)
+            {
+                // Volumen que cubren las mascaras de costados.
+                Gizmos.color = new Color(1f, 0.85f, 0.4f, 0.35f);
+                Gizmos.DrawWireCube(center, new Vector3(_size.x, _height, _size.y));
+            }
         }
     }
 }
