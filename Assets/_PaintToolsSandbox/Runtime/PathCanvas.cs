@@ -4,21 +4,24 @@ namespace Gekko.PaintTools
 {
     /// <summary>
     /// Una zona pintable de camino. Define un rectangulo del mundo (visto desde arriba)
-    /// y la textura de mascara que lo cubre.
+    /// y las DOS mascaras que lo cubren: una splat mask (que textura se ve) y una tint
+    /// mask (que tinte se le aplica encima). Van separadas para que pintar textura y
+    /// pintar tinte no compitan por los mismos canales RGBA.
     ///
     /// Por que proyectada desde arriba y no en UV de la malla: asi el sistema no depende
     /// ni de la cantidad de vertices ni de que la malla tenga UVs limpias y sin
     /// solapamientos. Sobre las mallas del Spline Terrain, que no garantizan ninguna de
     /// las dos cosas, es la unica opcion que funciona sin retocar nada.
     ///
-    /// El precio: la mascara es plana en XZ, asi que dos pisos apilados en la misma
-    /// vertical comparten mascara. Para eso se usa UN CANVAS POR PISO, cada uno con su
+    /// El precio: las mascaras son planas en XZ, asi que dos pisos apilados en la misma
+    /// vertical las comparten. Para eso se usa UN CANVAS POR PISO, cada uno con su
     /// textura y sus renderers asignados.
     /// </summary>
     [ExecuteAlways]
     public class PathCanvas : MonoBehaviour
     {
-        private static readonly int MaskId = Shader.PropertyToID("_PathMask");
+        private static readonly int SplatMaskId = Shader.PropertyToID("_SplatMask");
+        private static readonly int TintMaskId = Shader.PropertyToID("_TintMask");
         private static readonly int CanvasMinId = Shader.PropertyToID("_PathCanvasMin");
         private static readonly int CanvasSizeId = Shader.PropertyToID("_PathCanvasSize");
 
@@ -26,15 +29,18 @@ namespace Gekko.PaintTools
         [Tooltip("Tamano de la zona pintable en X y Z, en unidades del mundo. El centro es este transform.")]
         [SerializeField] private Vector2 _size = new Vector2(60f, 60f);
 
-        [Header("Mascara")]
-        [Tooltip("Textura de mascara. La crea el editor si falta. RGB = tinte pintado, A = cobertura.")]
+        [Header("Mascaras")]
+        [Tooltip("Splat mask: que textura se ve. RGBA = peso de Tex1/Tex2/Tex3/Tex4. La crea el editor si falta.")]
         [SerializeField] private Texture2D _mask;
+
+        [Tooltip("Tint mask: que tinte se pinta encima. RGB = color (neutro = mitad), A = fuerza. La crea el editor junto con la splat mask.")]
+        [SerializeField] private Texture2D _tintMask;
 
         [Tooltip("Set de pinceles a usar al pintar. Es data de autoria: solo la lee el editor.")]
         [SerializeField] private PathBrushSet _brushSet;
 
         [Header("Destino")]
-        [Tooltip("Los renderers del piso que tienen que mostrar el camino. Reciben la mascara por MaterialPropertyBlock.")]
+        [Tooltip("Los renderers del piso que tienen que mostrar el camino. Reciben las mascaras por MaterialPropertyBlock.")]
         [SerializeField] private Renderer[] _targetRenderers;
 
         private MaterialPropertyBlock _propertyBlock;
@@ -42,13 +48,16 @@ namespace Gekko.PaintTools
         // Estado de lo ultimo que se empujo, para no reescribir el MPB cada frame.
         private bool _hasAppliedOnce;
         private int _appliedMaskId;
+        private int _appliedTintMaskId;
         private int _appliedTargetCount;
         private Vector2 _appliedSize;
         private Vector3 _appliedPosition;
 
         public Texture2D Mask => _mask;
+        public Texture2D TintMask => _tintMask;
         public Vector2 Size => _size;
         public PathBrushSet BrushSet => _brushSet;
+        public Renderer[] TargetRenderers => _targetRenderers;
 
         /// <summary>Esquina inferior del rectangulo en XZ del mundo.</summary>
         public Vector2 WorldMin
@@ -83,6 +92,12 @@ namespace Gekko.PaintTools
             Apply();
         }
 
+        public void SetTintMask(Texture2D tintMask)
+        {
+            _tintMask = tintMask;
+            Apply();
+        }
+
         private void OnEnable()
         {
             Apply();
@@ -111,10 +126,12 @@ namespace Gekko.PaintTools
         private bool HasChangedSinceLastApply()
         {
             int maskId = _mask != null ? _mask.GetInstanceID() : 0;
+            int tintMaskId = _tintMask != null ? _tintMask.GetInstanceID() : 0;
             int targetCount = _targetRenderers != null ? _targetRenderers.Length : 0;
 
             if (!_hasAppliedOnce
                 || maskId != _appliedMaskId
+                || tintMaskId != _appliedTintMaskId
                 || targetCount != _appliedTargetCount
                 || _appliedSize != _size
                 || _appliedPosition != transform.position)
@@ -126,18 +143,19 @@ namespace Gekko.PaintTools
         }
 
         /// <summary>
-        /// Detecta el caso que ningun contador de cambios ve: la mascara se reimporto,
-        /// el Texture2D viejo se destruyo, y adentro del MaterialPropertyBlock quedo una
-        /// referencia muerta. El bloque sigue diciendo que tiene la propiedad, pero la
-        /// textura es null, asi que el shader cae al valor del material y el camino
-        /// desaparece de golpe SIN ningun error en consola.
+        /// Detecta el caso que ningun contador de cambios ve: alguna mascara se
+        /// reimporto, el Texture2D viejo se destruyo, y adentro del
+        /// MaterialPropertyBlock quedo una referencia muerta. El bloque sigue diciendo
+        /// que tiene la propiedad, pero la textura es null, asi que el shader cae al
+        /// valor del material y el camino desaparece de golpe SIN ningun error en
+        /// consola.
         ///
         /// Se revisa un solo renderer por frame: alcanza, porque Apply() los escribe a
         /// todos juntos, y GetPropertyBlock sobre un bloque cacheado no aloca.
         /// </summary>
         private bool HasDanglingMask()
         {
-            if (_mask == null || _propertyBlock == null || _targetRenderers == null)
+            if (_propertyBlock == null || _targetRenderers == null)
             {
                 return false;
             }
@@ -150,14 +168,16 @@ namespace Gekko.PaintTools
                 }
 
                 target.GetPropertyBlock(_propertyBlock);
-                return _propertyBlock.GetTexture(MaskId) == null;
+                bool splatDangling = _mask != null && _propertyBlock.GetTexture(SplatMaskId) == null;
+                bool tintDangling = _tintMask != null && _propertyBlock.GetTexture(TintMaskId) == null;
+                return splatDangling || tintDangling;
             }
 
             return false;
         }
 
         /// <summary>
-        /// Empuja la mascara y las coordenadas de la zona a los renderers asignados.
+        /// Empuja las mascaras y las coordenadas de la zona a los renderers asignados.
         ///
         /// Se usa MaterialPropertyBlock y no propiedades del material para que varios
         /// canvas puedan compartir el mismo material sin pisarse. El costo es que esos
@@ -165,7 +185,7 @@ namespace Gekko.PaintTools
         /// </summary>
         public void Apply()
         {
-            if (_targetRenderers == null || _targetRenderers.Length == 0 || _mask == null)
+            if (_targetRenderers == null || _targetRenderers.Length == 0 || (_mask == null && _tintMask == null))
             {
                 return;
             }
@@ -173,7 +193,8 @@ namespace Gekko.PaintTools
             _propertyBlock ??= new MaterialPropertyBlock();
 
             _hasAppliedOnce = true;
-            _appliedMaskId = _mask.GetInstanceID();
+            _appliedMaskId = _mask != null ? _mask.GetInstanceID() : 0;
+            _appliedTintMaskId = _tintMask != null ? _tintMask.GetInstanceID() : 0;
             _appliedTargetCount = _targetRenderers.Length;
             _appliedSize = _size;
             _appliedPosition = transform.position;
@@ -188,7 +209,14 @@ namespace Gekko.PaintTools
                 }
 
                 target.GetPropertyBlock(_propertyBlock);
-                _propertyBlock.SetTexture(MaskId, _mask);
+                if (_mask != null)
+                {
+                    _propertyBlock.SetTexture(SplatMaskId, _mask);
+                }
+                if (_tintMask != null)
+                {
+                    _propertyBlock.SetTexture(TintMaskId, _tintMask);
+                }
                 _propertyBlock.SetVector(CanvasMinId, new Vector4(min.x, min.y, 0f, 0f));
                 _propertyBlock.SetVector(CanvasSizeId, new Vector4(_size.x, _size.y, 0f, 0f));
                 target.SetPropertyBlock(_propertyBlock);

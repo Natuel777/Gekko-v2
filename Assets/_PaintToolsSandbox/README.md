@@ -26,12 +26,53 @@ Assets/_PaintToolsSandbox/
 ## Cómo usarlo
 
 1. `Tools > Gekko > Paint Tools > Crear material de piso con camino` → asignale **tu**
-   textura base y **tu** textura de camino.
+   Textura base y **tu** Textura 1. Si querés más de una textura pintable en la misma
+   zona, tildá `Textura 2 activa` (y 3/4) y asignale su textura — ver más abajo.
 2. Poné ese material en los renderers del piso.
 3. `Tools > Gekko > Paint Tools > Crear zona de camino` → ubicalo sobre la zona, ajustá
    el tamaño, y arrastrá los renderers del piso a `Target Renderers`.
-4. **Crear máscara** (elegí resolución).
-5. **Activar modo pintura** y pintar.
+4. **Crear máscaras** (elegí resolución) — crea las DOS máscaras de la zona (ver abajo).
+5. **Activar modo pintura**, elegí la pestaña **Pintar textura** o **Pintar tinte**, y
+   pintá.
+
+> **El PathCanvas se crea en (0,0,0).** Si tu piso no está en el origen, movelo (el
+> Transform, no un campo del inspector) hasta que el gizmo amarillo (`Size`) quede
+> centrado sobre el piso — si no, el pincel raycastea bien contra el piso pero pinta
+> en una zona del mundo que no es la que ves, y desde afuera parece que "no pasa nada"
+> al pintar. Encuadrá el PathCanvas junto con el piso en la Scene View para confirmar
+> que se solapan antes de pintar.
+
+## Varias texturas pintables en la MISMA zona (piedra, tierra, arena...)
+
+El material soporta hasta **4 texturas pintables** además de la base de fondo (5 en
+total). No es un tinte — son texturas de verdad, cada una con su propio tiling y color:
+
+- **Textura 1** siempre está disponible (es la mínima, no tiene toggle).
+- **Textura 2/3/4** son opcionales: tildá `Textura N activa` en el material y asignale
+  su textura. Apagada, el shader ni siquiera declara ese sampler — no cuesta nada.
+
+Al pintar, elegí la pestaña **Pintar textura** (arriba del pincel) y clickeá el slot que
+querés en la paleta (con su miniatura), o usá los **shortcuts `1`/`2`/`3`/`4`** con el
+pincel activo para cambiar sin soltar el mouse. Un indicador fijo en la esquina de la
+Scene View siempre te dice **con cuál estás pintando ahora**.
+
+Internamente esto es una **splat mask**: cada canal (R/G/B/A) guarda cuánto de la
+Textura 1/2/3/4 hay en ese píxel, igual que un splatmap de terreno. Pintar una textura
+nueva sobre una zona ya pintada la reemplaza de a poco (no las suma sin límite); borrar
+libera peso de vuelta a la base. El total pintado sigue usando el mismo truco de borde
+con ruido que antes, así que el límite entre "hay algo pintado" y "es la base" se sigue
+viendo prolijo aunque haya 3 o 4 texturas mezclándose.
+
+## Variantes de material completas (clonar)
+
+Si en cambio lo que querés es un material DISTINTO con sus propios valores de tiling/
+borde/luz (no solo otra textura en el mismo slot), clonalo:
+
+1. Seleccioná en el Project el material que ya tengas bien ajustado.
+2. `Tools > Gekko > Paint Tools > Clonar variante de camino (con nuevas texturas)`.
+3. En el clon, cambiale las texturas que quieras — el resto de los valores (tiling,
+   borde, triplanar, luz) queda igual.
+4. Usá ese clon en un `PathCanvas` nuevo para esa zona.
 
 ## Por qué no le importa la cantidad de vértices
 
@@ -80,14 +121,57 @@ minuto cero.
 
 `Rotación al azar` gira el stamp en cada aplicación para que no se note repetido.
 
-## El color
+## Controles y fluidez del pincel
 
-La máscara guarda **RGB = tinte** y **A = cobertura**. El tinte multiplica al color del
-material del camino, y **blanco = sin cambio** — así podés pintar zonas más rojizas,
-más pálidas o más saturadas del mismo camino sin cambiar de material.
+| | |
+|---|---|
+| Click y arrastrar | pintar |
+| Shift + click | borrar |
+| Ctrl + rueda, o `[` `]` | radio (proporcional: ~15% por paso) |
+| `1`-`4` | textura activa |
+| Esc | salir del modo pintura |
+
+- **Trazo continuo**: si movés el mouse rápido, el pincel rellena el tramo entre dos
+  eventos en vez de dejar puntos sueltos.
+- **Dureza** (pincel circular por defecto): 0 = caída suave desde el centro, alta = disco
+  casi pleno. `Fuerza` arranca en 1, así una pasada ya pinta a fondo.
+- **Solo sobre el piso destino** (tildado por defecto): el rayo ignora arboles, rocas y
+  cualquier collider que no sea uno de los `Target Renderers` del PathCanvas, así no
+  pinta en la copa de un árbol ni queda bloqueado por props. Destildalo si tu piso no
+  tiene collider propio entre los targets.
+- Rendimiento: la subida a la GPU es una por evento (no una por stamp), sin alocaciones
+  por píxel, y el cursor ya no fuerza un repintado infinito de la Scene View.
+
+## El tinte (máscara aparte)
+
+Pestaña **Pintar tinte**: pinta sobre una SEGUNDA máscara, independiente de la splat
+mask de texturas. RGB = color, A = cuánto de ese color se aplica ahí, y **blanco = sin
+cambio** — así podés pintar zonas más rojizas, pálidas o saturadas encima de CUALQUIERA
+de las 5 capas (base o Textura 1-4) sin cambiar de material ni pisar la selección de
+textura. Van separadas a propósito: pintar textura y pintar tinte no compiten por los
+mismos canales.
 
 Internamente se guarda a la mitad y el shader multiplica por 2, que es cómo se mete un
 multiplicador neutro en una textura de 8 bits sin canal extra.
+
+## Normal maps (opcional)
+
+El material puede tener relieve además de color: `_BaseNormalMap` para la capa base y
+`_Tex1NormalMap` para Textura 1, cada una con su `Strength`. Se mezclan con el mismo peso
+que el albedo de Textura 1. **Todavía no cubre Texturas 2/3/4** (para no triplicar samples
+sin que lo hayas pedido) — es una extensión chica si hace falta.
+
+Apagado por defecto (`Usar normal maps` destildado): sin texturas asignadas no cuesta
+nada, ni siquiera se declaran los samplers extra en esa variante del shader. Para usarlo:
+
+1. Importá tus texturas de normal con el tipo **Normal Map** (Unity las marca con el ícono
+   correspondiente y el importer las trata como tangent-space).
+2. Asignalas en `_BaseNormalMap` / `_Tex1NormalMap`.
+3. Tildá **Usar normal maps** y ajustá la `Fuerza` de cada una.
+
+Con Triplanar activo, el normal map se mezcla por los 3 ejes igual que el color (blend
+"whiteout", el estándar para evitar costuras); sin Triplanar usa un solo plano cenital,
+igual que el color.
 
 ## El desenfoque
 
@@ -101,9 +185,10 @@ con los píxeles ya procesados y aparece el arrastre direccional típico.
 
 El pintado de textura **no va por Ctrl+Z** — `Undo.RecordObject` no maneja bien datos de
 textura de varios MB. En su lugar hay un botón **Deshacer trazo**, que restaura el
-snapshot tomado al empezar la última pincelada. Es un solo nivel.
+snapshot tomado al empezar la última pincelada (de la máscara que estés pintando en ese
+momento, splat o tinte). Es un solo nivel.
 
-Acordate de **Guardar máscara** (o Ctrl+S).
+Acordate de **Guardar máscaras** (o Ctrl+S) — guarda las dos (splat y tinte) juntas.
 
 ---
 
@@ -196,9 +281,26 @@ Dos bugs encontrados y corregidos durante esa prueba:
 
 El dispersor de props todavía **no se probó**.
 
+**Sistema de splat mask (4 texturas pintables) probado en `PruebasTriplanar.unity`**, vía
+MCP: se armó un `PathCanvas` sobre un `Cube` con `M_PruebaCamino` (Base = grasstile,
+Textura 1 = groundtile, Textura 2 = ponele, activada por su toggle), se pintaron las 3
+zonas con texturas REALES distintas (no tintes) y una franja de tinte violeta encima de
+las 3 — las tres texturas y el tinte se ven correctamente en el mismo canvas.
+
 ## Pendiente / a decidir
-- El shader de camino muestrea las dos capas por XZ del mundo (planar). En paredes se
-  estira. Para paredes haría falta triplanar, que es un cambio chico si lo necesitás.
+- ~~El shader de camino muestrea las dos capas por XZ del mundo (planar). En paredes se
+  estira.~~ Resuelto: `Triplanar` ahora viene tildado por defecto (en el shader y en el
+  material que crea el menú), así que paredes/rampas/curvas ya no se estiran. Si un piso
+  es 100% horizontal y preferís pagar 1 sample en vez de 3, destildalo a mano.
+- **Cambio de formato de máscara (splat mask + tint mask separadas)**: cualquier
+  `PathCanvas` pintado con el sistema VIEJO (una sola máscara RGB=tinte/A=cobertura)
+  quedó con datos que ya no se leen igual — hace falta recrear sus máscaras
+  (`Crear máscaras`) y repintar. El único caso real es el camino de `doubleJump`.
+- Normal maps solo cubren Base + Textura 1. Extenderlos a Textura 2/3/4 es directo si
+  hace falta, pero suma hasta 6 samples más por pixel en el peor caso (triplanar × 3).
+- 4 texturas pintables es el máximo sin agregar una segunda splat mask (usa los 4
+  canales RGBA enteros). Si en algún momento hacen falta más, hay que duplicar la
+  textura de máscara y el costo de sampleo.
 - `PathCanvas` usa `MaterialPropertyBlock`, así que esos renderers salen del SRP Batcher.
   Son pocos (el piso), pero conviene saberlo.
 - La separación mínima del dispersor escanea todas las instancias: arriba de 20.000 se

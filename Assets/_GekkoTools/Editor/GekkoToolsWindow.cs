@@ -469,29 +469,60 @@ namespace Gekko.Tools.EditorTools
                 Title = "Caminos",
                 Tag = "Pintura de suelo por máscara proyectada",
                 Summary =
-                    "Pinta caminos sobre el piso mezclando dos materiales con una máscara proyectada desde arriba.",
+                    "Pinta hasta 4 texturas distintas sobre una base, mezclando por dos máscaras separadas " +
+                    "(splat de texturas + tinte de color) proyectadas desde arriba, con proyección triplanar.",
                 WhatFor =
                     "Para marcar senderos, claros y zonas de tierra sin depender de la cantidad de vértices " +
                     "de la malla ni de cómo estén sus UVs. Probado sobre un Plane de 121 vértices y un Quad " +
                     "de 4: el resultado es idéntico.",
                 Steps = new[]
                 {
-                    "Creá el material de piso y asignale tus texturas de base y de camino.",
+                    "Creá el material de piso y asignale tu Textura base y tu Textura 1. Si querés más " +
+                    "texturas pintables en la misma zona, tildá 'Textura 2/3/4 activa' y asignales la suya.",
                     "Poné ese material en los renderers del piso.",
-                    "Creá una zona de camino, ubicala sobre el área y ajustale el tamaño.",
+                    "Creá una zona de camino y MOVÉ SU TRANSFORM hasta que quede centrada sobre el piso " +
+                    "(se crea en el origen 0,0,0) — si el gizmo amarillo no se solapa con el piso, el pincel " +
+                    "pinta en un rectángulo del mundo que no es el que ves, y parece que 'no pasa nada'.",
+                    "Ajustale el tamaño a la zona.",
                     "Arrastrá los renderers del piso a 'Target Renderers' de la zona. SIN ESTO NO SE VE NADA.",
-                    "Creá la máscara y activá el modo pintura.",
-                    "Click y arrastrar pinta, shift borra, ctrl+rueda cambia el radio.",
+                    "Creá las máscaras (splat + tinte) y activá el modo pintura.",
+                    "Elegí la pestaña 'Pintar textura' (clickeá el slot en la paleta, o 1/2/3/4 con el pincel " +
+                    "activo) o 'Pintar tinte' (color libre). Click y arrastrar pinta (el trazo rápido se rellena " +
+                    "solo), shift borra, ctrl+rueda o [ ] cambian el radio. 'Dureza' y 'Solo sobre el piso " +
+                    "destino' (ignora árboles y props con collider) están en los ajustes del pincel. Un " +
+                    "indicador en la esquina de la Scene View siempre dice qué estás pintando.",
+                    "Para un material DISTINTO (no solo otra textura en el mismo slot): seleccioná uno ya " +
+                    "ajustado en el Project y usá 'Clonar variante de camino' — copia tiling/borde/luz/triplanar.",
                 },
                 Notes = new[]
                 {
-                    "La máscara es plana en XZ: dos pisos apilados en la misma vertical comparten máscara. " +
+                    "Las máscaras son planas en XZ: dos pisos apilados en la misma vertical las comparten. " +
                     "Para eso se usa una zona por piso.",
                     "El pincel raycastea contra colliders, así que la superficie necesita uno.",
+                    "'Tiling base' / 'Tiling 1-4' son los ÚNICOS campos de tiling que hacen algo: el shader " +
+                    "muestrea por posición de mundo, no por UV, así que el Tiling/Offset nativo que Unity " +
+                    "dibuja debajo de cada textura está oculto a propósito (no tenía ningún efecto).",
+                    "'Triplanar' viene tildado por defecto (en el shader y en los materiales que ya existen): " +
+                    "mezcla la proyección por los 3 ejes según la normal, así que rampas, paredes y superficies " +
+                    "curvas no estiran la textura en rayas verticales. Sin esto, cualquier piso que no sea " +
+                    "perfectamente horizontal se ve roto — es la causa más común de 'se rompió el tileado al " +
+                    "aplicar el material'. Solo destildalo si el piso es 100% plano y preferís pagar 1 sample " +
+                    "de textura en vez de 3.",
+                    "Textura 2/3/4 son opt-in por toggle ('Textura N activa'): apagadas, el shader ni siquiera " +
+                    "declara ese sampler — pintar más texturas no cuesta nada si no las usás.",
+                    "El tinte va en una máscara APARTE de la de texturas — pintar textura y pintar tinte no " +
+                    "compiten por los mismos canales, y el tinte se aplica encima de cualquiera de las 5 capas.",
+                    "El material admite normal maps opcionales ('Usar normal maps' + '_BaseNormalMap'/" +
+                    "'_Tex1NormalMap', cada uno con su Strength), mezclados con el peso de Textura 1 nomás " +
+                    "por ahora (2/3/4 quedan pendientes). Apagado por defecto, sin costo si no lo usás. Las " +
+                    "texturas van importadas como 'Normal Map', no 'Default'.",
+                    "Cambio de formato (máscara única → splat + tinte separadas): un PathCanvas pintado con " +
+                    "el sistema viejo necesita 'Crear máscaras' de nuevo y repintarse.",
                 },
                 Actions = new (string, Action)[]
                 {
                     ("Crear material de piso", () => EditorApplication.ExecuteMenuItem("Tools/Gekko/Paint Tools/Crear material de piso con camino")),
+                    ("Clonar variante de camino", () => EditorApplication.ExecuteMenuItem("Tools/Gekko/Paint Tools/Clonar variante de camino (con nuevas texturas)")),
                     ("Crear zona de camino", () => EditorApplication.ExecuteMenuItem("Tools/Gekko/Paint Tools/Crear zona de camino")),
                 },
             });

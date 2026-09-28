@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using Unity.Collections;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -7,16 +8,19 @@ using UnityEngine.SceneManagement;
 namespace Gekko.PaintTools.EditorTools
 {
     /// <summary>
-    /// Pincel de caminos. Pinta sobre la textura de mascara del <see cref="PathCanvas"/>,
-    /// no sobre los vertices de la malla — por eso funciona igual en una malla de 100
-    /// triangulos que en una de 100.000, y no le importa como esten las UVs.
+    /// Pincel de caminos. Pinta sobre DOS mascaras del <see cref="PathCanvas"/>, no sobre
+    /// los vertices de la malla — por eso funciona igual en una malla de 100 triangulos
+    /// que en una de 100.000, y no le importa como esten las UVs.
     ///
-    /// La mascara guarda RGB = tinte (blanco = sin cambio) y A = cobertura del camino.
+    /// Splat mask: RGBA = peso de Textura 1/2/3/4 (que textura se ve, no un tinte).
+    /// Tint mask: RGB = tinte (blanco = sin cambio), A = fuerza de ese tinte. Es una
+    /// segunda pasada, independiente de que textura haya debajo.
     /// </summary>
     [CustomEditor(typeof(PathCanvas))]
     public class PathCanvasEditor : UnityEditor.Editor
     {
         private const string DataFolder = "Assets/_PaintToolsSandbox/Data";
+        private const int SlotCount = 4;
 
         private enum BrushMode
         {
@@ -25,10 +29,29 @@ namespace Gekko.PaintTools.EditorTools
             Desenfocar,
         }
 
-        private static readonly SceneBrush Brush = new SceneBrush { Radius = 3f };
+        private enum PaintTarget
+        {
+            Textura,
+            Tinte,
+        }
+
+        // Interpolate: un movimiento rapido del mouse rellena el tramo en vez de dejar un
+        // trazo punteado. StepFraction mas chico = trazo mas parejo.
+        private static readonly SceneBrush Brush = new SceneBrush { Radius = 3f, Interpolate = true, StepFraction = 0.25f };
 
         private static BrushMode _mode = BrushMode.Pintar;
-        private static float _strength = 0.5f;
+        private static PaintTarget _paintTarget = PaintTarget.Textura;
+        private static int _activeSlot = 1;
+        private static float _strength = 1f;
+
+        // Dureza del pincel por defecto: 0 = caida suave desde el centro, 1 = disco duro.
+        // Antes la caida era cuadratica desde el mismo centro, asi que aun con fuerza al
+        // maximo el pincel pintaba poco y habia que repasar cada zona varias veces.
+        private static float _hardness = 0.5f;
+
+        // Solo golpea los renderers destino del PathCanvas. Con arboles, rocas y props con
+        // collider en la escena, el rayo pegaba en la copa y pintaba lejos de donde se veia.
+        private static bool _onlyTargets = true;
         private static Color _tint = Color.white;
         private static int _blurRadius = 2;
         private static bool _randomRotation = true;
@@ -37,7 +60,8 @@ namespace Gekko.PaintTools.EditorTools
 
         // Cache de pixeles: pintar leyendo y escribiendo la textura entera en cada
         // pincelada es inviable, asi que se mantiene una copia en RAM y solo se sube a
-        // la GPU el rectangulo tocado.
+        // la GPU el rectangulo tocado. Es de la mascara ACTIVA (splat o tinte, la que
+        // corresponda a _paintTarget) — pintar la otra invalida el cache.
         private Color32[] _pixels;
         private Texture2D _cachedMask;
 
@@ -50,6 +74,14 @@ namespace Gekko.PaintTools.EditorTools
         private int _brushHeight;
         private Texture2D _cachedBrushSource;
 
+        // Rectangulo tocado en los stamps del evento actual. Se sube a la GPU UNA vez por
+        // evento (no una por stamp): con interpolacion un evento puede traer varios stamps.
+        private bool _hasDirty;
+        private int _dirtyMinX, _dirtyMinY, _dirtyMaxX, _dirtyMaxY;
+
+        private PathCanvas _filterCanvas;
+        private GUIStyle _hudStyle;
+
         public override void OnInspectorGUI()
         {
             DrawDefaultInspector();
@@ -58,7 +90,7 @@ namespace Gekko.PaintTools.EditorTools
 
             EditorGUILayout.Space();
 
-            if (canvas.Mask == null)
+            if (canvas.Mask == null || canvas.TintMask == null)
             {
                 DrawMaskCreation(canvas);
                 return;
@@ -72,9 +104,16 @@ namespace Gekko.PaintTools.EditorTools
             if (Brush.Enabled)
             {
                 EditorGUILayout.HelpBox(
-                    "Click y arrastrar: aplicar.\nShift + click: borrar.\nCtrl + rueda: radio.",
+                    "Click y arrastrar: aplicar.\nShift + click: borrar.\nCtrl + rueda o [ ]: radio.\n" +
+                    "1-4: cambiar de textura activa (pintando Textura).",
                     MessageType.None);
             }
+
+            EditorGUILayout.Space();
+            DrawActiveIndicator(canvas);
+
+            EditorGUILayout.Space();
+            DrawPaintTargetTabs(canvas);
 
             EditorGUILayout.Space();
             DrawBrushSettings(canvas);
@@ -84,6 +123,90 @@ namespace Gekko.PaintTools.EditorTools
 
             EditorGUILayout.Space();
             DrawMaskButtons(canvas);
+        }
+
+        // -------------------------------------------------------- indicador activo
+
+        /// <summary>
+        /// Muestra bien grande QUE se esta pintando ahora mismo. Es la respuesta directa
+        /// a "no se con que textura estoy cargando": se ve arriba de todo, sin tener que
+        /// interpretar el resto del inspector.
+        /// </summary>
+        private void DrawActiveIndicator(PathCanvas canvas)
+        {
+            string label = _paintTarget == PaintTarget.Textura
+                ? $"Pintando: Textura {_activeSlot} ({SlotDisplayName(canvas, _activeSlot)})"
+                : "Pintando: Tinte";
+
+            var style = new GUIStyle(EditorStyles.boldLabel) { fontSize = 13 };
+            var color = _paintTarget == PaintTarget.Textura ? new Color(0.55f, 0.85f, 1f) : new Color(1f, 0.85f, 0.55f);
+
+            Material material = GetActiveMaterial(canvas);
+            float buttonWidth = material != null ? 90f : 0f;
+
+            Rect rect = GUILayoutUtility.GetRect(0f, 24f, GUILayout.ExpandWidth(true));
+            EditorGUI.DrawRect(rect, new Color(0.15f, 0.15f, 0.15f));
+            var prevColor = style.normal.textColor;
+            style.normal.textColor = color;
+            GUI.Label(new Rect(rect.x + 8f, rect.y, rect.width - 16f - buttonWidth, rect.height), label, style);
+            style.normal.textColor = prevColor;
+
+            // Ir directo al material desde acá: es el lugar donde se ven "Textura N (sin
+            // asignar)" y demas, asi que de ahi mismo se puede saltar a arreglarlo en vez
+            // de andar buscando a mano que renderer/material tiene el PathCanvas.
+            if (material != null)
+            {
+                var buttonRect = new Rect(rect.xMax - buttonWidth - 4f, rect.y + 2f, buttonWidth, rect.height - 4f);
+                if (GUI.Button(buttonRect, "Ver material"))
+                {
+                    PingMaterial(material);
+                }
+            }
+
+            if (_paintTarget == PaintTarget.Textura)
+            {
+                bool enabled = IsSlotEnabled(material, _activeSlot);
+                bool assigned = material != null && material.GetTexture($"_Tex{_activeSlot}") != null;
+
+                if (!enabled)
+                {
+                    DrawMaterialWarning(
+                        $"La Textura {_activeSlot} no esta activa en el material (toggle 'Textura {_activeSlot} " +
+                        "activa' destildado) — vas a pintar en un canal que el shader ignora y no se va a ver nada.",
+                        material);
+                }
+                else if (!assigned)
+                {
+                    // Justo lo que pasaba en la captura: slot activo pero sin textura
+                    // asignada = el shader cae al blanco por defecto y "pinta blanco".
+                    DrawMaterialWarning(
+                        $"La Textura {_activeSlot} esta activa pero no tiene textura asignada — el shader cae " +
+                        "al blanco por defecto del slot. Asignale una textura en el material.",
+                        material);
+                }
+            }
+        }
+
+        /// <summary>HelpBox + boton para ir directo al material, para los casos donde el problema se arregla ahi.</summary>
+        private static void DrawMaterialWarning(string message, Material material)
+        {
+            using (new EditorGUILayout.HorizontalScope(EditorStyles.helpBox))
+            {
+                EditorGUILayout.LabelField(
+                    new GUIContent(message, EditorGUIUtility.IconContent("console.warnicon").image),
+                    new GUIStyle(EditorStyles.wordWrappedLabel));
+
+                if (GUILayout.Button("Abrir material", GUILayout.Width(100f), GUILayout.ExpandHeight(true)))
+                {
+                    PingMaterial(material);
+                }
+            }
+        }
+
+        private static void PingMaterial(Material material)
+        {
+            Selection.activeObject = material;
+            EditorGUIUtility.PingObject(material);
         }
 
         private void DrawSummary(PathCanvas canvas)
@@ -118,7 +241,7 @@ namespace Gekko.PaintTools.EditorTools
 
         private void DrawMaskCreation(PathCanvas canvas)
         {
-            EditorGUILayout.HelpBox("Esta zona todavía no tiene máscara.", MessageType.Warning);
+            EditorGUILayout.HelpBox("Esta zona todavía no tiene sus máscaras (splat + tinte).", MessageType.Warning);
 
             _newMaskResolution = EditorGUILayout.IntPopup(
                 "Resolución",
@@ -130,10 +253,124 @@ namespace Gekko.PaintTools.EditorTools
             float texels = _newMaskResolution / Mathf.Max(canvas.Size.x, canvas.Size.y, 0.01f);
             EditorGUILayout.LabelField(" ", $"{texels:0.00} texels por unidad (eje más largo)");
 
-            if (GUILayout.Button("Crear máscara", GUILayout.Height(28f)))
+            if (GUILayout.Button("Crear máscaras", GUILayout.Height(28f)))
             {
-                CreateMask(canvas, _newMaskResolution);
+                CreateMasks(canvas, _newMaskResolution);
             }
+        }
+
+        // -------------------------------------------------------- tabs textura/tinte
+
+        private void DrawPaintTargetTabs(PathCanvas canvas)
+        {
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                DrawTab(PaintTarget.Textura, "Pintar textura");
+                DrawTab(PaintTarget.Tinte, "Pintar tinte");
+            }
+
+            EditorGUILayout.Space(4f);
+
+            if (_paintTarget == PaintTarget.Textura)
+            {
+                DrawTexturePalette(canvas);
+            }
+            else
+            {
+                DrawTintSettings();
+            }
+        }
+
+        private void DrawTab(PaintTarget tab, string label)
+        {
+            bool isActive = _paintTarget == tab;
+            var style = new GUIStyle(GUI.skin.button) { fontStyle = isActive ? FontStyle.Bold : FontStyle.Normal };
+            var prevColor = GUI.backgroundColor;
+            GUI.backgroundColor = isActive ? new Color(0.55f, 0.85f, 1f) : prevColor;
+
+            if (GUILayout.Toggle(isActive, label, style, GUILayout.Height(24f)) && !isActive)
+            {
+                _paintTarget = tab;
+                _cachedMask = null;
+                _pixels = null;
+                _strokeBackup = null;
+            }
+
+            GUI.backgroundColor = prevColor;
+        }
+
+        /// <summary>
+        /// Paleta de las hasta 4 texturas pintables del material asignado, con thumbnail
+        /// y nombre — asi elegis "con que textura estas cargando" viendola, no
+        /// adivinando un indice. Los shortcuts 1-4 (activos con el pincel prendido) hacen
+        /// lo mismo sin soltar el mouse.
+        /// </summary>
+        private void DrawTexturePalette(PathCanvas canvas)
+        {
+            Material material = GetActiveMaterial(canvas);
+
+            if (material == null)
+            {
+                EditorGUILayout.HelpBox(
+                    "El PathCanvas todavia no tiene 'Target Renderers' asignados, asi que no puedo leer que " +
+                    "texturas tiene el material para armar la paleta.",
+                    MessageType.Warning);
+            }
+
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                for (int slot = 1; slot <= SlotCount; slot++)
+                {
+                    DrawTextureSlotButton(material, slot);
+                }
+            }
+        }
+
+        private void DrawTextureSlotButton(Material material, int slot)
+        {
+            bool enabled = IsSlotEnabled(material, slot);
+            bool isActive = _activeSlot == slot;
+            Texture thumbnail = material != null ? material.GetTexture($"_Tex{slot}") : null;
+
+            using (new EditorGUILayout.VerticalScope(GUILayout.Width(64f)))
+            {
+                Rect rect = GUILayoutUtility.GetRect(60f, 48f, GUILayout.Width(60f));
+
+                if (isActive)
+                {
+                    EditorGUI.DrawRect(new Rect(rect.x - 2, rect.y - 2, rect.width + 4, rect.height + 4),
+                        new Color(0.4f, 0.75f, 1f, 1f));
+                }
+
+                if (thumbnail != null)
+                {
+                    GUI.DrawTexture(rect, thumbnail, ScaleMode.ScaleAndCrop);
+                }
+                else
+                {
+                    EditorGUI.DrawRect(rect, enabled ? new Color(0.25f, 0.25f, 0.27f) : new Color(0.12f, 0.12f, 0.12f));
+                }
+
+                if (!enabled)
+                {
+                    GUI.Label(rect, "off", EditorStyles.centeredGreyMiniLabel);
+                }
+
+                if (GUI.Button(rect, GUIContent.none, GUIStyle.none))
+                {
+                    _activeSlot = slot;
+                }
+
+                var numberStyle = new GUIStyle(EditorStyles.miniLabel) { alignment = TextAnchor.MiddleCenter };
+                GUILayout.Label($"({slot})", numberStyle);
+            }
+        }
+
+        private void DrawTintSettings()
+        {
+            _tint = EditorGUILayout.ColorField(
+                new GUIContent("Tinte", "Multiplica el color final. Blanco = sin cambio."),
+                _tint, true, false, false);
         }
 
         private void DrawBrushSettings(PathCanvas canvas)
@@ -143,6 +380,13 @@ namespace Gekko.PaintTools.EditorTools
             _mode = (BrushMode)EditorGUILayout.EnumPopup("Modo", _mode);
             Brush.DrawCommonSettings();
             _strength = EditorGUILayout.Slider("Fuerza", _strength, 0.01f, 1f);
+            _hardness = EditorGUILayout.Slider(
+                new GUIContent("Dureza", "0 = borde muy suave, 1 = disco duro. Solo afecta al pincel circular por defecto."),
+                _hardness, 0f, 0.95f);
+            _onlyTargets = EditorGUILayout.Toggle(
+                new GUIContent("Solo sobre el piso destino",
+                    "El pincel atraviesa arboles, rocas y demas colliders que no sean los Target Renderers del PathCanvas."),
+                _onlyTargets);
 
             if (_mode == BrushMode.Desenfocar)
             {
@@ -150,9 +394,6 @@ namespace Gekko.PaintTools.EditorTools
             }
             else
             {
-                _tint = EditorGUILayout.ColorField(
-                    new GUIContent("Tinte", "Multiplica el color del material del camino. Blanco = sin cambio."),
-                    _tint, true, false, false);
                 _randomRotation = EditorGUILayout.Toggle(
                     new GUIContent("Rotación al azar", "Gira el stamp en cada aplicación para que no se note repetido."),
                     _randomRotation);
@@ -234,39 +475,47 @@ namespace Gekko.PaintTools.EditorTools
                 {
                     if (GUILayout.Button("Deshacer trazo"))
                     {
-                        RestoreStrokeBackup(canvas);
+                        RestoreStrokeBackup();
                     }
                 }
 
-                if (GUILayout.Button("Guardar máscara"))
+                if (GUILayout.Button("Guardar máscaras"))
                 {
-                    SaveMask(canvas);
+                    SaveMask(canvas.Mask);
+                    SaveMask(canvas.TintMask);
+                    Debug.Log("[PathCanvas] Splat mask y tint mask guardadas.", canvas);
                 }
             }
 
             using (new EditorGUILayout.HorizontalScope())
             {
-                if (GUILayout.Button("Desenfocar todo"))
+                if (GUILayout.Button("Desenfocar todo (activa)"))
                 {
-                    EnsurePixels(canvas);
+                    Texture2D active = ActiveMaskTexture(canvas);
+                    EnsurePixels(active);
                     SnapshotStroke();
-                    BlurRegion(canvas.Mask.width, canvas.Mask.height, 0, 0, canvas.Mask.width, canvas.Mask.height, _blurRadius, 1f);
-                    UploadAll(canvas.Mask);
+                    BlurRegion(active.width, active.height, 0, 0, active.width, active.height, _blurRadius, 1f);
+                    UploadAll(active);
                 }
 
-                if (GUILayout.Button("Limpiar máscara"))
+                string clearLabel = _paintTarget == PaintTarget.Textura ? "Limpiar textura" : "Limpiar tinte";
+                if (GUILayout.Button(clearLabel))
                 {
-                    if (EditorUtility.DisplayDialog("Limpiar máscara",
-                            "Se borra todo el camino pintado de esta zona.", "Limpiar", "Cancelar"))
+                    Texture2D active = ActiveMaskTexture(canvas);
+                    string what = _paintTarget == PaintTarget.Textura ? "toda la textura pintada" : "todo el tinte pintado";
+                    if (EditorUtility.DisplayDialog(clearLabel, $"Se borra {what} de esta zona.", "Limpiar", "Cancelar"))
                     {
-                        EnsurePixels(canvas);
+                        EnsurePixels(active);
                         SnapshotStroke();
-                        var neutral = new Color32(128, 128, 128, 0);
+                        // Splat neutro = 0,0,0,0 (todo base). Tinte neutro = 128,128,128,0 (sin cambio).
+                        Color32 neutral = _paintTarget == PaintTarget.Textura
+                            ? new Color32(0, 0, 0, 0)
+                            : new Color32(128, 128, 128, 0);
                         for (int i = 0; i < _pixels.Length; i++)
                         {
                             _pixels[i] = neutral;
                         }
-                        UploadAll(canvas.Mask);
+                        UploadAll(active);
                     }
                 }
             }
@@ -275,36 +524,50 @@ namespace Gekko.PaintTools.EditorTools
         private void OnSceneGUI()
         {
             var canvas = (PathCanvas)target;
-            if (canvas.Mask == null)
+            if (canvas.Mask == null || canvas.TintMask == null)
             {
                 return;
             }
 
             Event e = Event.current;
+
+            HandleShortcuts(canvas, e);
+
+            // Filtro de raycast: solo los renderers destino cuentan como "piso".
+            _filterCanvas = canvas;
+            Brush.HitFilter = _onlyTargets ? (Func<RaycastHit, bool>)IsTargetHit : null;
+
             bool wasStroking = e.type == EventType.MouseDown && e.button == 0;
 
             SceneBrush.Action action = Brush.Update(e, out Vector3 point, out Vector3 normal, out bool cursorValid);
 
-            if (Brush.Enabled && cursorValid)
+            if (Brush.Enabled && cursorValid && e.type == EventType.Repaint)
             {
                 Brush.DrawCursor(point, normal, _mode == BrushMode.Borrar || e.shift);
-                SceneView.RepaintAll();
+            }
+
+            // Antes se llamaba RepaintAll() en CADA evento, incluido el Repaint: cada
+            // repintado disparaba otro y el editor quedaba repintando sin parar, robandole
+            // tiempo al pintado. Ahora solo se repinta cuando el cursor realmente se movio.
+            if (Brush.Enabled && (e.type == EventType.MouseMove || e.type == EventType.MouseDrag))
+            {
+                SceneView.currentDrawingSceneView?.Repaint();
             }
 
             if (wasStroking && Brush.Enabled)
             {
-                EnsurePixels(canvas);
+                EnsurePixels(ActiveMaskTexture(canvas));
                 SnapshotStroke();
             }
 
             switch (action)
             {
                 case SceneBrush.Action.Paint:
-                    Apply(canvas, point, _mode == BrushMode.Borrar);
+                    ApplyStroke(canvas, point, _mode == BrushMode.Borrar);
                     break;
 
                 case SceneBrush.Action.Erase:
-                    Apply(canvas, point, true);
+                    ApplyStroke(canvas, point, true);
                     break;
 
                 case SceneBrush.Action.StrokeEnded:
@@ -312,7 +575,7 @@ namespace Gekko.PaintTools.EditorTools
                     {
                         EditorUtility.SetDirty(_cachedMask);
                     }
-                    // Se reempuja al terminar el trazo: si el asset de la mascara se
+                    // Se reempuja al terminar el trazo: si el asset de alguna mascara se
                     // reimporto (cualquier Reimport, o un refresh forzado), la referencia
                     // que quedo dentro del MaterialPropertyBlock apunta a una textura
                     // destruida y el camino desaparece de golpe sin ningun error.
@@ -320,14 +583,147 @@ namespace Gekko.PaintTools.EditorTools
                     Repaint();
                     break;
             }
+
+            DrawHud(e);
         }
 
-        private void Apply(PathCanvas canvas, Vector3 worldPoint, bool erase)
+        /// <summary>Un golpe de rayo cuenta si es collider de (o hijo/padre de) alguno de los Target Renderers.</summary>
+        private bool IsTargetHit(RaycastHit hit)
         {
-            EnsurePixels(canvas);
+            Renderer[] targets = _filterCanvas != null ? _filterCanvas.TargetRenderers : null;
+            if (targets == null || hit.collider == null)
+            {
+                return false;
+            }
 
-            Texture2D mask = canvas.Mask;
+            Transform hitTransform = hit.collider.transform;
+            foreach (Renderer renderer in targets)
+            {
+                if (renderer == null)
+                {
+                    continue;
+                }
 
+                Transform target = renderer.transform;
+                if (hitTransform == target || hitTransform.IsChildOf(target) || target.IsChildOf(hitTransform))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// 1-4 cambian la textura activa (solo tiene sentido pintando Textura). [ y ] cambian
+        /// el radio. Solo responde con el pincel prendido, para no robarle las teclas al
+        /// resto del editor cuando el PathCanvas esta seleccionado nomas de paso.
+        /// </summary>
+        private void HandleShortcuts(PathCanvas canvas, Event e)
+        {
+            if (!Brush.Enabled || e.type != EventType.KeyDown)
+            {
+                return;
+            }
+
+            // [ y ] por caracter y no por keyCode: en teclados con otra distribucion
+            // (es-AR, es-ES) los corchetes salen con AltGr y el keyCode no es confiable.
+            if (e.character == '[' || e.character == ']' || e.keyCode == KeyCode.LeftBracket || e.keyCode == KeyCode.RightBracket)
+            {
+                bool shrink = e.character == '[' || e.keyCode == KeyCode.LeftBracket;
+                Brush.Radius = Mathf.Clamp(Brush.Radius * (shrink ? 0.85f : 1.15f), 0.1f, 50f);
+                e.Use();
+                Repaint();
+                SceneView.RepaintAll();
+                return;
+            }
+
+            int slot = e.keyCode switch
+            {
+                KeyCode.Alpha1 or KeyCode.Keypad1 => 1,
+                KeyCode.Alpha2 or KeyCode.Keypad2 => 2,
+                KeyCode.Alpha3 or KeyCode.Keypad3 => 3,
+                KeyCode.Alpha4 or KeyCode.Keypad4 => 4,
+                _ => 0,
+            };
+
+            if (slot == 0)
+            {
+                return;
+            }
+
+            _paintTarget = PaintTarget.Textura;
+            _activeSlot = slot;
+            _cachedMask = null;
+            _pixels = null;
+            _strokeBackup = null;
+
+            e.Use();
+            Repaint();
+            SceneView.RepaintAll();
+        }
+
+        /// <summary>
+        /// Indicador permanente en la esquina de la Scene View: la respuesta a "no se
+        /// con que textura estoy cargando" sin tener que mirar el Inspector.
+        /// </summary>
+        private void DrawHud(Event e)
+        {
+            // Solo se dibuja en Repaint (el resto de eventos no pinta nada) y el estilo se
+            // cachea: antes se creaba un GUIStyle nuevo en cada evento del mouse.
+            if (!Brush.Enabled || e.type != EventType.Repaint)
+            {
+                return;
+            }
+
+            _hudStyle ??= new GUIStyle(EditorStyles.helpBox)
+            {
+                fontSize = 12,
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.MiddleLeft,
+                padding = new RectOffset(10, 10, 6, 6),
+            };
+
+            Handles.BeginGUI();
+
+            string label = _paintTarget == PaintTarget.Textura
+                ? $"Pintando: Textura {_activeSlot}"
+                : "Pintando: Tinte";
+
+            var rect = new Rect(10f, 10f, 220f, 28f);
+            GUI.Label(rect, label, _hudStyle);
+            GUI.Label(new Rect(10f, rect.yMax + 2f, 260f, 18f), "1-4 textura   [ ] radio   Shift borra", EditorStyles.miniLabel);
+
+            Handles.EndGUI();
+        }
+
+        /// <summary>
+        /// Aplica todos los puntos del evento (con interpolacion pueden ser varios) y
+        /// recien despues sube el rectangulo tocado a la GPU, una sola vez.
+        /// </summary>
+        private void ApplyStroke(PathCanvas canvas, Vector3 fallbackPoint, bool erase)
+        {
+            Texture2D mask = ActiveMaskTexture(canvas);
+            EnsurePixels(mask);
+            _hasDirty = false;
+
+            if (Brush.StrokePoints.Count == 0)
+            {
+                StampAt(canvas, mask, fallbackPoint, erase);
+            }
+            else
+            {
+                foreach (Vector3 stampPoint in Brush.StrokePoints)
+                {
+                    StampAt(canvas, mask, stampPoint, erase);
+                }
+            }
+
+            FlushUpload(mask);
+        }
+
+        private void StampAt(PathCanvas canvas, Texture2D mask, Vector3 worldPoint, bool erase)
+        {
             // Dos radios: en una zona no cuadrada, un circulo del mundo es una elipse en
             // pixeles. Con un solo radio el pincel sale deformado.
             Vector2 radiusPx = canvas.WorldRadiusToPixels(Brush.Radius);
@@ -352,38 +748,70 @@ namespace Gekko.PaintTools.EditorTools
             {
                 BlurRegion(mask.width, mask.height, minX, minY, maxX - minX + 1, maxY - minY + 1, _blurRadius, _strength);
             }
+            else if (_paintTarget == PaintTarget.Textura)
+            {
+                StampTextureRegion(canvas, center, radiusPx, minX, minY, maxX, maxY, erase);
+            }
             else
             {
-                StampRegion(canvas, center, radiusPx, minX, minY, maxX, maxY, erase);
+                StampTintRegion(canvas, center, radiusPx, minX, minY, maxX, maxY, erase);
             }
 
-            UploadRegion(mask, minX, minY, maxX - minX + 1, maxY - minY + 1);
+            MarkDirty(minX, minY, maxX, maxY);
         }
 
-        private void StampRegion(
+        private void MarkDirty(int minX, int minY, int maxX, int maxY)
+        {
+            if (!_hasDirty)
+            {
+                _dirtyMinX = minX;
+                _dirtyMinY = minY;
+                _dirtyMaxX = maxX;
+                _dirtyMaxY = maxY;
+                _hasDirty = true;
+                return;
+            }
+
+            _dirtyMinX = Mathf.Min(_dirtyMinX, minX);
+            _dirtyMinY = Mathf.Min(_dirtyMinY, minY);
+            _dirtyMaxX = Mathf.Max(_dirtyMaxX, maxX);
+            _dirtyMaxY = Mathf.Max(_dirtyMaxY, maxY);
+        }
+
+        private void FlushUpload(Texture2D mask)
+        {
+            if (!_hasDirty)
+            {
+                return;
+            }
+
+            UploadRegion(mask, _dirtyMinX, _dirtyMinY, _dirtyMaxX - _dirtyMinX + 1, _dirtyMaxY - _dirtyMinY + 1);
+            _hasDirty = false;
+        }
+
+        /// <summary>
+        /// Pinta "cuanto de la textura activa hay" en el canal correspondiente del splat
+        /// (R/G/B/A = Textura 1/2/3/4), y les resta proporcionalmente a los otros 3 para
+        /// que la suma nunca pase de 1 — el mismo criterio que un pincel de splatmap de
+        /// terreno. Borrar solo baja el canal activo: lo que libera vuelve a la base.
+        /// </summary>
+        private void StampTextureRegion(
             PathCanvas canvas, Vector2 center, Vector2 radiusPx,
             int minX, int minY, int maxX, int maxY, bool erase)
         {
             LoadBrush(canvas);
 
-            // Rotacion del stamp, constante dentro de una aplicacion.
             float angle = _randomRotation ? UnityEngine.Random.Range(0f, Mathf.PI * 2f) : 0f;
             float cos = Mathf.Cos(angle);
             float sin = Mathf.Sin(angle);
 
             int width = canvas.Mask.width;
-
-            // El tinte se guarda a la mitad: el shader lo multiplica por 2, asi blanco
-            // vuelve a 1.0 y no cambia nada.
-            var tint = new Color(_tint.r * 0.5f, _tint.g * 0.5f, _tint.b * 0.5f);
-            var neutral = new Color(0.5f, 0.5f, 0.5f);
+            int activeChannel = _activeSlot - 1;
 
             for (int y = minY; y <= maxY; y++)
             {
                 for (int x = minX; x <= maxX; x++)
                 {
-                    // Se normaliza por eje: en pixeles el pincel es una elipse, pero en
-                    // el mundo vuelve a ser el circulo que dibuja el cursor.
                     float dx = (x + 0.5f - center.x) / radiusPx.x;
                     float dy = (y + 0.5f - center.y) / radiusPx.y;
 
@@ -401,17 +829,98 @@ namespace Gekko.PaintTools.EditorTools
                     int index = y * width + x;
                     Color32 current = _pixels[index];
 
-                    float coverage = current.a / 255f;
+                    // Vector4 (struct en stack) y no un float[4] por pixel: con radios
+                    // grandes eran decenas de miles de arrays por stamp, y el GC
+                    // provocaba los tirones al pintar.
+                    var weights = new Vector4(current.r, current.g, current.b, current.a) * (1f / 255f);
+
+                    if (erase)
+                    {
+                        weights[activeChannel] = Mathf.Max(0f, weights[activeChannel] - amount);
+                    }
+                    else
+                    {
+                        weights[activeChannel] = Mathf.Min(1f, weights[activeChannel] + amount);
+
+                        // A los demas canales les toca lo que quede libre, repartido en
+                        // proporcion a lo que ya tenian (no de a uno): asi pintar Textura
+                        // 2 sobre una zona con Textura 1 al 100% la va reemplazando de a
+                        // poco, en vez de dejarlas superpuestas sumando mas de 1.
+                        float othersSum = weights.x + weights.y + weights.z + weights.w - weights[activeChannel];
+
+                        if (othersSum > 1e-4f)
+                        {
+                            float allowed = Mathf.Max(0f, 1f - weights[activeChannel]);
+                            float scale = allowed / othersSum;
+                            for (int c = 0; c < 4; c++)
+                            {
+                                if (c != activeChannel)
+                                {
+                                    weights[c] *= scale;
+                                }
+                            }
+                        }
+                    }
+
+                    _pixels[index] = new Color32(
+                        (byte)Mathf.RoundToInt(Mathf.Clamp01(weights.x) * 255f),
+                        (byte)Mathf.RoundToInt(Mathf.Clamp01(weights.y) * 255f),
+                        (byte)Mathf.RoundToInt(Mathf.Clamp01(weights.z) * 255f),
+                        (byte)Mathf.RoundToInt(Mathf.Clamp01(weights.w) * 255f));
+                }
+            }
+        }
+
+        /// <summary>Pinta color + fuerza en la tint mask. Logica identica a la version anterior de un solo mask.</summary>
+        private void StampTintRegion(
+            PathCanvas canvas, Vector2 center, Vector2 radiusPx,
+            int minX, int minY, int maxX, int maxY, bool erase)
+        {
+            LoadBrush(canvas);
+
+            float angle = _randomRotation ? UnityEngine.Random.Range(0f, Mathf.PI * 2f) : 0f;
+            float cos = Mathf.Cos(angle);
+            float sin = Mathf.Sin(angle);
+
+            int width = canvas.TintMask.width;
+
+            // El tinte se guarda a la mitad: el shader lo multiplica por 2, asi blanco
+            // vuelve a 1.0 y no cambia nada.
+            var tint = new Color(_tint.r * 0.5f, _tint.g * 0.5f, _tint.b * 0.5f);
+            var neutral = new Color(0.5f, 0.5f, 0.5f);
+
+            for (int y = minY; y <= maxY; y++)
+            {
+                for (int x = minX; x <= maxX; x++)
+                {
+                    float dx = (x + 0.5f - center.x) / radiusPx.x;
+                    float dy = (y + 0.5f - center.y) / radiusPx.y;
+
+                    float rx = dx * cos - dy * sin;
+                    float ry = dx * sin + dy * cos;
+
+                    float amount = SampleBrush(rx * 0.5f + 0.5f, ry * 0.5f + 0.5f);
+                    if (amount <= 0f)
+                    {
+                        continue;
+                    }
+
+                    amount *= _strength;
+
+                    int index = y * width + x;
+                    Color32 current = _pixels[index];
+
+                    float strength01 = current.a / 255f;
                     Color color = new Color(current.r / 255f, current.g / 255f, current.b / 255f);
 
                     if (erase)
                     {
-                        coverage = Mathf.Max(0f, coverage - amount);
+                        strength01 = Mathf.Max(0f, strength01 - amount);
                         color = Color.Lerp(color, neutral, amount);
                     }
                     else
                     {
-                        coverage = Mathf.Min(1f, coverage + amount);
+                        strength01 = Mathf.Min(1f, strength01 + amount);
                         color = Color.Lerp(color, tint, amount);
                     }
 
@@ -419,7 +928,7 @@ namespace Gekko.PaintTools.EditorTools
                         (byte)Mathf.RoundToInt(Mathf.Clamp01(color.r) * 255f),
                         (byte)Mathf.RoundToInt(Mathf.Clamp01(color.g) * 255f),
                         (byte)Mathf.RoundToInt(Mathf.Clamp01(color.b) * 255f),
-                        (byte)Mathf.RoundToInt(coverage * 255f));
+                        (byte)Mathf.RoundToInt(strength01 * 255f));
                 }
             }
         }
@@ -501,10 +1010,10 @@ namespace Gekko.PaintTools.EditorTools
 
             _cachedBrushSource = source;
 
-            if (source == null || !source.isReadable)
+            if (source == null || !source.isReadable || source.width <= 0 || source.height <= 0)
             {
-                // Sin pincel cargado: circulo con caida suave, para que la herramienta
-                // sirva desde el minuto cero.
+                // Sin pincel cargado (o con dimensiones invalidas): circulo con caida
+                // suave, para que la herramienta sirva desde el minuto cero.
                 _brushAlpha = null;
                 _brushWidth = 0;
                 _brushHeight = 0;
@@ -512,6 +1021,20 @@ namespace Gekko.PaintTools.EditorTools
             }
 
             Color32[] pixels = source.GetPixels32();
+
+            // Defensivo: si la textura se reimporto justo antes (por ejemplo al tocar
+            // "Arreglar el importador", que dispara un SaveAndReimport), GetPixels32
+            // puede devolver un array que todavia no coincide con width*height de ESTE
+            // frame. Sin este chequeo, SampleBrush indexaba fuera de rango y tiraba
+            // abajo la Scene View entera con un IndexOutOfRangeException.
+            if (pixels.Length != source.width * source.height)
+            {
+                _brushAlpha = null;
+                _brushWidth = 0;
+                _brushHeight = 0;
+                return;
+            }
+
             _brushWidth = source.width;
             _brushHeight = source.height;
             _brushAlpha = new float[pixels.Length];
@@ -527,14 +1050,16 @@ namespace Gekko.PaintTools.EditorTools
 
         private float SampleBrush(float u, float v)
         {
-            if (_brushAlpha == null)
+            if (_brushAlpha == null || _brushWidth <= 0 || _brushHeight <= 0)
             {
-                // Circulo por defecto: caida cuadratica desde el centro.
+                // Circulo por defecto con dureza: pleno hasta el radio "_hardness" y
+                // caida suave (smoothstep) hasta el borde. Con dureza 0 es una caida
+                // continua desde el centro; con dureza alta, un disco casi pleno.
                 float dx = u * 2f - 1f;
                 float dy = v * 2f - 1f;
                 float distance = Mathf.Sqrt(dx * dx + dy * dy);
-                float falloff = Mathf.Clamp01(1f - distance);
-                return falloff * falloff;
+                float t = Mathf.Clamp01((1f - distance) / Mathf.Max(1f - _hardness, 0.05f));
+                return t * t * (3f - 2f * t);
             }
 
             if (u < 0f || u > 1f || v < 0f || v > 1f)
@@ -544,20 +1069,30 @@ namespace Gekko.PaintTools.EditorTools
 
             int x = Mathf.Clamp((int)(u * _brushWidth), 0, _brushWidth - 1);
             int y = Mathf.Clamp((int)(v * _brushHeight), 0, _brushHeight - 1);
-            return _brushAlpha[y * _brushWidth + x];
+
+            // Ultima red de seguridad: si por lo que sea el array no mide width*height,
+            // no crashear la Scene View por un pincel — simplemente no pintar ese texel.
+            int index = y * _brushWidth + x;
+            return index >= 0 && index < _brushAlpha.Length ? _brushAlpha[index] : 0f;
         }
 
         // -------------------------------------------------------------- textura
 
-        private void EnsurePixels(PathCanvas canvas)
+        /// <summary>Cual de las dos mascaras corresponde pintar segun la tab activa.</summary>
+        private Texture2D ActiveMaskTexture(PathCanvas canvas)
         {
-            if (_cachedMask == canvas.Mask && _pixels != null)
+            return _paintTarget == PaintTarget.Textura ? canvas.Mask : canvas.TintMask;
+        }
+
+        private void EnsurePixels(Texture2D activeMask)
+        {
+            if (_cachedMask == activeMask && _pixels != null)
             {
                 return;
             }
 
-            _cachedMask = canvas.Mask;
-            _pixels = _cachedMask.GetPixels32();
+            _cachedMask = activeMask;
+            _pixels = activeMask != null ? activeMask.GetPixels32() : null;
             _strokeBackup = null;
         }
 
@@ -572,26 +1107,42 @@ namespace Gekko.PaintTools.EditorTools
             Array.Copy(_pixels, _strokeBackup, _pixels.Length);
         }
 
-        private void RestoreStrokeBackup(PathCanvas canvas)
+        private void RestoreStrokeBackup()
         {
-            if (_strokeBackup == null || _pixels == null)
+            if (_strokeBackup == null || _pixels == null || _cachedMask == null)
             {
                 return;
             }
 
             Array.Copy(_strokeBackup, _pixels, _pixels.Length);
-            UploadAll(canvas.Mask);
+            UploadAll(_cachedMask);
         }
 
         private void UploadRegion(Texture2D mask, int x, int y, int width, int height)
         {
-            var block = new Color32[width * height];
-            for (int row = 0; row < height; row++)
+            if (mask.format == TextureFormat.RGBA32)
             {
-                Array.Copy(_pixels, (y + row) * mask.width + x, block, row * width, width);
+                // Escribe directo en la memoria CPU de la textura, fila por fila, sin el
+                // array temporal ni la conversion de SetPixels32 (que alocaba un bloque
+                // nuevo en cada stamp).
+                NativeArray<Color32> raw = mask.GetRawTextureData<Color32>();
+                for (int row = 0; row < height; row++)
+                {
+                    int offset = (y + row) * mask.width + x;
+                    NativeArray<Color32>.Copy(_pixels, offset, raw, offset, width);
+                }
+            }
+            else
+            {
+                var block = new Color32[width * height];
+                for (int row = 0; row < height; row++)
+                {
+                    Array.Copy(_pixels, (y + row) * mask.width + x, block, row * width, width);
+                }
+
+                mask.SetPixels32(x, y, width, height, block);
             }
 
-            mask.SetPixels32(x, y, width, height, block);
             mask.Apply(false);
         }
 
@@ -606,27 +1157,26 @@ namespace Gekko.PaintTools.EditorTools
         // porque ese formato demostro perder datos (a veces el archivo entero, guid
         // incluido) en un reimport. Ver AUDITORIA.md, seccion "Persistencia". Un PNG es
         // un archivo comun que el importer de Unity maneja de forma robusta.
-        private void SaveMask(PathCanvas canvas)
+        private static void SaveMask(Texture2D mask)
         {
-            if (canvas.Mask == null)
+            if (mask == null)
             {
                 return;
             }
 
-            string path = AssetDatabase.GetAssetPath(canvas.Mask);
+            string path = AssetDatabase.GetAssetPath(mask);
             if (string.IsNullOrEmpty(path))
             {
-                Debug.LogError("[PathCanvas] La máscara no tiene un archivo en disco asociado; no se pudo guardar.", canvas.Mask);
+                Debug.LogError("[PathCanvas] Una máscara no tiene un archivo en disco asociado; no se pudo guardar.", mask);
                 return;
             }
 
-            WritePng(canvas.Mask, path);
+            WritePng(mask, path);
             AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate);
-
-            Debug.Log("[PathCanvas] Máscara guardada.", canvas.Mask);
         }
 
-        private void CreateMask(PathCanvas canvas, int resolution)
+        /// <summary>Crea la splat mask (neutro = todo 0, es decir toda base) y la tint mask (neutro = gris medio, sin cobertura) juntas.</summary>
+        private void CreateMasks(PathCanvas canvas, int resolution)
         {
             if (!Directory.Exists(DataFolder))
             {
@@ -637,44 +1187,45 @@ namespace Gekko.PaintTools.EditorTools
             Scene scene = canvas.gameObject.scene;
             string sceneName = string.IsNullOrEmpty(scene.name) ? "Untitled" : scene.name;
 
-            // Nombre canonico, sin GenerateUniqueAssetPath todavia: si ya existe un
-            // archivo ahi Y ningun OTRO PathCanvas de la escena lo tiene asignado, es un
-            // huerfano (tipico cuando la referencia se rompio y alguien le pega otra vez
-            // a "Crear mascara") y se reusa en vez de parir uno nuevo. Si en cambio SI
-            // pertenece a otro canvas vivo, es una segunda zona con el mismo nombre de
-            // GameObject — un caso legitimo — y ahi si hace falta un sufijo.
-            string path = $"{DataFolder}/{sceneName}_{canvas.name}_PathMask.png";
+            Texture2D splat = GetOrCreateMask(
+                canvas, $"{DataFolder}/{sceneName}_{canvas.name}_SplatMask.png", resolution,
+                new Color32(0, 0, 0, 0), m => m == canvas.Mask);
 
+            Texture2D tint = GetOrCreateMask(
+                canvas, $"{DataFolder}/{sceneName}_{canvas.name}_TintMask.png", resolution,
+                new Color32(128, 128, 128, 0), m => m == canvas.TintMask);
+
+            Undo.RecordObject(canvas, "Crear máscaras de camino");
+            canvas.SetMask(splat);
+            canvas.SetTintMask(tint);
+            EditorUtility.SetDirty(canvas);
+
+            _cachedMask = null;
+            _pixels = null;
+
+            Debug.Log($"[PathCanvas] Máscaras creadas: splat en {AssetDatabase.GetAssetPath(splat)}, " +
+                      $"tinte en {AssetDatabase.GetAssetPath(tint)}.", canvas);
+        }
+
+        private Texture2D GetOrCreateMask(PathCanvas canvas, string path, int resolution, Color32 neutral, Func<Texture2D, bool> isOwnedByThis)
+        {
             if (File.Exists(path))
             {
                 var existing = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
-                if (existing != null && !IsMaskOwnedByAnotherCanvas(existing, canvas))
+                // Huerfana (nadie la tiene asignada) = reusable. Asignada a este mismo
+                // canvas = tambien reusable (recrear mascaras no debe perder la pintada).
+                if (existing != null && (isOwnedByThis(existing) || !IsMaskOwnedByAnyCanvas(existing, canvas)))
                 {
                     ConfigureMaskImporter(path);
-                    Undo.RecordObject(canvas, "Asignar máscara existente");
-                    canvas.SetMask(existing);
-                    EditorUtility.SetDirty(canvas);
-
-                    _cachedMask = null;
-                    _pixels = null;
-
-                    Debug.LogWarning(
-                        $"[PathCanvas] Ya había una máscara huérfana en {path} (ningún PathCanvas de la escena la " +
-                        "tenía asignada). Se reasignó esa en vez de crear un archivo nuevo.",
-                        existing);
-                    return;
+                    return existing;
                 }
 
                 if (existing != null)
                 {
-                    // Nombre en uso por OTRA zona: no pisarla. Mismo criterio que antes
-                    // usaba GenerateUniqueAssetPath (sufijo " 1", " 2", ...), pero ahora
-                    // solo se dispara cuando de verdad hace falta.
                     path = AssetDatabase.GenerateUniqueAssetPath(path);
                 }
             }
 
-            var neutral = new Color32(128, 128, 128, 0);
             var pixels = new Color32[resolution * resolution];
             for (int i = 0; i < pixels.Length; i++)
             {
@@ -691,16 +1242,7 @@ namespace Gekko.PaintTools.EditorTools
             AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceSynchronousImport);
             ConfigureMaskImporter(path);
 
-            var mask = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
-
-            Undo.RecordObject(canvas, "Crear máscara de camino");
-            canvas.SetMask(mask);
-            EditorUtility.SetDirty(canvas);
-
-            _cachedMask = null;
-            _pixels = null;
-
-            Debug.Log($"[PathCanvas] Máscara creada en {path}.", mask);
+            return AssetDatabase.LoadAssetAtPath<Texture2D>(path);
         }
 
         private static void WritePng(Texture2D texture, string assetPath)
@@ -708,12 +1250,12 @@ namespace Gekko.PaintTools.EditorTools
             File.WriteAllBytes(assetPath, texture.EncodeToPNG());
         }
 
-        // Distingue un archivo huerfano (reusable) de uno que es la mascara real de otra
+        // Distingue un archivo huerfano (reusable) de uno que es una mascara real de otra
         // zona con el mismo nombre de GameObject (NO reusable). Sin este chequeo, dos
         // canvases rotos con el mismo nombre terminan apuntando los dos al mismo archivo
-        // la segunda vez que se les da a "Crear mascara" — las dos zonas quedan
+        // la segunda vez que se les da a "Crear mascaras" — las dos zonas quedan
         // compartiendo pintura sin que nadie lo pida.
-        private static bool IsMaskOwnedByAnotherCanvas(Texture2D mask, PathCanvas self)
+        private static bool IsMaskOwnedByAnyCanvas(Texture2D mask, PathCanvas self)
         {
             var canvases = UnityEngine.Object.FindObjectsByType<PathCanvas>(FindObjectsInactive.Include, FindObjectsSortMode.None);
             foreach (PathCanvas other in canvases)
@@ -723,7 +1265,7 @@ namespace Gekko.PaintTools.EditorTools
                     continue;
                 }
 
-                if (other.Mask == mask)
+                if (other.Mask == mask || other.TintMask == mask)
                 {
                     return true;
                 }
@@ -733,8 +1275,7 @@ namespace Gekko.PaintTools.EditorTools
         }
 
         // RGBA32 sin mips, sin sRGB (es una mascara de datos, no color) y readable para
-        // que el pincel la pueda leer por CPU. Mismos valores que tenia el Texture2D
-        // creado a mano, ahora aplicados al importer del PNG.
+        // que el pincel la pueda leer por CPU.
         private static void ConfigureMaskImporter(string assetPath)
         {
             if (AssetImporter.GetAtPath(assetPath) is not TextureImporter importer)
@@ -764,6 +1305,56 @@ namespace Gekko.PaintTools.EditorTools
 
             importer.isReadable = true;
             importer.SaveAndReimport();
+        }
+
+        // -------------------------------------------------------------- material
+
+        /// <summary>El material del primer renderer asignado, que es de donde se lee la paleta de texturas.</summary>
+        private static Material GetActiveMaterial(PathCanvas canvas)
+        {
+            Renderer[] renderers = canvas.TargetRenderers;
+            if (renderers == null)
+            {
+                return null;
+            }
+
+            foreach (Renderer renderer in renderers)
+            {
+                if (renderer != null && renderer.sharedMaterial != null)
+                {
+                    return renderer.sharedMaterial;
+                }
+            }
+
+            return null;
+        }
+
+        private static bool IsSlotEnabled(Material material, int slot)
+        {
+            if (material == null)
+            {
+                return slot == 1; // Sin material para consultar, se asume el minimo (Textura 1).
+            }
+
+            if (slot == 1)
+            {
+                return true; // Textura 1 no tiene toggle: siempre es la capa pintable minima.
+            }
+
+            string property = $"_Tex{slot}Enabled";
+            return material.HasProperty(property) && material.GetFloat(property) > 0.5f;
+        }
+
+        private static string SlotDisplayName(PathCanvas canvas, int slot)
+        {
+            Material material = GetActiveMaterial(canvas);
+            if (material == null)
+            {
+                return "sin material";
+            }
+
+            Texture tex = material.GetTexture($"_Tex{slot}");
+            return tex != null ? tex.name : "sin asignar";
         }
     }
 }
