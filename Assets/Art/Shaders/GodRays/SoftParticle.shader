@@ -77,15 +77,23 @@ Shader "Gekko/SoftParticle"
                 float d = length(IN.uv * 2.0 - 1.0);
                 float shape = pow(smoothstep(0.0, 1.0, saturate(1.0 - d)), _Falloff);
 
+                float camDist = distance(_WorldSpaceCameraPos, IN.positionWS);
+                float camFade = saturate((camDist - _CamFadeStart) / max(_CamFadeEnd - _CamFadeStart, 1e-3));
+
+                // El sprite es un quad pero la forma es un circulo (shape): las 4
+                // esquinas (~21% del area) ya dan alpha 0 sin tocar la textura de
+                // depth. Con decenas de particulas grandes superpuestas (la niebla
+                // llega a blades de 24 unidades) esa lectura de depth es lo mas caro
+                // del shader, asi que la saltamos donde ya sabemos que no se ve.
+                half4 col = IN.color * _Color;
+                float cheapAlpha = col.a * shape * camFade;
+                clip(cheapAlpha - 0.003);
+
                 float2 screenUV = IN.positionCS.xy / _ScaledScreenParams.xy;
                 float sceneDepth = LinearEyeDepth(SampleSceneDepth(screenUV), _ZBufferParams);
                 float soft = saturate((sceneDepth - IN.positionCS.w) / max(_SoftDistance, 1e-3));
 
-                float camDist = distance(_WorldSpaceCameraPos, IN.positionWS);
-                float camFade = saturate((camDist - _CamFadeStart) / max(_CamFadeEnd - _CamFadeStart, 1e-3));
-
-                half4 col = IN.color * _Color;
-                col.a = saturate(col.a * shape * soft * camFade);
+                col.a = saturate(cheapAlpha * soft);
                 return col;
             }
             ENDHLSL

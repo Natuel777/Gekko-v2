@@ -126,6 +126,18 @@ Shader "Gekko/LightShaft"
                 float topFade = 1.0 - smoothstep(1.0 - _TopFade, 1.0, t);
                 float bottomFade = smoothstep(0.0, _BottomFade, t);
 
+                // se desvanece cerca de la camara para evitar cortes bruscos
+                float camDist = distance(_WorldSpaceCameraPos, IN.positionWS);
+                float camFade = saturate((camDist - _CamFadeStart) / max(_CamFadeEnd - _CamFadeStart, 1e-3));
+
+                // Todos los factores de arriba son baratos (sin texturas). El quad
+                // estirado tiene mucho pixel fuera del cono visible del haz (bordes,
+                // punta, cerca de camara): si ya da transparente del todo, cortamos
+                // aca y nos ahorramos el ruido y la lectura de depth de abajo, que
+                // son las partes caras y se pagan por cada uno de los 18 haces.
+                float cheapMask = edge * topFade * bottomFade * camFade;
+                clip(cheapMask - 0.003);
+
                 // estrias que se desplazan lentamente + respiracion de cada haz
                 float n = ValueNoise(float2(IN.uv.x * _NoiseScale + IN.seed * 50.0, t * 1.5 + _Time.y * _NoiseSpeed));
                 float streak = lerp(1.0, n * 1.6, _NoiseStrength);
@@ -136,11 +148,7 @@ Shader "Gekko/LightShaft"
                 float sceneDepth = LinearEyeDepth(SampleSceneDepth(screenUV), _ZBufferParams);
                 float soft = saturate((sceneDepth - IN.positionCS.w) / max(_SoftDistance, 1e-3));
 
-                // se desvanece cerca de la camara para evitar cortes bruscos
-                float camDist = distance(_WorldSpaceCameraPos, IN.positionWS);
-                float camFade = saturate((camDist - _CamFadeStart) / max(_CamFadeEnd - _CamFadeStart, 1e-3));
-
-                float alpha = edge * topFade * bottomFade * streak * breathe * soft * camFade * _Intensity * _Color.a;
+                float alpha = cheapMask * streak * breathe * soft * _Intensity * _Color.a;
                 return half4(_Color.rgb, saturate(alpha));
             }
             ENDHLSL
