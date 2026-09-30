@@ -1,13 +1,21 @@
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
 // Núcleo del desafío de purificación. Va en el MISMO GameObject que su collider: la lengua hace
 // hit.transform.GetComponent<IDamageable>(). No se destruye al romperse (la lengua todavía puede
 // tener la referencia hasta terminar de retraerse); se apaga el collider y el visual, o el visual pasa
 // al material purificado si hay uno asignado.
+// Al romperse, los renderers del núcleo cuyo material tenga la propiedad _Dissolve (M_Enredaderas, Nucleo) se
+// disuelven de 0 a 1 a _dissolveSpeed por segundo. El visual recién pasa a su estado final (purificado / oculto)
+// cuando el disolve termina; si ningún material tiene _Dissolve, cambia al instante como siempre.
 [RequireComponent(typeof(Collider))]
 public class PurificationCore : MonoBehaviour, IDamageable, IHitOncePerLick, IParticleSystemTarget
 {
+    // Propiedad del shader S_Enredaderas (la usan M_Enredaderas y Nucleo): 0 = entero, 1 = disuelto.
+    private static readonly int DissolveId = Shader.PropertyToID("_Dissolve");
+
     [Header("Config")]
     [SerializeField] private int _hitsToBreak = 1;
 
@@ -25,11 +33,17 @@ public class PurificationCore : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
     public bool CanBeTargeted => !IsBroken;
     public ParticleSystem Indicator => _indicator;
 
+    [Header("Dissolve (on break)")]
+    [Tooltip("Velocidad del disolve en unidades de _Dissolve por segundo: 0.5 = tarda 2 s en ir de 0 a 1, 2 = tarda 0.5 s. Solo corre cuando el núcleo se rompe.")]
+    [Min(0.01f)]
+    [SerializeField] private float _dissolveSpeed = 0.5f;
+
     [Header("Veins / Vines Art (optional)")]
     [SerializeField] private GameObject[] _activeWhileIntact;
     [SerializeField] private GameObject[] _activeWhenBroken;
 
     private Collider _collider;
+    private MaterialPropertyBlock _block;
     private int _hits;
 
     public bool IsBroken { get; private set; }
@@ -63,22 +77,106 @@ public class PurificationCore : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
 
         if(_collider != null) _collider.enabled = false;
 
-        if(_visual != null)
-        {
-            Renderer mesh = _purifiedMaterial != null ? _visual.GetComponentInChildren<Renderer>(true) : null;
+        // Si algún renderer tiene _Dissolve, se disuelve y recién después el visual pasa a su estado final.
+        // Si no, cambia al instante (núcleos con un material común, sin disolve).
+        List<Renderer> dissolving = GetDissolveTargets();
 
-            if(mesh != null) mesh.sharedMaterial = _purifiedMaterial;
-            
-            else _visual.SetActive(false);
-        }
+        if(dissolving.Count > 0) StartCoroutine(DissolveRoutine(dissolving));
+        else ApplyBrokenVisual();
 
         if(_breakParticle != null) _breakParticle.Play();
-        
+
         if(_breakSound != null) _breakSound.Play();
 
         SetActiveAll(_activeWhileIntact, false);
         SetActiveAll(_activeWhenBroken, true);
         Broken?.Invoke(this);
+    }
+
+    // Sube _Dissolve de 0 a 1 a _dissolveSpeed por segundo (0.5 = 2 s). Corre una sola vez, al romperse el núcleo.
+    private IEnumerator DissolveRoutine(List<Renderer> targets)
+    {
+        float dissolve = 0f;
+        float speed = Mathf.Max(_dissolveSpeed, 0.01f);
+
+        while(dissolve < 1f)
+        {
+            dissolve = Mathf.MoveTowards(dissolve, 1f, speed * Time.deltaTime);
+            SetDissolve(targets, dissolve);
+            yield return null;
+        }
+
+        // Ya disuelto del todo no se ve: se apaga para no seguir dibujándolo. La malla que recibe el material
+        // purificado queda afuera, porque ApplyBrokenVisual() la vuelve a mostrar con el material nuevo.
+        Renderer purifiedMesh = GetPurifiedMesh();
+
+        foreach(Renderer r in targets)
+            if(r != null && r != purifiedMesh) r.enabled = false;
+
+        ApplyBrokenVisual();
+    }
+
+    // El valor va en un MaterialPropertyBlock de cada renderer y NO en el material: M_Enredaderas lo comparten
+    // todas las enredaderas del nivel, y escribirlo ahí las disolvería a todas (y dejaría el asset modificado).
+    // Así solo se disuelve lo de ESTE núcleo y el material sigue en 0 para todo lo demás.
+    private void SetDissolve(List<Renderer> targets, float value)
+    {
+        _block ??= new MaterialPropertyBlock();
+
+        foreach(Renderer r in targets)
+        {
+            if(r == null) continue;
+
+            r.GetPropertyBlock(_block);
+            _block.SetFloat(DissolveId, value);
+            r.SetPropertyBlock(_block);
+        }
+    }
+
+    // Renderers del núcleo (él mismo y sus hijos activos) cuyo material tiene _Dissolve. Devuelve una lista vacía si
+    // el objeto está inactivo (sin corrutina no hay animación) o si ningún material la tiene; en los dos casos el
+    // visual cambia al instante, como antes.
+    private List<Renderer> GetDissolveTargets()
+    {
+        List<Renderer> targets = new();
+
+        if(!gameObject.activeInHierarchy) return targets;
+
+        foreach(Renderer r in GetComponentsInChildren<Renderer>())
+            if(HasDissolve(r)) targets.Add(r);
+
+        return targets;
+    }
+
+    private static bool HasDissolve(Renderer r)
+    {
+        foreach(Material material in r.sharedMaterials)
+            if(material != null && material.HasProperty(DissolveId)) return true;
+
+        return false;
+    }
+
+    // Estado final del visual: la malla recibe el material purificado, o se oculta si no hay uno asignado.
+    private void ApplyBrokenVisual()
+    {
+        if(_visual == null) return;
+
+        Renderer mesh = GetPurifiedMesh();
+
+        if(mesh != null)
+        {
+            // Se saca el override del disolve: si el material purificado también tuviera _Dissolve, heredaría el 1.
+            mesh.SetPropertyBlock(null);
+            mesh.sharedMaterial = _purifiedMaterial;
+        }
+
+        else _visual.SetActive(false);
+    }
+
+    // Malla de 'Visual' que recibe el material purificado. null si no hay material asignado (el visual se oculta).
+    private Renderer GetPurifiedMesh()
+    {
+        return _purifiedMaterial != null && _visual != null ? _visual.GetComponentInChildren<Renderer>(true) : null;
     }
 
     private static void SetActiveAll(GameObject[] objects, bool active)
