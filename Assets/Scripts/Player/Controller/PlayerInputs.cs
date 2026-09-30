@@ -145,8 +145,8 @@ public class PlayerInputs
         if(!pjController.TongueOut || _tongue.IsAttached)
             _tongue.ShootTongue();
     }
-    public void Respawn(InputAction.CallbackContext value) {GameManager.Instance.Respawn();}
 
+    public void Respawn(InputAction.CallbackContext value) {GameManager.Instance.Respawn();}
 
 
     private void PauseInput(InputAction.CallbackContext value)

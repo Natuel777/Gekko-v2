@@ -9,7 +9,7 @@ public class GekkoSwinging
     private Spring _spring;
     private Rigidbody _rb;
     private float _forwardThrustForce, _predictionSphereRadius, _horizontalThrustForce,
-                _extendCableSpeed, _maxTongueDistance;
+                _extendCableSpeed, _shortenCableSpeed, _maxTongueDistance;
     private Vector2 _thrustInput;
     private bool _shortenCablePressed;
     private RaycastHit _predictionHit;
@@ -57,7 +57,7 @@ public class GekkoSwinging
 
     public GekkoSwinging(Transform tongue, LayerMask layers, Transform transform, LineRenderer lineRenderer, Transform cam,
                         float forwardThrustForce, float horizontalThrustForce, float extendCableSpeed,
-                        Transform predictionPoint, float predictionSphereRadius, float maxTongueDistance,
+                        float shortenCableSpeed, Transform predictionPoint, float predictionSphereRadius, float maxTongueDistance,
                         int quality, float springDamper, float springStrength, float springVelocity,
                         float waveCount, float waveHeight, AnimationCurve waveAffectCurve,
                         float ropeGravity, float ropeDamping, int ropeIterations, float ropeSlack)
@@ -71,6 +71,7 @@ public class GekkoSwinging
         _forwardThrustForce = forwardThrustForce;
         _horizontalThrustForce = horizontalThrustForce;
         _extendCableSpeed = extendCableSpeed;
+        _shortenCableSpeed = Mathf.Max(0f, shortenCableSpeed);
         _predictionPoint = predictionPoint;
         _predictionSphereRadius = predictionSphereRadius;
         _maxTongueDistance = maxTongueDistance;
@@ -273,18 +274,14 @@ public class GekkoSwinging
 
         if(_shortenCablePressed)
         {
-            Vector3 directionToPoint = _grapplePoint - _transform.position;
-            _rb.AddForce(directionToPoint.normalized * _forwardThrustForce * Time.deltaTime);
             float distanceFromPoint = Vector3.Distance(_transform.position, _grapplePoint);
-            _joint.maxDistance = distanceFromPoint * 0.8f;
-            _joint.minDistance = distanceFromPoint * 0.25f;
-        }
 
-        if(_thrustInput.y < 0f)
-        {
-            float extendedDistanceFromPoint = Vector3.Distance(_transform.position, _grapplePoint) + _extendCableSpeed;
-            _joint.maxDistance = extendedDistanceFromPoint * 0.8f;
-            _joint.minDistance = extendedDistanceFromPoint * 0.25f;
+            // El largo máximo del cable baja _shortenCableSpeed metros por segundo (independiente del framerate).
+            // Se parte del menor entre el largo actual del joint y la distancia real, así si Gekko está colgando con
+            // cable de sobra el acortado empieza desde donde está el cable y no desde donde está Gekko.
+            float newMaxDistance = Mathf.Max(0f, Mathf.Min(_joint.maxDistance, distanceFromPoint) - _shortenCableSpeed * Time.deltaTime);
+            _joint.maxDistance = newMaxDistance;
+            _joint.minDistance = newMaxDistance * (0.25f / 0.8f); // misma proporción min/max que en StartGrapple
         }
     }
 

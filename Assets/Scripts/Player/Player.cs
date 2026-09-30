@@ -40,6 +40,8 @@ public class Player : MonoBehaviour
     [SerializeField] private float _forwardThrustForce = 15f;
     [SerializeField] private float _horizontalThrustForce = 10f;
     [SerializeField] private float _extendCableSpeed = 5f;
+    [Tooltip("Velocidad (metros por segundo) a la que se acorta el cable mientras se mantiene apretado el input de acortar.")]
+    [SerializeField] private float _shortenCableSpeed = 5f;
     [SerializeField] private Transform _predictionPoint;
     [SerializeField] private float _predictionSphereRadius = 0.5f;
     [SerializeField] private float _maxTongueDistance = 100f;
@@ -131,7 +133,7 @@ public class Player : MonoBehaviour
         cam.SetPJC(_pjController);
         _swinging = new GekkoSwinging(_tongue, _grappableLayers, transform, GetComponentInChildren<LineRenderer>(), Camera.main.transform,
                         _forwardThrustForce, _horizontalThrustForce, _extendCableSpeed,
-                        _predictionPoint, _predictionSphereRadius, _maxTongueDistance,
+                        _shortenCableSpeed, _predictionPoint, _predictionSphereRadius, _maxTongueDistance,
                         quality: _quality, springDamper: _springDamper, springStrength: _springStrength, springVelocity: _springVelocity,
                         waveCount: _waveCount, waveHeight: _waveHeight, waveAffectCurve: _waveAffectCurve,
                         ropeGravity: _ropeGravity, ropeDamping: _ropeDamping, ropeIterations: _ropeIterations, ropeSlack: _ropeSlack);
