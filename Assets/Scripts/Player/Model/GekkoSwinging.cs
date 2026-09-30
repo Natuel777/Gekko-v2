@@ -45,7 +45,16 @@ public class GekkoSwinging
     // con 0 la soga quedaría recta como una barra y sin movimiento.
     private float _ropeSlack;
     #endregion
-    
+
+    #region Height Limit
+    // Techo blando del swing (ver ApplyHeightLimit): Gekko no debería subir más arriba del punto de enganche.
+    //   _heightLimitOffset : corre el techo respecto de la altura del punto (0 = justo a su altura).
+    //   _heightLimitSpring : cuánto lo tira hacia abajo por cada metro que se pasó del techo (m/s² por metro).
+    //   _heightLimitDamper : cuánto frena su velocidad de subida mientras está pasado (m/s² por cada m/s).
+    //   _heightLimitMaxPull: tope de la aceleración hacia abajo (m/s²).
+    private float _heightLimitOffset, _heightLimitSpring, _heightLimitDamper, _heightLimitMaxPull;
+    #endregion
+
     private RotateGekkoWhileSwingin _gekkoRotation;
     
     #region Properties
@@ -60,7 +69,8 @@ public class GekkoSwinging
                         float shortenCableSpeed, Transform predictionPoint, float predictionSphereRadius, float maxTongueDistance,
                         int quality, float springDamper, float springStrength, float springVelocity,
                         float waveCount, float waveHeight, AnimationCurve waveAffectCurve,
-                        float ropeGravity, float ropeDamping, int ropeIterations, float ropeSlack)
+                        float ropeGravity, float ropeDamping, int ropeIterations, float ropeSlack,
+                        float heightLimitOffset, float heightLimitSpring, float heightLimitDamper, float heightLimitMaxPull)
     {
         _lineRenderer = lineRenderer;
         _tongueTip = tongue;
@@ -100,6 +110,12 @@ public class GekkoSwinging
         // El sobrante de soga no puede ser negativo: una soga más corta que la distancia entre sus puntas quedaría
         // siempre estirada, sin colgar.
         _ropeSlack = Mathf.Max(0f, ropeSlack);
+
+        // Resorte, amortiguador y tope no pueden ser negativos: un valor negativo empujaría a Gekko hacia ARRIBA.
+        _heightLimitOffset = heightLimitOffset;
+        _heightLimitSpring = Mathf.Max(0f, heightLimitSpring);
+        _heightLimitDamper = Mathf.Max(0f, heightLimitDamper);
+        _heightLimitMaxPull = Mathf.Max(0f, heightLimitMaxPull);
 
         _gekkoRotation = new RotateGekkoWhileSwingin(this, _rb);
     }
@@ -173,6 +189,26 @@ public class GekkoSwinging
         if(!_joint) return;
 
         _gekkoRotation.ArtificialFixedUpdate();
+        ApplyHeightLimit();
+    }
+
+    // Techo blando del swing: Gekko no puede subir más arriba del punto de enganche (+ _heightLimitOffset). Si se pasa,
+    // se lo tira hacia abajo como un resorte. Solo actúa sobre el eje Y, así que el swing horizontal sigue igual.
+    // Va en FixedUpdate porque es física real sobre el Rigidbody (a diferencia de ODMGearMovement, que corre en Update).
+    //  - Resorte: tira más fuerte cuanto más se pasó del techo.
+    //  - Amortiguador: frena la velocidad de SUBIDA. Solo la de subida, para no frenar también la vuelta hacia abajo.
+    //  - Tope: la aceleración total no pasa de _heightLimitMaxPull. Sin tope, si Gekko engancha un punto que está muy
+    //    por debajo de él, el resorte lo tiraría con una fuerza enorme de golpe.
+    private void ApplyHeightLimit()
+    {
+        float overshoot = _rb.position.y - (_grapplePoint.y + _heightLimitOffset);
+        if(overshoot <= 0f) return;
+
+        float upwardSpeed = Mathf.Max(0f, _rb.linearVelocity.y);
+        float pull = Mathf.Min(_heightLimitSpring * overshoot + _heightLimitDamper * upwardSpeed, _heightLimitMaxPull);
+
+        // ForceMode.Acceleration: los valores están en m/s² y no dependen de la masa del Rigidbody.
+        _rb.AddForce(Vector3.down * pull, ForceMode.Acceleration);
     }
 
     // Un frame de la lengua. Son 5 pasos, siempre en este orden:
