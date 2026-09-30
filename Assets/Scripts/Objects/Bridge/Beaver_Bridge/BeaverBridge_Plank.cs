@@ -4,19 +4,17 @@ public class BeaverBridge_Plank : CarriableObject, IRespawneable
 {
     private Vector3 _respawnPoint;
     private Quaternion _respawnRot;
-    private MeshRenderer _mesh;
     private void Start()
     {
-        _mesh = GetComponentInChildren<MeshRenderer>();
         _respawnPoint = transform.position;
         _respawnRot = transform.rotation;
         LevelOneManager.Instance.OnBeaverMission += Activate;
+        _canInteract = false;
     }
     private void Activate()
     {
-        _mesh.enabled = true;
-        _col.enabled = true;
-        _rb.useGravity = true;
+        _canInteract = true;
+        gameObject.layer = 9;
     }
     public void Positioned()
     {
