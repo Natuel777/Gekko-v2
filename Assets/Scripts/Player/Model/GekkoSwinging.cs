@@ -130,6 +130,7 @@ public class GekkoSwinging
 
         IsSwinging = true;
         _grapplePoint = grapplePointTransform.position;
+        _gekkoRotation.StartSwing();
         _joint = _transform.gameObject.AddComponent<SpringJoint>();
         _joint.autoConfigureConnectedAnchor = false;
         _joint.connectedAnchor = _grapplePoint;
