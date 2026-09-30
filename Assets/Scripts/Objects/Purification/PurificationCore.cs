@@ -43,7 +43,7 @@ public class PurificationCore : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
     [SerializeField] private GameObject[] _activeWhenBroken;
 
     private Collider _collider;
-    private MaterialPropertyBlock _block;
+    private readonly List<Material> _dissolveMaterials = new();
     private int _hits;
 
     public bool IsBroken { get; private set; }
@@ -96,13 +96,16 @@ public class PurificationCore : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
     // Sube _Dissolve de 0 a 1 a _dissolveSpeed por segundo (0.5 = 2 s). Corre una sola vez, al romperse el núcleo.
     private IEnumerator DissolveRoutine(List<Renderer> targets)
     {
+        List<Material> materials = GetDissolveMaterials(targets);
         float dissolve = 0f;
         float speed = Mathf.Max(_dissolveSpeed, 0.01f);
+
+        SetDissolve(materials, dissolve);
 
         while(dissolve < 1f)
         {
             dissolve = Mathf.MoveTowards(dissolve, 1f, speed * Time.deltaTime);
-            SetDissolve(targets, dissolve);
+            SetDissolve(materials, dissolve);
             yield return null;
         }
 
@@ -116,21 +119,37 @@ public class PurificationCore : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
         ApplyBrokenVisual();
     }
 
-    // El valor va en un MaterialPropertyBlock de cada renderer y NO en el material: M_Enredaderas lo comparten
-    // todas las enredaderas del nivel, y escribirlo ahí las disolvería a todas (y dejaría el asset modificado).
-    // Así solo se disuelve lo de ESTE núcleo y el material sigue en 0 para todo lo demás.
-    private void SetDissolve(List<Renderer> targets, float value)
+    // r.materials da una instancia propia de cada renderer: M_Enredaderas lo comparten todas las enredaderas del nivel,
+    // y escribir en el asset las disolvería a todas. No se usa MaterialPropertyBlock porque el GPU Resident Drawer
+    // (activo en PC_RPAsset) no es compatible con property blocks.
+    private List<Material> GetDissolveMaterials(List<Renderer> targets)
     {
-        _block ??= new MaterialPropertyBlock();
+        List<Material> materials = new();
 
         foreach(Renderer r in targets)
         {
             if(r == null) continue;
 
-            r.GetPropertyBlock(_block);
-            _block.SetFloat(DissolveId, value);
-            r.SetPropertyBlock(_block);
+            foreach(Material material in r.materials)
+                if(material != null && material.HasProperty(DissolveId)) materials.Add(material);
         }
+
+        _dissolveMaterials.AddRange(materials);
+
+        return materials;
+    }
+
+    private static void SetDissolve(List<Material> materials, float value)
+    {
+        foreach(Material material in materials)
+            if(material != null) material.SetFloat(DissolveId, value);
+    }
+
+    // Las instancias creadas por r.materials no las libera Unity solas hasta cambiar de escena.
+    private void OnDestroy()
+    {
+        foreach(Material material in _dissolveMaterials)
+            if(material != null) Destroy(material);
     }
 
     // Renderers del núcleo (él mismo y sus hijos activos) cuyo material tiene _Dissolve. Devuelve una lista vacía si
@@ -163,12 +182,7 @@ public class PurificationCore : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
 
         Renderer mesh = GetPurifiedMesh();
 
-        if(mesh != null)
-        {
-            // Se saca el override del disolve: si el material purificado también tuviera _Dissolve, heredaría el 1.
-            mesh.SetPropertyBlock(null);
-            mesh.sharedMaterial = _purifiedMaterial;
-        }
+        if(mesh != null) mesh.sharedMaterial = _purifiedMaterial;
 
         else _visual.SetActive(false);
     }

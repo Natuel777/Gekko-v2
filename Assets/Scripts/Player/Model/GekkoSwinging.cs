@@ -305,9 +305,7 @@ public class GekkoSwinging
         Vector3 flatForward = Vector3.ProjectOnPlane(_camera.forward, Vector3.up).normalized;
         Vector3 flatRight = Vector3.ProjectOnPlane(_camera.right, Vector3.up).normalized;
         _rb.AddForce(flatRight * _thrustInput.x * _horizontalThrustForce * Time.deltaTime);
-
-        if(_thrustInput.y > 0f)
-            _rb.AddForce(flatForward * _thrustInput.y * _forwardThrustForce * Time.deltaTime);
+        _rb.AddForce(flatForward * _thrustInput.y * _forwardThrustForce * Time.deltaTime);
 
         if(_shortenCablePressed)
         {
