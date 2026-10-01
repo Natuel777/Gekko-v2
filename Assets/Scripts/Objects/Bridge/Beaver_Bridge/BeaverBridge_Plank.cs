@@ -1,9 +1,14 @@
 using UnityEngine;
 
-public class BeaverBridge_Plank : CarriableObject, IRespawneable
+public class BeaverBridge_Plank : CarriableObject, IRespawneable, IParticleSystemTarget
 {
     private Vector3 _respawnPoint;
     private Quaternion _respawnRot;
+    [SerializeField] private ParticleSystem _particle;
+    public ParticleSystem Indicator => _particle;
+
+    public bool CanBeTargeted => _canInteract;
+
     private void Start()
     {
         _respawnPoint = transform.position;
