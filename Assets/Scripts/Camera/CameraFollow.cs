@@ -155,6 +155,7 @@ public class CameraFollow : MonoBehaviour
         if (alignment >= _upThreshold || _pjC.Grounded)
         {
             _camera.VerticalAxis.Range = new Vector2(0f, 80f);
+            //_camera.VerticalAxis.Range = new Vector2(-80f, 80f);
         }
         else
         {

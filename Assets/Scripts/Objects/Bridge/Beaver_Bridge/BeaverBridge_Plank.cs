@@ -1,22 +1,25 @@
 using UnityEngine;
 
-public class BeaverBridge_Plank : CarriableObject, IRespawneable
+public class BeaverBridge_Plank : CarriableObject, IRespawneable, IParticleSystemTarget
 {
     private Vector3 _respawnPoint;
     private Quaternion _respawnRot;
-    private MeshRenderer _mesh;
+    [SerializeField] private ParticleSystem _particle;
+    public ParticleSystem Indicator => _particle;
+
+    public bool CanBeTargeted => _canInteract;
+
     private void Start()
     {
-        _mesh = GetComponentInChildren<MeshRenderer>();
         _respawnPoint = transform.position;
         _respawnRot = transform.rotation;
         LevelOneManager.Instance.OnBeaverMission += Activate;
+        _canInteract = false;
     }
     private void Activate()
     {
-        _mesh.enabled = true;
-        _col.enabled = true;
-        _rb.useGravity = true;
+        _canInteract = true;
+        gameObject.layer = 9;
     }
     public void Positioned()
     {

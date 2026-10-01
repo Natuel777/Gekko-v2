@@ -22,12 +22,13 @@ public class CarriableObject : InteractableObject
         _rb.isKinematic = true;
     }
 
-    public override void Drop()
+    public override void Drop(Vector3 dropPos, float rotationY)
     {
         Transform t = null;
         if (ScreenManager.Instance) t = ScreenManager.Instance.GetComponent<ConfigGameScene>().mainGame;
         transform.SetParent(t);
-        transform.rotation = new Quaternion(0, transform.rotation.y, 0, 1);
+        transform.position = dropPos;
+        transform.rotation = new Quaternion(0, rotationY, 0, 1);
         transform.localScale = _originalScale;
         _col.enabled = true;
         _rb.isKinematic = false;

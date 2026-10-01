@@ -196,16 +196,25 @@ public class TongueManager : MonoBehaviour
             if(hit.transform.GetComponent<BaseObject>() != null || hit.transform.GetComponent<IDamageable>() !=null)
             {
                 _object = hit.transform;
-                if (_object.TryGetComponent(out BringgableObject bringgable))
-                {
-                    if (bringgable.CanMove)
-                    {
-                        bringgable.Grab();
 
+                if (_object.TryGetComponent(out InteractableObject obj))
+                {
+                    if(!obj.canInteract)  _object = null; 
+
+                    if(_object != null)
+                    {
+                        if (_object.TryGetComponent(out BringgableObject bringgable))
+                        {
+                            if (bringgable.CanMove)
+                            {
+                                bringgable.Grab();
+
+                            }
+                            else _object = null;
+                        }
                     }
-                    else _object = null;
                 }
-                    
+                
                 if (_object != null)
                 {
                     Collider col = _object.GetComponentInChildren<Collider>();
@@ -218,7 +227,7 @@ public class TongueManager : MonoBehaviour
                     if (_object.GetComponent<IDamageable>() != null) _pjViewer.Attack();
                     else if (_object.GetComponent<Collectible>() != null) _pjViewer.Attack();
                     else _pjViewer.Mouth(true);
-                }     
+                }
             }
             else _pjViewer.Attack();
             _finalPos = hit.point;
@@ -237,9 +246,7 @@ public class TongueManager : MonoBehaviour
     {
         if (_object)
         {
-            if(_object.TryGetComponent(out InteractableObject a)) a.Drop();
-            _object = null;
-            _attached = false;
+            if(_object.TryGetComponent(out InteractableObject a)) DropObject();
         }
         _currentPos = _startPos;
         _blend.SetBlendShapeWeight(0, 0f);
@@ -255,34 +262,31 @@ public class TongueManager : MonoBehaviour
     {
         if (_object == null) return;
         _pjController.TongueOut = true;
-        _object.GetComponent<InteractableObject>().Drop();
-        _currentPos = _object.position;
-        _object = null;
-        _attached = false;
+        DropObject();
         _stopDist = 0.05f;
-        _startPos = transform.position;
-        _pjController.HeadLocate();
-        _pjController.CanRotate = true;
         _retracting = true;
         _pjViewer.Mouth(false);
     }
     private void DropObject()
     {
-        _currentPos = _object.position;
+        Vector3 pos = _object.position;
+        _currentPos = pos;
+        float rot= transform.rotation.y;
         if (_object.TryGetComponent(out GrabbableObject grabObj))
         {
-            grabObj.Drop();
+            grabObj.Drop(pos, rot);
             _object = null;
         }
         else if (_object.TryGetComponent(out CarriableObject carryObj))
         {
-            carryObj.Drop();
+            pos += -transform.forward * 0.5f;
+            carryObj.Drop(pos, rot);
             _attached = false;
             _object = null;
         }
         else if (_object.TryGetComponent(out BringgableObject bringgable))
         {
-            bringgable.Drop();
+            bringgable.Drop(pos, rot);
 
             _attached = false;
             _object = null;
