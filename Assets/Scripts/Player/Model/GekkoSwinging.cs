@@ -323,10 +323,13 @@ public class GekkoSwinging
     private void CheckForSwingPoints()
     {
         bool foundPoint = TryFindSwingPoint(out RaycastHit hit);
+        ParticleSystem ps = _predictionPoint.GetComponentInChildren<ParticleSystem>();
+
+        if(ps == null) return;
 
         if(!foundPoint)
         {
-            _predictionPoint.gameObject.SetActive(false);
+            ps.Stop();
             return;
         }
 
@@ -334,11 +337,11 @@ public class GekkoSwinging
 
         if(hitTransform == null)
         {
-            _predictionPoint.gameObject.SetActive(false);
+            ps.Stop();
             return;
         }
 
-        _predictionPoint.gameObject.SetActive(true);
+        ps.Play();
 
         if(hitTransform.position != _previousHitPosition)
             _predictionPoint.position = hitTransform.position;
