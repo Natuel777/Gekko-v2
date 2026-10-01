@@ -9,7 +9,7 @@ public class GekkoSwinging
     private Spring _spring;
     private Rigidbody _rb;
     private float _forwardThrustForce, _predictionSphereRadius, _horizontalThrustForce,
-                _extendCableSpeed, _maxTongueDistance;
+                _extendCableSpeed, _shortenCableSpeed, _maxTongueDistance;
     private Vector2 _thrustInput;
     private bool _shortenCablePressed;
     private RaycastHit _predictionHit;
@@ -45,7 +45,16 @@ public class GekkoSwinging
     // con 0 la soga quedaría recta como una barra y sin movimiento.
     private float _ropeSlack;
     #endregion
-    
+
+    #region Height Limit
+    // Techo blando del swing (ver ApplyHeightLimit): Gekko no debería subir más arriba del punto de enganche.
+    //   _heightLimitOffset : corre el techo respecto de la altura del punto (0 = justo a su altura).
+    //   _heightLimitSpring : cuánto lo tira hacia abajo por cada metro que se pasó del techo (m/s² por metro).
+    //   _heightLimitDamper : cuánto frena su velocidad de subida mientras está pasado (m/s² por cada m/s).
+    //   _heightLimitMaxPull: tope de la aceleración hacia abajo (m/s²).
+    private float _heightLimitOffset, _heightLimitSpring, _heightLimitDamper, _heightLimitMaxPull;
+    #endregion
+
     private RotateGekkoWhileSwingin _gekkoRotation;
     
     #region Properties
@@ -57,10 +66,11 @@ public class GekkoSwinging
 
     public GekkoSwinging(Transform tongue, LayerMask layers, Transform transform, LineRenderer lineRenderer, Transform cam,
                         float forwardThrustForce, float horizontalThrustForce, float extendCableSpeed,
-                        Transform predictionPoint, float predictionSphereRadius, float maxTongueDistance,
+                        float shortenCableSpeed, Transform predictionPoint, float predictionSphereRadius, float maxTongueDistance,
                         int quality, float springDamper, float springStrength, float springVelocity,
                         float waveCount, float waveHeight, AnimationCurve waveAffectCurve,
-                        float ropeGravity, float ropeDamping, int ropeIterations, float ropeSlack)
+                        float ropeGravity, float ropeDamping, int ropeIterations, float ropeSlack,
+                        float heightLimitOffset, float heightLimitSpring, float heightLimitDamper, float heightLimitMaxPull)
     {
         _lineRenderer = lineRenderer;
         _tongueTip = tongue;
@@ -71,6 +81,7 @@ public class GekkoSwinging
         _forwardThrustForce = forwardThrustForce;
         _horizontalThrustForce = horizontalThrustForce;
         _extendCableSpeed = extendCableSpeed;
+        _shortenCableSpeed = Mathf.Max(0f, shortenCableSpeed);
         _predictionPoint = predictionPoint;
         _predictionSphereRadius = predictionSphereRadius;
         _maxTongueDistance = maxTongueDistance;
@@ -100,6 +111,12 @@ public class GekkoSwinging
         // siempre estirada, sin colgar.
         _ropeSlack = Mathf.Max(0f, ropeSlack);
 
+        // Resorte, amortiguador y tope no pueden ser negativos: un valor negativo empujaría a Gekko hacia ARRIBA.
+        _heightLimitOffset = heightLimitOffset;
+        _heightLimitSpring = Mathf.Max(0f, heightLimitSpring);
+        _heightLimitDamper = Mathf.Max(0f, heightLimitDamper);
+        _heightLimitMaxPull = Mathf.Max(0f, heightLimitMaxPull);
+
         _gekkoRotation = new RotateGekkoWhileSwingin(this, _rb);
     }
 
@@ -113,6 +130,7 @@ public class GekkoSwinging
 
         IsSwinging = true;
         _grapplePoint = grapplePointTransform.position;
+        _gekkoRotation.StartSwing();
         _joint = _transform.gameObject.AddComponent<SpringJoint>();
         _joint.autoConfigureConnectedAnchor = false;
         _joint.connectedAnchor = _grapplePoint;
@@ -172,6 +190,26 @@ public class GekkoSwinging
         if(!_joint) return;
 
         _gekkoRotation.ArtificialFixedUpdate();
+        ApplyHeightLimit();
+    }
+
+    // Techo blando del swing: Gekko no puede subir más arriba del punto de enganche (+ _heightLimitOffset). Si se pasa,
+    // se lo tira hacia abajo como un resorte. Solo actúa sobre el eje Y, así que el swing horizontal sigue igual.
+    // Va en FixedUpdate porque es física real sobre el Rigidbody (a diferencia de ODMGearMovement, que corre en Update).
+    //  - Resorte: tira más fuerte cuanto más se pasó del techo.
+    //  - Amortiguador: frena la velocidad de SUBIDA. Solo la de subida, para no frenar también la vuelta hacia abajo.
+    //  - Tope: la aceleración total no pasa de _heightLimitMaxPull. Sin tope, si Gekko engancha un punto que está muy
+    //    por debajo de él, el resorte lo tiraría con una fuerza enorme de golpe.
+    private void ApplyHeightLimit()
+    {
+        float overshoot = _rb.position.y - (_grapplePoint.y + _heightLimitOffset);
+        if(overshoot <= 0f) return;
+
+        float upwardSpeed = Mathf.Max(0f, _rb.linearVelocity.y);
+        float pull = Mathf.Min(_heightLimitSpring * overshoot + _heightLimitDamper * upwardSpeed, _heightLimitMaxPull);
+
+        // ForceMode.Acceleration: los valores están en m/s² y no dependen de la masa del Rigidbody.
+        _rb.AddForce(Vector3.down * pull, ForceMode.Acceleration);
     }
 
     // Un frame de la lengua. Son 5 pasos, siempre en este orden:
@@ -267,24 +305,18 @@ public class GekkoSwinging
         Vector3 flatForward = Vector3.ProjectOnPlane(_camera.forward, Vector3.up).normalized;
         Vector3 flatRight = Vector3.ProjectOnPlane(_camera.right, Vector3.up).normalized;
         _rb.AddForce(flatRight * _thrustInput.x * _horizontalThrustForce * Time.deltaTime);
-
-        if(_thrustInput.y > 0f)
-            _rb.AddForce(flatForward * _thrustInput.y * _forwardThrustForce * Time.deltaTime);
+        _rb.AddForce(flatForward * _thrustInput.y * _forwardThrustForce * Time.deltaTime);
 
         if(_shortenCablePressed)
         {
-            Vector3 directionToPoint = _grapplePoint - _transform.position;
-            _rb.AddForce(directionToPoint.normalized * _forwardThrustForce * Time.deltaTime);
             float distanceFromPoint = Vector3.Distance(_transform.position, _grapplePoint);
-            _joint.maxDistance = distanceFromPoint * 0.8f;
-            _joint.minDistance = distanceFromPoint * 0.25f;
-        }
 
-        if(_thrustInput.y < 0f)
-        {
-            float extendedDistanceFromPoint = Vector3.Distance(_transform.position, _grapplePoint) + _extendCableSpeed;
-            _joint.maxDistance = extendedDistanceFromPoint * 0.8f;
-            _joint.minDistance = extendedDistanceFromPoint * 0.25f;
+            // El largo máximo del cable baja _shortenCableSpeed metros por segundo (independiente del framerate).
+            // Se parte del menor entre el largo actual del joint y la distancia real, así si Gekko está colgando con
+            // cable de sobra el acortado empieza desde donde está el cable y no desde donde está Gekko.
+            float newMaxDistance = Mathf.Max(0f, Mathf.Min(_joint.maxDistance, distanceFromPoint) - _shortenCableSpeed * Time.deltaTime);
+            _joint.maxDistance = newMaxDistance;
+            _joint.minDistance = newMaxDistance * (0.25f / 0.8f); // misma proporción min/max que en StartGrapple
         }
     }
 

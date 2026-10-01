@@ -16,6 +16,9 @@ public class PurificationChallenge : MonoBehaviour
 {
     public enum ChallengeState { Active, ShieldDown, Completed }
 
+    // Propiedad del shader S_Enredaderas (la usa M_Enredaderas): 0 = entero, 1 = disuelto.
+    private static readonly int DissolveId = Shader.PropertyToID("_Dissolve");
+
     [Header("Data")]
     [SerializeField] private PurificationChallengeDataSO _data;
 
@@ -34,10 +37,13 @@ public class PurificationChallenge : MonoBehaviour
     [SerializeField] private HeavyBeetle[] _enemies;
 
     [Header("Art")]
-    [Tooltip("Se apagan al completar el desafío (zona corrompida). No pueden ser este objeto ni un ancestro.")]
+    [Tooltip("Se apagan al completar el desafío (zona corrompida). No pueden ser este objeto ni un ancestro. Los renderers con _Dissolve (M_Enredaderas) de ellos y de sus hijos se disuelven antes de apagarse.")]
     [SerializeField] private GameObject[] _corruptedVisuals;
     [Tooltip("Se prenden al completar el desafío (zona purificada).")]
     [SerializeField] private GameObject[] _purifiedVisuals;
+    [Tooltip("Velocidad del disolve de los visuales corrompidos en unidades de _Dissolve por segundo: 0.5 = tarda 2 s en ir de 0 a 1.")]
+    [Min(0.01f)]
+    [SerializeField] private float _dissolveSpeed = 0.5f;
 
     [Header("HUD")]
     [SerializeField] private Transform _canvas;
@@ -48,6 +54,7 @@ public class PurificationChallenge : MonoBehaviour
 
     private readonly List<HeavyBeetle> _allEnemies = new();
     private readonly HashSet<HeavyBeetle> _enemySet = new();
+    private readonly List<Material> _dissolveMaterials = new();
     private RecorruptScheduler _scheduler;
     private Camera _mainCamera;
     private int _total, _remaining;
@@ -122,6 +129,13 @@ public class PurificationChallenge : MonoBehaviour
     {
         Unsubscribe();
         EndBeat();
+    }
+
+    // Las instancias creadas por r.materials no las libera Unity solas hasta cambiar de escena.
+    private void OnDestroy()
+    {
+        foreach(Material material in _dissolveMaterials)
+            if(material != null) Destroy(material);
     }
 
     #region Subscriptions
@@ -251,7 +265,7 @@ public class PurificationChallenge : MonoBehaviour
 
         if(_pathBarrier != null) _pathBarrier.Drop();
 
-        SetActiveAll(_corruptedVisuals, false);
+        HideCorruptedVisuals();
         SetActiveAll(_purifiedVisuals, true);
 
         Completed?.Invoke();
@@ -298,6 +312,79 @@ public class PurificationChallenge : MonoBehaviour
         }
 
         if(_canvas != null) _canvas.gameObject.SetActive(false);
+    }
+    #endregion
+
+    #region Dissolve
+    // Los renderers con _Dissolve bajo los visuales corrompidos (M_Enredaderas) se disuelven de 0 a 1 y recién después
+    // se apaga todo; si ninguno tiene la propiedad, se apagan al instante como antes.
+    private void HideCorruptedVisuals()
+    {
+        List<Material> materials = GetDissolveMaterials(_corruptedVisuals);
+
+        if(materials.Count > 0) StartCoroutine(DissolveRoutine(materials));
+        else SetActiveAll(_corruptedVisuals, false);
+    }
+
+    // Sube _Dissolve de 0 a 1 a _dissolveSpeed por segundo (0.5 = 2 s). Corre una sola vez, al purificarse la planta.
+    private IEnumerator DissolveRoutine(List<Material> materials)
+    {
+        float dissolve = 0f;
+        float speed = Mathf.Max(_dissolveSpeed, 0.01f);
+
+        SetDissolve(materials, dissolve);
+
+        while(dissolve < 1f)
+        {
+            dissolve = Mathf.MoveTowards(dissolve, 1f, speed * Time.deltaTime);
+            SetDissolve(materials, dissolve);
+            yield return null;
+        }
+
+        SetActiveAll(_corruptedVisuals, false);
+    }
+
+    // r.materials da una instancia propia de cada renderer: M_Enredaderas es un asset compartido y escribir en él
+    // disolvería todas las enredaderas del nivel. No se usa MaterialPropertyBlock porque el GPU Resident Drawer
+    // (activo en PC_RPAsset) no es compatible con property blocks.
+    private List<Material> GetDissolveMaterials(GameObject[] roots)
+    {
+        List<Material> materials = new();
+        HashSet<Renderer> visited = new();
+
+        if(roots == null) return materials;
+
+        foreach(GameObject root in roots)
+        {
+            // Mismo límite que SetActiveAll: este objeto o un ancestro no se apaga, así que tampoco se disuelve.
+            if(root == null || transform.IsChildOf(root.transform)) continue;
+
+            foreach(Renderer r in root.GetComponentsInChildren<Renderer>())
+            {
+                if(!visited.Add(r) || !HasDissolve(r)) continue;
+
+                foreach(Material material in r.materials)
+                    if(material != null && material.HasProperty(DissolveId)) materials.Add(material);
+            }
+        }
+
+        _dissolveMaterials.AddRange(materials);
+
+        return materials;
+    }
+
+    private static bool HasDissolve(Renderer r)
+    {
+        foreach(Material material in r.sharedMaterials)
+            if(material != null && material.HasProperty(DissolveId)) return true;
+
+        return false;
+    }
+
+    private static void SetDissolve(List<Material> materials, float value)
+    {
+        foreach(Material material in materials)
+            if(material != null) material.SetFloat(DissolveId, value);
     }
     #endregion
 

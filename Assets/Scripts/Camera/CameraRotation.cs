@@ -37,10 +37,10 @@ public class CameraRotation : MonoBehaviour
     {
         bool playerIsMoving = _pjC.IsMoving;
 
-        if (playerIsMoving)
+        if(playerIsMoving)
             _timeSincePjMoved = 0f;
-        else
-            _timeSincePjMoved += Time.deltaTime;
+        
+        else _timeSincePjMoved += Time.deltaTime;
 
         //if (!_movingCamera && _timeSincePjMoved < _alignDelay)
         //{

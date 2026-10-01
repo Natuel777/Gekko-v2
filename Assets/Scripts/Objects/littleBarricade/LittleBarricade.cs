@@ -44,15 +44,13 @@ public class LittleBarricade : MonoBehaviour,IDamageable
         while (elapsed < _fadeDuration)
         {
             elapsed += Time.deltaTime;
-            float alpha = Mathf.Lerp(1f, 0f, elapsed / _fadeDuration);
+            float alpha = Mathf.Lerp(0f, 1f, elapsed / _fadeDuration);
 
             foreach (var mat in materials)
             {
-                if (mat.HasProperty("_Color"))
+                if (mat.HasProperty("_Dissolve"))
                 {
-                    Color c = mat.color;
-                    c.a = alpha;
-                    mat.color = c;
+                    mat.SetFloat("_Dissolve", alpha);
                 }
             }
 

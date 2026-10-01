@@ -40,9 +40,21 @@ public class Player : MonoBehaviour
     [SerializeField] private float _forwardThrustForce = 15f;
     [SerializeField] private float _horizontalThrustForce = 10f;
     [SerializeField] private float _extendCableSpeed = 5f;
+    [Tooltip("Velocidad (metros por segundo) a la que se acorta el cable mientras se mantiene apretado el input de acortar.")]
+    [SerializeField] private float _shortenCableSpeed = 5f;
     [SerializeField] private Transform _predictionPoint;
     [SerializeField] private float _predictionSphereRadius = 0.5f;
     [SerializeField] private float _maxTongueDistance = 100f;
+
+    [Header("Swing Height Limit")]
+    [Tooltip("Corre el techo del swing respecto de la altura del punto de enganche, en metros. 0 = justo a su altura; positivo = puede subir un poco más; negativo = el techo queda más abajo.")]
+    [SerializeField] private float _heightLimitOffset = 0f;
+    [Tooltip("Qué tan fuerte lo tira hacia abajo cuando se pasa del techo, en m/s² por cada metro de exceso. Sube = techo más duro; baja = más elástico.")]
+    [SerializeField] private float _heightLimitSpring = 40f;
+    [Tooltip("Frena la velocidad de subida mientras está por encima del techo (m/s² por cada m/s de subida). Sube = menos rebote; 0 = rebote elástico puro.")]
+    [SerializeField] private float _heightLimitDamper = 4f;
+    [Tooltip("Aceleración máxima hacia abajo del efecto, en m/s². Evita un tirón brusco si Gekko engancha estando muy por encima del punto. 0 = desactiva el límite.")]
+    [SerializeField] private float _heightLimitMaxPull = 60f;
 
     [Header("Rope Visual (Wave)")]
     [Tooltip("Cantidad de segmentos de la cuerda (LineRenderer tendrá quality+1 puntos).")]
@@ -131,10 +143,12 @@ public class Player : MonoBehaviour
         cam.SetPJC(_pjController);
         _swinging = new GekkoSwinging(_tongue, _grappableLayers, transform, GetComponentInChildren<LineRenderer>(), Camera.main.transform,
                         _forwardThrustForce, _horizontalThrustForce, _extendCableSpeed,
-                        _predictionPoint, _predictionSphereRadius, _maxTongueDistance,
+                        _shortenCableSpeed, _predictionPoint, _predictionSphereRadius, _maxTongueDistance,
                         quality: _quality, springDamper: _springDamper, springStrength: _springStrength, springVelocity: _springVelocity,
                         waveCount: _waveCount, waveHeight: _waveHeight, waveAffectCurve: _waveAffectCurve,
-                        ropeGravity: _ropeGravity, ropeDamping: _ropeDamping, ropeIterations: _ropeIterations, ropeSlack: _ropeSlack);
+                        ropeGravity: _ropeGravity, ropeDamping: _ropeDamping, ropeIterations: _ropeIterations, ropeSlack: _ropeSlack,
+                        heightLimitOffset: _heightLimitOffset, heightLimitSpring: _heightLimitSpring,
+                        heightLimitDamper: _heightLimitDamper, heightLimitMaxPull: _heightLimitMaxPull);
         _pjController.GetSwinging(_swinging);
 
         _pjInputs = new PlayerInputs(_pjController, _pjTongue, _aimM,cam, _interactM, this, _swinging);
@@ -225,6 +239,7 @@ public class Player : MonoBehaviour
         else DisablePlayerControl();
     }
 
+    #if UNITY_EDITOR
     private void OnDrawGizmosSelected()
     {
         Vector3 origin = transform.position + Vector3.up * _interactOriginY;
@@ -254,6 +269,7 @@ public class Player : MonoBehaviour
         Gizmos.DrawLine(cam.position, endPoint);
         Gizmos.DrawWireSphere(endPoint, _predictionSphereRadius);
     }
+    #endif
 
     private void OnTriggerEnter(Collider other)
     {
