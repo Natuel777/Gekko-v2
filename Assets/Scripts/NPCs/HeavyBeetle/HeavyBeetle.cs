@@ -214,11 +214,56 @@ public class HeavyBeetle : MonoBehaviour, IDamageable, IParticleSystemTarget, IP
     #if UNITY_EDITOR
     private void OnDrawGizmosSelected()
     {
+        if(data == null) return;
+
         Gizmos.color = Color.yellow;
         Gizmos.DrawWireSphere(transform.position, data.detectionRange);
 
-        Gizmos.color = Color.red;
-        Gizmos.DrawRay(_detectGroundPosition.position, Vector3.down * data.groundCheckDistance);
+        DrawGroundCheckGizmos();
+    }
+
+    // Reproduce el GroundCheck real: un rayo hacia abajo desde el sensor y, solo si ese rayo no toca piso,
+    // los rayos de rescate de FindGroundedDirection. Verde = toca piso, rojo = no toca.
+    private void DrawGroundCheckGizmos()
+    {
+        if(_detectGroundPosition == null) return;
+
+        // Del pivote del escarabajo al sensor.
+        Gizmos.color = Color.cyan;
+        Gizmos.DrawLine(transform.position, _detectGroundPosition.position);
+        Gizmos.DrawWireSphere(_detectGroundPosition.position, 0.05f);
+
+        // Rayo principal: desde el sensor hacia Vector3.down (mismos parámetros que GroundCheck).
+        float distance = data.groundCheckDistance;
+        bool hasGround = DrawGroundRay(_detectGroundPosition.position, distance);
+
+        // Sin piso adelante, GroundCheck busca una dirección segura probando estos rayos en orden.
+        if(hasGround) return;
+
+        Vector3 fwd = GroundCheck.FlatForward(transform);
+        float up = GroundCheck.FallbackUp(transform, _detectGroundPosition);
+
+        foreach(float yaw in GroundCheck.FallbackYaws)
+        {
+            Vector3 dir = Quaternion.Euler(0f, yaw, 0f) * fwd;
+            Vector3 origin = transform.position + dir * GroundCheck.FallbackAhead + Vector3.up * up;
+
+            Gizmos.color = Color.gray;
+            Gizmos.DrawLine(transform.position, origin);
+            DrawGroundRay(origin, distance + up);
+        }
+    }
+
+    private bool DrawGroundRay(Vector3 origin, float distance)
+    {
+        bool hit = Physics.Raycast(origin, Vector3.down, out RaycastHit info, distance, _groundMask, QueryTriggerInteraction.Ignore);
+
+        Gizmos.color = hit ? Color.green : Color.red;
+        Gizmos.DrawLine(origin, origin + Vector3.down * distance);
+
+        if(hit) Gizmos.DrawWireSphere(info.point, 0.06f);
+
+        return hit;
     }
     #endif
 }

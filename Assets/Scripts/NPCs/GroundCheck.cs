@@ -14,6 +14,28 @@ public class GroundCheck
     private const float GroundCheckEpsilon = 0.0001f;
     private Vector3 _lastPosition;
 
+    // Parámetros de la búsqueda de dirección segura. Son públicos para que el gizmo del NPC dibuje
+    // exactamente los mismos rayos que FindGroundedDirection.
+    public const float FallbackAhead = 0.75f;
+    public static readonly float[] FallbackYaws = { 90f, -90f, 135f, -135f, 180f };
+
+    // Forward del NPC aplanado en Y (si mira casi vertical, cae a Vector3.forward).
+    public static Vector3 FlatForward(Transform transform)
+    {
+        Vector3 fwd = transform.forward;
+        fwd.y = 0f;
+
+        if(fwd.sqrMagnitude < 0.001f) fwd = Vector3.forward;
+
+        return fwd.normalized;
+    }
+
+    // Altura a la que se elevan los rayos de rescate sobre la posición del NPC.
+    public static float FallbackUp(Transform transform, Transform sensor)
+    {
+        return Mathf.Max(0.1f, sensor.position.y - transform.position.y + 0.3f);
+    }
+
     public GroundCheck(Transform transform, Transform detectGroundPosition, float groundCheckDistance, LayerMask groundMask)
     {
         _transform = transform;
@@ -49,20 +71,13 @@ public class GroundCheck
 
     private Vector3 FindGroundedDirection()
     {
-        Vector3 fwd = _transform.forward;
-        fwd.y = 0f;
+        Vector3 fwd = FlatForward(_transform);
+        float up = FallbackUp(_transform, _detectGroundPosition);
 
-        if(fwd.sqrMagnitude < 0.001f) fwd = Vector3.forward;
-
-        fwd.Normalize();
-        float ahead = 0.75f;
-        float up = Mathf.Max(0.1f, _detectGroundPosition.position.y - _transform.position.y + 0.3f);
-        float[] yaws = { 90f, -90f, 135f, -135f, 180f };
-
-        foreach(float yaw in yaws)
+        foreach(float yaw in FallbackYaws)
         {
             Vector3 d = Quaternion.Euler(0f, yaw, 0f) * fwd;
-            Vector3 origin = _transform.position + d * ahead + Vector3.up * up;
+            Vector3 origin = _transform.position + d * FallbackAhead + Vector3.up * up;
 
             if(Physics.Raycast(origin, Vector3.down, _groundCheckDistance + up,
                     _groundMask, QueryTriggerInteraction.Ignore))
