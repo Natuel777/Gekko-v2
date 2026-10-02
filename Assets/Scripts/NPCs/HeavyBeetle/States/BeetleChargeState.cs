@@ -5,10 +5,12 @@ public class BeetleChargeState : IState
     private readonly HeavyBeetle _beetle;
 
     public BeetleChargeState(HeavyBeetle beetle) {_beetle = beetle;}
+
     public void Enter()
     {
         Debug.Log($"[{_beetle}] entered charge state.");
         _beetle.SetCharging(true);
+        _beetle.view.SetAngry(false);
         _beetle.chargeMovement.StartCharge(_beetle.playerTransform.position);
     }
 
