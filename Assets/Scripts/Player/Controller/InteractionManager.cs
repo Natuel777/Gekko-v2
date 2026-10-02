@@ -40,7 +40,6 @@ public class InteractionManager : MonoBehaviour
         {
             if (!StaticMethods.InFOV(startPos, hit.transform.position, viewRange, viewAngle, obstacle))
                 continue;
-
             float angle = Vector3.Angle(startPos.forward, hit.transform.position - startPos.position);
             if (angle < bestAngle)
             {
@@ -49,7 +48,6 @@ public class InteractionManager : MonoBehaviour
 
             }
         }
-
         return best;
     }
     public void Interact()

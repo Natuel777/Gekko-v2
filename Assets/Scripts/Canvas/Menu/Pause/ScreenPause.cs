@@ -27,7 +27,7 @@ public class ScreenPause : Screens
         base.BTN_Back();
         if(GameManager.Instance)
         {
-            GameManager.Instance.IsPause = false;
+            GameManager.Instance.CanPause = false;
             GameManager.Instance.Pj.ActivateInputs();
             Cursor.lockState = CursorLockMode.Locked;
             EventManager.Trigger("UnPauseEvent");

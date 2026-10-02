@@ -36,7 +36,7 @@ public class ScreenReafirm : Screens
     private void BTN_Menu()
     {
         if(GameManager.Instance)
-        GameManager.Instance.IsPause = false;
+        GameManager.Instance.CanPause = false;
         if (AudioManager.instance)
         {
             AudioManager.instance.ResetAudio();

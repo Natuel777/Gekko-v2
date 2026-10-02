@@ -10,7 +10,7 @@ public class GameManager : MonoBehaviour
     public LayerMask ClimbLayer;
     public LayerMask Surfaces;
     public LayerMask Obstacle;
-    public bool IsPause;
+    public bool CanPause;
     public CheckpointManager checkpointManager;
 
     public CollectiblesFactory factory;
@@ -47,7 +47,7 @@ public class GameManager : MonoBehaviour
         if (_screenPause != null)
             _screenPause.gameObject.SetActive(false);
 
-        IsPause = false;
+        CanPause = false;
     }
 
     private void Start()
@@ -92,14 +92,14 @@ public class GameManager : MonoBehaviour
 
     public void Pause()
     {
-        if(IsPause) return;
+        if(CanPause) return;
 
         ScreenManager.Instance.Push(_screenPause);
         List<SoundNames> soundsToNotPause = new List<SoundNames>{ SoundNames.Menu, SoundNames.LvlOne};
         if(AudioManager.instance)
         AudioManager.instance.PauseAll(soundsToNotPause);
         EventManager.Trigger("PauseEvent");
-        IsPause = true;
+        CanPause = true;
     }
 
     public void DestroyObject(GameObject obj) {Destroy(obj);}

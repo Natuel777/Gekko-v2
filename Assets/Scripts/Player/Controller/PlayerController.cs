@@ -93,6 +93,13 @@ public class PlayerController
         _rb.position = position;
         _pjTransform.position = position;
     }
+    public void TeleportWRot(Transform trans)
+    {
+        _rb.linearVelocity = Vector3.zero;
+        _rb.position = trans.position;
+        _pjTransform.position = trans.position;
+        _pjTransform.rotation = trans.rotation;
+    }
 
     public void ArtificialUpdate()
     {
