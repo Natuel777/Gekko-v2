@@ -107,6 +107,8 @@ public class PurificationChallenge : MonoBehaviour
 
         // Sin núcleos (o ya rotos) el escudo no tendría cómo caer.
         if(_remaining == 0) DropShield();
+
+        LevelOneManager.Instance.OnChallengeStart += ActivateCorruptedVisuals;
     }
 
     private void Update()
@@ -129,6 +131,8 @@ public class PurificationChallenge : MonoBehaviour
     {
         Unsubscribe();
         EndBeat();
+        LevelOneManager.Instance.OnChallengeStart -= ActivateCorruptedVisuals;
+
     }
 
     // Las instancias creadas por r.materials no las libera Unity solas hasta cambiar de escena.
@@ -316,6 +320,13 @@ public class PurificationChallenge : MonoBehaviour
     #endregion
 
     #region Dissolve
+    private void ActivateCorruptedVisuals()
+    {
+        foreach (var item in _corruptedVisuals)
+        {
+            item.SetActive(true);
+        }   
+    }
     // Los renderers con _Dissolve bajo los visuales corrompidos (M_Enredaderas) se disuelven de 0 a 1 y recién después
     // se apaga todo; si ninguno tiene la propiedad, se apagan al instante como antes.
     private void HideCorruptedVisuals()
@@ -325,6 +336,7 @@ public class PurificationChallenge : MonoBehaviour
         if(materials.Count > 0) StartCoroutine(DissolveRoutine(materials));
         else SetActiveAll(_corruptedVisuals, false);
     }
+    
 
     // Sube _Dissolve de 0 a 1 a _dissolveSpeed por segundo (0.5 = 2 s). Corre una sola vez, al purificarse la planta.
     private IEnumerator DissolveRoutine(List<Material> materials)

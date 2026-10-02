@@ -74,7 +74,7 @@ public class PurificationCore : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
     private void Break()
     {
         IsBroken = true;
-        _indicator = null;
+        _indicator.gameObject.SetActive(false);
         if(_collider != null) _collider.enabled = false;
 
         // Si algún renderer tiene _Dissolve, se disuelve y recién después el visual pasa a su estado final.
@@ -180,11 +180,12 @@ public class PurificationCore : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
     {
         if(_visual == null) return;
 
-        Renderer mesh = GetPurifiedMesh();
+        //Renderer mesh = GetPurifiedMesh();
+        //
+        //if(mesh != null) mesh.sharedMaterial = _purifiedMaterial;
 
-        if(mesh != null) mesh.sharedMaterial = _purifiedMaterial;
-
-        else _visual.SetActive(false);
+        //else _visual.SetActive(false);
+        gameObject.SetActive(false);
     }
 
     // Malla de 'Visual' que recibe el material purificado. null si no hay material asignado (el visual se oculta).

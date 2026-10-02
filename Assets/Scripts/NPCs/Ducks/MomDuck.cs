@@ -22,7 +22,7 @@ public class MomDuck : MonoBehaviour
         int currentDuck = 0;
         while (currentDuck < _ducks.Length)
         {
-            StartCoroutine(_ducks[currentDuck].StartMoving());
+           // StartCoroutine(_ducks[currentDuck].StartMoving());
             currentDuck++;
             yield return new WaitForSeconds(_timePerDuck);
         }
@@ -32,7 +32,7 @@ public class MomDuck : MonoBehaviour
         bool finish = true;
         for (int i = 0; i < _ducks.Length; i++)
         {
-            if (!_ducks[i].OnPosition) finish = false;
+            //if (!_ducks[i].OnPosition) finish = false;
         }
         if (finish)
         {
