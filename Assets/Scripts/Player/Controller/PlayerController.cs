@@ -1,4 +1,5 @@
 ﻿using Unity.Mathematics;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UIElements;
 using static UnityEngine.UI.Image;
@@ -21,12 +22,12 @@ public class PlayerController
     private LayerMask _obstacles;
     private LayerMask _blockMask;
 
-    private float _speed = 11f;
-    private float _jumpForce = 6f;
-    private float _coyoteTime = 0.3f;
+    private float _speed = 4.5f;
+    private float _jumpForce = 4.5f;
+    private float _coyoteTime = 0.5f;
     private float _coyoteTimer;
-    private float _fallMultiplier = 2.5f;
-    private float _lowJumpMultiplier = 3f;
+    private float _fallMultiplier = 0.8f;
+    private float _lowJumpMultiplier = 1.5f;
     private float _rotationSpeed = 10f;
     private float _speedMultiplier = 1f;
     
@@ -49,6 +50,8 @@ public class PlayerController
     
     private Vector3 _currentUp;
     private Vector2 _rawInput = new(), _smoothedInput = new(), _smoothedVelocity = new();
+    private Vector3 _refRight, _refForward, lastUp;
+    private bool _hasRef;
     private float _smoothInputSpeed = 0.2f;
     private float _tongueSlowness = 0.05f;
     
@@ -172,14 +175,15 @@ public class PlayerController
                     stickyForce *= 0.05f;
                 _rb.AddForce(-_currentUp * stickyForce * 2, ForceMode.Acceleration);
             }
+
         }
         else
         {
             float verticalSpeed = Vector3.Dot(_rb.linearVelocity, _currentUp);
             if (verticalSpeed < 0)
-                _rb.AddForce(-_currentUp * Mathf.Abs(Physics.gravity.y) * (_fallMultiplier - 1), ForceMode.Acceleration);
+                _rb.AddForce(-_lastValidDir * Mathf.Abs(Physics.gravity.y) * (_fallMultiplier - 1), ForceMode.Acceleration);
             else if (verticalSpeed > 0 && !_jumpPressed)
-                _rb.AddForce(-_currentUp * Mathf.Abs(Physics.gravity.y) * (_lowJumpMultiplier - 1), ForceMode.Acceleration);
+                _rb.AddForce(-_lastValidDir * Mathf.Abs(Physics.gravity.y) * (_lowJumpMultiplier - 1), ForceMode.Acceleration);
 
             if (_jumpGraceTime <= 0f)
             {
@@ -211,7 +215,8 @@ public class PlayerController
                 }
             }
         }
-        
+ 
+
         if (_rawInput.sqrMagnitude > 0.01f)
         {
             Move(_smoothedInput);
@@ -221,16 +226,57 @@ public class PlayerController
     private void Move(Vector2 input)
     {
         if(_camTransform == null) return;
-        Vector3 camForward = Vector3.Cross(_camTransform.right, _currentUp).normalized;
-        Vector3 camRight = Vector3.Cross(_currentUp, camForward).normalized;
 
-        Vector3 dir = (camForward * input.y + camRight * input.x).normalized;
-        dir = Vector3.ProjectOnPlane(dir, _currentUp).normalized;
+        Vector3 dir = Vector3.zero;
+        if (_isClimbing)
+        {
+            if(input.sqrMagnitude < 0.0001f)
+            {
+                _hasRef = false;
+                dir = Vector3.zero;
+            }
+
+            if(!_hasRef)
+            {
+                _refRight = Vector3.ProjectOnPlane(_camTransform.right, _currentUp);
+
+                Vector3 fwdFromForward = Vector3.ProjectOnPlane(_camTransform.forward, _currentUp);
+                Vector3 fwdFromUp = Vector3.ProjectOnPlane(_camTransform.up, _currentUp);
+
+                float facing = Mathf.Abs(Vector3.Dot(_camTransform.forward, _currentUp));
+                _refForward = Vector3.Lerp(fwdFromForward.normalized, fwdFromUp.normalized, facing * facing);
+
+                lastUp = _currentUp;
+                _hasRef = true;
+            }
+            else if(lastUp != _currentUp)
+            {
+                Quaternion delta = Quaternion.FromToRotation(lastUp, _currentUp);
+                _refRight = delta * _refRight;
+                _refForward = delta * _refForward;
+                lastUp = _currentUp;
+            }
+
+            _refRight = Vector3.ProjectOnPlane(_refRight, _currentUp).normalized;
+            _refForward = Vector3.ProjectOnPlane(_refForward, _currentUp).normalized;
+
+            dir = _refRight * input.x + _refForward * input.y;
+            dir = Vector3.ClampMagnitude(dir, 1f);
+        }
+        else
+        {
+            Vector3 camForward = Vector3.Cross(_camTransform.right, _currentUp).normalized;
+            Vector3 camRight = Vector3.Cross(_currentUp, camForward).normalized;
+
+            dir = (camForward * input.y + camRight * input.x).normalized;
+            dir = Vector3.ProjectOnPlane(dir, _currentUp).normalized;
+        }
+            
 
         if (dir.sqrMagnitude > 0.0001f)
         {
             dir.Normalize();
-            _lastValidDir = dir;
+            //_lastValidDir = dir;
             Rotate(dir);
         }
         else if(_lastValidDir.sqrMagnitude > 0.0001f)
@@ -453,8 +499,14 @@ public class PlayerController
         _rb.useGravity = true;
         _jumpGraceTime = _jumpGraceDuration;
         _pjViewer.Jump(true);
-
-        _rb.linearVelocity += _currentUp * force;
+        
+        if(Vector3.Angle(_currentUp, Vector3.up)> 45)
+        {
+            _lastValidDir = (_currentUp + new Vector3(0, 0.5f, 0)).normalized;
+            force *= 1.5f;
+        }
+        else _lastValidDir = _currentUp;
+        _rb.linearVelocity += _lastValidDir * force;
         _canJump = false;
     }
     private bool IsGrounded()
