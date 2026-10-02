@@ -271,7 +271,7 @@ public class TongueManager : MonoBehaviour
     {
         Vector3 pos = _object.position;
         _currentPos = pos;
-        float rot= transform.rotation.y;
+        float rot= _pj.rotation.y;
         if (_object.TryGetComponent(out GrabbableObject grabObj))
         {
             grabObj.Drop(pos, rot);

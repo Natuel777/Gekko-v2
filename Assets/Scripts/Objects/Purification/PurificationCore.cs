@@ -74,7 +74,7 @@ public class PurificationCore : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
     private void Break()
     {
         IsBroken = true;
-
+        _indicator = null;
         if(_collider != null) _collider.enabled = false;
 
         // Si algún renderer tiene _Dissolve, se disuelve y recién después el visual pasa a su estado final.

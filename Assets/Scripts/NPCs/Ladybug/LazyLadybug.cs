@@ -54,9 +54,8 @@ public class LazyLadybug : MonoBehaviour, IDialogueable, IInteractable
 
     public void Interacted()
     {
-        // if (UIManager.Instance == null || UIManager.Instance.HasActiveDialogue()) return;
-        // UIManager.Instance.StartDialogue(this);
-        StartCoroutine(Move());
+        if (UIManager.Instance == null || UIManager.Instance.HasActiveDialogue()) return;
+        UIManager.Instance.StartDialogue(this);
 
     }
     public void OnDialogueStart()

@@ -1,42 +1,66 @@
 using System.Collections;
+using Unity.Cinemachine;
 using UnityEngine;
+using UnityEngine.UI;
 
-public class BabyDuck : MonoBehaviour
+public class BabyDuck : MonoBehaviour, IDialogueable, IInteractable
 {
-    [SerializeField] private Transform[] _wayp;
-    [SerializeField] private float _speed;
-    [SerializeField] private MomDuck _mom;
-    private int _currentWayp;
+    [SerializeField] private bool _onWater;
     private Animator _anim;
-    private bool _onPosition;
-    public bool OnPosition => _onPosition;
+    private bool _found;
+
+    [Header("Canvas")]
+    [SerializeField] Dialogue[] _dialogue;
+    private int _currentDialogue;
+    [SerializeField] Sprite _imagedialogue;
+    [SerializeField] Canvas _canvas;
+    [SerializeField] Image _EIndicator;
+    [SerializeField] private AudioClip _audioTalk;
+    [Header("Cameras")]
+    [SerializeField] private CinemachineCamera _duckCam;
+    public Dialogue Dialogue => _dialogue[_currentDialogue];
+
+    public Transform Transform => transform;
+
+    public Sprite Image => _imagedialogue;
+
+    public AudioClip AudioClip => _audioTalk;
 
     private void Start()
     {
         _anim = GetComponent<Animator>();
-        _anim.SetBool("BabyDuckisWalk",false);
+        if(!_onWater) _anim.SetBool("BabyDuckisWalk",false);
+        else _anim.SetBool("BabyDuckisWalk", true);
     }
-    public IEnumerator StartMoving()
+
+    public void OnDialogueStart()
     {
-        _anim.SetBool("BabyDuckisWalk", true);
-        while (_currentWayp < _wayp.Length)
-        {
-            var dir = _wayp[_currentWayp].position - transform.position;
+        _duckCam.Priority = 30;
 
-            transform.position += dir.normalized * _speed * Time.deltaTime;
-            transform.forward = dir;
-
-            if (dir.magnitude < 0.25f)
-            {
-                _currentWayp++;
-            }
-            yield return new WaitForEndOfFrame();
-        }
-        transform.rotation = _wayp[_currentWayp - 1].rotation;
-        _onPosition = true;
-        _anim.SetBool("BabyDuckisWalk", false);
-        if (AudioManager.instance) AudioManager.instance.Play(SoundNames.Duck);
-        _mom.DuckPositioned();
     }
-    
+
+    public void OnDialogueEnd()
+    {
+        if(!_found)
+        {
+            _found = true;
+            _currentDialogue++;
+        }
+    }
+
+    public void Interacted()
+    {
+        if (UIManager.Instance == null || UIManager.Instance.HasActiveDialogue()) return;
+        UIManager.Instance.StartDialogue(this);
+    }
+
+    public void ShowInteractUI()
+    {
+        _EIndicator.enabled = true;
+    }
+
+    public void HideInteractUI()
+    {
+        _EIndicator.enabled = false;
+    }
 }
