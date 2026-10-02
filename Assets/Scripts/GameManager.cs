@@ -48,6 +48,7 @@ public class GameManager : MonoBehaviour
             _screenPause.gameObject.SetActive(false);
 
         CanPause = false;
+        Time.timeScale = 1f;
     }
 
     private void Start()
@@ -98,6 +99,7 @@ public class GameManager : MonoBehaviour
         List<SoundNames> soundsToNotPause = new List<SoundNames>{ SoundNames.Menu, SoundNames.LvlOne};
         if(AudioManager.instance)
         AudioManager.instance.PauseAll(soundsToNotPause);
+        Time.timeScale = 0f;
         EventManager.Trigger("PauseEvent");
         CanPause = true;
     }

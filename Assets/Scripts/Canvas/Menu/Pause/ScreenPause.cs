@@ -30,6 +30,7 @@ public class ScreenPause : Screens
             GameManager.Instance.CanPause = false;
             GameManager.Instance.Pj.ActivateInputs();
             Cursor.lockState = CursorLockMode.Locked;
+            Time.timeScale = 1f;
             EventManager.Trigger("UnPauseEvent");
         }
     }
