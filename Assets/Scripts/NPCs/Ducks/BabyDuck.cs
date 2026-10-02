@@ -13,6 +13,8 @@ public class BabyDuck : MonoBehaviour, IDialogueable, IInteractable
     private Transform _cam;
     private bool _interacted;
     private Transform _playerTransform;
+    private AudioSource _source;
+    [SerializeField] private ParticleSystem _cuack;
 
     [Header("Canvas")]
     [SerializeField] Dialogue[] _dialogue;
@@ -42,6 +44,9 @@ public class BabyDuck : MonoBehaviour, IDialogueable, IInteractable
         _EIndicator.enabled = false;
         _lookAtPlayer = new LookAtTarget(_rotationSpeed, transform, lockYAxis: true);
         LevelOneManager.Instance.OnMissionDuckStarted += MissionStarted;
+        _source = GetComponent<AudioSource>();
+        _source.resource = _audioTalk;
+        Cuack(true);
     }
     private void Update()
     {
@@ -50,6 +55,27 @@ public class BabyDuck : MonoBehaviour, IDialogueable, IInteractable
         {
             _lookAtPlayer.ArtificialUpdate();
             _lookAtPlayer.StartLooking(_playerTransform);
+        }
+
+    }
+    private void Cuack(bool activate)
+    {
+        if(activate)
+        {
+            StartCoroutine(CuackSound());
+            _cuack.Play();
+            return;
+        }
+        StopAllCoroutines();
+        _source.Stop();
+        _cuack.Stop();
+    }
+    private IEnumerator CuackSound()
+    {
+        while (true)
+        {
+            _source.Play();
+            yield return new WaitForSeconds(2);
         }
     }
     private void FollowPlayer()
@@ -61,22 +87,29 @@ public class BabyDuck : MonoBehaviour, IDialogueable, IInteractable
     private void Teleport()
     {
         Transform pos = LevelOneManager.Instance.DuckFound();
+        if(_onWater) _anim.SetBool("BabyDuckisWalk", false);
         transform.position = pos.position;
         transform.rotation = pos.rotation;
         ScreenFader.Instance.OnFadeMiddle -= Teleport;
     }
     public void OnDialogueStart()
     {
+        Cuack(false);
         _interacted = true;
         _duckCam.Priority = 30;
     }
 
     public void OnDialogueEnd()
     {
-        if(!_start) _duckCam.Priority = 0;
-        else if(!_found)
+        if (!_start)
+        {
+            _duckCam.Priority = 0;
+            Cuack(true);
+        }
+        else if (!_found)
         {
             _found = true;
+            Cuack(false);
             ScreenFader.Instance.OnFadeMiddle += Teleport;
             ScreenFader.Instance.OnFadeCompleted += FinishCam;
             ScreenFader.Instance.StartFade();
