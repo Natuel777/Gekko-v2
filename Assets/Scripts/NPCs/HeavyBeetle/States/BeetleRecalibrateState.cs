@@ -19,6 +19,7 @@ public class BeetleRecalibrateState : IState
         if(_timer <= 0)
             _beetle.SetState(_beetle.ChargeState);
     }
+    
     public void HandleEvent(CreatureEvent evt, object data = null)
     {
         if(evt == CreatureEvent.GekkoExit)
