@@ -243,8 +243,9 @@ public class PlayerController
         _pjViewer.Move(true);
         _isMoving = true;
 
-        float currentSpeed = (_tongueM != null && _tongueOut ? _speed * 0.8f : _speed) * _speedMultiplier;
-        Vector3 targetPos = _rb.position + dir * currentSpeed * Time.fixedDeltaTime;
+        Vector3 moveDir = GetMoveDirection(dir, out float alignment);
+        float currentSpeed = (_tongueM != null && _tongueOut ? _speed * 0.8f : _speed) * _speedMultiplier * alignment;
+        Vector3 targetPos = _rb.position + moveDir * currentSpeed * Time.fixedDeltaTime;
 
         LayerMask blockMask = ~(1 << _pjTransform.gameObject.layer);
 
@@ -380,6 +381,33 @@ public class PlayerController
                 }
             }
         }
+    }
+    // Hacia dónde avanza Gekko: hacia donde MIRA (Rotate ya lo giró en este paso), no directo hacia el input.
+    // Si avanzara hacia el input mientras el cuerpo todavía está girando (Rotate gira de a poco), se deslizaría de
+    // costado y el único punto del cuerpo que no se desliza quedaría ~velocidad x retraso del giro detrás del pivote
+    // (≈ 0.9: el inicio de la cola), así que se vería girar sobre la cola. Avanzando hacia donde mira, ese punto es el
+    // pivote, que está en el centro del cuerpo.
+    // alignment escala la velocidad: 1 = ya mira hacia el input; 0 = el input está a 90° o más (gira casi en el lugar
+    // sobre su centro y arranca enseguida, el giro tarda ~0.1 s).
+    // Excepciones que siguen moviéndose hacia el input, como antes: sin rotación permitida, y con la lengua afuera sin
+    // agarrar nada (ahí Gekko apunta y camina de costado a propósito).
+    private Vector3 GetMoveDirection(Vector3 inputDir, out float alignment)
+    {
+        alignment = 1f;
+
+        bool aimingTongue = _tongueOut && _tongueM != null && !_tongueM.IsAttached;
+
+        if (!_canRotate || aimingTongue || inputDir.sqrMagnitude < 0.0001f)
+            return inputDir;
+
+        Vector3 facing = Vector3.ProjectOnPlane(_pjTransform.forward, _currentUp);
+
+        if (facing.sqrMagnitude < 0.0001f)
+            return inputDir;
+
+        facing.Normalize();
+        alignment = Mathf.Clamp01(Vector3.Dot(facing, inputDir.normalized));
+        return facing;
     }
     private void Rotate(Vector3 dir)
     {
