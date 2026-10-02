@@ -38,11 +38,15 @@ Material:
     serializedVersion: 3
     m_TexEnvs:
     - _MainTex:
-        m_Texture: {fileID: 2800000, guid: 83df1ec7320ed284ebb0bcb341c9a488, type: 3}
+        m_Texture: {fileID: 2800000, guid: db42c025466faeb4f812402b59133d75, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _Normal:
-        m_Texture: {fileID: 2800000, guid: 6f18f3f537899594e9ecaef131b6dfb2, type: 3}
+        m_Texture: {fileID: 2800000, guid: 8844cdad58932f44fa0d9b6d3a475dee, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _SmoothMEt:
+        m_Texture: {fileID: 2800000, guid: 5d7960ce63a82694aa39c11179c5b8ba, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - unity_Lightmaps:
@@ -59,9 +63,12 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
+    - _BreahForce: 0.05
     - _Dissolve: 0
     - _DissolveOffset: 0.03
     - _GradientNoiseSclae: 7
+    - _MaskIntensity: 6
+    - _MaskPosition: -0.5
     - _NoisePower: 5
     - _QueueControl: 0
     - _QueueOffset: 0
