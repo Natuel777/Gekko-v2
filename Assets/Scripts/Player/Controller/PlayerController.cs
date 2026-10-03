@@ -228,49 +228,53 @@ public class PlayerController
         if(_camTransform == null) return;
 
         Vector3 dir = Vector3.zero;
-        if (_isClimbing)
-        {
-            if(input.sqrMagnitude < 0.0001f)
-            {
-                _hasRef = false;
-                dir = Vector3.zero;
-            }
-
-            if(!_hasRef)
-            {
-                _refRight = Vector3.ProjectOnPlane(_camTransform.right, _currentUp);
-
-                Vector3 fwdFromForward = Vector3.ProjectOnPlane(_camTransform.forward, _currentUp);
-                Vector3 fwdFromUp = Vector3.ProjectOnPlane(_camTransform.up, _currentUp);
-
-                float facing = Mathf.Abs(Vector3.Dot(_camTransform.forward, _currentUp));
-                _refForward = Vector3.Lerp(fwdFromForward.normalized, fwdFromUp.normalized, facing * facing);
-
-                lastUp = _currentUp;
-                _hasRef = true;
-            }
-            else if(lastUp != _currentUp)
-            {
-                Quaternion delta = Quaternion.FromToRotation(lastUp, _currentUp);
-                _refRight = delta * _refRight;
-                _refForward = delta * _refForward;
-                lastUp = _currentUp;
-            }
-
-            _refRight = Vector3.ProjectOnPlane(_refRight, _currentUp).normalized;
-            _refForward = Vector3.ProjectOnPlane(_refForward, _currentUp).normalized;
-
-            dir = _refRight * input.x + _refForward * input.y;
-            dir = Vector3.ClampMagnitude(dir, 1f);
-        }
-        else
-        {
+        //if (_isClimbing)
+        //{
+        //    if(input.sqrMagnitude < 0.0001f)
+        //    {
+        //        _hasRef = false;
+        //        dir = Vector3.zero;
+        //    }
+        //    Vector3 up = _currentUp;
+        //    if(!_hasRef)
+        //    {
+        //        _refRight = Vector3.ProjectOnPlane(_camTransform.right, up);
+        //
+        //        //Vector3 fwdFromForward = Vector3.ProjectOnPlane(_camTransform.forward, _currentUp);
+        //        //Vector3 fwdFromUp = Vector3.ProjectOnPlane(_camTransform.up, _currentUp);
+        //        //
+        //        //float facing = Mathf.Abs(Vector3.Dot(_camTransform.forward, _currentUp));
+        //        //_refForward = Vector3.Lerp(fwdFromForward.normalized, fwdFromUp.normalized, facing * facing);
+        //        if (_refRight.sqrMagnitude < 0.0001f) _refRight = Vector3.Cross(up, _camTransform.forward);
+        //
+        //        lastUp = up;
+        //        _hasRef = true;
+        //    }
+        //    else if(lastUp != up)
+        //    {
+        //        //Quaternion delta = Quaternion.FromToRotation(lastUp, _currentUp);
+        //        //_refRight = delta * _refRight;
+        //        //_refForward = delta * _refForward;
+        //        _refRight = Quaternion.FromToRotation(lastUp, up) * _refRight;
+        //        lastUp = up;
+        //    }
+        //
+        //    _refRight = Vector3.ProjectOnPlane(_refRight, up).normalized;
+        //    Vector3 forward = Vector3.Cross(_refForward, up).normalized;
+        //
+        //    dir = _refRight * input.x + forward * input.y;
+        //    dir = Vector3.ProjectOnPlane(dir, up);
+        //    dir = Vector3.ClampMagnitude(dir, 1f);
+        //}
+        //else
+        //{
+            _hasRef = false;
             Vector3 camForward = Vector3.Cross(_camTransform.right, _currentUp).normalized;
             Vector3 camRight = Vector3.Cross(_currentUp, camForward).normalized;
 
             dir = (camForward * input.y + camRight * input.x).normalized;
             dir = Vector3.ProjectOnPlane(dir, _currentUp).normalized;
-        }
+        //}
             
 
         if (dir.sqrMagnitude > 0.0001f)
