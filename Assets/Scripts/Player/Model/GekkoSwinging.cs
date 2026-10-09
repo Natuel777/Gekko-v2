@@ -325,11 +325,16 @@ public class GekkoSwinging
         bool foundPoint = TryFindSwingPoint(out RaycastHit hit);
         ParticleSystem ps = _predictionPoint.GetComponentInChildren<ParticleSystem>();
 
-        if(ps == null) return;
+        if(ps == null)
+        {
+            Debug.Log("Saramambiche");
+            return;
+        } 
 
         if(!foundPoint)
         {
-            ps.Stop();
+            Debug.Log("Mami que mami que mami");
+            HidePredictionParticle(ps);
             return;
         }
 
@@ -337,7 +342,7 @@ public class GekkoSwinging
 
         if(hitTransform == null)
         {
-            ps.Stop();
+            HidePredictionParticle(ps);
             return;
         }
 
@@ -347,6 +352,14 @@ public class GekkoSwinging
             _predictionPoint.position = hitTransform.position;
 
         _previousHitPosition = hitTransform.position;
+    }
+
+    // Ps_Selected tiene una única partícula con startLifetime = 99999 y sin loop. Con un Stop() común (StopEmitting) solo
+    // se deja de emitir: la partícula ya viva sigue ahí, congelada en la última posición. Por eso hay que pedir
+    // StopEmittingAndClear, que además la elimina. El próximo Play() la vuelve a emitir.
+    private void HidePredictionParticle(ParticleSystem ps)
+    {
+        ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
     }
 
     private Transform GetGrapplePoint(Transform hitObject)
