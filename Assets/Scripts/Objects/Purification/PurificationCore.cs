@@ -38,6 +38,12 @@ public class PurificationCore : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
     [Min(0.01f)]
     [SerializeField] private float _dissolveSpeed = 0.5f;
 
+    [Header("Line (on break, optional)")]
+    [Tooltip("LineController que dibuja la línea. Al romperse el núcleo se le sacan las posiciones de abajo y se redibuja.")]
+    [SerializeField] private LineController _lineController;
+    [Tooltip("Posiciones de la línea que pertenecen a este núcleo (las mismas que están en la lista del LineController). Al romperse se sacan de esa lista y se DESTRUYEN sus GameObjects.")]
+    [SerializeField] private Transform[] _linePositions;
+
     [Header("Veins / Vines Art (optional)")]
     [SerializeField] private GameObject[] _activeWhileIntact;
     [SerializeField] private GameObject[] _activeWhenBroken;
@@ -90,7 +96,28 @@ public class PurificationCore : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
 
         SetActiveAll(_activeWhileIntact, false);
         SetActiveAll(_activeWhenBroken, true);
+        RemoveLinePositions();
         Broken?.Invoke(this);
+    }
+
+    // Saca las posiciones de este núcleo de la línea (se redibuja sin ellas y con el loop abierto) y después destruye
+    // sus GameObjects. El orden importa: primero se sacan de la lista del LineController y recién después se destruyen
+    // (Destroy es diferido, pero así la línea nunca depende de un Transform destruido).
+    // Con LineController asignado, romper el núcleo abre el loop aunque este núcleo no tenga posiciones propias.
+    private void RemoveLinePositions()
+    {
+        if(_lineController != null) _lineController.RemovePositions(_linePositions);
+
+        if(_linePositions == null) return;
+
+        foreach(Transform position in _linePositions)
+        {
+            // Nunca se destruye el propio núcleo ni un padre suyo (IsChildOf también da true para sí mismo):
+            // se llevaría puesto a este componente mientras termina de romperse.
+            if(position == null || transform.IsChildOf(position)) continue;
+
+            Destroy(position.gameObject);
+        }
     }
 
     // Sube _Dissolve de 0 a 1 a _dissolveSpeed por segundo (0.5 = 2 s). Corre una sola vez, al romperse el núcleo.
