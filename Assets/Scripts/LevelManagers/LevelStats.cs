@@ -10,6 +10,7 @@ public class LevelStats : MonoBehaviour
     private readonly Dictionary<string, int> _totals = new();
 
     public float ElapsedTime => _elapsed;
+    
     public string FormattedTime
     {
         get { int t = Mathf.FloorToInt(_elapsed); return $"{t / 60:00}:{t % 60:00}"; }
@@ -23,21 +24,24 @@ public class LevelStats : MonoBehaviour
 
     private void Start()
     {
-        foreach (var c in FindObjectsByType<Collectible>(FindObjectsInactive.Exclude, FindObjectsSortMode.None))
+        foreach(var c in FindObjectsByType<Collectible>(FindObjectsInactive.Exclude, FindObjectsSortMode.None))
         {
-            if (!_totals.ContainsKey(c.CollectibleName)) _totals[c.CollectibleName] = 0;
+            if(!_totals.ContainsKey(c.CollectibleName)) _totals[c.CollectibleName] = 0;
+            
             _totals[c.CollectibleName]++;
         }
 
         int bugCount = FindObjectsByType<Bug>(FindObjectsInactive.Exclude, FindObjectsSortMode.None).Length;
-        if (bugCount > 0) _totals["Bug"] = bugCount;
+        
+        if(bugCount > 0) _totals["Bug"] = bugCount;
     }
 
     private void Update()
     {
-        if (_running) _elapsed += Time.deltaTime;
+        if(_running) _elapsed += Time.deltaTime;
     }
 
     public void StopTimer() => _running = false;
+    
     public int GetTotal(string key) => _totals.TryGetValue(key, out var n) ? n : 0;
 }
