@@ -73,11 +73,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _life: 1
   _head: {fileID: 6596408595635292412}
-  _purifiedMaterial: {fileID: 2100000, guid: bd73e62771c86e4469d8714ad9e6d530, type: 2}
   _barricade: {fileID: 340544268610014534}
   _fadeDuration: 3
   _particlePurification: {fileID: 3308689661043843316}
-  _indicator: {fileID: 0}
+  _indicator: {fileID: 5177246509473300654}
   _revealCamera: {fileID: 0}
   _revealSeconds: 3
   _revealShakeForce: 1.5
@@ -1577,6 +1576,11 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: de52fc7f9310b724e98895331cece361, type: 3}
+--- !u!198 &5177246509473300654 stripped
+ParticleSystem:
+  m_CorrespondingSourceObject: {fileID: 3838810809232670525, guid: de52fc7f9310b724e98895331cece361, type: 3}
+  m_PrefabInstance: {fileID: 8259448140176277395}
+  m_PrefabAsset: {fileID: 0}
 --- !u!4 &6418684328225118401 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 3138106452737926994, guid: de52fc7f9310b724e98895331cece361, type: 3}
