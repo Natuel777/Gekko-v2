@@ -3,18 +3,24 @@ using Unity.Cinemachine;
 using UnityEngine;
 
 
-public class LittleBarricade : MonoBehaviour,IDamageable
+public class LittleBarricade : MonoBehaviour, IDamageable, IParticleSystemTarget
 {
     [SerializeField] private float _life = 1;
     [SerializeField] private MeshRenderer _head;
     [SerializeField] private GameObject _barricade;
     [SerializeField] private float _fadeDuration = 3f;
     [SerializeField] private ParticleSystem _particlePurification;
+    [SerializeField] private ParticleSystem _indicator;
+    private bool _interacted = false;
 
     [Header("Reveal Camera")]
     [SerializeField] private CinemachineCamera _revealCamera;
     [SerializeField] private float _revealSeconds = 3f;
     [SerializeField] private float _revealShakeForce = 1.5f;
+
+    public ParticleSystem Indicator => _indicator;
+
+    public bool CanBeTargeted => _interacted;
 
     public void Damage(float dmg)
     {
@@ -43,7 +49,8 @@ public class LittleBarricade : MonoBehaviour,IDamageable
     }
     private IEnumerator Disapear()
     {
-
+        _interacted = true;
+        if (AudioManager.instance) AudioManager.instance.Play(SoundNames.Purify);
         MeshRenderer[] renderers = _barricade.GetComponentsInChildren<MeshRenderer>();
 
         Material[] materials = new Material[0];
@@ -58,18 +65,17 @@ public class LittleBarricade : MonoBehaviour,IDamageable
         }
         materials = materialList.ToArray();
 
-        float elapsed = 0f;
+        float dissolve = 0f;
 
-        while (elapsed < _fadeDuration)
+        while (dissolve < 1f)
         {
-            elapsed += Time.deltaTime;
-            float alpha = Mathf.Lerp(0f, 1f, elapsed / _fadeDuration);
+            dissolve = Mathf.MoveTowards(dissolve, 1f, _fadeDuration * Time.deltaTime);
 
             foreach (var mat in materials)
             {
                 if (mat.HasProperty("_Dissolve"))
                 {
-                    mat.SetFloat("_Dissolve", alpha);
+                    mat.SetFloat("_Dissolve", dissolve);
                 }
             }
 

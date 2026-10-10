@@ -146,11 +146,6 @@ public class TongueManager : MonoBehaviour
                         _pjController.HeadLocate();
                         return;
                     }
-                    else if (_object.TryGetComponent(out IDamageable damaggeable))
-                    {
-                        if(!_damageApplied) damaggeable.Damage(1);
-                        _object = null;
-                    }
                     else if (_object.TryGetComponent(out Collectible coll))
                     {
                         coll.Grab();
@@ -167,6 +162,7 @@ public class TongueManager : MonoBehaviour
     private void ApplyTipDamage(IDamageable target)
     {
         _damageApplied = target is IHitOncePerLick;
+        _object = null;
         target.Damage(1);
     }
 
