@@ -1600,9 +1600,7 @@ LineRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
-  m_Positions:
-  - {x: 0, y: 0, z: 0}
-  - {x: 0, y: 0, z: 1}
+  m_Positions: []
   m_Parameters:
     serializedVersion: 3
     widthMultiplier: 0.1
@@ -1610,21 +1608,39 @@ LineRenderer:
       serializedVersion: 2
       m_Curve:
       - serializedVersion: 3
-        time: 0
-        value: 1
+        time: 0.008539708
+        value: 0.5212918
         inSlope: 0
         outSlope: 0
         tangentMode: 0
         weightedMode: 0
         inWeight: 0.33333334
         outWeight: 0.33333334
+      - serializedVersion: 3
+        time: 0.14987189
+        value: 0.43738294
+        inSlope: -0.14030705
+        outSlope: -0.14030705
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0.94259816
+        outWeight: 0
+      - serializedVersion: 3
+        time: 0.99359524
+        value: 0.34392533
+        inSlope: -0.32293302
+        outSlope: -0.32293302
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0.12348183
+        outWeight: 0
       m_PreInfinity: 2
       m_PostInfinity: 2
       m_RotationOrder: 4
     colorGradient:
       serializedVersion: 2
-      key0: {r: 0.34069067, g: 0.7304158, b: 0.8301887, a: 1}
-      key1: {r: 0.7482645, g: 0.86214644, b: 0.8962264, a: 1}
+      key0: {r: 0.41349235, g: 0.8679245, b: 0.8491705, a: 1}
+      key1: {r: 1, g: 1, b: 1, a: 1}
       key2: {r: 0, g: 0, b: 0, a: 0}
       key3: {r: 0, g: 0, b: 0, a: 0}
       key4: {r: 0, g: 0, b: 0, a: 0}
@@ -1651,8 +1667,8 @@ LineRenderer:
       m_ColorSpace: 0
       m_NumColorKeys: 2
       m_NumAlphaKeys: 2
-    numCornerVertices: 0
-    numCapVertices: 0
+    numCornerVertices: 8
+    numCapVertices: 8
     alignment: 0
     textureMode: 0
     textureScale: {x: 1, y: 1}
@@ -67968,14 +67984,11 @@ MonoBehaviour:
     _healthBar: {fileID: 0}
     _fillImage: {fileID: 0}
     _canvasGroup: {fileID: 0}
-    _idleOpacity: 0.23
     _lerpSpeed: 5
-    _damageFadeDelay: 1
-    _opacityLerpSpeed: 3
     _pulsePeriod: 1
     _pulseScale: 0.1
     _damageColor: {r: 1, g: 0, b: 0, a: 1}
-    _healColor: {r: 0, g: 1, b: 0, a: 1}
+    _healColor: {r: 1, g: 1, b: 1, a: 1}
   _pjViewer: {fileID: 8983164166701744861}
   _tongue: {fileID: 4128742378122881986}
   _rotationSpeed: 5
@@ -68004,12 +68017,12 @@ MonoBehaviour:
   _heightLimitSpring: 40
   _heightLimitDamper: 4
   _heightLimitMaxPull: 60
-  _quality: 14
-  _springStrength: 300
-  _springDamper: 10
+  _quality: 10
+  _springStrength: 400
+  _springDamper: 6
   _springVelocity: 15
-  _waveCount: 4
-  _waveHeight: 1
+  _waveCount: 2
+  _waveHeight: 0.35
   _waveAffectCurve:
     serializedVersion: 2
     m_Curve:
@@ -68043,10 +68056,10 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  _ropeGravity: 9.81
-  _ropeDamping: 0.99
-  _ropeIterations: 13
-  _ropeSlack: 0.05
+  _ropeGravity: 4.57
+  _ropeDamping: 0.9372
+  _ropeIterations: 26
+  _ropeSlack: 0.01
 --- !u!114 &3432168389014509898
 MonoBehaviour:
   m_ObjectHideFlags: 0

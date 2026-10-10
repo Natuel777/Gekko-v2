@@ -51,7 +51,6 @@ public class PlayerController
     private Vector3 _currentUp;
     private Vector2 _rawInput = new(), _smoothedInput = new(), _smoothedVelocity = new();
     private Vector3 _refRight, _refForward, lastUp;
-    private bool _hasRef;
     private float _smoothInputSpeed = 0.2f;
     private float _tongueSlowness = 0.05f;
     
@@ -268,7 +267,6 @@ public class PlayerController
         //}
         //else
         //{
-            _hasRef = false;
             Vector3 camForward = Vector3.Cross(_camTransform.right, _currentUp).normalized;
             Vector3 camRight = Vector3.Cross(_currentUp, camForward).normalized;
 

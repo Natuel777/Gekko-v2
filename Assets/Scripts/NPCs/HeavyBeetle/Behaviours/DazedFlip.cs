@@ -13,10 +13,10 @@ public class DazedFlip
 
     private readonly Transform _transform;
     private readonly float _flipSpeed; // grados / segundo
-
     private float _targetZ;
 
     public bool RecoverDone { get; private set; }
+    public bool FlipDone { get; private set; }
 
     public DazedFlip(Transform transform, float flipSpeed)
     {
@@ -28,12 +28,14 @@ public class DazedFlip
     {
         _targetZ = FlippedZ;
         RecoverDone = false;
+        FlipDone = false;
     }
 
     public void StartRecover()
     {
         _targetZ = UprightZ;
         RecoverDone = false;
+        FlipDone = false;
     }
 
     public void ArtificialUpdate()
@@ -43,12 +45,21 @@ public class DazedFlip
         euler.z = newZ;
         _transform.localEulerAngles = euler;
 
-        if (!RecoverDone && Mathf.Approximately(_targetZ, UprightZ) &&
+        if(!RecoverDone && Mathf.Approximately(_targetZ, UprightZ) &&
             Mathf.Abs(Mathf.DeltaAngle(newZ, UprightZ)) <= DoneEpsilon)
         {
-            euler.z = UprightZ; // snap exacto a 0 para handoff limpio al wander
+            euler.z = UprightZ;
             _transform.localEulerAngles = euler;
             RecoverDone = true;
+            return;
+        }
+
+        if(!FlipDone && Mathf.Approximately(_targetZ, FlippedZ) &&
+            Mathf.Abs(Mathf.DeltaAngle(newZ, FlippedZ)) <= DoneEpsilon)
+        {
+            euler.z = FlippedZ;
+            _transform.localEulerAngles = euler;
+            FlipDone = true;
         }
     }
 }

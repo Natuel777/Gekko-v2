@@ -64,19 +64,20 @@ public class HeavyBeetle : MonoBehaviour, IDamageable, IParticleSystemTarget, IP
     private void Awake()
     {
         _eventFSM = new StateMachine();
+        Rigidbody rb = GetComponent<Rigidbody>();
 
         #region State initialization
         PatrolState = new BeetlePatrolState(this);
         AlertState = new BeetleAlertState(this, data.lookAtThreshold);
         ChargeState = new BeetleChargeState(this);
         RecalibrateState = new BeetleRecalibrateState(this);
-        DazedState = new BeetleDazedState(this, _collisionParticle);
+        DazedState = new BeetleDazedState(this, _collisionParticle, rb);
         #endregion
 
         #region Strategy
         ObstacleAvoidance avoidance = new ObstacleAvoidance(transform, 1.5f, ObstacleLayers);
         wanderMovement = new WanderMovement(data.wanderSpeed, data.changeDirTime, transform, avoidance, data.rotationSpeed);
-        chargeMovement = new ChargeMovement(GetComponent<Rigidbody>(), transform, data.chargeSpeed, data.chargeMaxDist, avoidance);
+        chargeMovement = new ChargeMovement(rb, transform, data.chargeSpeed, data.chargeMaxDist, avoidance);
         lookAt = new LookAtTarget(data.rotationSpeed, transform);
         dazedFlip = new DazedFlip(transform, data.flipSpeed);
         #endregion

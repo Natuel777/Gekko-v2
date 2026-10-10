@@ -5,12 +5,14 @@ public class BeetleDazedState : IState
     private readonly HeavyBeetle _beetle;
     private float _dazeTimer = 0f;
     private bool _recovering = false;
+    private Rigidbody _rb;
     private ParticleSystem _collisionParticle;
 
-    public BeetleDazedState(HeavyBeetle beetle, ParticleSystem col) 
+    public BeetleDazedState(HeavyBeetle beetle, ParticleSystem col, Rigidbody rb) 
     {
         _beetle = beetle;
         _collisionParticle = col;
+        _rb = rb;
     }
 
     public void Enter()
@@ -21,18 +23,21 @@ public class BeetleDazedState : IState
         _beetle.dazedFlip.StartFlip();
         _dazeTimer = _beetle.data.dazeDuration;
         _recovering = false;
+
         if(_collisionParticle != null) _collisionParticle.Play();
     }
 
     public void Exit()
     {
         _beetle.SetDazed(false);
-        // _beetle.SetTurnedInsideOut(false);  // reemplazado por el flip por código
+        _rb.isKinematic = false;
     }
 
     public void Update()
     {
         _beetle.dazedFlip.ArtificialUpdate();
+
+        if(_beetle.dazedFlip.FlipDone && !_rb.isKinematic) _rb.isKinematic = true;
 
         if (!_recovering)
         {
