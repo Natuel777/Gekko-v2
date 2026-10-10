@@ -23,8 +23,6 @@ public class PurificationCore : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
     [SerializeField] private ParticleSystem _hitParticle;
     [Tooltip("No debe ser hijo de 'Visual': ese objeto se desactiva al romperse.")]
     [SerializeField] private ParticleSystem _breakParticle;
-    [Tooltip("No debe ser hijo de 'Visual': ese objeto se desactiva al romperse.")]
-    [SerializeField] private AudioSource _breakSound;
     [Tooltip("Malla/objeto del núcleo. Se oculta al romperse, salvo que haya un Purified Material asignado.")]
     [SerializeField] private GameObject _visual;
     [Tooltip("Material que recibe la malla de 'Visual' al romperse. Si está asignado, la malla queda visible con este material en vez de ocultarse.")]
@@ -92,7 +90,7 @@ public class PurificationCore : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
 
         if(_breakParticle != null) _breakParticle.Play();
 
-        if(_breakSound != null) _breakSound.Play();
+        if (AudioManager.instance) AudioManager.instance.Play(SoundNames.Purify);
 
         SetActiveAll(_activeWhileIntact, false);
         SetActiveAll(_activeWhenBroken, true);

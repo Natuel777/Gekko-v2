@@ -74,17 +74,17 @@ public class AimManager : MonoBehaviour
     private List<Transform> GetTargets()
     {
         Collider[] hits = Physics.OverlapSphere(transform.position, _viewRange, _aimableMask);
-
         List<Transform> targets = new List<Transform>();
 
         foreach (var hit in hits)
         {
             if (hit.TryGetComponent(out IParticleSystemTarget pst) && !pst.CanBeTargeted) continue;
 
-            if(StaticMethods.InFOV(transform, hit.transform.position, _viewRange, _viewAngle, _obstacle))
+            if (StaticMethods.InFOV(transform, hit.transform.position, _viewRange, _viewAngle, _obstacle))
+            {
                 targets.Add(hit.transform);
+            }
         }
-
         return targets;
     }
     

@@ -27,8 +27,14 @@ public enum SoundNames
     PlankPlaced,
     PlayerSwingAttach,
     PlayerSwing,
+    PlayerHurt,
     BeaverVoice,
     Duck,
     MushroomBoing,
-
+    BeatleHurt,
+    PlantHurt,
+    Purify,
+    Shock,
+    PlantGrowl,
+    PlantShoot,
 }

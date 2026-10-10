@@ -42,6 +42,8 @@ public class GekkoHealth : IDamageable
             _currentHealth = 0f;
             GameManager.Instance.checkpointManager.Respawn();
         }
+
+        if (AudioManager.instance) AudioManager.instance.Play(SoundNames.PlayerHurt);
     }
 
     public void SetHealth(float value)

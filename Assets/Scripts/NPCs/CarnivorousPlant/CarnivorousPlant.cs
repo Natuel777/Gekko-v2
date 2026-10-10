@@ -244,6 +244,7 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
     private void PlayHurt()
     {
         if(_hasHurtTrigger) _animatorCarnivorousPlant.SetTrigger("hurt");
+        if (AudioManager.instance) AudioManager.instance.Play(SoundNames.PlantHurt);
     }
 
     public void PlayPurifiedFeedback()
@@ -251,6 +252,7 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
         if(_purifiedParticle != null) _purifiedParticle.Play();
         if(_purifiedSound != null) _purifiedSound.Play();
         ApplyPurifiedMaterial();
+        if (AudioManager.instance) AudioManager.instance.Play(SoundNames.Purify);
     }
 
     // Cambio de material unidireccional: la purificación de la planta es un estado terminal, no se revierte.
