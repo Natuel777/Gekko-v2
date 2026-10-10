@@ -20,7 +20,7 @@ public class LittleBarricade : MonoBehaviour, IDamageable, IParticleSystemTarget
 
     public ParticleSystem Indicator => _indicator;
 
-    public bool CanBeTargeted => _interacted;
+    public bool CanBeTargeted => !_interacted;
 
     public void Damage(float dmg)
     {
@@ -30,9 +30,9 @@ public class LittleBarricade : MonoBehaviour, IDamageable, IParticleSystemTarget
         {
             _particlePurification.Play();
             GetComponent<Collider>().enabled = false;
-            _head.enabled = false;
             StartCoroutine(Disapear());
             StartCoroutine(RevealCameraRoutine());
+            _interacted = true;
         }
     }
 
@@ -49,20 +49,21 @@ public class LittleBarricade : MonoBehaviour, IDamageable, IParticleSystemTarget
     }
     private IEnumerator Disapear()
     {
-        _interacted = true;
         if (AudioManager.instance) AudioManager.instance.Play(SoundNames.Purify);
         MeshRenderer[] renderers = _barricade.GetComponentsInChildren<MeshRenderer>();
+
 
         Material[] materials = new Material[0];
         var materialList = new System.Collections.Generic.List<Material>();
 
         foreach (var rend in renderers)
         {
-            foreach (var mat in rend.materials) // .materials (plural) instancia autom�ticamente
+            foreach (var mat in rend.materials)
             {
                 materialList.Add(mat);
             }
         }
+        materialList.Add(_head.material);
         materials = materialList.ToArray();
 
         float dissolve = 0f;
