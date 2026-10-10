@@ -59,8 +59,9 @@ public class PlantSpitBehaviour
             _shootInterval -= Time.deltaTime;
             return;
         }
-
         BugBullet venom = ShooteableObjectFactory.Instance.GetBullet<BugBullet>(_venomPrefab, _firePoint.position, Quaternion.identity);
+
+        if (AudioManager.instance) AudioManager.instance.Play(SoundNames.PlantShoot);
 
         if(venom == null) return;
 
