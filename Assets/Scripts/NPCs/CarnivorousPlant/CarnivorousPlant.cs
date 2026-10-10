@@ -154,7 +154,6 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
         if(_purified || _head == null || _isLunging) return;
         StartCoroutine(BiteLungeRoutine());
         if(_animatorCarnivorousPlant != null) _animatorCarnivorousPlant.SetTrigger("nibble");
-        if (AudioManager.instance) AudioManager.instance.Play(SoundNames.PlantGrowl);
     }
 
     private IEnumerator BiteLungeRoutine()
