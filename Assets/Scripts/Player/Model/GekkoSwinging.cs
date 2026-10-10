@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class GekkoSwinging
+public sealed class GekkoSwinging
 {
     private LayerMask _grappableLayers;
     private LineRenderer _lineRenderer;
