@@ -1,0 +1,99 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 484fdb49fc0d47e4592c3574f0ba0cc4, type: 3}
+  m_Name: Spline_Terrain_2_(24)_Data
+  m_EditorClassIdentifier: 
+  settings:
+    mode: 0
+    segmentsPerSpline: 16
+    colliderMatchesVisual: 0
+    colliderSimplify: 0.674
+    colliderSplit: 1
+    separateVisualMeshes: 0
+    floorGrid: 0
+    floorGridStyle: 0
+    floorCellSize: 4.51
+    splineSmoothing: 0
+    splineSmoothingIterations: 2
+    topOffset: {x: 0, y: 18.21, z: 0}
+    topEuler: {x: 0, y: 0, z: 0}
+    topScale: 1
+    wallHeightSegments: 1
+    wallCurvature: 0
+    smoothWalls: 1
+    bevelFloorEdges: 1
+    bevelSize: 0.32
+    bevelSegments: 2
+    bevelCurvature: 0.07
+    roadWidth: 2
+    outwardDistance: 4
+    noiseAmplitude: 1
+    noiseFrequency: 0.2
+    noiseSeed: 0
+    externalInnerWall: 1
+    floorUvScale: 1
+    wallUvScale: 1
+  knots:
+  - position: {x: 7.153824, y: 0, z: 6.5941467}
+    tangentIn: {x: -0, y: -0, z: -3.8259406}
+    tangentOut: {x: 0, y: 0, z: 1.8294482}
+    rotation: {x: 0, y: -0.015989115, z: -0, w: 0.9998722}
+  - position: {x: 6.5384865, y: 0, z: 10.632889}
+    tangentIn: {x: -0, y: -0, z: -1.4671743}
+    tangentOut: {x: 0, y: 0, z: 1.7133553}
+    rotation: {x: -0.00003431825, y: -0.077716425, z: 0.0004402473, w: 0.99697536}
+  - position: {x: 5.650959, y: 0, z: 16.133095}
+    tangentIn: {x: -0, y: -0, z: -1.170739}
+    tangentOut: {x: 0, y: 0, z: 0.63988185}
+    rotation: {x: -0.0000810717, y: -0.30945513, z: 0.00024912247, w: 0.950914}
+  - position: {x: 4.168831, y: 0, z: 16.890259}
+    tangentIn: {x: -0, y: -0, z: -0.7548211}
+    tangentOut: {x: 0, y: 0, z: 1.7619836}
+    rotation: {x: 0.00014079265, y: -0.619757, z: -0.00017828468, w: 0.78479373}
+  - position: {x: -4.9, y: 0, z: 16.849998}
+    tangentIn: {x: -0, y: -0, z: -3.2815595}
+    tangentOut: {x: 0, y: 0, z: 3.9011574}
+    rotation: {x: 0.000006485752, y: 0.72141963, z: -0.0000062257413, w: -0.69249827}
+  - position: {x: -17.678532, y: 0, z: 15.859367}
+    tangentIn: {x: -0, y: -0, z: -3.832304}
+    tangentOut: {x: 0, y: 0, z: 3.8149674}
+    rotation: {x: 0.000013038549, y: 0.8677618, z: -0.000007467375, w: -0.49698034}
+  - position: {x: -24.713634, y: 0, z: 5.2845306}
+    tangentIn: {x: -0, y: -0, z: -4.284829}
+    tangentOut: {x: 0, y: 0, z: 4.998026}
+    rotation: {x: -0.00030692102, y: 0.9929003, z: 0.00003676906, w: -0.11894919}
+  - position: {x: -22.814682, y: 0, z: -11.892014}
+    tangentIn: {x: -0, y: -0, z: -4.469348}
+    tangentOut: {x: 0, y: 0, z: 4.023248}
+    rotation: {x: 0, y: 0.93564457, z: 0, w: 0.35294357}
+  - position: {x: -9.205982, y: 0, z: -15.194077}
+    tangentIn: {x: -0, y: -0, z: -3.6763813}
+    tangentOut: {x: 0, y: 0, z: 2.4046073}
+    rotation: {x: 0, y: 0.7571653, z: 0, w: 0.65322334}
+  - position: {x: -3.2246246, y: 0, z: -15.53067}
+    tangentIn: {x: -0, y: -0, z: -1.806078}
+    tangentOut: {x: 0, y: 0, z: 1.4967788}
+    rotation: {x: 0, y: 0.7038886, z: 0, w: 0.7103104}
+  - position: {x: 0.8786087, y: 0, z: -15.224915}
+    tangentIn: {x: -0, y: -0, z: -1.4368901}
+    tangentOut: {x: 0, y: 0, z: 1.7635937}
+    rotation: {x: 0, y: 0.55670315, z: 0, w: 0.8307115}
+  - position: {x: 5.5970917, y: 0, z: -11.205475}
+    tangentIn: {x: -0, y: -0, z: -2.4062712}
+    tangentOut: {x: 0, y: 0, z: 4.0854325}
+    rotation: {x: 0, y: 0.23587266, z: 0, w: 0.97178394}
+  closed: 1
+  visualMesh: {fileID: 4300000, guid: 09f201ff3a6ffe344980d929c515bfa2, type: 2}
+  colliderMesh: {fileID: 4300000, guid: 0feca7c43a10f904d870e9f8b75d5177, type: 2}
+  floorMaterial: {fileID: 2100000, guid: 1723c770378d75e4b8efe781f343930b, type: 2}
+  wallMaterial: {fileID: 2100000, guid: 3aa3c53a2124ba24dbd9a968e6906838, type: 2}
+  edgeMaterial: {fileID: 2100000, guid: a39a510a6ea2fb242a65c0abd87239be, type: 2}

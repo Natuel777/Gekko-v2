@@ -1,0 +1,99 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 484fdb49fc0d47e4592c3574f0ba0cc4, type: 3}
+  m_Name: Spline_Terrain_2_(21)_Data
+  m_EditorClassIdentifier: 
+  settings:
+    mode: 0
+    segmentsPerSpline: 16
+    colliderMatchesVisual: 0
+    colliderSimplify: 0.674
+    colliderSplit: 1
+    separateVisualMeshes: 0
+    floorGrid: 0
+    floorGridStyle: 0
+    floorCellSize: 4.51
+    splineSmoothing: 0
+    splineSmoothingIterations: 2
+    topOffset: {x: 0, y: 20, z: 0}
+    topEuler: {x: 0, y: 0, z: 0}
+    topScale: 1
+    wallHeightSegments: 1
+    wallCurvature: 0
+    smoothWalls: 1
+    bevelFloorEdges: 1
+    bevelSize: 0.32
+    bevelSegments: 2
+    bevelCurvature: 0.07
+    roadWidth: 2
+    outwardDistance: 4
+    noiseAmplitude: 1
+    noiseFrequency: 0.2
+    noiseSeed: 0
+    externalInnerWall: 1
+    floorUvScale: 1
+    wallUvScale: 1
+  knots:
+  - position: {x: 11.9, y: 0, z: 6.6499977}
+    tangentIn: {x: -0, y: -0, z: -2.7405035}
+    tangentOut: {x: 0, y: 0, z: 1.6615984}
+    rotation: {x: 0, y: -0.0030335763, z: -0, w: 0.99999547}
+  - position: {x: 11.299999, y: 0, z: 10.649998}
+    tangentIn: {x: -0, y: -0, z: -1.4565434}
+    tangentOut: {x: 0, y: 0, z: 1.7109795}
+    rotation: {x: 0.001305822, y: -0.073650666, z: 0.00056370575, w: 0.9972831}
+  - position: {x: 10.488159, y: -0.03000021, z: 16.171844}
+    tangentIn: {x: -0, y: -0, z: -1.1679579}
+    tangentOut: {x: 0, y: 0, z: 0.6377933}
+    rotation: {x: 0.0013157678, y: -0.30612555, z: 0.00084755535, w: 0.9519898}
+  - position: {x: 9.006031, y: -0.03000021, z: 16.929008}
+    tangentIn: {x: -0, y: -0, z: -0.80093384}
+    tangentOut: {x: 0, y: 0, z: 2.3151665}
+    rotation: {x: -0.00036332183, y: -0.62000066, z: -0.00043555396, w: 0.78460115}
+  - position: {x: -4.9, y: 0, z: 16.849998}
+    tangentIn: {x: -0, y: -0, z: -4.329746}
+    tangentOut: {x: 0, y: 0, z: 3.8014414}
+    rotation: {x: -0.00010468258, y: 0.72498435, z: -0.00012191678, w: -0.68876535}
+  - position: {x: -15.569511, y: -0.03000021, z: 15.814247}
+    tangentIn: {x: -0, y: -0, z: -2.811273}
+    tangentOut: {x: 0, y: 0, z: 3.2889187}
+    rotation: {x: -0.000085442596, y: 0.93571913, z: -0.00024383324, w: -0.35274574}
+  - position: {x: -15.1, y: 0, z: 1.1499977}
+    tangentIn: {x: -0, y: -0, z: -3.8665602}
+    tangentOut: {x: 0, y: 0, z: 2.6071928}
+    rotation: {x: -0.000042399708, y: 0.9937146, z: 0.0005193109, w: 0.11194217}
+  - position: {x: -12.4, y: 0, z: -4.950001}
+    tangentIn: {x: -0, y: -0, z: -1.6954491}
+    tangentOut: {x: 0, y: 0, z: 1.2075251}
+    rotation: {x: 0, y: 0.9154786, z: 0, w: 0.4023666}
+  - position: {x: -9.200001, y: 0, z: -6.050003}
+    tangentIn: {x: -0, y: -0, z: -1.389862}
+    tangentOut: {x: 0, y: 0, z: 2.292763}
+    rotation: {x: 0, y: 0.7699507, z: 0, w: 0.6381035}
+  - position: {x: 0, y: 0, z: -6.44}
+    tangentIn: {x: -0, y: -0, z: -2.70075}
+    tangentOut: {x: 0, y: 0, z: 2.1273553}
+    rotation: {x: 0, y: 0.7025048, z: 0, w: 0.711679}
+  - position: {x: 5.7, y: 0, z: -6.050003}
+    tangentIn: {x: -0, y: -0, z: -1.8237331}
+    tangentOut: {x: 0, y: 0, z: 1.7116922}
+    rotation: {x: 0, y: 0.626366, z: 0, w: 0.77952915}
+  - position: {x: 10.4, y: 0, z: -4.25}
+    tangentIn: {x: -0, y: -0, z: -1.7227429}
+    tangentOut: {x: 0, y: 0, z: 2.5471923}
+    rotation: {x: 0, y: 0.3291951, z: 0, w: 0.94426197}
+  closed: 1
+  visualMesh: {fileID: 4300000, guid: 52dbc1ec7379eba488957a9a8cec671d, type: 2}
+  colliderMesh: {fileID: 4300000, guid: cf60fd9fe46a9744dbda2904b858e807, type: 2}
+  floorMaterial: {fileID: 2100000, guid: 1723c770378d75e4b8efe781f343930b, type: 2}
+  wallMaterial: {fileID: 2100000, guid: 3aa3c53a2124ba24dbd9a968e6906838, type: 2}
+  edgeMaterial: {fileID: 2100000, guid: a39a510a6ea2fb242a65c0abd87239be, type: 2}
