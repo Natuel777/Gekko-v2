@@ -114,6 +114,6 @@ public class BeaverBridge : MonoBehaviour
     }
     private void OnDisable()
     {
-        LevelOneManager.Instance.OnBeaverMission -= ActivateMission;
+        if(LevelOneManager.Instance != null) LevelOneManager.Instance.OnBeaverMission -= ActivateMission;
     }
 }

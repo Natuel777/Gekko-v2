@@ -108,7 +108,7 @@ public class PurificationChallenge : MonoBehaviour
         // Sin núcleos (o ya rotos) el escudo no tendría cómo caer.
         if(_remaining == 0) DropShield();
 
-        LevelOneManager.Instance.OnChallengeStart += ActivateCorruptedVisuals;
+        if(LevelOneManager.Instance != null) LevelOneManager.Instance.OnChallengeStart += ActivateCorruptedVisuals;
     }
 
     private void Update()
@@ -131,7 +131,7 @@ public class PurificationChallenge : MonoBehaviour
     {
         Unsubscribe();
         EndBeat();
-        LevelOneManager.Instance.OnChallengeStart -= ActivateCorruptedVisuals;
+        if(LevelOneManager.Instance != null) LevelOneManager.Instance.OnChallengeStart -= ActivateCorruptedVisuals;
 
     }
 

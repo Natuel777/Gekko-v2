@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f667f02cbfdb1d341ae6ce61c39a6871, type: 3}
+  m_Name: CorruptedGeckoBossDataSO
+  m_EditorClassIdentifier: 
+  detectionRange: 10
+  phases:
+  - attacksPerTanda: 2
+    attackInterval: 1.5
+    windowDuration: 5
+    hitsRequired: 1
+  - attacksPerTanda: 3
+    attackInterval: 1.2
+    windowDuration: 4
+    hitsRequired: 2
+  - attacksPerTanda: 4
+    attackInterval: 1
+    windowDuration: 3
+    hitsRequired: 3
