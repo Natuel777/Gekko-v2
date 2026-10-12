@@ -98,10 +98,6 @@ public class PurificationCore : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
         Broken?.Invoke(this);
     }
 
-    // Saca las posiciones de este núcleo de la línea (se redibuja sin ellas y con el loop abierto) y después destruye
-    // sus GameObjects. El orden importa: primero se sacan de la lista del LineController y recién después se destruyen
-    // (Destroy es diferido, pero así la línea nunca depende de un Transform destruido).
-    // Con LineController asignado, romper el núcleo abre el loop aunque este núcleo no tenga posiciones propias.
     private void RemoveLinePositions()
     {
         if(_lineController != null) _lineController.RemovePositions(_linePositions);
@@ -110,8 +106,6 @@ public class PurificationCore : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
 
         foreach(Transform position in _linePositions)
         {
-            // Nunca se destruye el propio núcleo ni un padre suyo (IsChildOf también da true para sí mismo):
-            // se llevaría puesto a este componente mientras termina de romperse.
             if(position == null || transform.IsChildOf(position)) continue;
 
             Destroy(position.gameObject);
