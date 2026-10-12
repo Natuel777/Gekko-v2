@@ -61,12 +61,14 @@ public class GameManager : MonoBehaviour
         DontDestroyOnLoad(_screenPause.gameObject);
     }
 
-    public void Respawn() 
+    public void Respawn()
     {
         if(AudioManager.instance)
         AudioManager.instance.ResetAudio();
         LevelOneManager.Instance.StartSong();
-        checkpointManager.Respawn();
+
+        if(RespawnController.Instance != null) RespawnController.Instance.TriggerRespawn(false);
+        else checkpointManager.Respawn();
     }
 
     public void RespawnAt(int index) {checkpointManager.RespawnAt(index);}

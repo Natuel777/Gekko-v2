@@ -8,6 +8,9 @@ public class GekkoHealth : IDamageable
     public float CurrentHealth => _currentHealth;
     public float MaxHealth => _maxHealth;
 
+    // Para el HUD de vida (ej. marchitar la hoja correspondiente).
+    public event System.Action<float> OnDamaged;
+
     public GekkoHealth(HealthBar healthBar)
     {
         _currentHealth = _maxHealth;
@@ -31,16 +34,30 @@ public class GekkoHealth : IDamageable
 
     public void Damage(float dmg)
     {
+        // Ventana de invulnerabilidad del DamageFeedback: ni vida ni efectos.
+        if(DamageFeedback.Instance != null && DamageFeedback.Instance.IsInvulnerable) return;
+
         Debug.Log("Gekko took " + dmg + " damage!");
         _currentHealth -= dmg;
+        _currentHealth = Mathf.Max(_currentHealth, 0f);
         _healthBar.UpdateHealthBar(_currentHealth, _maxHealth);
-        EventManager.Trigger<float>("OnCameraShake", 1f);
         _healthBar.TriggerDamagePulse();
+        OnDamaged?.Invoke(_currentHealth);
 
-        if(_currentHealth <= 0f)
+        bool isLethal = _currentHealth <= 0f;
+
+        // Golpe que mata: directo a la transición de respawn (iris), sin el combo de
+        // hitstop/empujón/temblor/parpadeo del DamageFeedback (no tiene sentido si ya se muere).
+        if(isLethal)
         {
-            _currentHealth = 0f;
-            GameManager.Instance.checkpointManager.Respawn();
+            if(RespawnController.Instance != null) RespawnController.Instance.TriggerRespawn(false);
+            else GameManager.Instance.checkpointManager.Respawn();
+        }
+        else
+        {
+            // El hitstop/vignette/empujón/temblor/invulnerabilidad vive en DamageFeedback;
+            // reemplaza el shake suelto que había acá (ahora usa Cinemachine Impulse de verdad).
+            DamageFeedback.Instance?.TriggerHit();
         }
 
         if (AudioManager.instance) AudioManager.instance.Play(SoundNames.PlayerHurt);

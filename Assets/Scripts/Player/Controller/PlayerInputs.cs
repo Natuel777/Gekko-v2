@@ -146,7 +146,11 @@ public class PlayerInputs
             _tongue.ShootTongue();
     }
 
-    public void Respawn(InputAction.CallbackContext value) {GameManager.Instance.Respawn();}
+    public void Respawn(InputAction.CallbackContext value)
+    {
+        if(RespawnController.Instance != null) RespawnController.Instance.TriggerRespawn(false);
+        else GameManager.Instance.Respawn();
+    }
 
 
     private void PauseInput(InputAction.CallbackContext value)

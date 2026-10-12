@@ -89,6 +89,14 @@ public class PlayerController
         WindEffectController.SetActive(false);
     }
 
+    // Empujón del DamageFeedback: pisa solo la velocidad horizontal, conserva la vertical
+    // (gravedad/salto en curso) como ya hace Move() en el resto del archivo.
+    public void ApplyKnockbackVelocity(Vector3 horizontalVelocity)
+    {
+        float currentY = _rb.linearVelocity.y;
+        _rb.linearVelocity = new Vector3(horizontalVelocity.x, currentY, horizontalVelocity.z);
+    }
+
     public void Teleport(Vector3 position)
     {
         _rb.linearVelocity = Vector3.zero;
