@@ -51,7 +51,6 @@ public class PlayerController
     private Vector3 _currentUp;
     private Vector2 _rawInput = new(), _smoothedInput = new(), _smoothedVelocity = new();
     private Vector3 _refRight, _refForward, lastUp;
-    private bool _hasRef;
     private float _smoothInputSpeed = 0.2f;
     private float _tongueSlowness = 0.05f;
     
@@ -88,6 +87,14 @@ public class PlayerController
         _surfaces = _climbRayMask | _groundRayMask;
         // Arrancamos sin boost: el post proceso de viento empieza apagado.
         WindEffectController.SetActive(false);
+    }
+
+    // Empujón del DamageFeedback: pisa solo la velocidad horizontal, conserva la vertical
+    // (gravedad/salto en curso) como ya hace Move() en el resto del archivo.
+    public void ApplyKnockbackVelocity(Vector3 horizontalVelocity)
+    {
+        float currentY = _rb.linearVelocity.y;
+        _rb.linearVelocity = new Vector3(horizontalVelocity.x, currentY, horizontalVelocity.z);
     }
 
     public void Teleport(Vector3 position)
@@ -268,7 +275,6 @@ public class PlayerController
         //}
         //else
         //{
-            _hasRef = false;
             Vector3 camForward = Vector3.Cross(_camTransform.right, _currentUp).normalized;
             Vector3 camRight = Vector3.Cross(_currentUp, camForward).normalized;
 

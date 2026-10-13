@@ -5,15 +5,19 @@ using UnityEngine.SceneManagement;
 public class CheckpointManager
 {
     private Vector3 _respawnPos;
+    private Quaternion _respawnRot = Quaternion.identity;
     private float _savedHealth;
     private bool _hasCheckpoint = false;
 
     private Dictionary<int, (Vector3 pos, float health)> _debugCheckpoints = new Dictionary<int, (Vector3, float)>();
     private Dictionary<int, string> _debugLevels = new Dictionary<int, string>();
 
-    public void SaveCheckpoint(Vector3 pos, float health, int debugIndex = -1)
+    public bool HasCheckpoint => _hasCheckpoint;
+
+    public void SaveCheckpoint(Vector3 pos, Quaternion rot, float health, int debugIndex = -1)
     {
         _respawnPos = pos;
+        _respawnRot = rot;
         _savedHealth = health;
         _hasCheckpoint = true;
 
@@ -22,6 +26,15 @@ public class CheckpointManager
             _debugCheckpoints[debugIndex] = (pos, health);
             Debug.Log($"Checkpoint {debugIndex} guardado en {pos} con vida {health}");
         }
+    }
+
+    // Para RespawnController: le da la pose a usar sin disparar el teleport instantáneo de Respawn().
+    public bool TryGetRespawnPose(out Vector3 pos, out Quaternion rot, out float health)
+    {
+        pos = _respawnPos;
+        rot = _respawnRot;
+        health = _savedHealth;
+        return _hasCheckpoint;
     }
 
     // Pre-registra un checkpoint SOLO para el teleport de debug (teclas 1/2/3).

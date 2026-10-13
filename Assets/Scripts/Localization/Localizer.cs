@@ -44,6 +44,8 @@ public static class Localizer
     // Para agregar textos nuevos: sumar una linea (clave, español, ingles) y usar la clave en un LocalizedText.
     private static readonly Dictionary<string, (string es, string en)> Table = new Dictionary<string, (string es, string en)>
     {
+        { "loading_label", ("CARGANDO", "LOADING") },
+
         { "tab_game", ("Juego", "Game") },
         { "tab_graphics", ("Gráficos", "Graphics") },
         { "tab_sound", ("Sonido", "Sound") },

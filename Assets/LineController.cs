@@ -23,19 +23,21 @@ public class LineController : MonoBehaviour
             _lineRenderer.SetPosition(i, _positions[i].position);
     }
 
-    // Saca de la lista las posiciones indicadas (ej. las de un PurificationCore roto), abre el loop y redibuja la línea.
-    // Se sacan ANTES de que se destruyan los Transforms, así UpdateLRPositions nunca lee uno destruido.
     public void RemovePositions(Transform[] positions)
     {
-        if(positions != null)
-            foreach(Transform position in positions)
-                _positions.Remove(position);
+        if(positions == null) return;
+
+        foreach(Transform position in positions)
+        {
+            if(!_positions.Contains(position)) continue;
+
+            _positions.Remove(position);
+        }
 
         OpenLoop();
         UpdateLRPositions();
     }
 
-    // Un núcleo roto corta el anillo: si la línea estaba en loop pasa a false; si ya estaba en false se deja como está.
     private void OpenLoop()
     {
         if(_lineRenderer != null && _lineRenderer.loop)

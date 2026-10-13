@@ -31,6 +31,7 @@ public class PlantBiteState : IState
         if(_biteTimer <= 0f)
         {
             _plant.Bite();
+            if (AudioManager.instance) AudioManager.instance.Play(SoundNames.PlantGrowl);
             _biteTimer = _plant.data.biteInterval;
         }
     }

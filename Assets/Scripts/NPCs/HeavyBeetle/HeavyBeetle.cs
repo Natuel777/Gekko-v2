@@ -176,7 +176,8 @@ public class HeavyBeetle : MonoBehaviour, IDamageable, IParticleSystemTarget, IP
         {
             SetState(PatrolState);
             view.ApplyPurifiedMaterial();
-            if(_purifiedParticle != null) _purifiedParticle.Play();
+            if (AudioManager.instance) AudioManager.instance.Play(SoundNames.Purify);
+            if (_purifiedParticle != null) _purifiedParticle.Play();
             PurifiedChanged?.Invoke(this);
         }
     }
@@ -205,11 +206,16 @@ public class HeavyBeetle : MonoBehaviour, IDamageable, IParticleSystemTarget, IP
     
     public void Damage(float dmg)
     {
-        if(IsDazed)
+        if (IsDazed)
         {
             //La partícula se reproduce dentro de SetPurified(true).
             SetPurified(true);
-        } 
+        }
+        else
+        {
+            Debug.Log("a");
+            if (AudioManager.instance) AudioManager.instance.Play(SoundNames.BeatleHurt);
+        }
     }
 
     #if UNITY_EDITOR

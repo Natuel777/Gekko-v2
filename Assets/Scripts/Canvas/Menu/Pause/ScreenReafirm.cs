@@ -20,7 +20,7 @@ public class ScreenReafirm : Screens
         if (change == ReafirmCanvas.GoToMenu)
         {
             _button.onClick.AddListener(BTN_Menu);
-            _text.text = "go back to the menu. You will lose all your progress";
+            _text.text = "Are you sure you want to go back to the menu. You will lose all your progress";
         }
         else if (change == ReafirmCanvas.RestartLevel)
         {
