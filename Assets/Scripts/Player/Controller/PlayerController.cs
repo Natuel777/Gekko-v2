@@ -50,14 +50,14 @@ public class PlayerController
     
     private Vector3 _currentUp;
     private Vector2 _rawInput = new(), _smoothedInput = new(), _smoothedVelocity = new();
-    private Vector3 _refRight, _refForward, lastUp;
+    private Vector3 _refRight, _refForward, _lastUp;
     private float _smoothInputSpeed = 0.2f;
     private float _tongueSlowness = 0.05f;
     
     private Vector3 _lastValidDir = Vector3.zero;
     private float _jumpGraceTime = 0f;
     private float _jumpGraceDuration = 0.1f;
-
+    private bool _hasRef;
 
     public bool JumpPressed { set { _jumpPressed = value; } }
     public bool IsMoving { get { return _isMoving; } }
@@ -235,53 +235,19 @@ public class PlayerController
         if(_camTransform == null) return;
 
         Vector3 dir = Vector3.zero;
-        //if (_isClimbing)
-        //{
-        //    if(input.sqrMagnitude < 0.0001f)
-        //    {
-        //        _hasRef = false;
-        //        dir = Vector3.zero;
-        //    }
-        //    Vector3 up = _currentUp;
-        //    if(!_hasRef)
-        //    {
-        //        _refRight = Vector3.ProjectOnPlane(_camTransform.right, up);
-        //
-        //        //Vector3 fwdFromForward = Vector3.ProjectOnPlane(_camTransform.forward, _currentUp);
-        //        //Vector3 fwdFromUp = Vector3.ProjectOnPlane(_camTransform.up, _currentUp);
-        //        //
-        //        //float facing = Mathf.Abs(Vector3.Dot(_camTransform.forward, _currentUp));
-        //        //_refForward = Vector3.Lerp(fwdFromForward.normalized, fwdFromUp.normalized, facing * facing);
-        //        if (_refRight.sqrMagnitude < 0.0001f) _refRight = Vector3.Cross(up, _camTransform.forward);
-        //
-        //        lastUp = up;
-        //        _hasRef = true;
-        //    }
-        //    else if(lastUp != up)
-        //    {
-        //        //Quaternion delta = Quaternion.FromToRotation(lastUp, _currentUp);
-        //        //_refRight = delta * _refRight;
-        //        //_refForward = delta * _refForward;
-        //        _refRight = Quaternion.FromToRotation(lastUp, up) * _refRight;
-        //        lastUp = up;
-        //    }
-        //
-        //    _refRight = Vector3.ProjectOnPlane(_refRight, up).normalized;
-        //    Vector3 forward = Vector3.Cross(_refForward, up).normalized;
-        //
-        //    dir = _refRight * input.x + forward * input.y;
-        //    dir = Vector3.ProjectOnPlane(dir, up);
-        //    dir = Vector3.ClampMagnitude(dir, 1f);
-        //}
-        //else
-        //{
+        if (_isClimbing)
+        {
+            dir = GetClimbDirection(input);
+        }
+        else
+        {
+            _hasRef = false;
             Vector3 camForward = Vector3.Cross(_camTransform.right, _currentUp).normalized;
             Vector3 camRight = Vector3.Cross(_currentUp, camForward).normalized;
+            dir = camForward * input.y + camRight * input.x;
+        }
+        dir = Vector3.ProjectOnPlane(dir, _currentUp).normalized;
 
-            dir = (camForward * input.y + camRight * input.x).normalized;
-            dir = Vector3.ProjectOnPlane(dir, _currentUp).normalized;
-        //}
-            
 
         if (dir.sqrMagnitude > 0.0001f)
         {
@@ -465,6 +431,37 @@ public class PlayerController
         alignment = Mathf.Clamp01(Vector3.Dot(facing, inputDir.normalized));
         return facing;
     }
+    private Vector3 GetClimbDirection(Vector2 input)
+    {
+        Vector3 up = _currentUp;
+
+        if (!_hasRef)
+        {
+            // Congelamos el marco con la cámara del momento en que empieza el input
+            Vector3 right = Vector3.ProjectOnPlane(_camTransform.right, up);
+            if (right.sqrMagnitude < 0.0001f)
+                right = Vector3.Cross(up, _camTransform.forward);
+
+            _refRight = right.normalized;
+            _refForward = Vector3.Cross(_refRight, up).normalized;
+            _lastUp = up;
+            _hasRef = true;
+        }
+        else if (Vector3.Angle(_lastUp, up) > 0.01f)
+        {
+            // La superficie giró: rotamos el marco con ella (transporte paralelo)
+            Quaternion delta = Quaternion.FromToRotation(_lastUp, up);
+            _refRight = delta * _refRight;
+            _refForward = delta * _refForward;
+            _lastUp = up;
+        }
+
+        // Reortogonalizamos para que no se acumule error
+        _refRight = Vector3.ProjectOnPlane(_refRight, up).normalized;
+        _refForward = Vector3.Cross(_refRight, up).normalized;
+
+        return _refRight * input.x + _refForward * input.y;
+    }
     private void Rotate(Vector3 dir)
     {
         if (!_canRotate) return;
@@ -506,6 +503,7 @@ public class PlayerController
     {
         _isSurface = false;
         _isClimbing = false;
+        _hasRef = false;
         _rb.useGravity = true;
         _jumpGraceTime = _jumpGraceDuration;
         _pjViewer.Jump(true);
@@ -687,7 +685,9 @@ public class PlayerController
             if (angleDiff > 0.5f)
             {
                 //_currentUp = bestHit.normal;
-                _currentUp = Vector3.Slerp(_currentUp, bestHit.normal, 15f * Time.fixedDeltaTime);
+                float follow = _isClimbing ? 40f : 15f;
+                _currentUp = Vector3.Slerp(_currentUp, bestHit.normal, Mathf.Clamp01(follow * Time.fixedDeltaTime));
+                //_currentUp = Vector3.Slerp(_currentUp, bestHit.normal, 15f * Time.fixedDeltaTime);
             }
 
             if (isGround)
@@ -749,6 +749,7 @@ public class PlayerController
         }
         _pjViewer.Move(false);
         _isMoving = false;
+        _hasRef = false;
         _lastValidDir = Vector3.zero;
         if (_pjViewer.IsWalkSoundPlaying()) _pjViewer.WalkSoundStop();
         if (_pjViewer.IsTrailPlaying()) _pjViewer.StopTrail();
