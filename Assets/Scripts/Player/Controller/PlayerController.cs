@@ -28,9 +28,10 @@ public class PlayerController
     private float _coyoteTimer;
     private float _fallMultiplier = 0.8f;
     private float _lowJumpMultiplier = 1.5f;
-    private float _rotationSpeed = 10f;
+    private float _rotationSpeed = 15f;
     private float _speedMultiplier = 1f;
-    
+    private float _moveAlignThreshold = 0.8f;
+
     private bool _isGrounded = false;
     private bool _isSurface = false;
     private bool _wasSurface = false;
@@ -428,7 +429,8 @@ public class PlayerController
             return inputDir;
 
         facing.Normalize();
-        alignment = Mathf.Clamp01(Vector3.Dot(facing, inputDir.normalized));
+        float dot = Vector3.Dot(facing, inputDir.normalized);
+        alignment = Mathf.Clamp01(Mathf.InverseLerp(_moveAlignThreshold, 1f, dot));
         return facing;
     }
     private Vector3 GetClimbDirection(Vector2 input)
@@ -437,28 +439,31 @@ public class PlayerController
 
         if (!_hasRef)
         {
-            // Congelamos el marco con la cámara del momento en que empieza el input
             Vector3 right = Vector3.ProjectOnPlane(_camTransform.right, up);
             if (right.sqrMagnitude < 0.0001f)
                 right = Vector3.Cross(up, _camTransform.forward);
 
             _refRight = right.normalized;
-            _refForward = Vector3.Cross(_refRight, up).normalized;
+
+            Vector3 fwd = Vector3.Cross(_refRight, up).normalized;
+            if (Vector3.Dot(fwd, _camTransform.up) < 0f)
+                fwd = -fwd; // respetamos el up de la cámara
+
+            _refForward = fwd;
             _lastUp = up;
             _hasRef = true;
         }
         else if (Vector3.Angle(_lastUp, up) > 0.01f)
         {
-            // La superficie giró: rotamos el marco con ella (transporte paralelo)
             Quaternion delta = Quaternion.FromToRotation(_lastUp, up);
             _refRight = delta * _refRight;
             _refForward = delta * _refForward;
             _lastUp = up;
         }
 
-        // Reortogonalizamos para que no se acumule error
+        // Reortogonalizamos SIN recalcular con Cross, para no perder el signo elegido
         _refRight = Vector3.ProjectOnPlane(_refRight, up).normalized;
-        _refForward = Vector3.Cross(_refRight, up).normalized;
+        _refForward = Vector3.ProjectOnPlane(_refForward, up).normalized;
 
         return _refRight * input.x + _refForward * input.y;
     }
