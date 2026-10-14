@@ -100,12 +100,15 @@ public class PlayerController
 
     public void Teleport(Vector3 position)
     {
+        // Un grapple en curso apunta a un ancla que con el teletransporte queda lejos: no puede sobrevivirlo.
+        _swinging?.CancelGrapple();
         _rb.linearVelocity = Vector3.zero;
         _rb.position = position;
         _pjTransform.position = position;
     }
     public void TeleportWRot(Transform trans)
     {
+        _swinging?.CancelGrapple();
         _rb.linearVelocity = Vector3.zero;
         _rb.position = trans.position;
         _pjTransform.position = trans.position;
@@ -124,10 +127,18 @@ public class PlayerController
     }
     public void ArtificialFixedUpdate()
     {
-        if (_swinging != null && _swinging.IsSwinging)
+        // Swing o grapple: a Gekko lo maneja la lengua, no el controller. Mientras haya cualquiera de los dos el controller
+        // no toca el Rigidbody. Es el "activeGrapple" del repo: sin esto, DetectSurface (que en el aire deja solo la
+        // velocidad vertical), Move() (que pisa la horizontal con _speed) y los multiplicadores de caída le deformarían o
+        // borrarían la parábola del grapple.
+        if (_swinging != null && (_swinging.IsSwinging || _swinging.IsGrappling))
         {
             _isClimbing = false;
-            _rb.useGravity = true;
+
+            // La gravedad del swing siempre está prendida. En el grapple la maneja GekkoGrapple: la apaga mientras Gekko
+            // espera, quieto, para salir disparado.
+            if (!_swinging.IsGrappling) _rb.useGravity = true;
+
             return;
         }
 
@@ -742,15 +753,20 @@ public class PlayerController
     public void CancelJump() { _pjViewer.Jump(false); }
     public void CancelMovement() 
     {
-        if (_isSurface && !_isIcySurface && !_isSlipperySurface)
+        // En pleno grapple la velocidad ES la parábola: soltar las teclas de movimiento no la tiene que frenar. (Si Gekko
+        // arrancó el swing parado sobre una superficie, _isSurface quedó en true y esto le pondría la velocidad en 0.)
+        if (_swinging == null || !_swinging.IsGrappling)
         {
-            _rb.linearVelocity = Vector3.zero;
-        }
-        else
-        {
-            Vector3 horizontalVel = new Vector3(_rb.linearVelocity.x, 0f, _rb.linearVelocity.z);
-            horizontalVel *= 0.995f;
-            _rb.linearVelocity = new Vector3(horizontalVel.x, _rb.linearVelocity.y, horizontalVel.z);
+            if (_isSurface && !_isIcySurface && !_isSlipperySurface)
+            {
+                _rb.linearVelocity = Vector3.zero;
+            }
+            else
+            {
+                Vector3 horizontalVel = new Vector3(_rb.linearVelocity.x, 0f, _rb.linearVelocity.z);
+                horizontalVel *= 0.995f;
+                _rb.linearVelocity = new Vector3(horizontalVel.x, _rb.linearVelocity.y, horizontalVel.z);
+            }
         }
         _pjViewer.Move(false);
         _isMoving = false;

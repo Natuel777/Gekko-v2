@@ -40,8 +40,6 @@ public class Player : MonoBehaviour
     [SerializeField] private float _forwardThrustForce = 15f;
     [SerializeField] private float _horizontalThrustForce = 10f;
     [SerializeField] private float _extendCableSpeed = 5f;
-    [Tooltip("Velocidad (metros por segundo) a la que se acorta el cable mientras se mantiene apretado el input de acortar.")]
-    [SerializeField] private float _shortenCableSpeed = 5f;
     [SerializeField] private Transform _predictionPoint;
     [SerializeField] private float _predictionSphereRadius = 0.5f;
     [SerializeField] private float _maxTongueDistance = 100f;
@@ -83,6 +81,15 @@ public class Player : MonoBehaviour
     [SerializeField] private int _ropeIterations = 8;
     [Tooltip("Largo extra de la soga sobre la distancia real entre sus puntas (0.05 = 5%). Más = cuelga y ondula más; 0 = recta y sin movimiento.")]
     [SerializeField] private float _ropeSlack = 0.05f;
+
+    [Header("Grapple")]
+    [Tooltip("Cuánto sube el arco por encima del punto de enganche, en metros para un Gekko de escala 1 (se escala con el tamaño real del pj). Más = arco más alto y vuelo más largo.")]
+    [SerializeField] private float _overshootYAxis = 2f;
+    [Tooltip("Segundos que hay que esperar, después de terminar un grapple, para poder usar otro.")]
+    [SerializeField] private float _grapplingCD = 1f;
+    [Tooltip("Segundos que Gekko queda clavado en el aire, tras apretar Space, antes de salir disparado hacia el punto (el freeze del repo). 0 = sale directo.")]
+    [Min(0f)]
+    [SerializeField] private float _grappleDelayTime = 0.25f;
     #endregion
 
     #region Properties
@@ -143,12 +150,13 @@ public class Player : MonoBehaviour
         cam.SetPJC(_pjController);
         _swinging = new GekkoSwinging(_tongue, _grappableLayers, transform, GetComponentInChildren<LineRenderer>(), Camera.main.transform,
                         _forwardThrustForce, _horizontalThrustForce, _extendCableSpeed,
-                        _shortenCableSpeed, _predictionPoint, _predictionSphereRadius, _maxTongueDistance,
+                        _predictionPoint, _predictionSphereRadius, _maxTongueDistance,
                         quality: _quality, springDamper: _springDamper, springStrength: _springStrength, springVelocity: _springVelocity,
                         waveCount: _waveCount, waveHeight: _waveHeight, waveAffectCurve: _waveAffectCurve,
                         ropeGravity: _ropeGravity, ropeDamping: _ropeDamping, ropeIterations: _ropeIterations, ropeSlack: _ropeSlack,
                         heightLimitOffset: _heightLimitOffset, heightLimitSpring: _heightLimitSpring,
-                        heightLimitDamper: _heightLimitDamper, heightLimitMaxPull: _heightLimitMaxPull);
+                        heightLimitDamper: _heightLimitDamper, heightLimitMaxPull: _heightLimitMaxPull).
+                        InitializeGrappleBehaviour(_overshootYAxis, _grapplingCD, _grappleDelayTime);
         _pjController.GetSwinging(_swinging);
 
         _pjInputs = new PlayerInputs(_pjController, _pjTongue, _aimM,cam, _interactM, this, _swinging);
@@ -276,9 +284,10 @@ public class Player : MonoBehaviour
         _collision.ArtificialOnTriggerEnter(other);
     }
 
-    private void OnCollisionEnter(Collision other) 
+    private void OnCollisionEnter(Collision other)
     {
-        _swinging.StopGrapple();
+        // Colgado del swing lo corta; en pleno grapple termina el vuelo (ver GekkoSwinging.ArtificialOnCollisionEnter).
+        _swinging.ArtificialOnCollisionEnter();
     }
 
     private void OnTriggerExit(Collider other)

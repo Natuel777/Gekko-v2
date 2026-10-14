@@ -68009,7 +68009,6 @@ MonoBehaviour:
   _forwardThrustForce: 150
   _horizontalThrustForce: 100
   _extendCableSpeed: 50
-  _shortenCableSpeed: 5
   _predictionPoint: {fileID: 0}
   _predictionSphereRadius: 0.5
   _maxTongueDistance: 100
@@ -68060,6 +68059,9 @@ MonoBehaviour:
   _ropeDamping: 0.9372
   _ropeIterations: 26
   _ropeSlack: 0.01
+  _overshootYAxis: 2
+  _grapplingCD: 1
+  _grappleDelayTime: 0.08
 --- !u!114 &3432168389014509898
 MonoBehaviour:
   m_ObjectHideFlags: 0

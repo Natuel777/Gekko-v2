@@ -694480,7 +694480,6 @@ MonoBehaviour:
   _forwardThrustForce: 50
   _horizontalThrustForce: 50
   _extendCableSpeed: 50
-  _shortenCableSpeed: 5
   _predictionPoint: {fileID: 1914964383}
   _predictionSphereRadius: 4
   _maxTongueDistance: 6
@@ -694531,6 +694530,9 @@ MonoBehaviour:
   _ropeDamping: 0.99
   _ropeIterations: 8
   _ropeSlack: 0.05
+  _overshootYAxis: 2
+  _grapplingCD: 1
+  _grappleDelayTime: 0.08
 --- !u!81 &7260311361992956952
 AudioListener:
   m_ObjectHideFlags: 0

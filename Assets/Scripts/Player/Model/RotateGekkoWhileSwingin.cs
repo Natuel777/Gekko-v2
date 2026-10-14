@@ -21,7 +21,7 @@ public sealed class RotateGekkoWhileSwingin
         _rb = rb;
     }
 
-    // Lo llama GekkoSwinging.StartGrapple al engancharse. Fija el "adelante" del swing (ver GetDesiredRotation).
+    // Lo llama GekkoSwinging.StartSwing al engancharse. Fija el "adelante" del swing (ver GetDesiredRotation).
     public void StartSwing()
     {
         Vector3 toGrapplePoint = _swinging.GrapplePoint - _rb.position;

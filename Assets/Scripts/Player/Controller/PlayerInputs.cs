@@ -118,8 +118,16 @@ public class PlayerInputs
 
     private void JumpInput(InputAction.CallbackContext value)
     {
+        // Colgado de la lengua (swing) o en pleno grapple, Space es del grapple y NO cuenta como salto. Si se marcara
+        // JumpPressed, el controller lo vería apenas despierte y le sumaría un salto encima de la parábola.
+        // Es por pulsación (performed), no por mantener apretado: igual que el GetKeyDown del repo.
+        if(_swinging.IsSwinging || _swinging.IsGrappling)
+        {
+            _swinging.TryStartGrapple();
+            return;
+        }
+
         pjController.JumpPressed = true;
-        _swinging.ShortenCablePressed = true;
     }
 
     private void InteractInput(InputAction.CallbackContext value)
@@ -134,7 +142,6 @@ public class PlayerInputs
     {
         pjController.JumpPressed = false;
         pjController.CancelJump();
-        _swinging.ShortenCablePressed = false;
     }
 
     private void TongueInput(InputAction.CallbackContext value)
@@ -170,9 +177,9 @@ public class PlayerInputs
 
     private void ChangeValues(InputAction.CallbackContext value) { _pj.ChangeVariables(); }
 
-    private void TongueAttachInput(InputAction.CallbackContext value) => _swinging.StartGrapple();
+    private void TongueAttachInput(InputAction.CallbackContext value) => _swinging.StartSwing();
 
-    private void TongueAttachCancel(InputAction.CallbackContext value) => _swinging.StopGrapple();
+    private void TongueAttachCancel(InputAction.CallbackContext value) => _swinging.StopSwing();
 
 }
 
