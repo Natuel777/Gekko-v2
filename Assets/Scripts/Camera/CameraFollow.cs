@@ -21,6 +21,12 @@ public class CameraFollow : MonoBehaviour
     [SerializeField, Min(0.01f)] private float _verticalRangeSpeed = 90f;
     private float _minVerticalAngle;
 
+    // Mirar hacia arriba desde el piso (lo hace CameraRotation). Mientras se puede, el eje vertical tiene este margen de
+    // grados por debajo del piso: así el input puede "empujar" más allá y CameraRotation lo convierte en inclinación.
+    // Alcanza con que sea mayor a lo que el mouse puede mover el eje en un frame.
+    private const float LookUpInputMargin = 90f;
+    private CameraRotation _rotation;
+
     public float cameraUpLerpSpeed = 2f;
     [SerializeField] private float _angleChange = 120f;
     [SerializeField] private float _newAngle = 90f;
@@ -33,6 +39,10 @@ public class CameraFollow : MonoBehaviour
     private float _baseRadius;
     public bool MovingCamera { set { _movingCamera = value; } }
     public Vector3 CameraUp { get { return _cameraUp; } }
+    // Límite de abajo real de la órbita (grados). Con Gekko en el piso es 0°: la cámara a ras del piso.
+    public float VerticalBottom => _minVerticalAngle;
+    // Gekko en el piso y la cámara puede mirar hacia arriba desde ahí (ver CameraRotation).
+    public bool LookUpAllowed { get; private set; }
 
     private void OnEnable()  => EventManager.Subscribe<float>("OnCameraShake", ShakeCamera);
    
@@ -45,6 +55,7 @@ public class CameraFollow : MonoBehaviour
         _baseRadius = _camera.Radius;
         _minVerticalAngle = _camera.VerticalAxis.Range.x;
         _input = GetComponent<CinemachineInputAxisController>();
+        _rotation = GetComponent<CameraRotation>();
 
         if(UIManager.Instance != null)
         {
@@ -164,9 +175,15 @@ public class CameraFollow : MonoBehaviour
     // Bajar el límite es instantáneo (no mueve la cámara). Subirlo es de a poco: Cinemachine recorta el valor del eje al
     // rango en cada frame, y si el límite saltara de golpe (al aterrizar con la cámara por debajo de 0°) la cámara pegaría
     // un salto. Así sube acompañando al límite.
+    //
+    // Con Gekko en el piso, y ya con el límite asentado en 0°, se habilita mirar hacia arriba (LookUpAllowed): el rango
+    // real del eje se abre LookUpInputMargin por debajo del piso y CameraRotation se encarga de que la cámara no baje de
+    // ahí (convierte ese extra en inclinación). Solo si CameraRotation está presente y activa: sin ella nadie frenaría
+    // a la cámara y bajaría del piso.
     private void UpdateVerticalRange()
     {
         float targetMin;
+        bool onFloor = false;
 
         if (_pjC.InAir)
         {
@@ -175,13 +192,19 @@ public class CameraFollow : MonoBehaviour
         else
         {
             float alignment = Vector3.Dot(_pjC.CurrentUp.normalized, Vector3.up);
-            targetMin = (alignment >= _upThreshold || _pjC.Grounded) ? 0f : -80f;
+            onFloor = alignment >= _upThreshold || _pjC.Grounded;
+            targetMin = onFloor ? 0f : -80f;
         }
 
         if (targetMin < _minVerticalAngle) _minVerticalAngle = targetMin;
         else _minVerticalAngle = Mathf.MoveTowards(_minVerticalAngle, targetMin, _verticalRangeSpeed * Time.deltaTime);
 
-        _camera.VerticalAxis.Range = new Vector2(_minVerticalAngle, 80f);
+        // Mientras el límite todavía sube (recién aterrizado) no: la cámara tiene que subir con él, no inclinarse.
+        LookUpAllowed = onFloor && Mathf.Approximately(_minVerticalAngle, targetMin)
+                        && _rotation != null && _rotation.isActiveAndEnabled;
+
+        float rangeMin = LookUpAllowed ? _minVerticalAngle - LookUpInputMargin : _minVerticalAngle;
+        _camera.VerticalAxis.Range = new Vector2(rangeMin, 80f);
     }
     private void DeactivateInput() { _input.enabled = false; }
     private void ActivateInput() { _input.enabled = true; }

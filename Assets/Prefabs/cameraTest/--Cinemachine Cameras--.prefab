@@ -16,6 +16,7 @@ GameObject:
   - component: {fileID: 3802944431813860367}
   - component: {fileID: 6395683099571813869}
   - component: {fileID: 3429558330299444281}
+  - component: {fileID: 4718293046152837461}
   m_Layer: 0
   m_Name: ThirdPersonManual
   m_TagString: Untagged
@@ -268,6 +269,22 @@ MonoBehaviour:
   _angleChange: 120
   _newAngle: 0
   _worldUpReference: {fileID: 0}
+--- !u!114 &4718293046152837461
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2512966151497612300}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 767b337e4819c8d4a8f880361a4dacb0, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  _maxLookUpAngle: 45
+  _lookUpSensitivity: 1
+  _lookUpReturnSpeed: 120
+  _floorCheckDistance: 0.8
 --- !u!114 &3429558330299444281
 MonoBehaviour:
   m_ObjectHideFlags: 0
