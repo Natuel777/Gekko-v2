@@ -13,7 +13,13 @@ public class CameraFollow : MonoBehaviour
     //public float _alignDeadzone = 15f;
     //public float _alignDelay = 0.5f;
     [SerializeField] private float _upThreshold = 0.98f;
-    [SerializeField] private float _floorCheckDistance = 0.8f;
+
+    // Paneo vertical (ver UpdateVerticalRange). Grados: 0 = a la altura de Gekko (su transform.position), negativo = por debajo.
+    [Tooltip("Cuánto puede bajar la cámara (en grados, por debajo de Gekko) cuando Gekko está en el aire.")]
+    [SerializeField] private float _airMinVerticalAngle = -30f;
+    [Tooltip("Velocidad (grados/s) a la que sube el límite de abajo al apoyarse, por ejemplo al aterrizar con la cámara por debajo de Gekko.")]
+    [SerializeField, Min(0.01f)] private float _verticalRangeSpeed = 90f;
+    private float _minVerticalAngle;
 
     public float cameraUpLerpSpeed = 2f;
     [SerializeField] private float _angleChange = 120f;
@@ -25,11 +31,8 @@ public class CameraFollow : MonoBehaviour
 
     private LayerMask _obstacle;
     private float _baseRadius;
-    private LayerMask _floorLayers;
-    private bool _cameraOnFloor;
     public bool MovingCamera { set { _movingCamera = value; } }
     public Vector3 CameraUp { get { return _cameraUp; } }
-    public bool CameraOnFloor { get { return _cameraOnFloor; } }
 
     private void OnEnable()  => EventManager.Subscribe<float>("OnCameraShake", ShakeCamera);
    
@@ -39,8 +42,8 @@ public class CameraFollow : MonoBehaviour
     {
         _pj = GameManager.Instance.Pj.transform;
         _obstacle = GameManager.Instance.Surfaces;
-        _floorLayers = LayerMask.GetMask("Ground");
         _baseRadius = _camera.Radius;
+        _minVerticalAngle = _camera.VerticalAxis.Range.x;
         _input = GetComponent<CinemachineInputAxisController>();
 
         if(UIManager.Instance != null)
@@ -70,7 +73,6 @@ public class CameraFollow : MonoBehaviour
     {
         PushCameraFromGeometry();
         UpdateVerticalRange();
-        UpdateCameraOnFloor();
     }
     private void SmoothCameraUp()
     {
@@ -154,24 +156,32 @@ public class CameraFollow : MonoBehaviour
             _camera.Radius = Mathf.Lerp(_camera.Radius, _baseRadius, 2f * Time.deltaTime);
         }
     }
-    private void UpdateCameraOnFloor()
-    {
-        _cameraOnFloor = Physics.Raycast(_camera.transform.position, -_cameraUp,
-            _floorCheckDistance, _floorLayers, QueryTriggerInteraction.Ignore);
-    }
+    // Límite de abajo del paneo vertical (VerticalAxis de la órbita, en grados; 0 = a la altura de Gekko):
+    //  - En el aire (salto, caída, swing, grapple): hasta _airMinVerticalAngle por debajo de Gekko. Lo que frena a la
+    //    cámara contra el piso es la colisión (PushCameraFromGeometry y el CinemachineDecollider), no este límite.
+    //  - Apoyado en el piso: igual que antes, no baja de 0°.
+    //  - Apoyado en una pared o techo: igual que antes, hasta -80°.
+    // Bajar el límite es instantáneo (no mueve la cámara). Subirlo es de a poco: Cinemachine recorta el valor del eje al
+    // rango en cada frame, y si el límite saltara de golpe (al aterrizar con la cámara por debajo de 0°) la cámara pegaría
+    // un salto. Así sube acompañando al límite.
     private void UpdateVerticalRange()
     {
-        float alignment = Vector3.Dot(_pjC.CurrentUp.normalized, Vector3.up);
+        float targetMin;
 
-        if (alignment >= _upThreshold || _pjC.Grounded)
+        if (_pjC.InAir)
         {
-            _camera.VerticalAxis.Range = new Vector2(0f, 80f);
-            //_camera.VerticalAxis.Range = new Vector2(-80f, 80f);
+            targetMin = _airMinVerticalAngle;
         }
         else
         {
-            _camera.VerticalAxis.Range = new Vector2(-80f, 80f);
+            float alignment = Vector3.Dot(_pjC.CurrentUp.normalized, Vector3.up);
+            targetMin = (alignment >= _upThreshold || _pjC.Grounded) ? 0f : -80f;
         }
+
+        if (targetMin < _minVerticalAngle) _minVerticalAngle = targetMin;
+        else _minVerticalAngle = Mathf.MoveTowards(_minVerticalAngle, targetMin, _verticalRangeSpeed * Time.deltaTime);
+
+        _camera.VerticalAxis.Range = new Vector2(_minVerticalAngle, 80f);
     }
     private void DeactivateInput() { _input.enabled = false; }
     private void ActivateInput() { _input.enabled = true; }

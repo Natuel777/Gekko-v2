@@ -22,13 +22,22 @@ public class CameraRotation : MonoBehaviour
 
     private LayerMask _obstacle;
     //private float _baseRadius;
+
+    // Chequeo de piso de la cámara: un rayo desde la cámara hacia "abajo" (el up de la cámara) que dice si hay piso a
+    // menos de _floorCheckDistance. Antes vivía en CameraFollow.
+    [SerializeField] private float _floorCheckDistance = 0.8f;
+    private LayerMask _floorLayers;
+    private bool _cameraOnFloor;
+
     public bool MovingCamera { set { _movingCamera = value; } }
     public Vector3 CameraUp { get { return _cameraUp; } }
+    public bool CameraOnFloor { get { return _cameraOnFloor; } }
 
     private void Awake()
     {
         _pj = GameManager.Instance.Pj.transform;
         _obstacle = GameManager.Instance.Surfaces;
+        _floorLayers = LayerMask.GetMask("Ground");
         //_baseRadius = _camera.Radius;
     }
 
@@ -65,6 +74,9 @@ public class CameraRotation : MonoBehaviour
 
         // Miramos al personaje
         transform.LookAt(_pj.position + _pjC.CurrentUp * 1f, _pjC.CurrentUp);
+
+        // Al final, con la cámara ya en su posición final de este frame.
+        UpdateCameraOnFloor();
     }
     private void SmoothCameraUp()
     {
@@ -118,6 +130,11 @@ public class CameraRotation : MonoBehaviour
     //        _camera.Radius = Mathf.Lerp(_camera.Radius, _baseRadius, 2f * Time.deltaTime);
     //    }
     //}
+    private void UpdateCameraOnFloor()
+    {
+        _cameraOnFloor = Physics.Raycast(_camera.transform.position, -_cameraUp,
+            _floorCheckDistance, _floorLayers, QueryTriggerInteraction.Ignore);
+    }
     public void SetPJC(PlayerController pjc)
     {
         _pjC = pjc;
