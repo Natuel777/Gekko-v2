@@ -170,8 +170,6 @@ public sealed class GekkoSwinging
 
     public void ArtificialUpdate()
     {
-        // El grapple se actualiza SIEMPRE y antes que cualquier guard: su cooldown y sus timers tienen que correr también
-        // sin joint (después de soltar el swing ya no hay) y cuando no hay nada enganchado.
         _grappleBehaviour.ArtificialUpdate();
 
         CheckForSwingPoints();
@@ -180,8 +178,6 @@ public sealed class GekkoSwinging
         // repo, donde MovePlayer corta con activeGrapple.
         if(!_joint) return;
 
-        // Acá queda solo lo que EMPUJA a Gekko (la física real del swing). Simular y dibujar la soga se hace en
-        // ArtificialLateUpdate.
         ODMGearMovement();
     }
 
@@ -204,9 +200,12 @@ public sealed class GekkoSwinging
         // Antes del guard del joint: la espera del grapple (Gekko clavado en el aire) necesita FixedUpdate y no hay joint.
         _grappleBehaviour.ArtificialFixedUpdate();
 
+        // Antes del guard del joint: durante el grapple no hay joint y Gekko igual tiene que girar hacia el punto.
+        // RotateGekkoWhileSwingin se protege sola: solo gira con swing o con grapple.
+        _gekkoRotation.ArtificialFixedUpdate();
+
         if(!_joint) return;
 
-        _gekkoRotation.ArtificialFixedUpdate();
         ApplyHeightLimit();
     }
 
@@ -426,10 +425,10 @@ public sealed class GekkoSwinging
     }
 
     public GekkoSwinging InitializeGrappleBehaviour(float overshootYAxis, float grapplingCD, float delayTime,
-                                                    float finishDistance)
+                                                    float finishDistance, float lookSpeed)
     {
         _grappleBehaviour = new GekkoGrapple(this, _rb, _transform, overshootYAxis, grapplingCD, delayTime,
-                                             finishDistance);
+                                             finishDistance, _gekkoRotation, lookSpeed);
         return this;
     }
 }

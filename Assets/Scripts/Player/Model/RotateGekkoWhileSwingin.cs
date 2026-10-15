@@ -15,6 +15,11 @@ public sealed class RotateGekkoWhileSwingin
     // El "adelante" del swing: dirección horizontal (unitaria) hacia donde quedaba el punto de enganche al engancharse.
     private Vector3 _heading = Vector3.forward;
 
+    // Giro hacia el punto de enganche durante el grapple (ver StartLookAtGrapplePoint). Es independiente del giro del swing.
+    private bool _lookingAtGrapplePoint;
+    private Vector3 _grappleLookPoint;
+    private float _grappleLookSpeed;
+
     public RotateGekkoWhileSwingin(GekkoSwinging swinging, Rigidbody rb)
     {
         _swinging = swinging;
@@ -38,6 +43,13 @@ public sealed class RotateGekkoWhileSwingin
     // Update pelea con la interpolación (el Rigidbody avanza a saltos) y hace temblar la cámara que lo sigue.
     public void ArtificialFixedUpdate()
     {
+        // Durante el grapple ya no hay swing: Gekko gira solo para mirar al punto de enganche.
+        if(_lookingAtGrapplePoint)
+        {
+            RotateTowardsGrapplePoint();
+            return;
+        }
+
         if(!_swinging.IsSwinging) return;
 
         Vector3 toGrapplePoint = _swinging.GrapplePoint - _rb.position;
@@ -47,6 +59,37 @@ public sealed class RotateGekkoWhileSwingin
 
         Quaternion desiredRotation = GetDesiredRotation(toGrapplePoint);
         _rb.MoveRotation(Quaternion.Lerp(_rb.rotation, desiredRotation, Time.fixedDeltaTime * _rotationSpeed));
+    }
+
+    // Lo llama GekkoGrapple al arrancar el grapple: desde ahora, y hasta StopLookAtGrapplePoint, Gekko gira de a poco para
+    // mirar al punto de enganche. degreesPerSecond es la velocidad angular máxima (0 = no gira).
+    public void StartLookAtGrapplePoint(Vector3 point, float degreesPerSecond)
+    {
+        _grappleLookPoint = point;
+        _grappleLookSpeed = Mathf.Max(0f, degreesPerSecond);
+        _lookingAtGrapplePoint = true;
+    }
+
+    // Lo llama GekkoGrapple al terminar el grapple. Después PlayerController se despierta y endereza a Gekko solo.
+    public void StopLookAtGrapplePoint() => _lookingAtGrapplePoint = false;
+
+    // A diferencia del swing (que nunca lo deja darse vuelta, ver GetDesiredRotation), acá Gekko mira DIRECTO al punto y sin
+    // limitar ejes: giro, cabeceo y, si hace falta, hasta pasar de la vertical. RotateTowards gira a velocidad angular
+    // constante, así que el giro es progresivo (no salta) y dura lo que tenga que durar según cuánto haya que girar.
+    // El "arriba" de referencia es el del mundo, así Gekko no se inclina de costado. Salvo cuando el punto queda casi recto
+    // arriba o abajo: ahí el "arriba" del mundo es paralelo a la mirada y no define el giro, y se usa el "arriba" actual.
+    // Corre en FixedUpdate y rota por el Rigidbody, por el mismo motivo que el giro del swing (ver ArtificialFixedUpdate).
+    private void RotateTowardsGrapplePoint()
+    {
+        Vector3 toPoint = _grappleLookPoint - _rb.position;
+
+        // Encima del punto no hay hacia dónde mirar: se mantiene la rotación actual.
+        if(toPoint.sqrMagnitude <= 0.0001f) return;
+
+        Vector3 up = Mathf.Abs(toPoint.normalized.y) > 0.99f ? _rb.rotation * Vector3.up : Vector3.up;
+        Quaternion target = Quaternion.LookRotation(toPoint, up);
+
+        _rb.MoveRotation(Quaternion.RotateTowards(_rb.rotation, target, _grappleLookSpeed * Time.fixedDeltaTime));
     }
 
     // Gekko mira hacia el punto de enganche, pero SIN darse vuelta: nunca mira a más de 90° del rumbo del swing.

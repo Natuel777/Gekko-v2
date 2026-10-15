@@ -17,17 +17,20 @@ public sealed class GekkoGrapple
     private readonly GekkoSwinging _swinging;
     private readonly Rigidbody _rb;
     private readonly Transform _transform;
-    private readonly float _overshootYAxis, _grapplingCD, _delayTime, _finishDistance;
+    private readonly RotateGekkoWhileSwingin _rotation;
+    private readonly float _overshootYAxis, _grapplingCD, _delayTime, _finishDistance, _lookSpeed;
 
     private Phase _phase = Phase.Idle;
     private float _cooldownTimer, _phaseTimer;
     private Vector3 _grapplePoint;
+    private bool _secondJumpEnabled = false;
 
     // true desde que arranca la espera hasta que termina el vuelo.
     public bool IsGrappling => _phase != Phase.Idle;
+    public bool SecondJumpEnabled => _secondJumpEnabled;
 
     public GekkoGrapple(GekkoSwinging swinging, Rigidbody rb, Transform t, float overshootYAxis, float grapplingCD, float delayTime,
-                        float finishDistance)
+                        float finishDistance, RotateGekkoWhileSwingin rotation, float lookSpeed)
     {
         _swinging = swinging;
         _rb = rb;
@@ -36,6 +39,8 @@ public sealed class GekkoGrapple
         _grapplingCD = grapplingCD;
         _delayTime = Mathf.Max(0f, delayTime);
         _finishDistance = Mathf.Max(0f, finishDistance);
+        _rotation = rotation;
+        _lookSpeed = Mathf.Max(0f, lookSpeed);
     }
 
     // Lo llama GekkoSwinging.ArtificialUpdate en cada frame, haya swing o no: el cooldown y los timers del vuelo tienen
@@ -83,6 +88,10 @@ public sealed class GekkoGrapple
         // válida, el swing no llega a soltarse.
         if(!TryCalculateLaunch(out Vector3 velocity, out float flightTime)) return false;
 
+        // Gekko empieza a girar, de a poco, para mirar al punto: desde ya, o sea también durante la espera. Se corta en
+        // Finish.
+        _rotation.StartLookAtGrapplePoint(_grapplePoint, _lookSpeed);
+
         if(_delayTime <= 0f)
         {
             StartFlight(velocity, flightTime);
@@ -109,6 +118,7 @@ public sealed class GekkoGrapple
         {
             ParticleSystem ps = other.GetComponentInChildren<ParticleSystem>();
             ps?.Play(); 
+            _secondJumpEnabled = true;
         }
 
         else Debug.Log("Jovani gran Jovani Vasquez");
@@ -120,10 +130,11 @@ public sealed class GekkoGrapple
         {
             ParticleSystem ps = other.GetComponentInChildren<ParticleSystem>();
             
-            if(ps != null && ps.isPlaying)
+            if(ps != null)
             {
                 Debug.Log("Este es Jovaniiiii");
-                ps.Stop(); 
+                ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear); 
+                _secondJumpEnabled = false;
             } 
         }
 
@@ -183,6 +194,9 @@ public sealed class GekkoGrapple
 
         // Termina el vuelo, termina la lengua. El controller se despierta solo: ya no hay IsGrappling.
         _swinging.HideTongue();
+
+        // Ya no hay nada que mirar: PlayerController se despierta y endereza a Gekko solo.
+        _rotation.StopLookAtGrapplePoint();
     }
 
     // Arma la parábola. La altura del arco sale igual que en el ExecuteGrapple del repo: se parte de un punto más bajo que
