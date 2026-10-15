@@ -105,7 +105,29 @@ public sealed class GekkoGrapple
 
     public void ArtificialOnTriggerEnter(Collider other)
     {
-        if(other.gameObject.layer == 16 && _phase == Phase.Flying) Finish(true);
+        if(other.gameObject.layer == 16 && _phase == Phase.Flying)
+        {
+            ParticleSystem ps = other.GetComponentInChildren<ParticleSystem>();
+            ps?.Play(); 
+        }
+
+        else Debug.Log("Jovani gran Jovani Vasquez");
+    }
+
+    public void ArtificialOnTriggerExit(Collider other)
+    {
+        if(other.gameObject.layer == 16)
+        {
+            ParticleSystem ps = other.GetComponentInChildren<ParticleSystem>();
+            
+            if(ps != null && ps.isPlaying)
+            {
+                Debug.Log("Este es Jovaniiiii");
+                ps.Stop(); 
+            } 
+        }
+
+        else Debug.Log("Eldeeeeennn riiinggg, sqrrrrrrrrr");
     }
 
     // Gekko ya está a _finishDistance o menos del punto de enganche. Los metros valen para un Gekko de escala 1 y se

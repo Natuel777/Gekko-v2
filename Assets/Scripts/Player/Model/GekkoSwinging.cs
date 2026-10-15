@@ -383,7 +383,6 @@ public sealed class GekkoSwinging
 
         if(!foundPoint)
         {
-            Debug.Log("Mami que mami que mami");
             HidePredictionParticle(ps);
             return;
         }

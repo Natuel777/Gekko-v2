@@ -24571,11 +24571,6 @@ Transform:
   - {fileID: 1979558655}
   m_Father: {fileID: 1829566602}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &147656391 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 561622117767658488, guid: d2d02cf1738380247aaecdffc8521b29, type: 3}
-  m_PrefabInstance: {fileID: 2430094816215773328}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1 &147780258
 GameObject:
   m_ObjectHideFlags: 0
@@ -576378,37 +576373,13 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 561622117767658488, guid: d2d02cf1738380247aaecdffc8521b29, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 2430094816215773331}
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: d2d02cf1738380247aaecdffc8521b29, type: 3}
 --- !u!4 &2430094816215773329 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 897083268221176149, guid: d2d02cf1738380247aaecdffc8521b29, type: 3}
   m_PrefabInstance: {fileID: 2430094816215773328}
   m_PrefabAsset: {fileID: 0}
---- !u!135 &2430094816215773331
-SphereCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 147656391}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Radius: 0.26
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1001 &2430094816227632707
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -694566,6 +694537,7 @@ MonoBehaviour:
   _overshootYAxis: 2
   _grapplingCD: 1
   _grappleDelayTime: 0.08
+  _grappleFinishDistance: 1.5
 --- !u!81 &7260311361992956952
 AudioListener:
   m_ObjectHideFlags: 0

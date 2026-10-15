@@ -297,6 +297,7 @@ public class Player : MonoBehaviour
     private void OnTriggerExit(Collider other)
     {
         _collision.ArtificialOnTriggerExit(other);
+        _swinging.GrappleBehaviour.ArtificialOnTriggerExit(other);
     }
 
     private void OnTriggerStay(Collider other) {_collision.ArtificialOnTriggerStay(other);}
