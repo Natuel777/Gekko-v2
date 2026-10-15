@@ -282,6 +282,7 @@ public class Player : MonoBehaviour
     private void OnTriggerEnter(Collider other)
     {
         _collision.ArtificialOnTriggerEnter(other);
+        _swinging.GrappleBehaviour.ArtificialOnTriggerEnter(other);
     }
 
     private void OnCollisionEnter(Collision other)

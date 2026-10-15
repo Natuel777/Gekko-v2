@@ -13,6 +13,7 @@ public class CameraFollow : MonoBehaviour
     //public float _alignDeadzone = 15f;
     //public float _alignDelay = 0.5f;
     [SerializeField] private float _upThreshold = 0.98f;
+    [SerializeField] private float _floorCheckDistance = 0.8f;
 
     public float cameraUpLerpSpeed = 2f;
     [SerializeField] private float _angleChange = 120f;
@@ -24,8 +25,11 @@ public class CameraFollow : MonoBehaviour
 
     private LayerMask _obstacle;
     private float _baseRadius;
+    private LayerMask _floorLayers;
+    private bool _cameraOnFloor;
     public bool MovingCamera { set { _movingCamera = value; } }
     public Vector3 CameraUp { get { return _cameraUp; } }
+    public bool CameraOnFloor { get { return _cameraOnFloor; } }
 
     private void OnEnable()  => EventManager.Subscribe<float>("OnCameraShake", ShakeCamera);
    
@@ -35,6 +39,7 @@ public class CameraFollow : MonoBehaviour
     {
         _pj = GameManager.Instance.Pj.transform;
         _obstacle = GameManager.Instance.Surfaces;
+        _floorLayers = LayerMask.GetMask("Ground");
         _baseRadius = _camera.Radius;
         _input = GetComponent<CinemachineInputAxisController>();
 
@@ -65,6 +70,7 @@ public class CameraFollow : MonoBehaviour
     {
         PushCameraFromGeometry();
         UpdateVerticalRange();
+        UpdateCameraOnFloor();
     }
     private void SmoothCameraUp()
     {
@@ -147,6 +153,11 @@ public class CameraFollow : MonoBehaviour
         {
             _camera.Radius = Mathf.Lerp(_camera.Radius, _baseRadius, 2f * Time.deltaTime);
         }
+    }
+    private void UpdateCameraOnFloor()
+    {
+        _cameraOnFloor = Physics.Raycast(_camera.transform.position, -_cameraUp,
+            _floorCheckDistance, _floorLayers, QueryTriggerInteraction.Ignore);
     }
     private void UpdateVerticalRange()
     {

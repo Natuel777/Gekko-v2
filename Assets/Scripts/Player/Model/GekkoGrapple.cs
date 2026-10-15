@@ -1,19 +1,5 @@
 using UnityEngine;
 
-// El grapple de Gekko: colgado de la lengua (swing), Space lo suelta y lo dispara en una parábola hacia el punto de
-// enganche. Está portado del repo de Dave / GameDevelopment (Grappling.cs + PlayerMovementGrappling.cs). La diferencia es
-// que el repo programa todo con Invoke y flags de un MonoBehaviour; acá son timers propios (ArtificialUpdate), porque esto
-// es una clase plana que maneja GekkoSwinging.
-//
-// El grapple tiene dos fases:
-//   1) Freezing (solo si _delayTime > 0): Gekko queda clavado en el aire un instante antes de salir disparado. Es el
-//      "freeze" del repo. Con _delayTime = 0 se saltea y sale directo.
-//   2) Flying: se le setea la velocidad UNA sola vez y después no se la toca más: la parábola la dibuja la gravedad.
-//      Termina al primer choque sólido o, si no choca con nada, a los pocos segundos (ver FlightTimeMargin).
-//
-// Mientras dura (en cualquiera de las dos fases) IsGrappling es true. Eso es lo que hace de "activeGrapple" del repo:
-//   - PlayerController no toca el Rigidbody (ver su ArtificialFixedUpdate): sin eso le borraría la velocidad a la parábola.
-//   - GekkoSwinging no tiene joint, ni techo de altura, ni empuje: ya no se balancea. Solo sigue dibujando la lengua.
 public sealed class GekkoGrapple
 {
     private enum Phase { Idle, Freezing, Flying }
@@ -61,8 +47,8 @@ public sealed class GekkoGrapple
 
         if(_phaseTimer > 0f) return;
 
-        // Se acabó la espera: sale disparado. Se acabó el vuelo sin chocar con nada: se corta igual.
         if(_phase == Phase.Freezing) Launch();
+
         else Finish(true);
     }
 
@@ -107,6 +93,11 @@ public sealed class GekkoGrapple
     public void ArtificialOnCollisionEnter()
     {
         if(_phase == Phase.Flying) Finish(true);
+    }
+
+    public void ArtificialOnTriggerEnter(Collider other)
+    {
+        if(other.gameObject.layer == 16 && _phase == Phase.Flying) Finish(true);
     }
 
     // Corta el grapple sin cooldown. Lo usa el teletransporte (PlayerController.Teleport): un grapple en curso apunta a un

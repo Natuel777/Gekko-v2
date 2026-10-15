@@ -65,6 +65,7 @@ public sealed class GekkoSwinging
     public bool IsGrappling => _grappleBehaviour != null && _grappleBehaviour.IsGrappling;
     public Vector2 ThrustInput { set { _thrustInput = value; } }
     public Vector3 GrapplePoint => _grapplePoint;
+    public GekkoGrapple GrappleBehaviour => _grappleBehaviour;
     #endregion
 
     public GekkoSwinging(Transform tongue, LayerMask layers, Transform transform, LineRenderer lineRenderer, Transform cam,
