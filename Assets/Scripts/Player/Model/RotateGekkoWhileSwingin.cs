@@ -15,9 +15,13 @@ public sealed class RotateGekkoWhileSwingin
     // El "adelante" del swing: dirección horizontal (unitaria) hacia donde quedaba el punto de enganche al engancharse.
     private Vector3 _heading = Vector3.forward;
 
-    // Giro hacia el punto de enganche durante el grapple (ver StartLookAtGrapplePoint). Es independiente del giro del swing.
-    private bool _lookingAtGrapplePoint;
+    // Giro durante el grapple y el segundo salto (ver StartLookAtGrapplePoint y StartLookInDirection). Es independiente del
+    // giro del swing. Hay dos formas de decir hacia dónde mirar: un PUNTO (el gancho; la dirección se recalcula en cada
+    // paso porque Gekko se mueve) o una DIRECCIÓN fija (la de la cámara al saltar).
+    private bool _grappleLookActive;
+    private bool _grappleLookIsDirection;
     private Vector3 _grappleLookPoint;
+    private Vector3 _grappleLookDirection;
     private float _grappleLookSpeed;
 
     public RotateGekkoWhileSwingin(GekkoSwinging swinging, Rigidbody rb)
@@ -43,10 +47,11 @@ public sealed class RotateGekkoWhileSwingin
     // Update pelea con la interpolación (el Rigidbody avanza a saltos) y hace temblar la cámara que lo sigue.
     public void ArtificialFixedUpdate()
     {
-        // Durante el grapple ya no hay swing: Gekko gira solo para mirar al punto de enganche.
-        if(_lookingAtGrapplePoint)
+        // Durante el grapple ya no hay swing: Gekko gira solo para mirar al punto de enganche (o, en el segundo salto,
+        // hacia la dirección en la que salta).
+        if(_grappleLookActive)
         {
-            RotateTowardsGrapplePoint();
+            RotateTowardsGrappleTarget();
             return;
         }
 
@@ -66,12 +71,28 @@ public sealed class RotateGekkoWhileSwingin
     public void StartLookAtGrapplePoint(Vector3 point, float degreesPerSecond)
     {
         _grappleLookPoint = point;
+        _grappleLookIsDirection = false;
         _grappleLookSpeed = Mathf.Max(0f, degreesPerSecond);
-        _lookingAtGrapplePoint = true;
+        _grappleLookActive = true;
     }
 
-    // Lo llama GekkoGrapple al terminar el grapple. Después PlayerController se despierta y endereza a Gekko solo.
-    public void StopLookAtGrapplePoint() => _lookingAtGrapplePoint = false;
+    // Lo llama GekkoGrapple al arrancar el segundo salto: Gekko gira de a poco hacia direction (la dirección en la que
+    // mira la cámara, que es hacia donde salta) y la mantiene fija hasta StopLookAtGrapplePoint. Misma rotación
+    // progresiva que StartLookAtGrapplePoint; solo cambia a dónde apunta. Si ya había un giro en curso lo reemplaza.
+    public void StartLookInDirection(Vector3 direction, float degreesPerSecond)
+    {
+        // Sin dirección no hay hacia dónde girar: se deja el giro como estaba.
+        if(direction.sqrMagnitude <= 0.0001f) return;
+
+        _grappleLookDirection = direction.normalized;
+        _grappleLookIsDirection = true;
+        _grappleLookSpeed = Mathf.Max(0f, degreesPerSecond);
+        _grappleLookActive = true;
+    }
+
+    // Lo llama GekkoGrapple al terminar el grapple o el segundo salto. Después PlayerController se despierta y endereza a
+    // Gekko solo.
+    public void StopLookAtGrapplePoint() => _grappleLookActive = false;
 
     // A diferencia del swing (que nunca lo deja darse vuelta, ver GetDesiredRotation), acá Gekko mira DIRECTO al punto y sin
     // limitar ejes: giro, cabeceo y, si hace falta, hasta pasar de la vertical. RotateTowards gira a velocidad angular
@@ -79,9 +100,10 @@ public sealed class RotateGekkoWhileSwingin
     // El "arriba" de referencia es el del mundo, así Gekko no se inclina de costado. Salvo cuando el punto queda casi recto
     // arriba o abajo: ahí el "arriba" del mundo es paralelo a la mirada y no define el giro, y se usa el "arriba" actual.
     // Corre en FixedUpdate y rota por el Rigidbody, por el mismo motivo que el giro del swing (ver ArtificialFixedUpdate).
-    private void RotateTowardsGrapplePoint()
+    private void RotateTowardsGrappleTarget()
     {
-        Vector3 toPoint = _grappleLookPoint - _rb.position;
+        // Hacia dónde mirar: la dirección fija del segundo salto, o la que va de Gekko al punto de enganche.
+        Vector3 toPoint = _grappleLookIsDirection ? _grappleLookDirection : _grappleLookPoint - _rb.position;
 
         // Encima del punto no hay hacia dónde mirar: se mantiene la rotación actual.
         if(toPoint.sqrMagnitude <= 0.0001f) return;

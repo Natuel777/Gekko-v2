@@ -96,6 +96,9 @@ public class Player : MonoBehaviour
     [Tooltip("Velocidad (grados por segundo) a la que Gekko gira para mirar al punto de enganche mientras dura el grapple. Más = gira más rápido; 0 = no gira.")]
     [Min(0f)]
     [SerializeField] private float _grappleLookSpeed = 360f;
+    [Tooltip("Qué tan lejos llega el segundo salto (el de Space dentro del trigger del gancho, hacia donde mira la cámara), como múltiplo de lo que midió el grapple. 1 = salta tan lejos como el grapple; 2 = el doble; 0 = derecho hacia arriba.")]
+    [Min(0f)]
+    [SerializeField] private float _secondJumpMultiplier = 1f;
     #endregion
 
     #region Properties
@@ -162,7 +165,7 @@ public class Player : MonoBehaviour
                         ropeGravity: _ropeGravity, ropeDamping: _ropeDamping, ropeIterations: _ropeIterations, ropeSlack: _ropeSlack,
                         heightLimitOffset: _heightLimitOffset, heightLimitSpring: _heightLimitSpring,
                         heightLimitDamper: _heightLimitDamper, heightLimitMaxPull: _heightLimitMaxPull).
-                        InitializeGrappleBehaviour(_overshootYAxis, _grapplingCD, _grappleDelayTime, _grappleFinishDistance, _grappleLookSpeed);
+                        InitializeGrappleBehaviour(_overshootYAxis, _grapplingCD, _grappleDelayTime, _grappleFinishDistance, _grappleLookSpeed, _secondJumpMultiplier);
         _pjController.GetSwinging(_swinging);
 
         _pjInputs = new PlayerInputs(_pjController, _pjTongue, _aimM,cam, _interactM, this, _swinging);

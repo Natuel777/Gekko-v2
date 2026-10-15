@@ -13,9 +13,14 @@ public class GekkoCollision
         _owner = owner;
     }
 
+    // Los triggers cortan el swing (lava, coleccionables...), salvo el de los ganchos: ese solo abre la ventana del segundo
+    // salto. Sin esta excepción, enganchar otro gancho justo después de saltar (Gekko todavía dentro del trigger del
+    // anterior) cortaba el swing en el mismo instante.
+    private bool CutsSwing(Collider other) => other.gameObject.layer != GekkoGrapple.SwingAttachLayer;
+
     public void ArtificialOnTriggerEnter(Collider other)
     {
-        if(_owner.Swinging.IsSwinging) _owner.Swinging.StopSwing();
+        if(_owner.Swinging.IsSwinging && CutsSwing(other)) _owner.Swinging.StopSwing();
 
         if(other.TryGetComponent(out Collectible collectible))
         {
@@ -48,7 +53,7 @@ public class GekkoCollision
 
     public void ArtificialOnTriggerStay(Collider other)
     {
-        if(_owner.Swinging.IsSwinging) _owner.Swinging.StopSwing();
+        if(_owner.Swinging.IsSwinging && CutsSwing(other)) _owner.Swinging.StopSwing();
 
         if(other.CompareTag("Lava"))
         {

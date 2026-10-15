@@ -126,14 +126,21 @@ public sealed class GekkoSwinging
     // Engancha la lengua a un punto y arranca el swing (SpringJoint). Lo llama PlayerInputs al apretar el botón de la lengua.
     public void StartSwing()
     {
-        // En pleno grapple no se puede enganchar un swing nuevo: habría dos sistemas manejando a Gekko a la vez.
-        if(IsGrappling) return;
+        // En pleno grapple no se puede enganchar un swing nuevo: habría dos sistemas manejando a Gekko a la vez. La excepción
+        // es el segundo salto: ya no tiene lengua ni punto que alcanzar, así que se lo puede cortar enganchando otro gancho.
+        bool interruptsSecondJump = _grappleBehaviour != null && _grappleBehaviour.IsSecondJumpFlying;
+
+        if(IsGrappling && !interruptsSecondJump) return;
 
         if(!TryFindSwingPoint(out RaycastHit hit)) return;
 
         Transform grapplePointTransform = GetGrapplePoint(hit.transform);
 
         if(grapplePointTransform == null) return;
+
+        // Recién con un punto válido se corta el vuelo: si no hay a qué engancharse, el salto sigue como estaba. Va antes de
+        // armar el swing porque cortar el vuelo apaga la lengua (HideTongue) y el swing la tiene que prender después.
+        if(interruptsSecondJump) _grappleBehaviour.EndSecondJump();
 
         IsSwinging = true;
         _grapplePoint = grapplePointTransform.position;
@@ -188,9 +195,10 @@ public sealed class GekkoSwinging
     //  2) Es lo último que pasa antes de dibujar la pantalla, así que se muestra exactamente lo que se acaba de simular.
     public void ArtificialLateUpdate()
     {
-        // La lengua se dibuja mientras haya swing O grapple. Durante el grapple ya no hay joint (se soltó el swing), pero la
-        // soga sigue yendo de la boca al ancla hasta que termina el vuelo. Sin ninguno de los dos no hay soga.
-        if(!IsSwinging && !IsGrappling) return;
+        // La lengua se dibuja mientras haya swing O grapple con la lengua afuera. Durante el grapple ya no hay joint (se
+        // soltó el swing), pero la soga sigue yendo de la boca al ancla hasta que termina el vuelo. El segundo salto la
+        // suelta (IsTongueOut), aunque siga habiendo vuelo. Sin ninguno de los dos no hay soga.
+        if(!IsSwinging && !(_grappleBehaviour != null && _grappleBehaviour.IsTongueOut)) return;
 
         DrawTongue();
     }
@@ -317,6 +325,8 @@ public sealed class GekkoSwinging
         ReleaseSwing();
     }
 
+    public void TrySecondJump() => _grappleBehaviour.TrySecondJump(_camera.forward);
+
     // Corta un grapple en curso, sin cooldown. Lo llama PlayerController.Teleport: el vuelo apunta a un ancla que con el
     // teletransporte quedó lejos.
     public void CancelGrapple() => _grappleBehaviour?.Cancel();
@@ -425,10 +435,10 @@ public sealed class GekkoSwinging
     }
 
     public GekkoSwinging InitializeGrappleBehaviour(float overshootYAxis, float grapplingCD, float delayTime,
-                                                    float finishDistance, float lookSpeed)
+                                                    float finishDistance, float lookSpeed, float secondJumpMultiplier)
     {
         _grappleBehaviour = new GekkoGrapple(this, _rb, _transform, overshootYAxis, grapplingCD, delayTime,
-                                             finishDistance, _gekkoRotation, lookSpeed);
+                                             finishDistance, _gekkoRotation, lookSpeed, secondJumpMultiplier);
         return this;
     }
 }

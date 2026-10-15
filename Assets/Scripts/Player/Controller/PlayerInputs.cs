@@ -127,10 +127,11 @@ public class PlayerInputs
             return;
         }
 
-        //else if(_swinging.GrappleBehaviour.SecondJumpEnabled)
-        //{
-        //    
-        //}
+        else if(_swinging.GrappleBehaviour.SecondJumpEnabled)
+        {
+            _swinging.TrySecondJump();
+            return;
+        }
 
         pjController.JumpPressed = true;
     }
