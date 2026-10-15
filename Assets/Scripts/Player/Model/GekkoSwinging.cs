@@ -334,8 +334,8 @@ public sealed class GekkoSwinging
     // Corta el swing y apaga la lengua. Lo llaman PlayerInputs (al soltar el botón de la lengua), los choques y los triggers.
     public void StopSwing()
     {
-        // Soltar el botón de la lengua en pleno grapple no lo corta: el vuelo termina solo, al chocar o por tiempo (ver
-        // GekkoGrapple). En el repo tampoco hay nada que corte el vuelo salvo tocar algo.
+        // Soltar el botón de la lengua en pleno grapple no lo corta: el vuelo termina solo, al chocar, al llegar al punto
+        // o por tiempo (ver GekkoGrapple). En el repo tampoco hay nada que corte el vuelo salvo tocar algo.
         if(IsGrappling) return;
 
         ReleaseSwing();
@@ -426,9 +426,11 @@ public sealed class GekkoSwinging
         return Physics.SphereCast(_camera.position, _predictionSphereRadius, _camera.forward, out hit, _maxTongueDistance, _grappableLayers);
     }
 
-    public GekkoSwinging InitializeGrappleBehaviour(float overshootYAxis, float grapplingCD, float delayTime)
+    public GekkoSwinging InitializeGrappleBehaviour(float overshootYAxis, float grapplingCD, float delayTime,
+                                                    float finishDistance)
     {
-        _grappleBehaviour = new GekkoGrapple(this, _rb, _transform, overshootYAxis, grapplingCD, delayTime);
+        _grappleBehaviour = new GekkoGrapple(this, _rb, _transform, overshootYAxis, grapplingCD, delayTime,
+                                             finishDistance);
         return this;
     }
 }

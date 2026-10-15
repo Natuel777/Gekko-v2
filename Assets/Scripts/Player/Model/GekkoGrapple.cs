@@ -9,14 +9,15 @@ public sealed class GekkoGrapple
     private const float LowestPointOffset = 1f;
 
     // Segundos de más, sobre el tiempo de vuelo calculado, que se espera antes de cortar el vuelo si no chocó con nada.
-    // El vuelo normal termina antes, al chocar (ver ArtificialOnCollisionEnter): esto es solo la red de seguridad que en
-    // el repo es el ResetRestrictions a los 3 s, pero ajustada al vuelo real en vez de un valor fijo.
+    // El vuelo normal termina antes, al chocar (ver ArtificialOnCollisionEnter) o al llegar al punto (ver
+    // ReachedGrapplePoint): esto es solo la red de seguridad que en el repo es el ResetRestrictions a los 3 s, pero
+    // ajustada al vuelo real en vez de un valor fijo.
     private const float FlightTimeMargin = 0.5f;
 
     private readonly GekkoSwinging _swinging;
     private readonly Rigidbody _rb;
     private readonly Transform _transform;
-    private readonly float _overshootYAxis, _grapplingCD, _delayTime;
+    private readonly float _overshootYAxis, _grapplingCD, _delayTime, _finishDistance;
 
     private Phase _phase = Phase.Idle;
     private float _cooldownTimer, _phaseTimer;
@@ -25,7 +26,8 @@ public sealed class GekkoGrapple
     // true desde que arranca la espera hasta que termina el vuelo.
     public bool IsGrappling => _phase != Phase.Idle;
 
-    public GekkoGrapple(GekkoSwinging swinging, Rigidbody rb, Transform t, float overshootYAxis, float grapplingCD, float delayTime)
+    public GekkoGrapple(GekkoSwinging swinging, Rigidbody rb, Transform t, float overshootYAxis, float grapplingCD, float delayTime,
+                        float finishDistance)
     {
         _swinging = swinging;
         _rb = rb;
@@ -33,6 +35,7 @@ public sealed class GekkoGrapple
         _overshootYAxis = overshootYAxis;
         _grapplingCD = grapplingCD;
         _delayTime = Mathf.Max(0f, delayTime);
+        _finishDistance = Mathf.Max(0f, finishDistance);
     }
 
     // Lo llama GekkoSwinging.ArtificialUpdate en cada frame, haya swing o no: el cooldown y los timers del vuelo tienen
@@ -42,6 +45,12 @@ public sealed class GekkoGrapple
         if(_cooldownTimer > 0f) _cooldownTimer -= Time.deltaTime;
 
         if(_phase == Phase.Idle) return;
+
+        if(_phase == Phase.Flying && ReachedGrapplePoint())
+        {
+            Finish(true);
+            return;
+        }
 
         _phaseTimer -= Time.deltaTime;
 
@@ -88,8 +97,7 @@ public sealed class GekkoGrapple
         return true;
     }
 
-    // El primer choque sólido corta el vuelo (el OnCollisionEnter del repo). Solo cuenta en Flying, o sea desde que ya se
-    // aplicó la velocidad (el enableMovementOnNextTouch del repo): durante la espera tocar algo no lo cancela.
+
     public void ArtificialOnCollisionEnter()
     {
         if(_phase == Phase.Flying) Finish(true);
@@ -98,6 +106,14 @@ public sealed class GekkoGrapple
     public void ArtificialOnTriggerEnter(Collider other)
     {
         if(other.gameObject.layer == 16 && _phase == Phase.Flying) Finish(true);
+    }
+
+    // Gekko ya está a _finishDistance o menos del punto de enganche. Los metros valen para un Gekko de escala 1 y se
+    // escalan con su tamaño real, igual que _overshootYAxis.
+    private bool ReachedGrapplePoint()
+    {
+        float distance = _finishDistance * _transform.lossyScale.y;
+        return (_grapplePoint - _transform.position).sqrMagnitude <= distance * distance;
     }
 
     // Corta el grapple sin cooldown. Lo usa el teletransporte (PlayerController.Teleport): un grapple en curso apunta a un
@@ -130,7 +146,8 @@ public sealed class GekkoGrapple
         _rb.linearVelocity = velocity;
     }
 
-    // Único lugar donde termina un grapple (por choque, por tiempo, por cancelación o por un cálculo inválido).
+    // Único lugar donde termina un grapple (por choque, por llegar al punto, por tiempo, por cancelación o por un
+    // cálculo inválido).
     private void Finish(bool startCooldown)
     {
         _phase = Phase.Idle;

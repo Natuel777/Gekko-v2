@@ -90,6 +90,9 @@ public class Player : MonoBehaviour
     [Tooltip("Segundos que Gekko queda clavado en el aire, tras apretar Space, antes de salir disparado hacia el punto (el freeze del repo). 0 = sale directo.")]
     [Min(0f)]
     [SerializeField] private float _grappleDelayTime = 0.25f;
+    [Tooltip("Distancia al punto de enganche, en metros para un Gekko de escala 1 (se escala con el tamaño real del pj), a la que termina el vuelo del grapple. 0 = el vuelo solo termina al chocar o por tiempo.")]
+    [Min(0f)]
+    [SerializeField] private float _grappleFinishDistance = 1.5f;
     #endregion
 
     #region Properties
@@ -156,7 +159,7 @@ public class Player : MonoBehaviour
                         ropeGravity: _ropeGravity, ropeDamping: _ropeDamping, ropeIterations: _ropeIterations, ropeSlack: _ropeSlack,
                         heightLimitOffset: _heightLimitOffset, heightLimitSpring: _heightLimitSpring,
                         heightLimitDamper: _heightLimitDamper, heightLimitMaxPull: _heightLimitMaxPull).
-                        InitializeGrappleBehaviour(_overshootYAxis, _grapplingCD, _grappleDelayTime);
+                        InitializeGrappleBehaviour(_overshootYAxis, _grapplingCD, _grappleDelayTime, _grappleFinishDistance);
         _pjController.GetSwinging(_swinging);
 
         _pjInputs = new PlayerInputs(_pjController, _pjTongue, _aimM,cam, _interactM, this, _swinging);
