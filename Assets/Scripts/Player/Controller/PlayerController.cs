@@ -154,6 +154,7 @@ public class PlayerController
             DetectSurface();
 
         _isGrounded = IsGrounded();
+        OnWater();
 
         _tongueM.CanUseTongue = _isSurface;
 
@@ -584,6 +585,23 @@ public class PlayerController
         }
 
         return false;
+    }
+    private void OnWater()
+    {
+        float scale = _pjTransform.lossyScale.x;
+        float half = ((_collider.height / 2f) - _collider.radius) * scale;
+        Vector3 center = _pjTransform.TransformPoint(_collider.center);
+
+        if(Physics.Raycast(_pjTransform.position, Vector3.down, out RaycastHit nearHit, 1f * scale, 1 <<4, QueryTriggerInteraction.Ignore))
+        {
+            _collider.material.dynamicFriction = 0f;
+            _collider.material.staticFriction = 0f;
+        }
+        else
+        {
+            _collider.material.dynamicFriction = 1f;
+            _collider.material.staticFriction = 1f;
+        }
     }
     private bool CastSurface(Vector3 origin, float radius, Vector3 dir, float dist, LayerMask validMask, out RaycastHit hit)
     {
