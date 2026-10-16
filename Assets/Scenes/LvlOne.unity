@@ -12116,7 +12116,6 @@ MonoBehaviour:
   _dissolveTo: 1
   _dropDuration: 1
   _dropParticle: {fileID: 0}
-  _dropSound: {fileID: 0}
 --- !u!43 &55781002
 Mesh:
   m_ObjectHideFlags: 0
@@ -37219,35 +37218,17 @@ Mesh:
     offset: 0
     size: 0
     path: 
---- !u!1 &218849324 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 2785574082875505662, guid: d3f03b117df4c17479e571a02bd13bc6, type: 3}
-  m_PrefabInstance: {fileID: 1015762815}
-  m_PrefabAsset: {fileID: 0}
 --- !u!4 &218849325 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 6519576176525341311, guid: d3f03b117df4c17479e571a02bd13bc6, type: 3}
   m_PrefabInstance: {fileID: 1015762815}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &218849326
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 218849324}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e8e081cf41e9d32489d5caffebef3b3d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _beaver: {fileID: 1716292596}
 --- !u!114 &218849327 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 6945438937463703059, guid: d3f03b117df4c17479e571a02bd13bc6, type: 3}
   m_PrefabInstance: {fileID: 1015762815}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 218849324}
+  m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 2b694e71271ed2d498adf7ca94d93fcd, type: 3}
@@ -215055,10 +215036,7 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 2785574082875505662, guid: d3f03b117df4c17479e571a02bd13bc6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 218849326}
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: d3f03b117df4c17479e571a02bd13bc6, type: 3}
 --- !u!1 &1016000933
 GameObject:
@@ -230830,7 +230808,7 @@ GameObject:
   - component: {fileID: 1084689137}
   - component: {fileID: 1084689138}
   m_Layer: 0
-  m_Name: sound
+  m_Name: Water sound
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -311218,7 +311196,6 @@ MonoBehaviour:
   _dissolveTo: 1
   _dropDuration: 1
   _dropParticle: {fileID: 0}
-  _dropSound: {fileID: 0}
 --- !u!65 &1381956724
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -323307,7 +323284,7 @@ GameObject:
   - component: {fileID: 1464719044}
   - component: {fileID: 1464719045}
   m_Layer: 0
-  m_Name: sound (1)
+  m_Name: Water sound (1)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -576597,7 +576574,6 @@ MonoBehaviour:
   _dissolveTo: 1
   _dropDuration: 1
   _dropParticle: {fileID: 0}
-  _dropSound: {fileID: 0}
 --- !u!4 &2397338091053565629
 Transform:
   m_ObjectHideFlags: 0
