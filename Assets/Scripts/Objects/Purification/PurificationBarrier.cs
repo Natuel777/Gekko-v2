@@ -2,9 +2,6 @@ using System;
 using System.Collections;
 using UnityEngine;
 
-// Barrera del desafío de purificación (escudo de la planta o bloqueo del camino). Solo se puede bajar,
-// nunca vuelve a subir. Los colliders deben ser sólidos (no trigger) y SIN IDamageable: así la lengua
-// rebota contra la barrera y los escarabajos la esquivan/se aturden (capa Obstacle).
 public class PurificationBarrier : MonoBehaviour
 {
     [Header("Dissolve")]
