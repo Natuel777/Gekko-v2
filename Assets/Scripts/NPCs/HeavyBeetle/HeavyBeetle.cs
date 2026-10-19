@@ -176,7 +176,7 @@ public class HeavyBeetle : MonoBehaviour, IDamageable, IParticleSystemTarget, IP
         {
             SetState(PatrolState);
             view.ApplyPurifiedMaterial();
-            if (AudioManager.instance) AudioManager.instance.Play(SoundNames.Purify);
+            //if (AudioManager.instance) AudioManager.instance.Play(SoundNames.Purify);
             if (_purifiedParticle != null) _purifiedParticle.Play();
             PurifiedChanged?.Invoke(this);
         }

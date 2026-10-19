@@ -16,7 +16,6 @@ public class PurificationBarrier : MonoBehaviour
 
     [Header("Feedback (optional)")]
     [SerializeField] private ParticleSystem _dropParticle;
-    [SerializeField] private AudioSource _dropSound;
 
     private Collider[] _colliders;
     private MaterialPropertyBlock _block;
@@ -61,7 +60,7 @@ public class PurificationBarrier : MonoBehaviour
         }
 
         if(_dropParticle != null) _dropParticle.Play();
-        if(_dropSound != null) _dropSound.Play();
+        if (AudioManager.instance) AudioManager.instance.Play(SoundNames.PlankPlaced);
 
         StartCoroutine(DissolveRoutine());
     }
