@@ -18,6 +18,12 @@ public class LittleBarricade : MonoBehaviour, IDamageable, IParticleSystemTarget
     [SerializeField] private float _revealSeconds = 3f;
     [SerializeField] private float _revealShakeForce = 1.5f;
 
+    [Header("Line (on break, optional)")]
+    [Tooltip("LineControllers que dibujan las líneas. Al romperse la barricada se les sacan las posiciones de abajo y se redibujan.")]
+    [SerializeField] private LineController[] _lineControllers;
+    [Tooltip("Posiciones de la línea que pertenecen a esta barricada, una por cada LineController (mismo orden). Al romperse se sacan de la lista de ese LineController.")]
+    [SerializeField] private Transform[] _linePositionsGroups;
+
     public ParticleSystem Indicator => _indicator;
 
     public bool CanBeTargeted => !_interacted;
@@ -32,7 +38,19 @@ public class LittleBarricade : MonoBehaviour, IDamageable, IParticleSystemTarget
             GetComponent<Collider>().enabled = false;
             StartCoroutine(Disapear());
             StartCoroutine(RevealCameraRoutine());
+            RemoveLinePositions();
             _interacted = true;
+        }
+    }
+
+    private void RemoveLinePositions()
+    {
+        int count = Mathf.Min(_lineControllers.Length, _linePositionsGroups.Length);
+
+        for(int i = 0; i < count; i++)
+        {
+            if(_lineControllers[i] != null && _linePositionsGroups[i] != null)
+                _lineControllers[i].RemovePositions(_linePositionsGroups[i]);
         }
     }
 

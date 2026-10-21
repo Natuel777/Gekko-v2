@@ -3,13 +3,6 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-// Núcleo del desafío de purificación. Va en el MISMO GameObject que su collider: la lengua hace
-// hit.transform.GetComponent<IDamageable>(). No se destruye al romperse (la lengua todavía puede
-// tener la referencia hasta terminar de retraerse); se apaga el collider y el visual, o el visual pasa
-// al material purificado si hay uno asignado.
-// Al romperse, los renderers del núcleo cuyo material tenga la propiedad _Dissolve (M_Enredaderas, Nucleo) se
-// disuelven de 0 a 1 a _dissolveSpeed por segundo. El visual recién pasa a su estado final (purificado / oculto)
-// cuando el disolve termina; si ningún material tiene _Dissolve, cambia al instante como siempre.
 [RequireComponent(typeof(Collider))]
 public class PurificationCore : MonoBehaviour, IDamageable, IHitOncePerLick, IParticleSystemTarget
 {
