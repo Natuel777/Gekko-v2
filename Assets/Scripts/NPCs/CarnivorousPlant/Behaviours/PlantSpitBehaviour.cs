@@ -8,12 +8,14 @@ public class PlantSpitBehaviour
     private readonly float _initialShootInterval;
     private readonly bool _rotateToPlayer;
     private readonly float _rotationSpeed;
+    private readonly System.Action _onShoot;
 
     private Transform _target;
     private float _shootInterval;
 
-    public PlantSpitBehaviour(Transform head, Transform firePoint, BugBullet venomPrefab, float shootInterval, bool rotateToPlayer, float rotationSpeed)
+    public PlantSpitBehaviour(Transform head, Transform firePoint, BugBullet venomPrefab, float shootInterval, bool rotateToPlayer, float rotationSpeed, System.Action onShoot = null)
     {
+        _onShoot = onShoot;
         _head = head;
         _firePoint = firePoint;
         _venomPrefab = venomPrefab;
@@ -66,6 +68,7 @@ public class PlantSpitBehaviour
         if(venom == null) return;
 
         venom.SetDirection(direction);
+        _onShoot?.Invoke();
         _shootInterval = _initialShootInterval;
     }
 }

@@ -131998,7 +131998,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Priority:
     Enabled: 1
-    m_Value: 60
+    m_Value: 7
   OutputChannel: 1
   StandbyUpdate: 2
   m_StreamingVersion: 20241001
@@ -145765,7 +145765,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5760019974057680459, guid: 71f45ef9a84d6e843b58579110283367, type: 3}
       propertyPath: Priority.m_Value
-      value: 64
+      value: 10
       objectReference: {fileID: 0}
     - target: {fileID: 5760019974057680459, guid: 71f45ef9a84d6e843b58579110283367, type: 3}
       propertyPath: Target.TrackingTarget
@@ -148681,6 +148681,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _director: {fileID: 766193469}
   _playOnce: 1
+  _cinematicOnlyObjects: []
 --- !u!320 &766193469
 PlayableDirector:
   m_ObjectHideFlags: 0
@@ -206198,6 +206199,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _director: {fileID: 989995966}
   _playOnce: 1
+  _cinematicOnlyObjects: []
 --- !u!320 &989995966
 PlayableDirector:
   m_ObjectHideFlags: 0
@@ -430488,6 +430490,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _director: {fileID: 0}
   _playOnce: 1
+  _cinematicOnlyObjects:
+  - {fileID: 1153575509}
+  - {fileID: 276206012}
+  - {fileID: 371495818}
 --- !u!320 &1830443437
 PlayableDirector:
   m_ObjectHideFlags: 0
@@ -656411,6 +656417,8 @@ MonoBehaviour:
   _dissolveSpeed: 0.5
   _canvas: {fileID: 0}
   _textCount: {fileID: 0}
+  _camShieldDown: {fileID: 691003282}
+  _shieldDownCamSeconds: 2
   _camFinish: {fileID: 953399237}
 --- !u!4 &5314203417709279810
 Transform:

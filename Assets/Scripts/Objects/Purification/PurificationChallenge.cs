@@ -49,6 +49,12 @@ public class PurificationChallenge : MonoBehaviour
     [SerializeField] private Transform _canvas;
     [SerializeField] private TextMeshProUGUI _textCount;
 
+    [Header("Shield Down")]
+    [Tooltip("Cámara que muestra la planta al romper el último núcleo (ej. ClearShot). El blend lo hace el CinemachineBrain.")]
+    [SerializeField] private CinemachineVirtualCameraBase _camShieldDown;
+    [Min(0f)]
+    [SerializeField] private float _shieldDownCamSeconds = 2f;
+
     [Header("Finish")]
     [SerializeField] private CinemachineCamera _camFinish;
 
@@ -59,6 +65,9 @@ public class PurificationChallenge : MonoBehaviour
     private Camera _mainCamera;
     private int _total, _remaining;
     private bool _beatActive, _inputLocked, _subscribed;
+    private bool _shieldCamActive;
+    private int _shieldCamBasePriority;
+    private Coroutine _shieldCamRoutine;
 
     public ChallengeState State { get; private set; } = ChallengeState.Active;
 
@@ -130,6 +139,7 @@ public class PurificationChallenge : MonoBehaviour
     private void OnDisable()
     {
         Unsubscribe();
+        EndShieldDownCam();
         EndBeat();
         if(LevelOneManager.Instance != null) LevelOneManager.Instance.OnChallengeStart -= ActivateCorruptedVisuals;
 
@@ -240,7 +250,43 @@ public class PurificationChallenge : MonoBehaviour
         UpdateText();
         CoreBroken?.Invoke(_remaining, _total);
 
-        if(_remaining == 0) DropShield();
+        if(_remaining == 0)
+        {
+            DropShield();
+            // Solo acá y no en DropShield: si arranca sin núcleos (Start) no hay nada que mostrar.
+            _shieldCamRoutine = StartCoroutine(ShieldDownCamRoutine());
+        }
+    }
+
+    // Muestra la planta unos segundos para avisar que ya se le puede pegar. No bloquea el input:
+    // al caer el escudo todavía hay escarabajos activos.
+    private IEnumerator ShieldDownCamRoutine()
+    {
+        if(_camShieldDown == null) yield break;
+
+        _shieldCamActive = true;
+        _shieldCamBasePriority = _camShieldDown.Priority.Value;
+        _camShieldDown.Priority = 30;
+
+        yield return new WaitForSeconds(_shieldDownCamSeconds);
+
+        _shieldCamRoutine = null;
+        EndShieldDownCam();
+    }
+
+    // Idempotente, igual que EndBeat: si se corta la corrutina la cámara no queda tomada.
+    private void EndShieldDownCam()
+    {
+        if(_shieldCamRoutine != null)
+        {
+            StopCoroutine(_shieldCamRoutine);
+            _shieldCamRoutine = null;
+        }
+
+        if(!_shieldCamActive) return;
+        _shieldCamActive = false;
+
+        if(_camShieldDown != null) _camShieldDown.Priority = _shieldCamBasePriority;
     }
 
     private void DropShield()
@@ -262,6 +308,7 @@ public class PurificationChallenge : MonoBehaviour
         // Primero el estado, así cualquier re-corrupción pendiente se descarta.
         State = ChallengeState.Completed;
         _scheduler.CancelAll();
+        EndShieldDownCam();
 
         // Un escarabajo que nunca se activó no tiene FSM inicializada (su Awake no corrió).
         foreach(HeavyBeetle enemy in _allEnemies)
