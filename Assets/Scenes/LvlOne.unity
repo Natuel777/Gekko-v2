@@ -14129,9 +14129,21 @@ PrefabInstance:
       propertyPath: m_ConstrainProportionsScale
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 6435560849726335998, guid: 25f8b6fa9f54e7548b59dd614d1e4471, type: 3}
+      propertyPath: m_Name
+      value: RunePurified2
+      objectReference: {fileID: 0}
+    - target: {fileID: 6488535680826411527, guid: 25f8b6fa9f54e7548b59dd614d1e4471, type: 3}
+      propertyPath: m_Name
+      value: RunePurified
+      objectReference: {fileID: 0}
     - target: {fileID: 7426308800390476809, guid: 25f8b6fa9f54e7548b59dd614d1e4471, type: 3}
       propertyPath: m_Name
       value: PurificationChallengeHealthbar
+      objectReference: {fileID: 0}
+    - target: {fileID: 7981892270859184685, guid: 25f8b6fa9f54e7548b59dd614d1e4471, type: 3}
+      propertyPath: m_Name
+      value: RunePurified3
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -21321,6 +21333,17 @@ Transform:
   - {fileID: 1562689211}
   m_Father: {fileID: 261497599}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &119386341 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 7070497336497673951, guid: 25f8b6fa9f54e7548b59dd614d1e4471, type: 3}
+  m_PrefabInstance: {fileID: 65295134}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6aa29853b5da50842a32e6956260bdad, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &120304406
 GameObject:
   m_ObjectHideFlags: 0
@@ -658007,6 +658030,7 @@ MonoBehaviour:
   _dissolveSpeed: 0.5
   _canvas: {fileID: 0}
   _textCount: {fileID: 0}
+  _healthbar: {fileID: 119386341}
   _camShieldDown: {fileID: 691003282}
   _shieldDownCamSeconds: 2
   _camFinish: {fileID: 953399237}

@@ -48,6 +48,8 @@ public class PurificationChallenge : MonoBehaviour
     [Header("HUD")]
     [SerializeField] private Transform _canvas;
     [SerializeField] private TextMeshProUGUI _textCount;
+    [Tooltip("Barra de runas del desafío (opcional). Se le avisa cada vez que se rompe un núcleo; la barra pasa sola a 'purificada' al quedarse sin runas corruptas, así que hace falta una runa por núcleo.")]
+    [SerializeField] private PurificationChallengeHealthbar _healthbar;
 
     [Header("Shield Down")]
     [Tooltip("Cámara que muestra la planta al romper el último núcleo (ej. ClearShot). El blend lo hace el CinemachineBrain.")]
@@ -117,7 +119,7 @@ public class PurificationChallenge : MonoBehaviour
         // Sin núcleos (o ya rotos) el escudo no tendría cómo caer.
         if(_remaining == 0) DropShield();
 
-        if(LevelOneManager.Instance != null) LevelOneManager.Instance.OnChallengeStart += ActivateCorruptedVisuals;
+        if(LevelOneManager.Instance != null) LevelOneManager.Instance.OnChallengeStart += OnChallengeStarted;
     }
 
     private void Update()
@@ -141,7 +143,7 @@ public class PurificationChallenge : MonoBehaviour
         Unsubscribe();
         EndShieldDownCam();
         EndBeat();
-        if(LevelOneManager.Instance != null) LevelOneManager.Instance.OnChallengeStart -= ActivateCorruptedVisuals;
+        if(LevelOneManager.Instance != null) LevelOneManager.Instance.OnChallengeStart -= OnChallengeStarted;
 
     }
 
@@ -248,6 +250,7 @@ public class PurificationChallenge : MonoBehaviour
 
         _remaining = Mathf.Max(0, _remaining - 1);
         UpdateText();
+        if(_healthbar != null) _healthbar.RemoveCorruptedRune();
         CoreBroken?.Invoke(_remaining, _total);
 
         if(_remaining == 0)
@@ -365,6 +368,14 @@ public class PurificationChallenge : MonoBehaviour
         if(_canvas != null) _canvas.gameObject.SetActive(false);
     }
     #endregion
+
+    private void OnChallengeStarted()
+    {
+        ActivateCorruptedVisuals();
+
+        // El ChallengeTrigger se puede volver a pisar: una vez completado no se vuelve a mostrar la barra.
+        if(_healthbar != null && State != ChallengeState.Completed) _healthbar.gameObject.SetActive(true);
+    }
 
     #region Dissolve
     private void ActivateCorruptedVisuals()
