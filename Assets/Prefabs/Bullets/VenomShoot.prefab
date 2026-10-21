@@ -287,8 +287,8 @@ ParticleSystem:
     startSize:
       serializedVersion: 2
       minMaxState: 3
-      scalar: 1
-      minScalar: 0.3
+      scalar: 0.33
+      minScalar: 0.06
       maxCurve:
         serializedVersion: 2
         m_Curve:
@@ -4842,9 +4842,9 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 7696374708823446897}
-  - component: {fileID: 459613805438460037}
   - component: {fileID: -6039782297685878006}
   - component: {fileID: 2992824938028806548}
+  - component: {fileID: -7193035914480385921}
   m_Layer: 0
   m_Name: VenomShoot
   m_TagString: Untagged
@@ -4863,28 +4863,13 @@ Transform:
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
+  m_ConstrainProportionsScale: 1
   m_Children:
   - {fileID: 2771695134304325864}
   - {fileID: 4173688739476521115}
   - {fileID: 1053795609578243565}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &459613805438460037
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7312455954260931932}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 66edeefc814e8d8488a60e385c7a5930, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  speed: 20
-  fireRate: 4
-  hitPrefab: {fileID: 597414989682788185, guid: ad67ba9947ced2d438ec8eb5971f3e24, type: 3}
 --- !u!54 &-6039782297685878006
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -4935,6 +4920,22 @@ CapsuleCollider:
   m_Height: 1
   m_Direction: 1
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &-7193035914480385921
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7312455954260931932}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f6d8f71276444134987e14f3a638a456, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  data: {fileID: 11400000, guid: d3f3d1bfe7ce3a54b8f1310a93adf513, type: 2}
+  _name: PoisonBullet
+  _hitEffect: {fileID: 0}
+  _lifetime: 3.5
 --- !u!1 &7807078526457751157
 GameObject:
   m_ObjectHideFlags: 0
@@ -5223,8 +5224,8 @@ ParticleSystem:
     startSize:
       serializedVersion: 2
       minMaxState: 3
-      scalar: 0.5
-      minScalar: 0.8
+      scalar: 0.1
+      minScalar: 0.4
       maxCurve:
         serializedVersion: 2
         m_Curve:
@@ -5276,8 +5277,8 @@ ParticleSystem:
     startSizeY:
       serializedVersion: 2
       minMaxState: 3
-      scalar: 0.5
-      minScalar: 0.8
+      scalar: 0.1
+      minScalar: 0.4
       maxCurve:
         serializedVersion: 2
         m_Curve:
@@ -5329,8 +5330,8 @@ ParticleSystem:
     startSizeZ:
       serializedVersion: 2
       minMaxState: 3
-      scalar: 1
-      minScalar: 1.3
+      scalar: 0.5
+      minScalar: 0.8
       maxCurve:
         serializedVersion: 2
         m_Curve:

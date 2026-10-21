@@ -28,7 +28,9 @@ public class BugBullet : ShooteableObject
         if(other.TryGetComponent(out Player player))
         {
             EventManager.Trigger<float>("OnPlayerDamaged", data.damage);
+
             if(_hitEffect != null) _hitEffect.Play();
+            
             ShooteableObjectFactory.Instance?.ReturnBullet(this);
         }
     }
