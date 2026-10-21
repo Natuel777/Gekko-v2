@@ -14,6 +14,7 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
 
     [Header("Feedback")]
     [SerializeField] private ParticleSystem _purifiedParticle;
+    [SerializeField] private GameObject _muzzlePS;
     [SerializeField] private AudioSource _purifiedSound;
     [SerializeField] private Animator _animatorCarnivorousPlant;
 
@@ -68,7 +69,7 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
         BiteState = new PlantBiteState(this);
         PurifiedState = new PlantPurifiedState(this);
 
-        spitBehaviour = new PlantSpitBehaviour(_head, _firePoint, _venomPrefab, data.shootInterval, data.rotateToPlayer, data.rotationSpeed);
+        spitBehaviour = new PlantSpitBehaviour(_head, _firePoint, _venomPrefab, data.shootInterval, data.rotateToPlayer, data.rotationSpeed, _muzzlePS);
 
         if(_head != null)
         {

@@ -7,7 +7,11 @@ public class BugBullet : ShooteableObject
     [SerializeField] private float _lifetime = 3.5f;
     private float _timer;
 
-    public void SetDirection(Vector3 direction) {_direction = direction;}
+    public void SetDirection(Vector3 direction) 
+    {
+        _direction = direction;
+        transform.rotation = Quaternion.LookRotation(direction);
+    }
 
     private void OnEnable() {_timer = 0f;}
 
@@ -27,6 +31,7 @@ public class BugBullet : ShooteableObject
     {
         if(other.TryGetComponent(out Player player))
         {
+            Debug.Log("La yuta, la yuta...");
             EventManager.Trigger<float>("OnPlayerDamaged", data.damage);
 
             if(_hitEffect != null) _hitEffect.Play();

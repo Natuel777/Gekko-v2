@@ -6,9 +6,10 @@ using UnityEngine;
 // (CorruptedGeckoBoss.BlueberryHitReduction). Sin View/animación de recolección todavía (placeholder).
 public class PurificationBerry : Collectible
 {
+    public override CollectibleType CollectibleType => CollectibleType.PurificationBerry;
     public override Collectible CreateCollectibleType()
     {
-        return GameManager.Instance.factory.Create(_notificationData.Name, transform.position, transform.rotation);
+        return GameManager.Instance.factory.Create(CollectibleType, transform.position, transform.rotation);
     }
 
     public override void Grab()

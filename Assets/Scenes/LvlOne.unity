@@ -415384,6 +415384,89 @@ Transform:
   m_Children: []
   m_Father: {fileID: 570924610}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1001 &1739971301
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 4178200462686404672}
+    m_Modifications:
+    - target: {fileID: 936827390365473749, guid: 14628d29ff8caaa4baf1c8f9e52bcc1d, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 936827390365473749, guid: 14628d29ff8caaa4baf1c8f9e52bcc1d, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 936827390365473749, guid: 14628d29ff8caaa4baf1c8f9e52bcc1d, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 2.37
+      objectReference: {fileID: 0}
+    - target: {fileID: 936827390365473749, guid: 14628d29ff8caaa4baf1c8f9e52bcc1d, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 936827390365473749, guid: 14628d29ff8caaa4baf1c8f9e52bcc1d, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 936827390365473749, guid: 14628d29ff8caaa4baf1c8f9e52bcc1d, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 936827390365473749, guid: 14628d29ff8caaa4baf1c8f9e52bcc1d, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 936827390365473749, guid: 14628d29ff8caaa4baf1c8f9e52bcc1d, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 936827390365473749, guid: 14628d29ff8caaa4baf1c8f9e52bcc1d, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 936827390365473749, guid: 14628d29ff8caaa4baf1c8f9e52bcc1d, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5497208244106064156, guid: 14628d29ff8caaa4baf1c8f9e52bcc1d, type: 3}
+      propertyPath: InitialModule.startSize.scalar
+      value: 2.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 5497208244106064156, guid: 14628d29ff8caaa4baf1c8f9e52bcc1d, type: 3}
+      propertyPath: InitialModule.startSize.minScalar
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 5702509244653245113, guid: 14628d29ff8caaa4baf1c8f9e52bcc1d, type: 3}
+      propertyPath: InitialModule.startSize.scalar
+      value: 2.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 5702509244653245113, guid: 14628d29ff8caaa4baf1c8f9e52bcc1d, type: 3}
+      propertyPath: InitialModule.startSize.minScalar
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 7162592523744904456, guid: 14628d29ff8caaa4baf1c8f9e52bcc1d, type: 3}
+      propertyPath: m_Name
+      value: Muzzle_VFX
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 14628d29ff8caaa4baf1c8f9e52bcc1d, type: 3}
+--- !u!4 &1739971302 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 936827390365473749, guid: 14628d29ff8caaa4baf1c8f9e52bcc1d, type: 3}
+  m_PrefabInstance: {fileID: 1739971301}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &1739971303 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 7162592523744904456, guid: 14628d29ff8caaa4baf1c8f9e52bcc1d, type: 3}
+  m_PrefabInstance: {fileID: 1739971301}
+  m_PrefabAsset: {fileID: 0}
 --- !u!4 &1740260992 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 7379846452787179214, guid: bba5fd0165387f548ac2e272e070e28d, type: 3}
@@ -556143,6 +556226,7 @@ MonoBehaviour:
   _head: {fileID: 4818000275480620463}
   _firePoint: {fileID: 7627278458363857412}
   _purifiedParticle: {fileID: 1675312415382177219}
+  _muzzlePS: {fileID: 1739971303}
   _purifiedSound: {fileID: 0}
   _animatorCarnivorousPlant: {fileID: 4575904975286603674}
   _indicator: {fileID: 4535395008616840454}
@@ -621001,6 +621085,7 @@ Transform:
   - {fileID: 7627278458363857412}
   - {fileID: 7511862461720154850}
   - {fileID: 2322182429506250089}
+  - {fileID: 1739971302}
   m_Father: {fileID: 4073713540842654823}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!4 &4180353553547376260

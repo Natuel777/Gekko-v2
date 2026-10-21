@@ -10,9 +10,10 @@ public class Blueberry : Collectible
     {
         _bv = new BlueberryView(GetComponentInChildren<Renderer>(), transform,this);
     }
+    public override CollectibleType CollectibleType => CollectibleType.Blueberry;
     public override Collectible CreateCollectibleType()
     {
-        return GameManager.Instance.factory.Create(_notificationData.Name, transform.position, transform.rotation);
+        return GameManager.Instance.factory.Create(CollectibleType, transform.position, transform.rotation);
     }
 
     public override void Grab()
