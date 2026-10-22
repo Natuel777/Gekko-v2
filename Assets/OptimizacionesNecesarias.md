@@ -6,3 +6,5 @@
 2) LittleBarrier y PurificationCore son en esencia lo mismo, unificar.
 
 3) Atlas UI para todoooo
+
+4) Reemplazar ints por ushort donde sea posible/necesario
