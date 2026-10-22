@@ -11,9 +11,10 @@ public class StrawBerry : Collectible
     {
         _sv = new StrawBerryView(transform, this);
     }
+    public override CollectibleType CollectibleType => CollectibleType.StrawBerry;
     public override Collectible CreateCollectibleType()
     {
-        return GameManager.Instance.factory.Create(_notificationData.Name, transform.position, transform.rotation);
+        return GameManager.Instance.factory.Create(CollectibleType, transform.position, transform.rotation);
     }
     private void Update()
     {

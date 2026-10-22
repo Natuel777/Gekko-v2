@@ -8,12 +8,18 @@ public class PlantSpitBehaviour
     private readonly float _initialShootInterval;
     private readonly bool _rotateToPlayer;
     private readonly float _rotationSpeed;
+    private readonly System.Action _onShoot;
 
     private Transform _target;
+    private GameObject _muzzlePS;
     private float _shootInterval;
 
-    public PlantSpitBehaviour(Transform head, Transform firePoint, BugBullet venomPrefab, float shootInterval, bool rotateToPlayer, float rotationSpeed)
+    public PlantSpitBehaviour(Transform head, Transform firePoint,
+                                BugBullet venomPrefab, float shootInterval,
+                                bool rotateToPlayer, float rotationSpeed,
+                                GameObject muzzlePS, System.Action onShoot = null)
     {
+        _onShoot = onShoot;
         _head = head;
         _firePoint = firePoint;
         _venomPrefab = venomPrefab;
@@ -21,6 +27,7 @@ public class PlantSpitBehaviour
         _rotateToPlayer = rotateToPlayer;
         _rotationSpeed = rotationSpeed;
         _shootInterval = shootInterval;
+        _muzzlePS = muzzlePS;
     }
 
     public void StartSpitting(Transform target)
@@ -61,11 +68,18 @@ public class PlantSpitBehaviour
         }
         BugBullet venom = ShooteableObjectFactory.Instance.GetBullet<BugBullet>(_venomPrefab, _firePoint.position, Quaternion.identity);
 
-        if (AudioManager.instance) AudioManager.instance.Play(SoundNames.PlantShoot);
+        if(AudioManager.instance) AudioManager.instance.Play(SoundNames.PlantShoot);
+        
+        if(_muzzlePS != null)
+        {
+            foreach(ParticleSystem item in _muzzlePS.GetComponentsInChildren<ParticleSystem>())
+                item.Play();
+        }
 
         if(venom == null) return;
 
         venom.SetDirection(direction);
+        _onShoot?.Invoke();
         _shootInterval = _initialShootInterval;
     }
 }

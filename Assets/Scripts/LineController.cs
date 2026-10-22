@@ -23,24 +23,21 @@ public class LineController : MonoBehaviour
             _lineRenderer.SetPosition(i, _positions[i].position);
     }
 
-    public void RemovePositions(Transform[] positions)
+    public void RemovePositions(Transform positionsGroup)
     {
-        if(positions == null) return;
+        if(positionsGroup == null) return;
 
-        foreach(Transform position in positions)
-        {
-            if(!_positions.Contains(position)) continue;
+        _positions.Remove(positionsGroup);
 
-            _positions.Remove(position);
-        }
+        for(int i = 0; i < positionsGroup.childCount; i++)
+            _positions.Remove(positionsGroup.GetChild(i));
 
-        OpenLoop();
         UpdateLRPositions();
     }
 
-    private void OpenLoop()
-    {
-        if(_lineRenderer != null && _lineRenderer.loop)
-            _lineRenderer.loop = false;
-    }
+    //private void OpenLoop()
+    //{
+    //    if(_lineRenderer != null && _lineRenderer.loop)
+    //        _lineRenderer.loop = false;
+    //}
 }

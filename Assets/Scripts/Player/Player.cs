@@ -78,7 +78,7 @@ public class Player : MonoBehaviour
     [Range(0.9f, 1f)]
     [SerializeField] private float _ropeDamping = 0.99f;
     [Tooltip("Pasadas del solver de distancias por paso. Más = soga más rígida y precisa; menos = más elástica.")]
-    [SerializeField] private int _ropeIterations = 8;
+    [SerializeField] private ushort _ropeIterations = 8;
     [Tooltip("Largo extra de la soga sobre la distancia real entre sus puntas (0.05 = 5%). Más = cuelga y ondula más; 0 = recta y sin movimiento.")]
     [SerializeField] private float _ropeSlack = 0.05f;
 

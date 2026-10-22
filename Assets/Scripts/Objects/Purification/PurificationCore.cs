@@ -3,13 +3,6 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-// Núcleo del desafío de purificación. Va en el MISMO GameObject que su collider: la lengua hace
-// hit.transform.GetComponent<IDamageable>(). No se destruye al romperse (la lengua todavía puede
-// tener la referencia hasta terminar de retraerse); se apaga el collider y el visual, o el visual pasa
-// al material purificado si hay uno asignado.
-// Al romperse, los renderers del núcleo cuyo material tenga la propiedad _Dissolve (M_Enredaderas, Nucleo) se
-// disuelven de 0 a 1 a _dissolveSpeed por segundo. El visual recién pasa a su estado final (purificado / oculto)
-// cuando el disolve termina; si ningún material tiene _Dissolve, cambia al instante como siempre.
 [RequireComponent(typeof(Collider))]
 public class PurificationCore : MonoBehaviour, IDamageable, IHitOncePerLick, IParticleSystemTarget
 {
@@ -38,9 +31,10 @@ public class PurificationCore : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
 
     [Header("Line (on break, optional)")]
     [Tooltip("LineController que dibuja la línea. Al romperse el núcleo se le sacan las posiciones de abajo y se redibuja.")]
-    [SerializeField] private LineController _lineController;
+    [SerializeField] private LineController[] _lineControllers;
     [Tooltip("Posiciones de la línea que pertenecen a este núcleo (las mismas que están en la lista del LineController). Al romperse se sacan de esa lista y se DESTRUYEN sus GameObjects.")]
-    [SerializeField] private Transform[] _linePositions;
+    [SerializeField] private Transform[] _linePositionsGroups;
+    private Dictionary<LineController, Transform> _positionOfEachLR = new();
 
     [Header("Veins / Vines Art (optional)")]
     [SerializeField] private GameObject[] _activeWhileIntact;
@@ -58,6 +52,9 @@ public class PurificationCore : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
         _collider = GetComponent<Collider>();
         SetActiveAll(_activeWhileIntact, true);
         SetActiveAll(_activeWhenBroken, false);
+
+        for(int i = 0; i < _lineControllers.Length ; i++)
+            _positionOfEachLR.Add(_lineControllers[i], _linePositionsGroups[i]);
     }
 
     public void Damage(float dmg)
@@ -100,15 +97,9 @@ public class PurificationCore : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
 
     private void RemoveLinePositions()
     {
-        if(_lineController != null) _lineController.RemovePositions(_linePositions);
-
-        if(_linePositions == null) return;
-
-        foreach(Transform position in _linePositions)
+        foreach(var item in _positionOfEachLR)
         {
-            if(position == null || transform.IsChildOf(position)) continue;
-
-            Destroy(position.gameObject);
+            if(item.Key != null && item.Value != null) item.Key.RemovePositions(item.Value);
         }
     }
 

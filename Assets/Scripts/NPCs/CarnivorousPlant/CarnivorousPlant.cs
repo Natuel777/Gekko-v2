@@ -14,6 +14,7 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
 
     [Header("Feedback")]
     [SerializeField] private ParticleSystem _purifiedParticle;
+    [SerializeField] private GameObject _muzzlePS;
     [SerializeField] private AudioSource _purifiedSound;
     [SerializeField] private Animator _animatorCarnivorousPlant;
 
@@ -68,7 +69,7 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
         BiteState = new PlantBiteState(this);
         PurifiedState = new PlantPurifiedState(this);
 
-        spitBehaviour = new PlantSpitBehaviour(_head, _firePoint, _venomPrefab, data.shootInterval, data.rotateToPlayer, data.rotationSpeed);
+        spitBehaviour = new PlantSpitBehaviour(_head, _firePoint, _venomPrefab, data.shootInterval, data.rotateToPlayer, data.rotationSpeed, _muzzlePS, PlaySpit);
 
         if(_head != null)
         {
@@ -221,6 +222,12 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
         }
 
         EventManager.Trigger<float>("OnPlayerDamaged", data.biteDamage);
+    }
+
+    // Lo llama PlantSpitBehaviour cada vez que sale un proyectil. El nombre del trigger en AC_carnivorousPlant es "splittle".
+    private void PlaySpit()
+    {
+        if(_animatorCarnivorousPlant != null) _animatorCarnivorousPlant.SetTrigger("splittle");
     }
 
     // El escudo del desafío de purificación bloquea los golpes hasta que se rompen todos los núcleos.
