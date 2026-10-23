@@ -55,7 +55,7 @@ public class Player : MonoBehaviour
     [SerializeField] private float _heightLimitMaxPull = 60f;
 
     [Header("Rope Visual (Wave)")]
-    [Tooltip("Cantidad de segmentos de la cuerda (LineRenderer tendrá quality+1 puntos).")]
+    [Tooltip("Cantidad de segmentos de la cuerda (LineRenderer tendrá quality+1 puntos). 10 alcanza; si lo subís, subí también Rope Iterations (con 20 hilos hacen falta ~60) o la soga se abomba más.")]
     [SerializeField] private int _quality = 10;
     [Tooltip("Qué tan fuerte 'tira' el spring hacia 0. Sube = oscilación más rápida.")]
     [SerializeField] private float _springStrength = 400f;
@@ -79,8 +79,12 @@ public class Player : MonoBehaviour
     [SerializeField] private float _ropeDamping = 0.99f;
     [Tooltip("Pasadas del solver de distancias por paso. Más = soga más rígida y precisa; menos = más elástica.")]
     [SerializeField] private ushort _ropeIterations = 8;
-    [Tooltip("Largo extra de la soga sobre la distancia real entre sus puntas (0.05 = 5%). Más = cuelga y ondula más; 0 = recta y sin movimiento.")]
-    [SerializeField] private float _ropeSlack = 0.05f;
+    [Tooltip("Largo de la soga sobre la distancia real entre sus puntas (0.05 = 5% más larga, -0.02 = 2% más corta). Positivo = cuelga y se abomba; 0 = justo; NEGATIVO = soga pre-tensada: queda estirada y con la misma tensión en todos sus nodos. -0.02 es un buen punto de partida para una lengua tensa.")]
+    [Range(-0.1f, 0.2f)]
+    [SerializeField] private float _ropeSlack = -0.02f;
+    [Tooltip("Cuánto se endereza lo que se VE de la soga hacia la recta boca-ancla. 0 = tal cual la simulación (con su panza); 1 = recta. Es solo visual: no cambia la simulación ni el latigazo. Complementa a Rope Slack negativo; sube si todavía se ven nodos flojos.")]
+    [Range(0f, 1f)]
+    [SerializeField] private float _ropeTautness = 0.5f;
 
     [Header("Grapple")]
     [Tooltip("Cuánto sube el arco por encima del punto de enganche, en metros para un Gekko de escala 1 (se escala con el tamaño real del pj). Más = arco más alto y vuelo más largo.")]
@@ -162,7 +166,7 @@ public class Player : MonoBehaviour
                         _predictionPoint, _predictionSphereRadius, _maxTongueDistance,
                         quality: _quality, springDamper: _springDamper, springStrength: _springStrength, springVelocity: _springVelocity,
                         waveCount: _waveCount, waveHeight: _waveHeight, waveAffectCurve: _waveAffectCurve,
-                        ropeGravity: _ropeGravity, ropeDamping: _ropeDamping, ropeIterations: _ropeIterations, ropeSlack: _ropeSlack,
+                        ropeGravity: _ropeGravity, ropeDamping: _ropeDamping, ropeIterations: _ropeIterations, ropeSlack: _ropeSlack, ropeTautness: _ropeTautness,
                         heightLimitOffset: _heightLimitOffset, heightLimitSpring: _heightLimitSpring,
                         heightLimitDamper: _heightLimitDamper, heightLimitMaxPull: _heightLimitMaxPull).
                         InitializeGrappleBehaviour(_overshootYAxis, _grapplingCD, _grappleDelayTime, _grappleFinishDistance, _grappleLookSpeed, _secondJumpMultiplier);

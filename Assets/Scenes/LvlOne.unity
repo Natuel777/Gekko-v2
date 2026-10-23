@@ -12280,6 +12280,7 @@ MonoBehaviour:
   _dissolveFrom: 0
   _dissolveTo: 1
   _dropDuration: 1
+  _stepDuration: 1.5
   _dropParticle: {fileID: 0}
 --- !u!43 &55781002
 Mesh:
@@ -312387,6 +312388,7 @@ MonoBehaviour:
   _dissolveFrom: 0
   _dissolveTo: 1
   _dropDuration: 1
+  _stepDuration: 1.5
   _dropParticle: {fileID: 0}
 --- !u!65 &1381956724
 BoxCollider:
@@ -424703,7 +424705,7 @@ Camera:
   far clip plane: 295
   field of view: 70
   orthographic: 0
-  orthographic size: 5.136685
+  orthographic size: 5
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2
@@ -578207,6 +578209,7 @@ MonoBehaviour:
   _dissolveFrom: 0
   _dissolveTo: 1
   _dropDuration: 1
+  _stepDuration: 1.5
   _dropParticle: {fileID: 0}
 --- !u!4 &2397338091053565629
 Transform:
@@ -697145,10 +697148,11 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  _ropeGravity: 9.81
-  _ropeDamping: 0.99
-  _ropeIterations: 8
-  _ropeSlack: 0.05
+  _ropeGravity: 4.57
+  _ropeDamping: 0.9372
+  _ropeIterations: 26
+  _ropeSlack: -0.02
+  _ropeTautness: 0.5
   _overshootYAxis: 2
   _grapplingCD: 1
   _grappleDelayTime: 0.08

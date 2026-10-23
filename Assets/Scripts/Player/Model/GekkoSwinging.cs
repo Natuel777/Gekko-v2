@@ -16,11 +16,15 @@ public sealed class GekkoSwinging
                     _camera, _transform, _tongueTip;
     
     #region Tongue Visual
-    // Cómo se dibuja la lengua: dos efectos que se SUMAN.
-    //   1) LA SOGA FÍSICA (RopeSimulation): decide la forma base. Cuelga por su peso, se queda atrás cuando Gekko se
-    //      mueve y rebota al frenar. La explicación completa está arriba de esa clase.
-    //   2) EL LATIGAZO (Spring + onda senoidal): una ondulación "artística" que aparece al enganchar y se apaga sola.
-    // La física manda y el latigazo se le suma por encima recién al dibujar (ver UpdateLineRenderer).
+    // Cómo se dibuja la lengua: tres cosas, en este orden.
+    //   1) LA SOGA FÍSICA (RopeSimulation): decide la forma base. Se queda atrás cuando Gekko se mueve y rebota al frenar.
+    //      Puede colgar (slack positivo) o estar pre-tensada (slack negativo). La explicación completa está arriba de
+    //      esa clase.
+    //   2) LA TENSIÓN VISUAL (_ropeTautness): al dibujar, la forma de la soga se acerca a la recta boca -> ancla. Es lo que
+    //      deja la lengua pareja de punta a punta.
+    //   3) EL LATIGAZO (Spring + onda senoidal): una ondulación "artística" que aparece al enganchar y se apaga sola.
+    // La física manda, la tensión visual la endereza y el latigazo se le suma por encima recién al dibujar (ver
+    // UpdateLineRenderer).
 
     // Cantidad de hilos de la soga. La simulación y el LineRenderer tienen _quality + 1 puntos.
     private int _quality;
@@ -40,9 +44,21 @@ public sealed class GekkoSwinging
     // reutiliza en cada frame, así dibujar no genera basura (GC).
     private Vector3[] _ropePoints;
 
-    // Soga de sobra respecto de la distancia real entre sus puntas (0.05 = 5% más larga). Es lo que hace que cuelgue:
-    // con 0 la soga quedaría recta como una barra y sin movimiento.
+    // Largo de la soga respecto de la distancia real entre sus puntas (0.05 = 5% más larga, -0.02 = 2% más corta):
+    //   positivo : sobra soga, cuelga y se abomba. Una soga sin tensión se dobla de costado con cualquier acortamiento de
+    //              la distancia, así que por poco que sobre el abombado es grande (decenas de cm en una soga de 4 m).
+    //   0        : justo. Queda casi recta, pero todavía se abomba un poco cuando las puntas se mueven.
+    //   negativo : soga PRE-TENSADA. Siempre está estirada, así que todos los hilos tienen la misma tensión y no hay de
+    //              dónde doblarse. Es lo que la deja tensa y pareja de punta a punta.
     private float _ropeSlack;
+
+    // Cuánto se endereza lo que se VE de la soga: 0 = tal cual la simulación, 1 = recta de la boca al ancla. Es solo
+    // visual, no cambia la simulación ni el latigazo (ver UpdateLineRenderer).
+    private float _ropeTautness;
+
+    // Lo más pre-tensada que puede estar la soga: -0.1 = 10% más corta que la distancia entre sus puntas. Más que eso no
+    // se ve mejor, y un valor cercano a -1 dejaría la soga sin largo.
+    private const float MinRopeSlack = -0.1f;
     #endregion
 
     #region Height Limit
@@ -73,7 +89,7 @@ public sealed class GekkoSwinging
                         Transform predictionPoint, float predictionSphereRadius, float maxTongueDistance,
                         int quality, float springDamper, float springStrength, float springVelocity,
                         float waveCount, float waveHeight, AnimationCurve waveAffectCurve,
-                        float ropeGravity, float ropeDamping, int ropeIterations, float ropeSlack,
+                        float ropeGravity, float ropeDamping, int ropeIterations, float ropeSlack, float ropeTautness,
                         float heightLimitOffset, float heightLimitSpring, float heightLimitDamper, float heightLimitMaxPull)
     {
         _lineRenderer = lineRenderer;
@@ -110,9 +126,11 @@ public sealed class GekkoSwinging
         _rope = new RopeSimulation(_quality, ropeDamping, ropeGravity, ropeIterations);
         _ropePoints = new Vector3[_quality + 1];
 
-        // El sobrante de soga no puede ser negativo: una soga más corta que la distancia entre sus puntas quedaría
-        // siempre estirada, sin colgar.
-        _ropeSlack = Mathf.Max(0f, ropeSlack);
+        // El sobrante de soga puede ser negativo: una soga más corta que la distancia entre sus puntas queda siempre
+        // estirada y recta, con la misma tensión en todos los hilos (soga pre-tensada). El mínimo evita un largo de 0.
+        // La tensión visual es un porcentaje: de 0 a 1.
+        _ropeSlack = Mathf.Max(MinRopeSlack, ropeSlack);
+        _ropeTautness = Mathf.Clamp01(ropeTautness);
 
         // Resorte, amortiguador y tope no pueden ser negativos: un valor negativo empujaría a Gekko hacia ARRIBA.
         _heightLimitOffset = heightLimitOffset;
@@ -255,10 +273,12 @@ public sealed class GekkoSwinging
         Vector3 tongueTipPos = _tongueTip.position;
         _currentGrapplePoint = Vector3.Lerp(_currentGrapplePoint, _grapplePoint, deltaTime * 8f);
 
-        // PASO 3 - ¿Cuánto mide la soga? La distancia entre sus puntas más un sobrante (_ropeSlack).
-        //  - Ese sobrante es lo que la hace colgar y ondular. Ejemplo: puntas a 5 m y slack 0.05 -> la soga mide 5.25 m.
-        //  - NO se usa _joint.maxDistance: el joint se configura en 0.8 x la distancia inicial, o sea MÁS CORTO que el
-        //    hueco real entre las puntas. Una soga de ese largo estaría siempre estirada y recta, y no se vería el efecto.
+        // PASO 3 - ¿Cuánto mide la soga? La distancia entre sus puntas más un sobrante (_ropeSlack), que puede ser negativo.
+        //  - Positivo: la soga cuelga y se abomba. Ejemplo: puntas a 5 m y slack 0.05 -> la soga mide 5.25 m.
+        //  - Negativo: la soga está pre-tensada. Ejemplo: puntas a 5 m y slack -0.02 -> mide 4.9 m, más corta que el hueco,
+        //    así que queda estirada y recta, con la misma tensión en todos los hilos. Se usa un valor chico (-0.02).
+        //  - NO se usa _joint.maxDistance: el joint se configura en 0.8 x la distancia inicial, o sea un 20% MÁS CORTO que
+        //    el hueco real entre las puntas. Una soga estirada tanto quedaría como una barra.
         //  - Como sigue a la distancia actual, acortar o alargar el cable (ODMGearMovement) no necesita ningún caso
         //    especial: la soga se acomoda sola.
         float visibleDistance = Vector3.Distance(tongueTipPos, _currentGrapplePoint);
@@ -268,16 +288,18 @@ public sealed class GekkoSwinging
         // conservan su largo (el detalle está explicado arriba de RopeSimulation).
         _rope.Simulate(deltaTime, tongueTipPos, _currentGrapplePoint, restLength);
 
-        // PASO 5 - Se dibuja: se copian los puntos al LineRenderer sumándoles el latigazo.
+        // PASO 5 - Se dibuja: se copian los puntos al LineRenderer, enderezados según _ropeTautness y con el latigazo.
         UpdateLineRenderer();
     }
 
-    // Copia los puntos de la soga al LineRenderer y les suma el latigazo. No hace avanzar nada: solo dibuja el estado
-    // actual (por eso StartSwing también lo puede usar para mostrar la pose inicial).
+    // Copia los puntos de la soga al LineRenderer, los endereza según _ropeTautness y les suma el latigazo. No hace
+    // avanzar nada: solo dibuja el estado actual (por eso StartSwing también lo puede usar para mostrar la pose inicial).
     private void UpdateLineRenderer()
     {
         // Los puntos que calculó la simulación: el 0 es la lengua y el último es el ancla.
         Vector3[] simulated = _rope.Points;
+        Vector3 ropeStart = simulated[0];
+        Vector3 ropeEnd = simulated[_quality];
 
         // Hacia dónde se curva el latigazo: una dirección "arriba" que sea perpendicular a la soga. Se obtiene girando
         // un "arriba" común para que mire a lo largo de la soga (LookRotation).
@@ -300,10 +322,17 @@ public sealed class GekkoSwinging
             //  - curva: vale 0 en las dos puntas, así la lengua y el ancla no se despegan aunque la onda esté al máximo.
             Vector3 whip = up * _waveHeight * Mathf.Sin(delta * _waveCount * Mathf.PI) * _spring.Value * _waveAffectCurve.Evaluate(delta);
 
-            // Punto final = punto de la simulación + latigazo. El latigazo se suma recién acá, al dibujar, y NO dentro
-            // de la simulación: si entrara ahí, la soga lo trataría como movimiento real y lo arrastraría consigo. Así
-            // el latigazo sigue siendo un efecto controlable y la física aporta el movimiento natural.
-            _ropePoints[i] = simulated[i] + whip;
+            // Tensión visual: el punto simulado se acerca a su lugar sobre la recta lengua -> ancla, que es donde estaría si
+            // la soga estuviera perfectamente tensa. Con _ropeTautness en 0 queda donde lo dejó la simulación; con 1,
+            // sobre la recta. Las dos puntas ya están sobre la recta, así que no se mueven. Es solo al dibujar: la
+            // simulación sigue por su cuenta y el desvío se vuelve a calcular en cada frame, no se acumula.
+            Vector3 shapedPoint = Vector3.Lerp(simulated[i], Vector3.Lerp(ropeStart, ropeEnd, delta), _ropeTautness);
+
+            // Punto final = punto enderezado + latigazo. El latigazo se suma recién acá, al dibujar, y NO dentro de la
+            // simulación: si entrara ahí, la soga lo trataría como movimiento real y lo arrastraría consigo. Tampoco lo
+            // endereza la tensión visual: la onda queda siempre completa. Así el latigazo sigue siendo un efecto
+            // controlable y la física aporta el movimiento natural.
+            _ropePoints[i] = shapedPoint + whip;
         }
 
         // Se entregan todos los puntos al LineRenderer de una sola vez (más barato que un SetPosition por punto).
