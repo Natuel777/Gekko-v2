@@ -28,6 +28,7 @@ public class LittleBarricade : MonoBehaviour, IDamageable, IParticleSystemTarget
 
     public bool CanBeTargeted => !_interacted;
 
+    [SerializeField] private GameObject[] CorruptionParticles;
     public void Damage(float dmg)
     {
         _life -= dmg;
@@ -51,6 +52,10 @@ public class LittleBarricade : MonoBehaviour, IDamageable, IParticleSystemTarget
         {
             if(_lineControllers[i] != null && _linePositionsGroups[i] != null)
                 _lineControllers[i].RemovePositions(_linePositionsGroups[i]);
+        }
+        foreach (var item in CorruptionParticles)
+        {
+            item.SetActive(false);
         }
     }
 

@@ -47,6 +47,7 @@ public class PurificationCore : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
     public bool IsBroken { get; private set; }
     public event Action<PurificationCore> Broken;
 
+    [SerializeField] private GameObject[] CorruptionParticles;
     private void Awake()
     {
         _collider = GetComponent<Collider>();
@@ -100,6 +101,10 @@ public class PurificationCore : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
         foreach(var item in _positionOfEachLR)
         {
             if(item.Key != null && item.Value != null) item.Key.RemovePositions(item.Value);
+        }
+        foreach(var item in CorruptionParticles)
+        {
+            item.SetActive(false);
         }
     }
 
