@@ -3425,7 +3425,6 @@ GameObject:
   m_Component:
   - component: {fileID: 1031384866}
   - component: {fileID: 1031384865}
-  - component: {fileID: 1031384864}
   - component: {fileID: 1031384868}
   - component: {fileID: 1031384867}
   m_Layer: 0
@@ -3435,14 +3434,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!81 &1031384864
-AudioListener:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1031384863}
-  m_Enabled: 0
 --- !u!20 &1031384865
 Camera:
   m_ObjectHideFlags: 0
@@ -11554,6 +11545,7 @@ MonoBehaviour:
   _ropeDamping: 0.99
   _ropeIterations: 8
   _ropeSlack: 0.05
+  _ropeTautness: 0.5
   _overshootYAxis: 2
   _grapplingCD: 1
   _grappleDelayTime: 0.08
