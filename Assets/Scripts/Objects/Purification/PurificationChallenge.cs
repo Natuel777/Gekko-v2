@@ -70,7 +70,7 @@ public class PurificationChallenge : MonoBehaviour
     private bool _shieldCamActive;
     private int _shieldCamBasePriority;
     private Coroutine _shieldCamRoutine;
-
+    private bool _suscribed;
     public ChallengeState State { get; private set; } = ChallengeState.Active;
 
     // (núcleos restantes, núcleos totales)
@@ -99,6 +99,7 @@ public class PurificationChallenge : MonoBehaviour
     private void OnEnable()
     {
         Subscribe();
+        if (_suscribed) SuscribeToEvent();
     }
 
     private void Start()
@@ -119,7 +120,8 @@ public class PurificationChallenge : MonoBehaviour
         // Sin núcleos (o ya rotos) el escudo no tendría cómo caer.
         if(_remaining == 0) DropShield();
 
-        if(LevelOneManager.Instance != null) LevelOneManager.Instance.OnChallengeStart += OnChallengeStarted;
+        _suscribed = true;
+        SuscribeToEvent();
     }
 
     private void Update()
@@ -143,8 +145,8 @@ public class PurificationChallenge : MonoBehaviour
         Unsubscribe();
         EndShieldDownCam();
         EndBeat();
-        if(LevelOneManager.Instance != null) LevelOneManager.Instance.OnChallengeStart -= OnChallengeStarted;
-
+        if (LevelOneManager.Instance == null) return;
+        LevelOneManager.Instance.OnChallengeStart -= OnChallengeStarted;
     }
 
     // Las instancias creadas por r.materials no las libera Unity solas hasta cambiar de escena.
@@ -176,7 +178,12 @@ public class PurificationChallenge : MonoBehaviour
                 _scheduler.Schedule(enemy);
         }
     }
-
+    private void SuscribeToEvent()
+    {
+        if (LevelOneManager.Instance == null) return;
+        LevelOneManager.Instance.OnChallengeStart -= OnChallengeStarted;
+        LevelOneManager.Instance.OnChallengeStart += OnChallengeStarted;
+    }
     private void Unsubscribe()
     {
         if(!_subscribed) return;

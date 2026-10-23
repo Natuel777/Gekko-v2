@@ -3,9 +3,11 @@ using UnityEngine;
 using UnityEngine.UI;
 using Unity.Cinemachine;
 using System.Collections;
+using System;
 
 public class PuzzleBeaver : MonoBehaviour, IInteractable, IDialogueable
 {
+    private bool _suscribed;
     private Animator _anim;
     private Transform _cam;
     private bool _started;
@@ -47,12 +49,13 @@ public class PuzzleBeaver : MonoBehaviour, IInteractable, IDialogueable
         _exclamation.enabled = false;
         _anim = GetComponentInChildren<Animator>();
         _cam = CameraStateManager.Instance.CurrentCamera.transform;
-        LevelOneManager.Instance.OnBridgeConstructed += BridgeFinished;
-
+        _suscribed = true;
+        Suscribe();
         _playerTransform = GameManager.Instance.Pj.transform;
         _playerDetection = new BugDetection(transform, _playerTransform, _detectionRange);
         _lookAtPlayer = new LookAtTarget(_rotationSpeed, transform, lockYAxis: true);
     }
+
 
     private void Update()
     {
@@ -161,9 +164,19 @@ public class PuzzleBeaver : MonoBehaviour, IInteractable, IDialogueable
     {
         _EIndicator.enabled = false;
     }
-
+    private void OnEnable()
+    {
+        if (_suscribed) Suscribe();
+    }
+    private void Suscribe()
+    {
+        if (LevelOneManager.Instance == null) return;
+        LevelOneManager.Instance.OnBridgeConstructed -= BridgeFinished;
+        LevelOneManager.Instance.OnBridgeConstructed += BridgeFinished;
+    }
     private void OnDisable()
     {
+        if (LevelOneManager.Instance == null) return;
         LevelOneManager.Instance.OnBridgeConstructed -= BridgeFinished;
     }
 

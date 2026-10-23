@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using Unity.Cinemachine;
 using UnityEngine;
@@ -5,6 +6,7 @@ using UnityEngine.UI;
 
 public class MomDuck : MonoBehaviour, IDialogueable, IInteractable
 {
+    private bool _suscribed;
     [SerializeField] private float _rotationSpeed = 5f;
     private Animator _anim;
     private Transform _cam;
@@ -45,7 +47,8 @@ public class MomDuck : MonoBehaviour, IDialogueable, IInteractable
         _playerTransform = GameManager.Instance.Pj.transform;
         _cam = CameraStateManager.Instance.CurrentCamera.transform;
         _lookAtPlayer = new LookAtTarget(_rotationSpeed, transform, lockYAxis: true);
-        LevelOneManager.Instance.OnDuckFound += DuckFound;
+        _suscribed = true;
+        Suscribe();
     }
     private void Update()
     {
@@ -139,9 +142,21 @@ public class MomDuck : MonoBehaviour, IDialogueable, IInteractable
     {
         _EIndicator.enabled = false;
     }
+    private void OnEnable()
+    {
+        if (_suscribed) Suscribe();
+    }
+
+    private void Suscribe()
+    {
+        if (LevelOneManager.Instance == null) return;
+        LevelOneManager.Instance.OnDuckFound -= DuckFound;
+        LevelOneManager.Instance.OnDuckFound += DuckFound;
+    }
 
     private void OnDisable()
     {
+        if (LevelOneManager.Instance == null) return;
         LevelOneManager.Instance.OnDuckFound -= DuckFound;
     }
 }

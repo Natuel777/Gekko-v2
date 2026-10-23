@@ -2,6 +2,7 @@ using UnityEngine;
 using TMPro;
 using System.Collections;
 using Unity.Cinemachine;
+using System;
 
 public class BeaverBridge : MonoBehaviour
 {
@@ -20,13 +21,17 @@ public class BeaverBridge : MonoBehaviour
     [SerializeField] private GameObject _beaverAnimation;
     [SerializeField] private GameObject _hammerAnimation;
     [SerializeField] private CinemachineCamera _camFinish;
+    private bool _suscribed;
     private void Start()
     {
         if (_missionActive) ActivateMission();
 
-        if(LevelOneManager.Instance != null)
-            LevelOneManager.Instance.OnBeaverMission += ActivateMission;
+        _suscribed = true;
+        Suscribe();
     }
+
+    
+
     private void ActivateMission()
     {
         _missionActive = true;
@@ -111,6 +116,16 @@ public class BeaverBridge : MonoBehaviour
                 }
             }
         }
+    }
+    private void OnEnable()
+    {
+        if (_suscribed) Suscribe();
+    }
+    private void Suscribe()
+    {
+        if (LevelOneManager.Instance == null) return;
+        LevelOneManager.Instance.OnBeaverMission -= ActivateMission;
+        LevelOneManager.Instance.OnBeaverMission += ActivateMission;
     }
     private void OnDisable()
     {

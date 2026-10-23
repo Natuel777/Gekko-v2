@@ -26,6 +26,8 @@ public class BabyDuck : MonoBehaviour, IDialogueable, IInteractable
     [Header("Cameras")]
     [SerializeField] private CinemachineCamera _duckCam;
     private LookAtTarget _lookAtPlayer;
+    private bool _suscribed;
+
     public Dialogue Dialogue => _dialogue[_currentDialogue];
 
     public Transform Transform => transform;
@@ -43,7 +45,8 @@ public class BabyDuck : MonoBehaviour, IDialogueable, IInteractable
         _playerTransform = GameManager.Instance.Pj.transform;
         _EIndicator.enabled = false;
         _lookAtPlayer = new LookAtTarget(_rotationSpeed, transform, lockYAxis: true);
-        LevelOneManager.Instance.OnMissionDuckStarted += MissionStarted;
+        _suscribed = true;
+        Suscribe();
         _source = GetComponent<AudioSource>();
         _source.resource = _audioTalk;
         Cuack(true);
@@ -144,8 +147,22 @@ public class BabyDuck : MonoBehaviour, IDialogueable, IInteractable
         _EIndicator.enabled = false;
     }
 
+    private void OnEnable()
+    {
+        if (_suscribed) Suscribe();
+    }
+
+    private void Suscribe()
+    {
+        if (LevelOneManager.Instance == null) return;
+        LevelOneManager.Instance.OnMissionDuckStarted -= MissionStarted;
+        LevelOneManager.Instance.OnMissionDuckStarted += MissionStarted;
+
+    }
+
     private void OnDisable()
     {
+        if (LevelOneManager.Instance == null) return;
         LevelOneManager.Instance.OnMissionDuckStarted -= MissionStarted;
     }
 }
