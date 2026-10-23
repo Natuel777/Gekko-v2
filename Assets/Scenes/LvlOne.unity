@@ -59518,7 +59518,7 @@ GameObject:
   - component: {fileID: 295834023}
   - component: {fileID: 295834024}
   m_Layer: 0
-  m_Name: Camera1 (2)
+  m_Name: Camera3- Enredaderas
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -59532,13 +59532,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 295834022}
   serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0.7968078, z: -0, w: -0.60423285}
-  m_LocalPosition: {x: 17.170004, y: 2.3400002, z: -1.2300005}
+  m_LocalRotation: {x: -0, y: -0.7660445, z: 0, w: -0.6427876}
+  m_LocalPosition: {x: 14.97, y: 2.3400002, z: 0.13}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 2006405545}
-  m_LocalEulerAnglesHint: {x: 0, y: -254.347, z: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: -260, z: 0}
 --- !u!114 &295834024
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -76480,11 +76480,11 @@ Transform:
   m_GameObject: {fileID: 369903347}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0.9990544, z: -0, w: -0.043478154}
-  m_LocalPosition: {x: 85.7, y: 29.1, z: -79.7}
+  m_LocalPosition: {x: 29.399998, y: 10.123529, z: 0.54000854}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 0}
+  m_Father: {fileID: 1092349204}
   m_LocalEulerAnglesHint: {x: 0, y: -184.984, z: 0}
 --- !u!1 &371216264
 GameObject:
@@ -140274,7 +140274,7 @@ GameObject:
   - component: {fileID: 699667243}
   - component: {fileID: 699667244}
   m_Layer: 0
-  m_Name: Camera1 (1)
+  m_Name: Camera2- Nucleo
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -140288,13 +140288,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 699667242}
   serializedVersion: 2
-  m_LocalRotation: {x: -0.0793689, y: -0.22491899, z: 0.059659317, w: -0.9693053}
-  m_LocalPosition: {x: 19.030006, y: 4.62, z: 3.3799992}
+  m_LocalRotation: {x: -0, y: -0.6427878, z: 0, w: -0.76604426}
+  m_LocalPosition: {x: 13.06, y: 3.187, z: 6.386}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 2006405545}
-  m_LocalEulerAnglesHint: {x: 10.411, y: -334.297, z: -4.663}
+  m_LocalEulerAnglesHint: {x: 0, y: -280, z: 0}
 --- !u!114 &699667244
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -149817,7 +149817,7 @@ GameObject:
   - component: {fileID: 766193469}
   - component: {fileID: 766193468}
   m_Layer: 0
-  m_Name: ParkourCinematicTrigger
+  m_Name: TIMELINE ParkourCinematicTrigger
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -149874,17 +149874,22 @@ PlayableDirector:
     m_References:
     - b5d01f68cf1652540962c2a4ea870eb3: {fileID: 699667244}
     - 54a0d3c0-a981-4c24-a5a3-18cb4d5580fb: {fileID: 369903349}
+    - 1cc0e7bd165e9e146aa7a34829d8c8c2: {fileID: 699667244}
     - ffbaba4461b297a43ba9a68f3dfab7c9: {fileID: 369903349}
     - 14e6b4ddea16f5e4e90f8bea016537d8: {fileID: 2089499238}
+    - 1120206cd3e0975498982e7ae2b73737: {fileID: 1274179909}
     - 5d555f28a1632b446b8caacd83237662: {fileID: 903086110}
     - : {fileID: 369903349}
     - d2ec4f1b06ed68141bc91382591792a2: {fileID: 699667244}
     - f8e816438b0ac064d84294bfab94efcb: {fileID: 1627142302}
+    - 3726895d614171c4b8c583d2cb5931b5: {fileID: 295834024}
     - 9842bb8d995c2c341871c137590146ca: {fileID: 1117216274}
     - 7d5a87a6-c81d-4a2c-b04d-31d90482b0c2: {fileID: 903086110}
     - ea516169bb258ea4a8056f03b61d7f6b: {fileID: 1026374063}
+    - 671f64f1d32f1f34dba235d8c0564b97: {fileID: 1627142302}
     - 5ad933a437e58ae4e94a6f901a021efe: {fileID: 903086109}
     - c90bea964a5bc6f4b9a1903b0cdd8096: {fileID: 295834024}
+    - 11daf49d2ce0c9d4f83696385ac9c13d: {fileID: 1274179909}
     - a4dcc0b8a3f6d7f41a4a105386ccb9e4: {fileID: 369903349}
     - fee21ae31c62f5f48a53ee9781330325: {fileID: 699667244}
 --- !u!65 &766193470
@@ -188584,13 +188589,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 903086109}
   serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0.8028384, z: -0, w: -0.5961968}
-  m_LocalPosition: {x: 58.05, y: 17.56, z: -79.4}
+  m_LocalRotation: {x: -0, y: -0.91004944, z: -0, w: -0.41449988}
+  m_LocalPosition: {x: 13.640003, y: -0.19000053, z: 0.84000397}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: -253.196, z: 0}
+  m_Father: {fileID: 1092349204}
+  m_LocalEulerAnglesHint: {x: 0, y: -228.976, z: 0}
 --- !u!1 &903090957
 GameObject:
   m_ObjectHideFlags: 0
@@ -207335,7 +207340,7 @@ GameObject:
   - component: {fileID: 989995966}
   - component: {fileID: 989995965}
   m_Layer: 0
-  m_Name: ParkourCinematicTrigger
+  m_Name: TIMELINE - ParkourCinematicTrigger
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -207393,20 +207398,26 @@ PlayableDirector:
     - 54a0d3c0-a981-4c24-a5a3-18cb4d5580fb: {fileID: 369903349}
     - ffbaba4461b297a43ba9a68f3dfab7c9: {fileID: 369903349}
     - 42b62e73f14ce764e863b5e69c487a92: {fileID: 369903349}
+    - 083a5f3be0d03834ab43f555686c4d56: {fileID: 903086110}
     - 14e6b4ddea16f5e4e90f8bea016537d8: {fileID: 2089499238}
     - b98561d565e58b9479dd09411f258630: {fileID: 1117216274}
     - a5bcf05836c28c040b82938f2387c352: {fileID: 1117216274}
     - 98c72997017f4a14db5012224c3a694c: {fileID: 903086110}
     - 5d555f28a1632b446b8caacd83237662: {fileID: 903086110}
+    - 04d5c0f923f7838458efb600a254191d: {fileID: 1274179909}
     - 025ce53003f5fb74ca5709626a506b54: {fileID: 1117216274}
     - : {fileID: 369903349}
+    - 79888b713cd257e4abc7bea587a75ed5: {fileID: 1117216274}
     - 0082f7a4aded41043bd885b59c654b08: {fileID: 1117216274}
     - 59f63d70ca67e2c419fce69f100e8b8a: {fileID: 1026374063}
     - 9842bb8d995c2c341871c137590146ca: {fileID: 1117216274}
     - 7d5a87a6-c81d-4a2c-b04d-31d90482b0c2: {fileID: 903086110}
     - ea516169bb258ea4a8056f03b61d7f6b: {fileID: 1026374063}
     - 5ad933a437e58ae4e94a6f901a021efe: {fileID: 903086109}
+    - b213220b5c554b545b228823d9e2d339: {fileID: 369903349}
     - a4dcc0b8a3f6d7f41a4a105386ccb9e4: {fileID: 369903349}
+    - ca070eadf8e593d4a927dbfb8e6d9497: {fileID: 1274179909}
+    - 60f6ef28cba8a3349ae8fd99488426b4: {fileID: 1026374063}
 --- !u!65 &989995967
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -218354,11 +218365,11 @@ Transform:
   m_GameObject: {fileID: 1026374062}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0.75885373, z: -0, w: -0.6512611}
-  m_LocalPosition: {x: 88.59, y: 38.9, z: -122.05}
+  m_LocalPosition: {x: 32.289997, y: 19.923532, z: -41.809998}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 0}
+  m_Father: {fileID: 1092349204}
   m_LocalEulerAnglesHint: {x: 0, y: -261.273, z: 0}
 --- !u!114 &1026374065
 MonoBehaviour:
@@ -233333,7 +233344,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1092349204}
   m_Layer: 0
-  m_Name: ParkourCinematic
+  m_Name: Zona4- Cinematica
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -233348,12 +233359,16 @@ Transform:
   m_GameObject: {fileID: 1092349203}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 56.3, y: 18.97647, z: -80.240005}
+  m_LocalPosition: {x: -15.799999, y: 16.37, z: 18.559998}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 989995964}
-  m_Father: {fileID: 0}
+  - {fileID: 903086112}
+  - {fileID: 369903350}
+  - {fileID: 1117216275}
+  - {fileID: 1026374064}
+  m_Father: {fileID: 1517578784}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1092977696
 GameObject:
@@ -242127,11 +242142,11 @@ Transform:
   m_GameObject: {fileID: 1117216273}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0.99548954, z: -0, w: -0.094872326}
-  m_LocalPosition: {x: 88.59, y: 44.28, z: -130.17}
+  m_LocalPosition: {x: 32.289997, y: 25.30353, z: -49.929993}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 0}
+  m_Father: {fileID: 1092349204}
   m_LocalEulerAnglesHint: {x: 0, y: -190.888, z: 0}
 --- !u!1 &1117509685
 GameObject:
@@ -302106,6 +302121,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
+  - {fileID: 2006405545}
   - {fileID: 355848175}
   - {fileID: 2430094816227632708}
   - {fileID: 916164690}
@@ -343828,6 +343844,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
+  - {fileID: 1092349204}
   - {fileID: 256195494}
   - {fileID: 555103609}
   - {fileID: 28922360}
@@ -384963,7 +384980,7 @@ GameObject:
   - component: {fileID: 1627142301}
   - component: {fileID: 1627142302}
   m_Layer: 0
-  m_Name: Camera1
+  m_Name: Camera1- MostrarZona
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -384978,7 +384995,7 @@ Transform:
   m_GameObject: {fileID: 1627142300}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0.6508613, z: -0, w: -0.7591966}
-  m_LocalPosition: {x: 2.1999984, y: 0.3800001, z: 1.0300004}
+  m_LocalPosition: {x: 6.66, y: 0.3800001, z: 1.76}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -424686,7 +424703,7 @@ Camera:
   far clip plane: 295
   field of view: 70
   orthographic: 0
-  orthographic size: 5
+  orthographic size: 5.136685
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2
@@ -469519,7 +469536,7 @@ GameObject:
   m_Component:
   - component: {fileID: 2006405545}
   m_Layer: 0
-  m_Name: Zona2
+  m_Name: Zona2-Timeline
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -469534,7 +469551,7 @@ Transform:
   m_GameObject: {fileID: 2006405544}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: 0.66163087, z: -0, w: 0.7498297}
-  m_LocalPosition: {x: -16, y: 4.3, z: -53}
+  m_LocalPosition: {x: -8.51, y: 5.7655306, z: 8.73}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -469542,7 +469559,7 @@ Transform:
   - {fileID: 1627142301}
   - {fileID: 699667243}
   - {fileID: 295834023}
-  m_Father: {fileID: 0}
+  m_Father: {fileID: 1344213966}
   m_LocalEulerAnglesHint: {x: 0, y: 82.849, z: 0}
 --- !u!1 &2006451529
 GameObject:
@@ -745529,9 +745546,3 @@ SceneRoots:
   - {fileID: 319319819}
   - {fileID: 808083885}
   - {fileID: 310030822}
-  - {fileID: 2006405545}
-  - {fileID: 1092349204}
-  - {fileID: 903086112}
-  - {fileID: 369903350}
-  - {fileID: 1117216275}
-  - {fileID: 1026374064}
