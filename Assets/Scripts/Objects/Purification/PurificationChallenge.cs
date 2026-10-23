@@ -7,7 +7,8 @@ using UnityEngine;
 
 // Controlador de un desafío de purificación (uno por zona). Es pasivo: no tiene trigger de zona, reacciona
 // a eventos. Flujo: Active -> (todos los núcleos rotos) ShieldDown -> (planta purificada) Completed.
-//  - Núcleos rotos: cae el escudo de la planta y esta pasa a ser golpeable.
+//  - Núcleos rotos: cada uno disuelve un tramo más del escudo de la planta (con 3 núcleos, 3 fases). Al romper el último
+//    el escudo termina de disolverse y la planta pasa a ser golpeable.
 //  - Planta purificada: cae la barrera del camino, todos los escarabajos del desafío quedan purificados
 //    de forma permanente y se corre la cinemática de cierre.
 //  - Mientras la planta viva, los escarabajos DE ESTE desafío que se purifican se re-corrompen a los pocos
@@ -27,7 +28,7 @@ public class PurificationChallenge : MonoBehaviour
     [SerializeField] private PurificationCore[] _cores;
 
     [Header("Barriers")]
-    [Tooltip("Barrera alrededor de la planta: cae al romper todos los núcleos.")]
+    [Tooltip("Barrera alrededor de la planta: se disuelve un tramo por cada núcleo roto y cae del todo al romper el último.")]
     [SerializeField] private PurificationBarrier _shield;
     [Tooltip("Barrera que tapa el camino: cae al purificar la planta.")]
     [SerializeField] private PurificationBarrier _pathBarrier;
@@ -260,7 +261,13 @@ public class PurificationChallenge : MonoBehaviour
         if(_healthbar != null) _healthbar.RemoveCorruptedRune();
         CoreBroken?.Invoke(_remaining, _total);
 
-        if(_remaining == 0)
+        if(_remaining > 0)
+        {
+            // Cada núcleo roto disuelve un tramo más del escudo: con 3 núcleos, el primero lo lleva a 1/3 y el segundo a
+            // 2/3. El tramo final (el último núcleo) lo hace DropShield.
+            if(_shield != null) _shield.DissolveStep(_total - _remaining, _total);
+        }
+        else
         {
             DropShield();
             // Solo acá y no en DropShield: si arranca sin núcleos (Start) no hay nada que mostrar.
@@ -305,7 +312,14 @@ public class PurificationChallenge : MonoBehaviour
 
         State = ChallengeState.ShieldDown;
 
-        if(_shield != null) _shield.Drop();
+        // Último tramo: el escudo termina de disolverse (con el mismo ritmo que los anteriores) y cae. Con _total en 0 (sin
+        // núcleos) la barrera igual necesita al menos un tramo para disolverse.
+        if(_shield != null)
+        {
+            int steps = Mathf.Max(1, _total);
+            _shield.DissolveStep(steps, steps);
+        }
+
         if(_plant != null) _plant.SetShielded(false);
 
         ShieldDropped?.Invoke();
