@@ -105,7 +105,19 @@ public class GameManager : MonoBehaviour
 
     public void Pause()
     {
-        if(CanPause) return;
+        if(CanPause)
+        {
+            if (_screenPause.isActiveAndEnabled)
+            {
+                CanPause = false;
+                Pj.ActivateInputs();
+                Cursor.lockState = CursorLockMode.Locked;
+                Time.timeScale = 1f;
+                EventManager.Trigger("UnPauseEvent");
+            }
+            ScreenManager.Instance.Pop();
+            return;
+        }
 
         ScreenManager.Instance.Push(_screenPause);
         List<SoundNames> soundsToNotPause = new List<SoundNames>{ SoundNames.Menu, SoundNames.LvlOne};

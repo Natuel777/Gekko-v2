@@ -8,7 +8,9 @@ public class ConfigGameScene : MonoBehaviour
 
     void Start()
     {
-        ScreenManager.Instance.Push(new ScreenGO(mainGame));
+        AudioListener listener = GetComponent<AudioListener>();
+        ScreenManager.Instance.Push(new ScreenGO(mainGame, listener));
+        listener.enabled = false;
     }
 
     void Update()

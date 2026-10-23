@@ -30,7 +30,7 @@ public class MainMenuManager : MonoBehaviour
     {
         if (AudioManager.instance) AudioManager.instance.Play(SoundNames.Menu, true);
 
-        ScreenManager.Instance.Push(new ScreenGO(transform));
+        ScreenManager.Instance.Push(new ScreenGO(transform, null));
 
         // El texto arranca oculto y aparece recién cuando se cumple el delay
         if (ButtonsPressAnyKey)

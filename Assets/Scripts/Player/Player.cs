@@ -228,6 +228,7 @@ public class Player : MonoBehaviour
     private void OnDestroy()
     {
         _blueberryCombo?.ArtificialOnDisable();
+        //_pjInputs.PauseInputSet(false);
     }
 
     public void ActivateInputs()
@@ -244,6 +245,7 @@ public class Player : MonoBehaviour
         _pjController.CancelMovement();
         _pjController.CanRotate = false;
         _pjController.Talking = true;
+        _pjController.JumpPressed = false;
         _pjInputs.DeactivatePlayerInputs();
     }
 
