@@ -10,8 +10,18 @@ collectibles. There is no CI, build script, or test suite in this repo — all w
 
 ## Working with this repo
 
-- This is a Unity project, not something you build/run from the CLI. To verify changes compile, open the project in
-  Unity Editor (6000.0.62f1) or check the generated `.csproj`/`.slnx` files after Unity regenerates them.
+- To interact with the live, already-open Unity Editor (check compile errors, run tests, inspect/edit scene and
+  asset state, capture the Game view, build), use the official **`unity` CLI**
+  (`C:\Users\Risi\AppData\Local\Unity\bin\unity.exe`), which talks to the Editor's Pipeline server via the
+  `com.unity.pipeline` package already listed in `Packages/manifest.json`. Key commands: `unity status` (confirm a
+  connected Editor and its port/PID), `unity command`/`cmd <name> [args]` (run a Pipeline command against the open
+  Editor — list available commands with `unity command` alone), `unity recompile` (recompile and report compile
+  errors), `unity test`, `unity build`. If no Editor is connected, open the project with `unity open` rather than
+  launching Unity Hub manually.
+- **Do not** use the third-party `com.coplaydev.unity-mcp` ("MCP for Unity") package or its MCP server to drive the
+  Editor — it requires manually re-toggling its local HTTP bridge inside the Editor window after every restart and
+  is redundant with the `unity` CLI above. If that MCP tool is ever invoked anyway and fails to connect, that's the
+  expected state; point back to the `unity` CLI instead of trying to restart the MCP bridge.
 - `Library/`, `Temp/`, `Logs/`, `UserSettings/`, and `.vs/` are Unity/IDE-generated and gitignored — never edit files
   under them, and don't treat their presence/absence as meaningful.
 - `Gekko-v2.slnx` and `Gekko.slnx` are Unity-generated solution files listing the compiled assemblies. There is no
