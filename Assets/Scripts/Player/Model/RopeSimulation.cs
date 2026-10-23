@@ -77,8 +77,15 @@ using UnityEngine;
 //  EL LARGO DE LA SOGA Y POR QUÉ CUELGA
 //  ------------------------------------
 //  Quien la usa (GekkoSwinging) le dice cuánto mide la soga en reposo (restLength). Si mide MÁS que la distancia entre
-//  las puntas, le sobra soga y cuelga formando una panza. Si mide igual, queda recta como una barra.
+//  las puntas, le sobra soga y cuelga formando una panza. Si mide igual, queda casi recta.
 //     Ejemplo: puntas a 5 m y restLength = 5.25 m -> sobran 25 cm de soga, que se ven como una panza de ~0.7 m.
+//
+//  Si mide MENOS (soga pre-tensada), no llega de una punta a la otra sin estirarse: queda recta y estirada, y como todos
+//  los hilos se estiran por igual, tiene la misma tensión en todos sus nodos.
+//     Ejemplo: puntas a 5 m y restLength = 4.9 m -> la soga queda recta, con cada hilo estirado un 2%.
+//  Esto importa porque una soga SIN tensión se dobla de costado con cualquier acortamiento de la distancia entre las
+//  puntas (como una regla que se comprime), y por poco que sobre, el abombado es grande. Una soga con tensión no se dobla:
+//  cuando las puntas se acercan solo se afloja un poco el estiramiento.
 //
 //
 //  EL TIEMPO: POR QUÉ HAY "SUBPASOS"
@@ -206,7 +213,8 @@ public sealed class RopeSimulation
     //   tip        : dónde está la lengua de Gekko ahora (punto 0, clavado).
     //   end        : dónde está el ancla (último punto, clavado).
     //   restLength : cuánto mide la soga en total. Si es mayor que la distancia entre tip y end, sobra soga y cuelga;
-    //                si es igual, queda recta.
+    //                si es igual, queda casi recta; si es menor, queda estirada y recta, con la misma tensión en todos
+    //                los hilos (soga pre-tensada).
     public void Simulate(float deltaTime, Vector3 tip, Vector3 end, float restLength)
     {
         // 1) Largo de cada hilo: todos miden lo mismo, así que es el largo total repartido en partes iguales.

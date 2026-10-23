@@ -118,20 +118,17 @@ public class PlayerInputs
 
     private void JumpInput(InputAction.CallbackContext value)
     {
-        // Colgado de la lengua (swing) o en pleno grapple, Space es del grapple y NO cuenta como salto. Si se marcara
-        // JumpPressed, el controller lo vería apenas despierte y le sumaría un salto encima de la parábola.
-        // Es por pulsación (performed), no por mantener apretado: igual que el GetKeyDown del repo.
-        if(_swinging.IsSwinging || _swinging.IsGrappling && !_swinging.GrappleBehaviour.SecondJumpEnabled)
-        {
-            _swinging.TryStartGrapple();
-            return;
-        }
+        //if(_swinging.IsSwinging || _swinging.IsGrappling && !_swinging.GrappleBehaviour.SecondJumpEnabled)
+        //{
+        //    _swinging.TryStartGrapple();
+        //    return;
+        //}
 
-        else if(_swinging.GrappleBehaviour.SecondJumpEnabled)
-        {
-            _swinging.TrySecondJump();
-            return;
-        }
+        //else if(_swinging.GrappleBehaviour.SecondJumpEnabled)
+        //{
+        //    _swinging.TrySecondJump();
+        //    return;
+        //}
 
         pjController.JumpPressed = true;
     }
