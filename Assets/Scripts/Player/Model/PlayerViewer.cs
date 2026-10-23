@@ -36,6 +36,7 @@ public class PlayerViewer : MonoBehaviour
 
     }
     public void Attack() { _anim.SetTrigger("Attack"); }
+    public void Celebrate() { _anim.SetTrigger("Celebrate"); }
     #endregion
     #region Particles
     public bool IsTrailPlaying() => _trail.isPlaying;

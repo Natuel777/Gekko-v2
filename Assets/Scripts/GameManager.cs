@@ -31,6 +31,7 @@ public class GameManager : MonoBehaviour
             DontDestroyOnLoad(gameObject);
             checkpointManager = new CheckpointManager();
             SceneManager.sceneLoaded += OnSceneLoaded;
+            EventManager.Subscribe("OnLevelFinished", ShowFinishScreen);
         }
 
         else Destroy(gameObject);
@@ -40,6 +41,15 @@ public class GameManager : MonoBehaviour
     {
         factory?.ClearPools();
         SceneManager.sceneLoaded -= OnSceneLoaded;
+        EventManager.Unsubscribe("OnLevelFinished", ShowFinishScreen);
+    }
+
+    // Lo dispara FinishLevelTrigger cuando termina (o se saltea) la cinemática de final.
+    private void ShowFinishScreen()
+    {
+        var screenFinish = Instantiate(Resources.Load<ScreenFinishLevel>("Canvas_Finish"));
+        ScreenManager.Instance.Push(screenFinish);
+        Cursor.lockState = CursorLockMode.Confined;
     }
 
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
