@@ -36,6 +36,14 @@ public class GroundCheck
         return Mathf.Max(0.1f, sensor.position.y - transform.position.y + 0.3f);
     }
 
+    // Traduce el bool ignoreTriggers a la enum de Unity que usan los raycasts. Es público para que el
+    // gizmo del NPC dibuje los rayos con la misma configuración que TryGetSafeDirection. Se usa Collide
+    // (y no UseGlobal) para que "detectar triggers" no dependa de Physics.queriesHitTriggers.
+    public static QueryTriggerInteraction TriggerInteraction(bool ignoreTriggers)
+    {
+        return ignoreTriggers ? QueryTriggerInteraction.Ignore : QueryTriggerInteraction.Collide;
+    }
+
     public GroundCheck(Transform transform, Transform detectGroundPosition, float groundCheckDistance, LayerMask groundMask)
     {
         _transform = transform;
@@ -48,7 +56,10 @@ public class GroundCheck
     // Cada frame que la posición cambió desde el anterior, chequea que haya piso
     // debajo del sensor. Si no hay, devuelve true junto con una dirección segura
     // hacia la que sí hay piso (para que el caller redirija su movimiento activo).
-    public bool TryGetSafeDirection(out Vector3 safeDirection)
+    // ignoreTriggers: true = los raycasts ignoran los colliders trigger (QueryTriggerInteraction.Ignore),
+    // false = también los detectan como piso (QueryTriggerInteraction.Collide). Aplica al rayo principal
+    // y a los de FindGroundedDirection, para que "qué cuenta como piso" sea lo mismo en ambos.
+    public bool TryGetSafeDirection(out Vector3 safeDirection, bool ignoreTriggers)
     {
         safeDirection = Vector3.zero;
 
@@ -61,15 +72,17 @@ public class GroundCheck
 
         _lastPosition = pos;
 
+        QueryTriggerInteraction triggers = TriggerInteraction(ignoreTriggers);
+
         if(Physics.Raycast(_detectGroundPosition.position, Vector3.down,
-                _groundCheckDistance, _groundMask, QueryTriggerInteraction.Ignore))
+                _groundCheckDistance, _groundMask, triggers))
             return false;
 
-        safeDirection = FindGroundedDirection();
+        safeDirection = FindGroundedDirection(triggers);
         return true;
     }
 
-    private Vector3 FindGroundedDirection()
+    private Vector3 FindGroundedDirection(QueryTriggerInteraction triggers)
     {
         Vector3 fwd = FlatForward(_transform);
         float up = FallbackUp(_transform, _detectGroundPosition);
@@ -80,7 +93,7 @@ public class GroundCheck
             Vector3 origin = _transform.position + d * FallbackAhead + Vector3.up * up;
 
             if(Physics.Raycast(origin, Vector3.down, _groundCheckDistance + up,
-                    _groundMask, QueryTriggerInteraction.Ignore))
+                    _groundMask, triggers))
                 return d;
         }
 

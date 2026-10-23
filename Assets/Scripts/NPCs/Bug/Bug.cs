@@ -143,7 +143,7 @@ public class Bug : MonoBehaviour , IDamageable
     // Si no hay, redirige el movimiento activo (flee o wander) para no caminar en el aire.
     private void UpdateGroundCheck()
     {
-        if(_groundCheck.TryGetSafeDirection(out Vector3 safeDir))
+        if(_groundCheck.TryGetSafeDirection(out Vector3 safeDir, ignoreTriggers: true))
         {
             if(fleeMovement.IsActive) fleeMovement.Redirect(safeDir);
 

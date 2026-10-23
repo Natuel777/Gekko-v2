@@ -30,6 +30,10 @@ public class HeavyBeetle : MonoBehaviour, IDamageable, IParticleSystemTarget, IP
 
     private GroundCheck _groundCheck;
 
+    // A diferencia del resto de los NPCs (que ignoran los triggers), el raycast de piso del escarabajo
+    // también detecta colliders trigger. Lo usan el GroundCheck real y su gizmo, para que no se desfasen.
+    private const bool IgnoreTriggersInGroundCheck = false;
+
     private Camera _mainCamera;
 
     #region FSM
@@ -187,7 +191,7 @@ public class HeavyBeetle : MonoBehaviour, IDamageable, IParticleSystemTarget, IP
     // GroundCheck). Si no hay, redirige la estrategia activa para no caminar en el aire.
     private void UpdateGroundCheck()
     {
-        if(_groundCheck.TryGetSafeDirection(out Vector3 safeDir))
+        if(_groundCheck.TryGetSafeDirection(out Vector3 safeDir, IgnoreTriggersInGroundCheck))
         {
             if(IsCharging) chargeMovement.Redirect(safeDir);
 
@@ -263,7 +267,9 @@ public class HeavyBeetle : MonoBehaviour, IDamageable, IParticleSystemTarget, IP
 
     private bool DrawGroundRay(Vector3 origin, float distance)
     {
-        bool hit = Physics.Raycast(origin, Vector3.down, out RaycastHit info, distance, _groundMask, QueryTriggerInteraction.Ignore);
+        // Mismo QueryTriggerInteraction que usa el GroundCheck real.
+        bool hit = Physics.Raycast(origin, Vector3.down, out RaycastHit info, distance, _groundMask,
+            GroundCheck.TriggerInteraction(IgnoreTriggersInGroundCheck));
 
         Gizmos.color = hit ? Color.green : Color.red;
         Gizmos.DrawLine(origin, origin + Vector3.down * distance);
