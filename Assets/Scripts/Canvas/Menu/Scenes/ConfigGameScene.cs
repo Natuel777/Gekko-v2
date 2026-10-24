@@ -10,6 +10,7 @@ public class ConfigGameScene : MonoBehaviour
     {
         AudioListener listener = GetComponent<AudioListener>();
         ScreenManager.Instance.Push(new ScreenGO(mainGame, listener));
+        if(listener != null)
         listener.enabled = false;
     }
 
