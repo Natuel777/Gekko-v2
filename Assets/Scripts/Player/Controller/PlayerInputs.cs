@@ -23,6 +23,7 @@ public class PlayerInputs
         _pjInteract = interact;
         _pj = pj;
         _swinging = swinging;
+        //PauseInputSet(true);
     }
 
     private void ReloadBindings() => InputRebindStore.ApplySaved(_input.asset);
@@ -69,7 +70,14 @@ public class PlayerInputs
         _input.Character.TongueAttach.performed -= TongueAttachInput;
         _input.Character.TongueAttach.canceled -= TongueAttachCancel;
     }
+    public void PauseInputSet(bool a)
+    {
+        if (a) 
+            _input.Character.Pause.performed += PauseInput;
+        else
+            _input.Character.Pause.performed -= PauseInput;
 
+    }
     public void DeactivatePlayerInputs()
     {
         _input.Character.Jump.performed -= JumpInput;

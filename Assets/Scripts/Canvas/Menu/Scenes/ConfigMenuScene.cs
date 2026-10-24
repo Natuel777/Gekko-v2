@@ -6,7 +6,7 @@ public class ConfigMenuScene : MonoBehaviour
 {
     void Start()
     {
-        ScreenManager.Instance.Push(new ScreenGO(transform));
+        ScreenManager.Instance.Push(new ScreenGO(transform, null));
     }
     public void BTN_Options()
     {
