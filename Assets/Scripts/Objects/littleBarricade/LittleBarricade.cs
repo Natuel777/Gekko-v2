@@ -1,6 +1,7 @@
 using System.Collections;
 using Unity.Cinemachine;
 using UnityEngine;
+using static UnityEditor.PlayerSettings;
 
 
 public class LittleBarricade : MonoBehaviour, IDamageable, IParticleSystemTarget
@@ -35,6 +36,8 @@ public class LittleBarricade : MonoBehaviour, IDamageable, IParticleSystemTarget
 
         if(_life <=0)
         {
+            _indicator.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+            _indicator = null;
             _particlePurification.Play();
             GetComponent<Collider>().enabled = false;
             StartCoroutine(Disapear());
@@ -105,7 +108,7 @@ public class LittleBarricade : MonoBehaviour, IDamageable, IParticleSystemTarget
 
             yield return null;
         }
-
+        
         _barricade.SetActive(false);
     }
 } 
