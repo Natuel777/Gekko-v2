@@ -8,26 +8,30 @@ public class SimonPuzzle : MonoBehaviour, IActivable
 {
     [SerializeField] private SimonPiece[] _pieces;
     [SerializeField] private SimonRounds[] _rounds;
+    private Material[] _mats;
     [SerializeField] private float _waitTime;
+    [SerializeField] private float _showTime;
     private float _count;
     private int _currentRound;
+    private Queue<int> _currentRoundQueue;
     private bool _showing;
     private bool _hearing;
+    private bool _finish;
 
     private void Start()
     {
+        _currentRoundQueue = new();
+        _mats = new Material[_pieces.Length];
+
         for (int i = 0; i < _pieces.Length; i++)
         {
             _pieces[i].SetNumber(i);
+            _mats[i] = _pieces[i].GetComponentInChildren<Renderer>().material;
         }
-    }
-    private void Update()
-    {
-        
     }
     public void Activated()
     {
-        if(_showing) return;
+        if(_showing || _hearing || _finish) return;
 
         _showing = true;
         StartCoroutine(ShowRound());
@@ -35,25 +39,25 @@ public class SimonPuzzle : MonoBehaviour, IActivable
 
     private IEnumerator ShowRound()
     {
-        List<int> list = _rounds[_currentRound].Order.ToList();
-        List<Material> mats = new();
-        foreach (SimonPiece i in _pieces)
+        Queue<int> queue = new();
+        foreach (var item in _rounds[_currentRound].Order)
         {
-            mats.Add(i.GetComponentInChildren<Renderer>().material);
+            queue.Enqueue(item);
+            _currentRoundQueue.Enqueue(item);
         }
         _count = _waitTime;
         bool finish = false;
-        while(list.Count > 0)
+        while(queue.Count > 0)
         {
-            mats[list.First()].color = Color.blue;
+            _mats[queue.Peek()].color = Color.blue;
             _count -= Time.deltaTime;
 
             if(_count <= 0) finish = true;
             if (finish)
             {
-                mats[list.First()].color = Color.white;
+                _mats[queue.Peek()].color = Color.white;
                 _count = _waitTime;
-                list.RemoveAt(0);
+                queue.Dequeue();
                 finish = false;
             }
             yield return null;
@@ -78,8 +82,39 @@ public class SimonPuzzle : MonoBehaviour, IActivable
         }
     }
     private void InputRecieved(int id)
-    { 
-    
+    {
+        if (!_hearing) return;
+        if(id != _currentRoundQueue.Dequeue())
+        {
+            _hearing = false;
+            _mats[id].color = Color.red;
+            return;
+        }
+
+        _mats[id].color = Color.green;
+
+        if(_currentRoundQueue.Count <=0)
+        {
+            _hearing = false;
+            _currentRound++;
+            StartCoroutine(FinishRound());
+            if (_rounds.Length >= _currentRound) _finish = true;
+        }
+    }
+    private IEnumerator FinishRound()
+    {
+        ChangeAllPiecesColor(Color.green);
+
+        yield return new WaitForSeconds(_showTime);
+
+        ChangeAllPiecesColor(Color.white);
+    }
+    private void ChangeAllPiecesColor(Color color)
+    {
+        foreach (var m in _mats)
+        {
+            m.color = color;
+        }
     }
 
 }
