@@ -93,15 +93,31 @@ public class HeavyBeetle : MonoBehaviour, IDamageable, IParticleSystemTarget, IP
         _groundCheck = new GroundCheck(transform, _detectGroundPosition, data.groundCheckDistance, _groundMask);
     }
 
+    private bool _frozenForCinematic;
+
     private void OnEnable()
     {
         if(group != null) group.Register(this);
+        EventManager.Subscribe("OnCinematicStart", FreezeForCinematic);
+        EventManager.Subscribe("OnCinematicEnd", UnfreezeForCinematic);
     }
 
     private void OnDisable()
     {
         if(group != null) group.Unregister(this);
+        EventManager.Unsubscribe("OnCinematicStart", FreezeForCinematic);
+        EventManager.Unsubscribe("OnCinematicEnd", UnfreezeForCinematic);
     }
+
+    // Mientras corre cualquier cinemática (ParkourCinematicTrigger) el escarabajo se queda quieto del
+    // todo: se frena cualquier embestida en curso y se saltea el FSM hasta que termine.
+    private void FreezeForCinematic()
+    {
+        _frozenForCinematic = true;
+        if(TryGetComponent(out Rigidbody rb)) rb.linearVelocity = Vector3.zero;
+    }
+
+    private void UnfreezeForCinematic() => _frozenForCinematic = false;
 
     private void Start()
     {
@@ -115,6 +131,8 @@ public class HeavyBeetle : MonoBehaviour, IDamageable, IParticleSystemTarget, IP
     #region Loop
     private void Update()
     {
+        if(_frozenForCinematic) return;
+
         _eventFSM.UpdateState();
         UpdateDetection();
         UpdateGroundCheck();

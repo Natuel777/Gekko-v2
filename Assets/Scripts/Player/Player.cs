@@ -262,6 +262,14 @@ public class Player : MonoBehaviour
         else DisablePlayerControl();
     }
 
+    // Para cinemáticas: además de bloquear el input, corta la física (gravedad/salto en curso) para que
+    // Gekko no siga en movimiento si entró a la cinemática en el aire.
+    public void SetFrozenForCinematic(bool frozen)
+    {
+        Inputs(!frozen);
+        _pjController.SetFrozenForCinematic(frozen);
+    }
+
     #if UNITY_EDITOR
     private void OnDrawGizmosSelected()
     {

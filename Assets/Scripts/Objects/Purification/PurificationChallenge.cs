@@ -2,8 +2,8 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
-using Unity.Cinemachine;
 using UnityEngine;
+using UnityEngine.Playables;
 
 // Controlador de un desafío de purificación (uno por zona). Es pasivo: no tiene trigger de zona, reacciona
 // a eventos. Flujo: Active -> (todos los núcleos rotos) ShieldDown -> (planta purificada) Completed.
@@ -53,13 +53,18 @@ public class PurificationChallenge : MonoBehaviour
     [SerializeField] private PurificationChallengeHealthbar _healthbar;
 
     [Header("Shield Down")]
-    [Tooltip("Cámara que muestra la planta al romper el último núcleo (ej. ClearShot). El blend lo hace el CinemachineBrain.")]
-    [SerializeField] private CinemachineVirtualCameraBase _camShieldDown;
-    [Min(0f)]
-    [SerializeField] private float _shieldDownCamSeconds = 2f;
+    [Tooltip("Timeline que, al romper el último núcleo, encadena la cámara de 'núcleo roto' con la de la planta enojada (con movimiento propio en vez de un blend automático).")]
+    [SerializeField] private PlayableDirector _shieldDownDirector;
 
     [Header("Finish")]
-    [SerializeField] private CinemachineCamera _camFinish;
+    [Tooltip("Timeline de cierre: cámara de la planta purificada, diálogo y fade a negro.")]
+    [SerializeField] private PlayableDirector _plantPurifiedDirector;
+
+    [Header("Skip")]
+    [Tooltip("Mantener Interactuar (E) este tiempo salta el timeline que se esté reproduciendo.")]
+    [Min(0.1f)]
+    [SerializeField] private float _skipHoldSeconds = 3f;
+    [SerializeField] private SkipCinematicPrompt _skipPrompt;
 
     private readonly List<HeavyBeetle> _allEnemies = new();
     private readonly HashSet<HeavyBeetle> _enemySet = new();
@@ -68,10 +73,9 @@ public class PurificationChallenge : MonoBehaviour
     private Camera _mainCamera;
     private int _total, _remaining;
     private bool _beatActive, _inputLocked, _subscribed;
-    private bool _shieldCamActive;
-    private int _shieldCamBasePriority;
-    private Coroutine _shieldCamRoutine;
     private bool _suscribed;
+    private CinematicSkipHandler _skipHandler;
+    private Coroutine _completionBeatRoutine;
     public ChallengeState State { get; private set; } = ChallengeState.Active;
 
     // (núcleos restantes, núcleos totales)
@@ -82,6 +86,7 @@ public class PurificationChallenge : MonoBehaviour
     private void Awake()
     {
         BuildEnemyList();
+        _skipHandler = new CinematicSkipHandler(_skipHoldSeconds, _skipPrompt);
 
         float min = _data != null ? _data.recorruptDelayMin : 3f;
         float max = _data != null ? _data.recorruptDelayMax : 5f;
@@ -127,9 +132,34 @@ public class PurificationChallenge : MonoBehaviour
 
     private void Update()
     {
-        if(State == ChallengeState.Completed) return;
+        if(State != ChallengeState.Completed) _scheduler.ArtificialUpdate(Time.deltaTime);
 
-        _scheduler.ArtificialUpdate(Time.deltaTime);
+        PlayableDirector active = GetActiveDirector();
+        _skipHandler.ArtificialUpdate(active, () => OnCinematicSkipped(active));
+    }
+
+    private PlayableDirector GetActiveDirector()
+    {
+        if(_shieldDownDirector != null && _shieldDownDirector.state == PlayState.Playing) return _shieldDownDirector;
+        if(_plantPurifiedDirector != null && _plantPurifiedDirector.state == PlayState.Playing) return _plantPurifiedDirector;
+        return null;
+    }
+
+    // El director ya esta detenido (lo para CinematicSkipHandler); acá solo falta la limpieza que haria
+    // el flujo normal (cerrar dialogo, cortar la corrutina de espera y restaurar input/HUD).
+    private void OnCinematicSkipped(PlayableDirector director)
+    {
+        if(director != _plantPurifiedDirector) return;
+
+        if(UIManager.Instance != null && UIManager.Instance.HasActiveDialogue()) UIManager.Instance.EndDialogue();
+
+        if(_completionBeatRoutine != null)
+        {
+            StopCoroutine(_completionBeatRoutine);
+            _completionBeatRoutine = null;
+        }
+
+        EndBeat();
     }
 
     // El HUD world-space mira a la cámara.
@@ -144,7 +174,7 @@ public class PurificationChallenge : MonoBehaviour
     private void OnDisable()
     {
         Unsubscribe();
-        EndShieldDownCam();
+        if(_shieldDownDirector != null) _shieldDownDirector.Stop();
         EndBeat();
         if (LevelOneManager.Instance == null) return;
         LevelOneManager.Instance.OnChallengeStart -= OnChallengeStarted;
@@ -271,39 +301,10 @@ public class PurificationChallenge : MonoBehaviour
         {
             DropShield();
             // Solo acá y no en DropShield: si arranca sin núcleos (Start) no hay nada que mostrar.
-            _shieldCamRoutine = StartCoroutine(ShieldDownCamRoutine());
+            // El timeline encadena la cámara de "núcleo roto" (BossPlantPhases) con la de la planta enojada,
+            // con movimiento propio en vez de un blend automático del CinemachineBrain.
+            if(_shieldDownDirector != null) _shieldDownDirector.Play();
         }
-    }
-
-    // Muestra la planta unos segundos para avisar que ya se le puede pegar. No bloquea el input:
-    // al caer el escudo todavía hay escarabajos activos.
-    private IEnumerator ShieldDownCamRoutine()
-    {
-        if(_camShieldDown == null) yield break;
-
-        _shieldCamActive = true;
-        _shieldCamBasePriority = _camShieldDown.Priority.Value;
-        _camShieldDown.Priority = 30;
-
-        yield return new WaitForSeconds(_shieldDownCamSeconds);
-
-        _shieldCamRoutine = null;
-        EndShieldDownCam();
-    }
-
-    // Idempotente, igual que EndBeat: si se corta la corrutina la cámara no queda tomada.
-    private void EndShieldDownCam()
-    {
-        if(_shieldCamRoutine != null)
-        {
-            StopCoroutine(_shieldCamRoutine);
-            _shieldCamRoutine = null;
-        }
-
-        if(!_shieldCamActive) return;
-        _shieldCamActive = false;
-
-        if(_camShieldDown != null) _camShieldDown.Priority = _shieldCamBasePriority;
     }
 
     private void DropShield()
@@ -332,7 +333,7 @@ public class PurificationChallenge : MonoBehaviour
         // Primero el estado, así cualquier re-corrupción pendiente se descarta.
         State = ChallengeState.Completed;
         _scheduler.CancelAll();
-        EndShieldDownCam();
+        if(_shieldDownDirector != null) _shieldDownDirector.Stop();
 
         // Un escarabajo que nunca se activó no tiene FSM inicializada (su Awake no corrió).
         foreach(HeavyBeetle enemy in _allEnemies)
@@ -345,15 +346,13 @@ public class PurificationChallenge : MonoBehaviour
 
         Completed?.Invoke();
 
-        StartCoroutine(CompletionBeat());
+        _completionBeatRoutine = StartCoroutine(CompletionBeat());
     }
 
     // El input solo se bloquea acá, cuando ya no quedan hostiles activos (al caer el escudo sí los hay).
     private IEnumerator CompletionBeat()
     {
         _beatActive = true;
-
-        if(_camFinish != null) _camFinish.Priority = 30;
 
         Player pj = GameManager.Instance != null ? GameManager.Instance.Pj : null;
 
@@ -363,8 +362,16 @@ public class PurificationChallenge : MonoBehaviour
             _inputLocked = true;
         }
 
-        float seconds = _data != null ? _data.completionBeatSeconds : 3f;
-        yield return new WaitForSeconds(seconds);
+        if(_plantPurifiedDirector != null)
+        {
+            _plantPurifiedDirector.Play();
+            yield return new WaitForSeconds((float)_plantPurifiedDirector.duration);
+        }
+        else
+        {
+            float seconds = _data != null ? _data.completionBeatSeconds : 3f;
+            yield return new WaitForSeconds(seconds);
+        }
 
         EndBeat();
     }
@@ -375,8 +382,9 @@ public class PurificationChallenge : MonoBehaviour
     {
         if(!_beatActive) return;
         _beatActive = false;
+        _completionBeatRoutine = null;
 
-        if(_camFinish != null) _camFinish.Priority = 0;
+        if(_plantPurifiedDirector != null) _plantPurifiedDirector.Stop();
 
         if(_inputLocked)
         {

@@ -48,6 +48,7 @@ public class PlayerController
     private float _icyDriftForce = 200f;
     private bool _isSlipperySurface = false;
     private float _slipperyForce = 0.25f;
+    private bool _frozenForCinematic;
     
     private Vector3 _currentUp;
     private Vector2 _rawInput = new(), _smoothedInput = new(), _smoothedVelocity = new();
@@ -102,6 +103,17 @@ public class PlayerController
         _rb.linearVelocity = new Vector3(horizontalVelocity.x, currentY, horizontalVelocity.z);
     }
 
+    // Congela a Gekko del todo para una cinemática: a diferencia de Inputs(false) (que solo frena el
+    // input y, si está en el piso, la velocidad), esto también corta la gravedad y la caída/salto en
+    // curso, para que no siga en movimiento mientras la cámara está en la cinemática.
+    public void SetFrozenForCinematic(bool frozen)
+    {
+        _frozenForCinematic = frozen;
+        _rb.linearVelocity = Vector3.zero;
+        _rb.angularVelocity = Vector3.zero;
+        _rb.useGravity = !frozen;
+    }
+
     public void Teleport(Vector3 position)
     {
         // Un grapple en curso apunta a un ancla que con el teletransporte queda lejos: no puede sobrevivirlo.
@@ -131,6 +143,12 @@ public class PlayerController
     }
     public void ArtificialFixedUpdate()
     {
+        if (_frozenForCinematic)
+        {
+            _rb.linearVelocity = Vector3.zero;
+            return;
+        }
+
         // Swing o grapple: a Gekko lo maneja la lengua, no el controller. Mientras haya cualquiera de los dos el controller
         // no toca el Rigidbody. Es el "activeGrapple" del repo: sin esto, DetectSurface (que en el aire deja solo la
         // velocidad vertical), Move() (que pisa la horizontal con _speed) y los multiplicadores de caída le deformarían o

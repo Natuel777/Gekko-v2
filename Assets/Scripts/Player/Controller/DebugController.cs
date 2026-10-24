@@ -1,3 +1,4 @@
+using UnityEngine;
 using UnityEngine.InputSystem;
 
 public class DebugController
@@ -20,7 +21,18 @@ public class DebugController
         else if (kb.digit6Key.wasPressedThisFrame) GameManager.Instance.RespawnAt(5);
         else if (kb.digit7Key.wasPressedThisFrame) GameManager.Instance.RespawnAt(6);
         else if (kb.digit8Key.wasPressedThisFrame) GameManager.Instance.RespawnAt(7);
-        else if (kb.digit9Key.wasPressedThisFrame) GameManager.Instance.RespawnAt(8);
+        else if (kb.digit9Key.wasPressedThisFrame) BreakAllPurificationCores();
         else if (kb.digit0Key.wasPressedThisFrame) GameManager.Instance.RespawnAt(9);
+    }
+
+    // Debug: rompe de una todos los nucleos de purificacion activos en la escena, para poder
+    // probar directamente el paso de purificar la planta sin tener que pegarles a mano.
+    private void BreakAllPurificationCores()
+    {
+        foreach(PurificationCore core in Object.FindObjectsByType<PurificationCore>(FindObjectsSortMode.None))
+        {
+            int guard = 0;
+            while(!core.IsBroken && guard++ < 20) core.Damage(0f);
+        }
     }
 }

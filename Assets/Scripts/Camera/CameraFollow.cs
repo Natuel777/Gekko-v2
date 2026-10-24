@@ -62,6 +62,12 @@ public class CameraFollow : MonoBehaviour
             UIManager.Instance.OnActivatingDialogue += DeactivateInput;
             UIManager.Instance.OnDeactivatingDialogue += ActivateInput;
         }
+
+        // Al pausar, PlayerInputs cambia Cursor.lockState (Locked -> Confined) para poder clickear el menú: ese
+        // cambio le manda al mouse delta un salto grande que la cámara interpretaba como un giro brusco. Se
+        // desactiva el input de la cámara acá, antes de que el lockState cambie (PauseEvent dispara primero).
+        EventManager.Subscribe("PauseEvent", DeactivateInput);
+        EventManager.Subscribe("UnPauseEvent", ActivateInput);
     }
 
 
@@ -215,6 +221,8 @@ public class CameraFollow : MonoBehaviour
     private void OnDisable()
     {
         EventManager.Unsubscribe<float>("OnCameraShake", ShakeCamera);
+        EventManager.Unsubscribe("PauseEvent", DeactivateInput);
+        EventManager.Unsubscribe("UnPauseEvent", ActivateInput);
         if (UIManager.Instance == null) return;
         UIManager.Instance.OnActivatingDialogue -= DeactivateInput;
         UIManager.Instance.OnDeactivatingDialogue -= ActivateInput;

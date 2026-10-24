@@ -25,6 +25,12 @@ public class LittleBarricade : MonoBehaviour, IDamageable, IParticleSystemTarget
     [Tooltip("Posiciones de la línea que pertenecen a esta barricada, una por cada LineController (mismo orden). Al romperse se sacan de la lista de ese LineController.")]
     [SerializeField] private Transform[] _linePositionsGroups;
 
+    [Header("Touch Hazard")]
+    [Tooltip("Empuje al Gekko si choca contra la barricada mientras sigue en pie.")]
+    [SerializeField] private float _touchPushForce = 3.5f;
+    [Tooltip("Daño al Gekko si choca contra la barricada mientras sigue en pie.")]
+    [SerializeField] private float _touchDamage = 5f;
+
     public ParticleSystem Indicator => _indicator;
 
     public bool CanBeTargeted => !_interacted;
@@ -45,6 +51,22 @@ public class LittleBarricade : MonoBehaviour, IDamageable, IParticleSystemTarget
             RemoveLinePositions();
             _interacted = true;
         }
+    }
+
+    // Empuje + daño leve al chocar de frente contra la barricada en pie, para que no sea gratis caminar contra
+    // ella en vez de romperla con la lengua. Misma convención que CarnivorousPlant.ApplyBiteHit.
+    private void OnCollisionEnter(Collision collision)
+    {
+        if(_interacted) return;
+        if(!collision.gameObject.TryGetComponent(out Player player)) return;
+
+        if(player.TryGetComponent(out Rigidbody rb))
+        {
+            Vector3 dir = (player.transform.position - transform.position).normalized;
+            rb.AddForce(dir * _touchPushForce, ForceMode.Impulse);
+        }
+
+        EventManager.Trigger<float>("OnPlayerDamaged", _touchDamage);
     }
 
     private void RemoveLinePositions()

@@ -63,6 +63,10 @@ public class BossPlantPhases : MonoBehaviour
         _phase = total - remaining;
         ApplyPhase();
 
+        // El último núcleo (remaining == 0) lo muestra el timeline de "escudo caído" en PurificationChallenge,
+        // que encadena esta misma cámara con la de la planta enojada. Acá solo se maneja el resto.
+        if(remaining <= 0) return;
+
         EndCam();
         _camRoutine = StartCoroutine(CoreBrokenCamRoutine());
     }
