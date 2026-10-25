@@ -415,7 +415,7 @@ public sealed class GekkoSwinging
 
         if(ps == null)
         {
-            Debug.Log("Saramambiche");
+            //Debug.Log("Saramambiche");
             return;
         } 
 

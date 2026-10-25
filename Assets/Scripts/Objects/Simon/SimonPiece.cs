@@ -9,6 +9,16 @@ public class SimonPiece : MonoBehaviour
 
     private void OnCollisionEnter(Collision collision)
     {
-        if (collision.gameObject.GetComponent<Player>()) OnPressed?.Invoke(_id);
+        if (collision.gameObject.GetComponent<Player>())
+        {
+            OnPressed?.Invoke(_id);
+        }
+    }
+    private void OnCollisionExit(Collision collision)
+    {
+        if (collision.gameObject.GetComponent<Player>())
+        {
+            GetComponent<Renderer>().material.color = Color.white;
+        }
     }
 }
