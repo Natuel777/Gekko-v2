@@ -14,9 +14,14 @@ public sealed class GekkoGrapple
     // ajustada al vuelo real en vez de un valor fijo.
     private const float FlightTimeMargin = 0.5f;
 
-    // Layer SwingAttach, la de los ganchos (Gancho.prefab). Su trigger abre la ventana del segundo salto; no es un peligro,
-    // así que GekkoCollision no lo trata como tal (no corta el swing).
+    // Layer SwingAttach, la de los ganchos de swing (Gancho.prefab). No es un peligro, así que GekkoCollision no lo trata como
+    // tal (no corta el swing).
     public const int SwingAttachLayer = 16;
+
+    // Layer GrapplePoint, la de los ganchos de grapple (GrapplePoint.prefab). El click derecho apuntando a uno arranca el
+    // grapple (ver GekkoDetection). Su trigger abre la ventana del segundo salto; tampoco es un peligro, así que
+    // GekkoCollision no corta el swing con él.
+    public const int GrapplePointLayer = 18;
 
     private readonly GekkoSwinging _swinging;
     private readonly Rigidbody _rb;
@@ -43,7 +48,7 @@ public sealed class GekkoGrapple
     public bool IsTongueOut => _phase != Phase.Idle && !_secondJumpActive;
 
     // El vuelo en curso es el de un segundo salto. A diferencia del grapple, a este vuelo se lo puede interrumpir enganchando
-    // un swing nuevo (ver EndSecondJump): ya no hay lengua ni punto que alcanzar.
+    // un swing (ver EndSecondJump) o un grapple nuevo (ver TryStart): ya no hay lengua ni punto que alcanzar.
     public bool IsSecondJumpFlying => _phase == Phase.Flying && _secondJumpActive;
 
     public GekkoGrapple(GekkoSwinging swinging, Rigidbody rb, Transform t, float overshootYAxis, float grapplingCD, float delayTime,
@@ -95,18 +100,20 @@ public sealed class GekkoGrapple
         _rb.linearVelocity = Vector3.zero;
     }
 
-    // Intenta arrancar el grapple hacia grapplePoint. Devuelve false, sin cambiar nada, si todavía hay cooldown, si ya hay
-    // un grapple en curso o si la parábola hacia ese punto no se puede calcular. GekkoSwinging solo suelta el swing si
-    // esto devuelve true.
+    // Intenta arrancar el grapple hacia grapplePoint: es el click derecho apuntando a un GrapplePoint (ver GekkoDetection).
+    // Devuelve false, sin cambiar nada, si todavía hay cooldown, si ya hay un grapple en curso o si la parábola hacia ese
+    // punto no se puede calcular. La única excepción a "ya hay un grapple en curso" es el segundo salto: a ese vuelo se lo
+    // corta y el grapple nuevo toma el control. No pasa por Finish, así que no arranca un cooldown nuevo: se respeta el que
+    // quedaba del grapple anterior. GekkoSwinging solo prende la lengua (y suelta el swing, si lo hay) si esto devuelve true.
     public bool TryStart(Vector3 grapplePoint)
     {
-        if(_phase != Phase.Idle || _cooldownTimer > 0f) return false;
-
-        _grapplePoint = grapplePoint;
+        if((_phase != Phase.Idle && !IsSecondJumpFlying) || _cooldownTimer > 0f) return false;
 
         // Se calcula ya, aunque con espera la velocidad recién se use en Launch: así, si el punto no tiene una parábola
-        // válida, el swing no llega a soltarse.
-        if(!TryCalculateLaunch(_grapplePoint, out Vector3 velocity, out float flightTime)) return false;
+        // válida, no se cambia nada (un segundo salto en vuelo, por ejemplo, sigue como estaba).
+        if(!TryCalculateLaunch(grapplePoint, out Vector3 velocity, out float flightTime)) return false;
+
+        _grapplePoint = grapplePoint;
 
         // Lo que mide este grapple (de donde arranca hasta el gancho) es la base del alcance del segundo salto. Y como
         // arranca un grapple nuevo, el vuelo deja de ser un segundo salto.
@@ -134,7 +141,7 @@ public sealed class GekkoGrapple
 
     // Segundo salto: un salto igual al del grapple (la misma parábola y el mismo arco), pero hacia donde mira la cámara en
     // vez de hacia el gancho. Solo se puede dar mientras la ventana está abierta (_secondJumpEnabled: desde que Gekko
-    // entra al trigger del gancho volando hasta que sale), y se gasta al usarlo.
+    // entra volando al trigger de un GrapplePoint hasta que sale), y se gasta al usarlo. Sigue siendo con Space.
     //
     // A dónde llega: se apunta a un destino sobre la línea de la cámara, a (distancia del último grapple x
     // _secondJumpMultiplier) de Gekko. Con multiplicador 1 salta tan lejos como saltó el grapple; con 2, el doble; con 0,
@@ -182,9 +189,11 @@ public sealed class GekkoGrapple
         if(_phase == Phase.Flying) Finish(true);
     }
 
+    // La ventana del segundo salto la abre el trigger de un GrapplePoint (no el de un gancho de swing) mientras dura el
+    // vuelo del grapple, y se cierra al salir de él (ver ArtificialOnTriggerExit).
     public void ArtificialOnTriggerEnter(Collider other)
     {
-        if(other.gameObject.layer == SwingAttachLayer && _phase == Phase.Flying)
+        if(other.gameObject.layer == GrapplePointLayer && _phase == Phase.Flying)
         {
             ParticleSystem ps = other.GetComponentInChildren<ParticleSystem>();
             ps?.Play(); 
@@ -196,7 +205,7 @@ public sealed class GekkoGrapple
 
     public void ArtificialOnTriggerExit(Collider other)
     {
-        if(other.gameObject.layer == SwingAttachLayer)
+        if(other.gameObject.layer == GrapplePointLayer)
         {
             ParticleSystem ps = other.GetComponentInChildren<ParticleSystem>();
             

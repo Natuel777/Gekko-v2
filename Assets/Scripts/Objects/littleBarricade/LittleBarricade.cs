@@ -1,8 +1,6 @@
 using System.Collections;
 using Unity.Cinemachine;
 using UnityEngine;
-using static UnityEditor.PlayerSettings;
-
 
 public class LittleBarricade : MonoBehaviour, IDamageable, IParticleSystemTarget
 {

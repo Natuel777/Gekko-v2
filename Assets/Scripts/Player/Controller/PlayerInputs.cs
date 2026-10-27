@@ -126,17 +126,19 @@ public class PlayerInputs
 
     private void JumpInput(InputAction.CallbackContext value)
     {
-        //if(_swinging.IsSwinging || _swinging.IsGrappling && !_swinging.GrappleBehaviour.SecondJumpEnabled)
-        //{
-        //    _swinging.TryStartGrapple();
-        //    return;
-        //}
+        // Segundo salto: con la ventana abierta (Gekko llegó volando a un GrapplePoint y sigue dentro de su trigger), Space da
+        // el segundo salto en vez de un salto común. Es por pulsación (performed), no por mantener apretado. Colgado del swing
+        // no: ahí manda el joint, y el segundo salto pelearía con él.
+        if(!_swinging.IsSwinging && _swinging.GrappleBehaviour.SecondJumpEnabled)
+        {
+            _swinging.TrySecondJump();
+            return;
+        }
 
-        //else if(_swinging.GrappleBehaviour.SecondJumpEnabled)
-        //{
-        //    _swinging.TrySecondJump();
-        //    return;
-        //}
+        // En pleno grapple (la espera o el vuelo) Space no cuenta como salto. Si se marcara JumpPressed, el controller lo
+        // vería apenas despierte y le sumaría un salto encima de la parábola. (El grapple ya no se hace con Space: es el
+        // click derecho, ver TongueAttachInput.)
+        if(_swinging.IsGrappling) return;
 
         pjController.JumpPressed = true;
     }
@@ -188,7 +190,8 @@ public class PlayerInputs
 
     private void ChangeValues(InputAction.CallbackContext value) { _pj.ChangeVariables(); }
 
-    private void TongueAttachInput(InputAction.CallbackContext value) => _swinging.StartSwing();
+    // Click derecho: engancha lo que apunta la cámara. Un gancho de swing arranca el swing; un GrapplePoint, el grapple.
+    private void TongueAttachInput(InputAction.CallbackContext value) => _swinging.AttachTongue();
 
     private void TongueAttachCancel(InputAction.CallbackContext value) => _swinging.StopSwing();
 

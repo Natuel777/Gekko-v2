@@ -36,6 +36,7 @@ public class Player : MonoBehaviour
     [SerializeField] private LayerMask _dialogueLayer;
 
     [Header("Swinging")]
+    [Tooltip("Capas de los ganchos de swing (SwingAttach). La de los GrapplePoint no se elige acá: GekkoDetection la suma sola.")]
     [SerializeField] private LayerMask _grappableLayers;
     [SerializeField] private float _forwardThrustForce = 15f;
     [SerializeField] private float _horizontalThrustForce = 10f;
@@ -91,7 +92,7 @@ public class Player : MonoBehaviour
     [SerializeField] private float _overshootYAxis = 2f;
     [Tooltip("Segundos que hay que esperar, después de terminar un grapple, para poder usar otro.")]
     [SerializeField] private float _grapplingCD = 1f;
-    [Tooltip("Segundos que Gekko queda clavado en el aire, tras apretar Space, antes de salir disparado hacia el punto (el freeze del repo). 0 = sale directo.")]
+    [Tooltip("Segundos que Gekko queda clavado en el aire, tras el click derecho sobre un GrapplePoint, antes de salir disparado hacia el punto (el freeze del repo). 0 = sale directo.")]
     [Min(0f)]
     [SerializeField] private float _grappleDelayTime = 0.25f;
     [Tooltip("Distancia al punto de enganche, en metros para un Gekko de escala 1 (se escala con el tamaño real del pj), a la que termina el vuelo del grapple. 0 = el vuelo solo termina al chocar o por tiempo.")]
@@ -100,7 +101,7 @@ public class Player : MonoBehaviour
     [Tooltip("Velocidad (grados por segundo) a la que Gekko gira para mirar al punto de enganche mientras dura el grapple. Más = gira más rápido; 0 = no gira.")]
     [Min(0f)]
     [SerializeField] private float _grappleLookSpeed = 360f;
-    [Tooltip("Qué tan lejos llega el segundo salto (el de Space dentro del trigger del gancho, hacia donde mira la cámara), como múltiplo de lo que midió el grapple. 1 = salta tan lejos como el grapple; 2 = el doble; 0 = derecho hacia arriba.")]
+    [Tooltip("Qué tan lejos llega el segundo salto (el de Space dentro del trigger del GrapplePoint, hacia donde mira la cámara), como múltiplo de lo que midió el grapple. 1 = salta tan lejos como el grapple; 2 = el doble; 0 = derecho hacia arriba.")]
     [Min(0f)]
     [SerializeField] private float _secondJumpMultiplier = 1f;
     #endregion
@@ -293,7 +294,8 @@ public class Player : MonoBehaviour
     private void DrawSwingSphereCastGizmo()
     {
         Transform cam = Camera.main.transform;
-        bool didHit = Physics.SphereCast(cam.position, _predictionSphereRadius, cam.forward, out RaycastHit hit, _maxTongueDistance, _grappableLayers);
+        // El mismo SphereCast y las mismas capas que usa GekkoDetection (swing + GrapplePoint).
+        bool didHit = GekkoDetection.SphereCast(cam, _predictionSphereRadius, _maxTongueDistance, GekkoDetection.BuildMask(_grappableLayers), out RaycastHit hit);
         Vector3 endPoint = didHit ? hit.point : cam.position + cam.forward * _maxTongueDistance;
 
         Gizmos.color = didHit ? Color.green : Color.red;

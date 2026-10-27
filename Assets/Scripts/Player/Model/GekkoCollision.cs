@@ -13,10 +13,14 @@ public class GekkoCollision
         _owner = owner;
     }
 
-    // Los triggers cortan el swing (lava, coleccionables...), salvo el de los ganchos: ese solo abre la ventana del segundo
-    // salto. Sin esta excepción, enganchar otro gancho justo después de saltar (Gekko todavía dentro del trigger del
-    // anterior) cortaba el swing en el mismo instante.
-    private bool CutsSwing(Collider other) => other.gameObject.layer != GekkoGrapple.SwingAttachLayer;
+    // Los triggers cortan el swing (lava, coleccionables...), salvo los de los ganchos (swing y GrapplePoint): el de un
+    // GrapplePoint solo abre la ventana del segundo salto. Sin esta excepción, enganchar otro gancho justo después de saltar
+    // (Gekko todavía dentro del trigger del anterior) cortaba el swing en el mismo instante.
+    private bool CutsSwing(Collider other)
+    {
+        int layer = other.gameObject.layer;
+        return layer != GekkoGrapple.SwingAttachLayer && layer != GekkoGrapple.GrapplePointLayer;
+    }
 
     public void ArtificialOnTriggerEnter(Collider other)
     {

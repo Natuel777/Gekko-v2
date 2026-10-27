@@ -2,18 +2,14 @@ using UnityEngine;
 
 public sealed class GekkoSwinging
 {
-    private LayerMask _grappableLayers;
     private LineRenderer _lineRenderer;
-    private Vector3 _grapplePoint = Vector3.zero, _previousHitPosition, _currentGrapplePoint;
+    private Vector3 _grapplePoint = Vector3.zero, _currentGrapplePoint;
     private SpringJoint _joint;
     private Spring _spring;
     private Rigidbody _rb;
-    private float _forwardThrustForce, _predictionSphereRadius, _horizontalThrustForce,
-                _extendCableSpeed, _maxTongueDistance;
+    private float _forwardThrustForce, _horizontalThrustForce, _extendCableSpeed;
     private Vector2 _thrustInput;
-    private RaycastHit _predictionHit;
-    private Transform _lastHitObject, _cachedGrapplePoint, _predictionPoint,
-                    _camera, _transform, _tongueTip;
+    private Transform _camera, _transform, _tongueTip;
     
     #region Tongue Visual
     // Cómo se dibuja la lengua: tres cosas, en este orden.
@@ -72,6 +68,9 @@ public sealed class GekkoSwinging
 
     private RotateGekkoWhileSwingin _gekkoRotation;
     private GekkoGrapple _grappleBehaviour;
+
+    // Qué hay delante de la cámara para engancharse: un swing, un GrapplePoint o nada (ver GekkoDetection).
+    private GekkoDetection _detection;
     
     #region Properties
     // Colgado de la lengua, balanceándose con el SpringJoint.
@@ -94,16 +93,16 @@ public sealed class GekkoSwinging
     {
         _lineRenderer = lineRenderer;
         _tongueTip = tongue;
-        _grappableLayers = layers;
         _transform = transform;
         _camera = cam;
         _rb = transform.GetComponent<Rigidbody>();
         _forwardThrustForce = forwardThrustForce;
         _horizontalThrustForce = horizontalThrustForce;
         _extendCableSpeed = extendCableSpeed;
-        _predictionPoint = predictionPoint;
-        _predictionSphereRadius = predictionSphereRadius;
-        _maxTongueDistance = maxTongueDistance;
+
+        // La detección es un objeto aparte: se queda con las capas, el indicador y el alcance del SphereCast. Las capas que
+        // llegan son las de los ganchos de swing; la de los GrapplePoint la suma la propia detección.
+        _detection = new GekkoDetection(cam, layers, predictionPoint, predictionSphereRadius, maxTongueDistance);
 
         // Mathf.Max(1, ...) garantiza al menos un hilo y evita dividir por cero en UpdateLineRenderer (delta = i / _quality).
         _quality = Mathf.Max(1, quality);
@@ -141,27 +140,40 @@ public sealed class GekkoSwinging
         _gekkoRotation = new RotateGekkoWhileSwingin(this, _rb);
     }
 
-    // Engancha la lengua a un punto y arranca el swing (SpringJoint). Lo llama PlayerInputs al apretar el botón de la lengua.
-    public void StartSwing()
+    // Click derecho (lo llama PlayerInputs al apretar el botón de enganche). Engancha la lengua a lo que apunta la cámara, y lo
+    // que pasa depende de lo que sea (ver GekkoDetection): un gancho de swing arranca el swing; un GrapplePoint arranca el
+    // grapple. Si no apunta a nada que se pueda enganchar, no hace nada.
+    public void AttachTongue()
     {
-        // En pleno grapple no se puede enganchar un swing nuevo: habría dos sistemas manejando a Gekko a la vez. La excepción
+        // En pleno grapple no se puede enganchar nada nuevo: habría dos sistemas manejando a Gekko a la vez. La excepción
         // es el segundo salto: ya no tiene lengua ni punto que alcanzar, así que se lo puede cortar enganchando otro gancho.
         bool interruptsSecondJump = _grappleBehaviour != null && _grappleBehaviour.IsSecondJumpFlying;
 
         if(IsGrappling && !interruptsSecondJump) return;
 
-        if(!TryFindSwingPoint(out RaycastHit hit)) return;
+        // Se detecta ahora y no se usa lo del último frame: la cámara pudo moverse desde entonces.
+        switch(_detection.Detect())
+        {
+            case GekkoDetection.TargetType.Swing:
+                StartSwing(_detection.Point, interruptsSecondJump);
+                break;
 
-        Transform grapplePointTransform = GetGrapplePoint(hit.transform);
+            case GekkoDetection.TargetType.Grapple:
+                StartGrapple(_detection.Point);
+                break;
+        }
+    }
 
-        if(grapplePointTransform == null) return;
-
-        // Recién con un punto válido se corta el vuelo: si no hay a qué engancharse, el salto sigue como estaba. Va antes de
-        // armar el swing porque cortar el vuelo apaga la lengua (HideTongue) y el swing la tiene que prender después.
+    // Arranca el swing (SpringJoint) colgado de anchor.
+    private void StartSwing(Vector3 anchor, bool interruptsSecondJump)
+    {
+        // Recién con un punto válido se corta el vuelo: si no hay a qué engancharse, el salto sigue como estaba (AttachTongue
+        // ya validó el punto). Va antes de armar el swing porque cortar el vuelo apaga la lengua (HideTongue) y el swing la
+        // tiene que prender después.
         if(interruptsSecondJump) _grappleBehaviour.EndSecondJump();
 
         IsSwinging = true;
-        _grapplePoint = grapplePointTransform.position;
+        _grapplePoint = anchor;
         _gekkoRotation.StartSwing();
         _joint = _transform.gameObject.AddComponent<SpringJoint>();
         _joint.autoConfigureConnectedAnchor = false;
@@ -174,13 +186,35 @@ public sealed class GekkoSwinging
         _joint.damper = 7f; //Consultar motivo del valor
         _joint.massScale = 4.5f; //Consultar motivo del valor
 
-        // ---- Arranque de la soga visual ----
-        // Cada enganche empieza de cero, sin "memoria" del anterior:
-        //  1) _currentGrapplePoint (la punta de la soga que viaja hacia el ancla) sale desde la lengua.
-        //  2) Reset(): toda la soga arranca colapsada en la lengua y quieta. Sin esto heredaría la forma y el
-        //     movimiento del enganche anterior. Después, mientras la punta viaja hacia el ancla (ver DrawTongue), la
-        //     soga se va desenrollando detrás de ella.
-        //  3) El Spring recibe su empujón inicial: es lo que dispara el latigazo.
+        BeginTongue();
+    }
+
+    // Arranca el grapple hacia anchor (un GrapplePoint).
+    private void StartGrapple(Vector3 anchor)
+    {
+        // El grapple decide si puede arrancar (cooldown, parábola válida, o si corta un segundo salto en vuelo). Si dice que
+        // no, no cambió nada: ni la lengua ni el swing.
+        if(!_grappleBehaviour.TryStart(anchor)) return;
+
+        // El grapple ya tomó el control de Gekko: si estaba colgado de un swing, se lo suelta.
+        if(IsSwinging) ReleaseSwing();
+
+        // La lengua sale de la boca hacia el GrapplePoint y queda dibujada hasta que termine el vuelo (ver
+        // ArtificialLateUpdate).
+        _grapplePoint = anchor;
+        BeginTongue();
+    }
+
+    // Arranque de la soga visual. Lo comparten el swing y el grapple, y cada enganche empieza de cero, sin "memoria" del
+    // anterior:
+    //  1) _currentGrapplePoint (la punta de la soga que viaja hacia el ancla) sale desde la lengua.
+    //  2) Reset(): toda la soga arranca colapsada en la lengua y quieta. Sin esto heredaría la forma y el
+    //     movimiento del enganche anterior. Después, mientras la punta viaja hacia el ancla (ver DrawTongue), la
+    //     soga se va desenrollando detrás de ella.
+    //  3) El Spring recibe su empujón inicial: es lo que dispara el latigazo.
+    // Hay que haber fijado _grapplePoint antes de llamarlo.
+    private void BeginTongue()
+    {
         _currentGrapplePoint = _tongueTip.position;
         _rope.Reset(_currentGrapplePoint);
         _spring.SetVelocity(_springVelocity);
@@ -197,7 +231,8 @@ public sealed class GekkoSwinging
     {
         _grappleBehaviour.ArtificialUpdate();
 
-        CheckForSwingPoints();
+        // Qué hay delante de la cámara (swing, grapple o nada) y el indicador sobre el ancla.
+        _detection.ArtificialUpdate();
 
         // Sin joint no hay swing. Durante el grapple tampoco hay joint, así que el empuje (ODM) no corre: igual que en el
         // repo, donde MovePlayer corta con activeGrapple.
@@ -213,9 +248,9 @@ public sealed class GekkoSwinging
     //  2) Es lo último que pasa antes de dibujar la pantalla, así que se muestra exactamente lo que se acaba de simular.
     public void ArtificialLateUpdate()
     {
-        // La lengua se dibuja mientras haya swing O grapple con la lengua afuera. Durante el grapple ya no hay joint (se
-        // soltó el swing), pero la soga sigue yendo de la boca al ancla hasta que termina el vuelo. El segundo salto la
-        // suelta (IsTongueOut), aunque siga habiendo vuelo. Sin ninguno de los dos no hay soga.
+        // La lengua se dibuja mientras haya swing O grapple con la lengua afuera. Durante el grapple no hay joint (el grapple
+        // no lo usa), pero la soga sigue yendo de la boca al ancla hasta que termina el vuelo. El segundo salto la suelta
+        // (IsTongueOut), aunque siga habiendo vuelo. Sin ninguno de los dos no hay soga.
         if(!IsSwinging && !(_grappleBehaviour != null && _grappleBehaviour.IsTongueOut)) return;
 
         DrawTongue();
@@ -262,7 +297,7 @@ public sealed class GekkoSwinging
         float deltaTime = Time.deltaTime;
 
         // PASO 1 - El latigazo avanza un poquito: el Spring va perdiendo fuerza y la onda se achica hasta desaparecer.
-        // (StartSwing le dio el empujón inicial con SetVelocity.)
+        // (BeginTongue le dio el empujón inicial con SetVelocity.)
         _spring.Update(deltaTime);
 
         // PASO 2 - ¿Dónde están las dos puntas de la soga?
@@ -293,7 +328,7 @@ public sealed class GekkoSwinging
     }
 
     // Copia los puntos de la soga al LineRenderer, los endereza según _ropeTautness y les suma el latigazo. No hace
-    // avanzar nada: solo dibuja el estado actual (por eso StartSwing también lo puede usar para mostrar la pose inicial).
+    // avanzar nada: solo dibuja el estado actual (por eso BeginTongue también lo puede usar para mostrar la pose inicial).
     private void UpdateLineRenderer()
     {
         // Los puntos que calculó la simulación: el 0 es la lengua y el último es el ancla.
@@ -339,21 +374,8 @@ public sealed class GekkoSwinging
         _lineRenderer.SetPositions(_ropePoints);
     }
 
-    // Space estando colgado de la lengua: suelta el swing y dispara a Gekko hacia el punto de enganche en una parábola (ver
-    // GekkoGrapple). Reemplaza al viejo "acortar cable". PlayerInputs lo llama UNA vez por pulsación, no en cada frame que
-    // se mantiene apretado. No hace nada si no hay swing (no hay ancla a la que ir), si hay cooldown o si ya hay un
-    // grapple en curso.
-    public void TryStartGrapple()
-    {
-        if(!IsSwinging) return;
-
-        // Si el grapple no puede arrancar (cooldown, parábola inválida) el swing sigue como estaba.
-        if(!_grappleBehaviour.TryStart(_grapplePoint)) return;
-
-        // El grapple ya tomó el control de Gekko: se suelta el swing. La lengua queda dibujada hasta que termine el vuelo.
-        ReleaseSwing();
-    }
-
+    // Space con la ventana del segundo salto abierta (ver GekkoGrapple.TrySecondJump): salta hacia donde mira la cámara.
+    // PlayerInputs lo llama UNA vez por pulsación, no en cada frame que se mantiene apretado.
     public void TrySecondJump() => _grappleBehaviour.TrySecondJump(_camera.forward);
 
     // Corta un grapple en curso, sin cooldown. Lo llama PlayerController.Teleport: el vuelo apunta a un ancla que con el
@@ -392,7 +414,7 @@ public sealed class GekkoSwinging
     }
 
     // Apaga la lengua: el LineRenderer queda sin puntos y el latigazo se reinicia. La soga no hace falta resetearla acá:
-    // cada enganche nuevo empieza con _rope.Reset() en StartSwing. Es público porque GekkoGrapple la llama al terminar el
+    // cada enganche nuevo empieza con _rope.Reset() en BeginTongue. Es público porque GekkoGrapple la llama al terminar el
     // vuelo (mientras dura el grapple la lengua se queda dibujada).
     public void HideTongue()
     {
@@ -406,61 +428,6 @@ public sealed class GekkoSwinging
         Vector3 flatRight = Vector3.ProjectOnPlane(_camera.right, Vector3.up).normalized;
         _rb.AddForce(flatRight * _thrustInput.x * _horizontalThrustForce * Time.deltaTime);
         _rb.AddForce(flatForward * _thrustInput.y * _forwardThrustForce * Time.deltaTime);
-    }
-
-    private void CheckForSwingPoints()
-    {
-        bool foundPoint = TryFindSwingPoint(out RaycastHit hit);
-        ParticleSystem ps = _predictionPoint.GetComponentInChildren<ParticleSystem>();
-
-        if(ps == null)
-        {
-            //Debug.Log("Saramambiche");
-            return;
-        } 
-
-        if(!foundPoint)
-        {
-            HidePredictionParticle(ps);
-            return;
-        }
-
-        Transform hitTransform = GetGrapplePoint(hit.transform);
-
-        if(hitTransform == null)
-        {
-            HidePredictionParticle(ps);
-            return;
-        }
-
-        ps.Play();
-
-        if(hitTransform.position != _previousHitPosition)
-            _predictionPoint.position = hitTransform.position;
-
-        _previousHitPosition = hitTransform.position;
-    }
-
-    // Ps_Selected tiene una única partícula con startLifetime = 99999 y sin loop. Con un Stop() común (StopEmitting) solo
-    // se deja de emitir: la partícula ya viva sigue ahí, congelada en la última posición. Por eso hay que pedir
-    // StopEmittingAndClear, que además la elimina. El próximo Play() la vuelve a emitir.
-    private void HidePredictionParticle(ParticleSystem ps)
-    {
-        ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
-    }
-
-    private Transform GetGrapplePoint(Transform hitObject)
-    {
-        if(hitObject == _lastHitObject) return _cachedGrapplePoint;
-
-        _lastHitObject = hitObject;
-        _cachedGrapplePoint = hitObject.Find("GrapplePoint");
-        return _cachedGrapplePoint;
-    }
-
-    private bool TryFindSwingPoint(out RaycastHit hit)
-    {
-        return Physics.SphereCast(_camera.position, _predictionSphereRadius, _camera.forward, out hit, _maxTongueDistance, _grappableLayers);
     }
 
     public GekkoSwinging InitializeGrappleBehaviour(float overshootYAxis, float grapplingCD, float delayTime,

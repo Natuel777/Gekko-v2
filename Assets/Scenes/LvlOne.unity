@@ -150849,6 +150849,8 @@ MonoBehaviour:
   _director: {fileID: 766193469}
   _playOnce: 1
   _cinematicOnlyObjects: []
+  _skipHoldSeconds: 3
+  _skipPrompt: {fileID: 0}
 --- !u!320 &766193469
 PlayableDirector:
   m_ObjectHideFlags: 0
@@ -208698,6 +208700,8 @@ MonoBehaviour:
   _director: {fileID: 989995966}
   _playOnce: 1
   _cinematicOnlyObjects: []
+  _skipHoldSeconds: 3
+  _skipPrompt: {fileID: 0}
 --- !u!320 &989995966
 PlayableDirector:
   m_ObjectHideFlags: 0
@@ -434925,6 +434929,8 @@ MonoBehaviour:
   - {fileID: 0}
   - {fileID: 0}
   - {fileID: 0}
+  _skipHoldSeconds: 3
+  _skipPrompt: {fileID: 0}
 --- !u!320 &1830443437
 PlayableDirector:
   m_ObjectHideFlags: 0
@@ -661848,9 +661854,10 @@ MonoBehaviour:
   _canvas: {fileID: 0}
   _textCount: {fileID: 0}
   _healthbar: {fileID: 119386341}
-  _camShieldDown: {fileID: 691003282}
-  _shieldDownCamSeconds: 2
-  _camFinish: {fileID: 953399237}
+  _shieldDownDirector: {fileID: 0}
+  _plantPurifiedDirector: {fileID: 0}
+  _skipHoldSeconds: 3
+  _skipPrompt: {fileID: 0}
 --- !u!4 &5314203417709279810
 Transform:
   m_ObjectHideFlags: 0
