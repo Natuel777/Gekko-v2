@@ -3,6 +3,7 @@ public enum ScenesNames
     LoadScene,
     Menu,
     Level1,
+    Level2,
     Intentocin
 }
 public enum ReafirmCanvas

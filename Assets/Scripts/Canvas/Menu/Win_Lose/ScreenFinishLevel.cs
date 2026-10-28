@@ -34,4 +34,8 @@ public class ScreenFinishLevel : Screens
     {
         GameManager.Instance.RestartLvl();
     }
+    public void BTN_NextLvl()
+    {
+        GameManager.Instance.NextLevel();
+    }
 }

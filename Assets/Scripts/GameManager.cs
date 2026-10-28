@@ -102,6 +102,20 @@ public class GameManager : MonoBehaviour
         if(AsyncLoader.sceneToLoad == ScenesNames.LoadScene) SceneManager.LoadScene(SceneManager.GetActiveScene().name);
         else SceneManager.LoadScene(ScenesDictionary.SceneName[ScenesNames.LoadScene]);
     }
+    public void NextLevel()
+    {
+        if (AudioManager.instance) AudioManager.instance.ResetAudio();
+        CollectiblesRegister.Clear();
+
+        string current = SceneManager.GetActiveScene().name;
+
+        if (ScenesDictionary.TryGetNextLevel(current, out ScenesNames next))
+            AsyncLoader.sceneToLoad = next;
+        else
+            AsyncLoader.sceneToLoad = ScenesNames.Menu;
+
+        SceneManager.LoadScene(ScenesDictionary.SceneName[ScenesNames.LoadScene]);
+    }
 
     public void Pause()
     {
