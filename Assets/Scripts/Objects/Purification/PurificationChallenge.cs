@@ -402,8 +402,11 @@ public class PurificationChallenge : MonoBehaviour
     {
         ActivateCorruptedVisuals();
 
-        // El ChallengeTrigger se puede volver a pisar: una vez completado no se vuelve a mostrar la barra.
-        if(_healthbar != null && State != ChallengeState.Completed) _healthbar.gameObject.SetActive(true);
+        if(_healthbar != null && State != ChallengeState.Completed)
+        {
+            _healthbar.gameObject.SetActive(true);
+            StartCoroutine(_healthbar.FadeRoutine(true)); 
+        } 
     }
 
     #region Dissolve

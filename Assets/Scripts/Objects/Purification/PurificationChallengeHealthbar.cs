@@ -9,8 +9,8 @@ public class PurificationChallengeHealthbar : MonoBehaviour
     [SerializeField] private Image[] _purifiedRunes;
     [SerializeField] private List<Image> _corruptedRunes = new List<Image>();
     [SerializeField] private GameObject _purifiedBG, _corruptedBG;
-    [SerializeField] private float _fadeOutDelay = 2f;
-    [SerializeField] private float _fadeOutDuration = 1f;
+    [SerializeField] private float _fadeDelay = 2f;
+    [SerializeField] private float _fadeDuration = 1f;
 
     private CanvasGroup _canvasGroup;
 
@@ -52,25 +52,39 @@ public class PurificationChallengeHealthbar : MonoBehaviour
 
         _corruptedBG.SetActive(false);
         _purifiedBG.SetActive(true);
-
-        StartCoroutine(FadeOutRoutine());
+        StartCoroutine(FadeRoutine(false));
     }
 
-    private IEnumerator FadeOutRoutine()
+    public IEnumerator FadeRoutine(bool value)
     {
-        yield return new WaitForSeconds(_fadeOutDelay);
+        yield return new WaitForSeconds(_fadeDelay);
 
         float startAlpha = _canvasGroup.alpha;
         float elapsed = 0f;
 
-        while(elapsed < _fadeOutDuration)
+        if(!value)
         {
-            elapsed += Time.deltaTime;
-            _canvasGroup.alpha = Mathf.Lerp(startAlpha, 0f, elapsed / _fadeOutDuration);
-            yield return null;
+            while(elapsed < _fadeDuration)
+            {
+                elapsed += Time.deltaTime;
+                _canvasGroup.alpha = Mathf.Lerp(startAlpha, 0f, elapsed / _fadeDuration);
+                yield return null;
+            }
+
+            _canvasGroup.alpha = 0f;
         }
 
-        _canvasGroup.alpha = 0f;
+        else
+        {
+            while(elapsed < _fadeDuration)
+            {
+                elapsed += Time.deltaTime;
+                _canvasGroup.alpha = Mathf.Lerp(startAlpha, 1f, elapsed / _fadeDuration);
+                yield return null;
+            }
+
+            _canvasGroup.alpha = 1f;
+        }
     }
 
     private bool StllRunesToBreak() => _corruptedRunes.Count != 0;
