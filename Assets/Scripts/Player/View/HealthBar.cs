@@ -25,6 +25,11 @@ public class HealthBar
     private float _healPulseTimer = 0f;
     private bool _isDamageColorFlashing = false;
 
+    // Corazones del HUD: viven como hermanos de _healthBar dentro del mismo prefab de Canvas,
+    // asi que no hace falta cablear nada nuevo por escena (ver Canvas.prefab > "Hearts").
+    private HeartIcon[] _hearts;
+    private int _litHearts = -1;
+
     public void Initialize()
     {
         if (_healthBar == null) return;
@@ -34,6 +39,17 @@ public class HealthBar
         _currentDisplayValue = 1f;
         _healthBar.value = 1f;
         if (_canvasGroup != null) _canvasGroup.alpha = 1f;
+
+        var heartsContainer = _healthBar.transform.parent != null ? _healthBar.transform.parent.Find("Hearts") : null;
+        _hearts = heartsContainer != null ? heartsContainer.GetComponentsInChildren<HeartIcon>(true) : null;
+        SetLitHearts(_hearts != null ? _hearts.Length : 0);
+    }
+
+    private void SetLitHearts(int litHearts)
+    {
+        if (_hearts == null || litHearts == _litHearts) return;
+        _litHearts = litHearts;
+        for (int i = 0; i < _hearts.Length; i++) _hearts[i].SetFull(i < litHearts);
     }
 
     public void UpdateHealthBar(float currentHealth, float maxHealth)
@@ -57,6 +73,8 @@ public class HealthBar
             _currentDisplayValue = _targetValue;
         
         _healthBar.value = _currentDisplayValue;
+        if (_hearts != null && _hearts.Length > 0)
+            SetLitHearts(Mathf.RoundToInt(_currentDisplayValue * _hearts.Length));
         bool isCritical = _targetValue < _criticalThreshold && _targetValue > 0f;
 
         if(_isDamageColorFlashing && _currentDisplayValue == _targetValue)

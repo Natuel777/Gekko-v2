@@ -12,4 +12,8 @@ public class PlayerPrefsKeys : MonoBehaviour
     public const string musicEnabledKey = "MusicEnabled";
     public const string languageKey = "Language";
     public const string inputOverridesKey = "InputBindingOverrides";
+    public const string cameraShakeKey = "CameraShakeEnabled";
+    public const string brightnessKey = "Brightness";
+    public const string cameraSensitivityKey = "CameraSensitivity";
+    public const string invertYKey = "InvertCameraY";
 }

@@ -1,11 +1,20 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
 using UnityEngine.UI;
 
 public class GraphicsSettingsPanel : MonoBehaviour
 {
     [SerializeField] private ArrowValueSelector _resolutionSelector;
     [SerializeField] private Toggle _fullscreenToggle;
+    [SerializeField] private Toggle _shakeToggle;
+
+    // Slider pensado en rango 0-100 (como el resto de la UI de Opciones); 50 = exposición neutra.
+    [SerializeField] private Slider _brightnessSlider;
+    [SerializeField, Min(0f)] private float _maxExposureEV = 2f;
+
+    private const float BrightnessSliderDefault = 50f;
 
     private readonly List<Vector2Int> _resolutions = new List<Vector2Int>();
 
@@ -49,6 +58,62 @@ public class GraphicsSettingsPanel : MonoBehaviour
             _fullscreenToggle.onValueChanged.RemoveListener(SetFullscreen);
             _fullscreenToggle.onValueChanged.AddListener(SetFullscreen);
         }
+
+        if (_shakeToggle)
+        {
+            var cameraFollow = FindFirstObjectByType<CameraFollow>();
+            bool shakeEnabled = cameraFollow ? cameraFollow.ShakeEnabled : PlayerPrefs.GetInt(PlayerPrefsKeys.cameraShakeKey, 1) == 1;
+            _shakeToggle.SetIsOnWithoutNotify(shakeEnabled);
+            _shakeToggle.onValueChanged.RemoveListener(SetShakeEnabled);
+            _shakeToggle.onValueChanged.AddListener(SetShakeEnabled);
+        }
+
+        if (_brightnessSlider)
+        {
+            float savedValue = PlayerPrefs.GetFloat(PlayerPrefsKeys.brightnessKey, BrightnessSliderDefault);
+            _brightnessSlider.SetValueWithoutNotify(savedValue);
+            _brightnessSlider.onValueChanged.RemoveListener(SetBrightness);
+            _brightnessSlider.onValueChanged.AddListener(SetBrightness);
+        }
+    }
+
+    private void SetShakeEnabled(bool value)
+    {
+        var cameraFollow = FindFirstObjectByType<CameraFollow>();
+        if (cameraFollow) cameraFollow.SetShakeEnabled(value);
+        else
+        {
+            // Sin cámara en escena (ej. probando el menú solo): guardar igual para que se aplique al entrar a jugar.
+            PlayerPrefs.SetInt(PlayerPrefsKeys.cameraShakeKey, value ? 1 : 0);
+            PlayerPrefs.Save();
+        }
+    }
+
+    private void SetBrightness(float sliderValue)
+    {
+        PlayerPrefs.SetFloat(PlayerPrefsKeys.brightnessKey, sliderValue);
+        PlayerPrefs.Save();
+        ApplyBrightness(sliderValue, _maxExposureEV);
+    }
+
+    // Aplica el brillo guardado al Volume global de la escena actual (si hay uno con Color Adjustments habilitado).
+    // Se llama tanto desde este panel como al cargar cada escena de juego, para que afecte aunque no se abra Opciones.
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+    private static void ApplySavedBrightnessOnStart()
+    {
+        float savedValue = PlayerPrefs.GetFloat(PlayerPrefsKeys.brightnessKey, BrightnessSliderDefault);
+        ApplyBrightness(savedValue, 2f);
+    }
+
+    private static void ApplyBrightness(float sliderValue, float maxExposureEV)
+    {
+        var volume = FindFirstObjectByType<Volume>();
+        if (!volume || !volume.profile) return;
+        if (!volume.profile.TryGet(out ColorAdjustments colorAdjustments)) return;
+
+        float exposure = (sliderValue - BrightnessSliderDefault) / BrightnessSliderDefault * maxExposureEV;
+        colorAdjustments.postExposure.overrideState = true;
+        colorAdjustments.postExposure.value = exposure;
     }
 
     // Screen.resolutions solo lista lo que el monitor soporta: la mas grande es la nativa, no se puede pasar de ahi.
