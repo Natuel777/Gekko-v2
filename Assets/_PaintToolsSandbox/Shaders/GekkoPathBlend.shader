@@ -59,6 +59,27 @@ Shader "Gekko/Path Blend"
         _LightWrap  ("Wrap de luz", Range(0, 1)) = 0.4
         _BandSmooth ("Suavidad de la banda", Range(0.01, 0.5)) = 0.25
 
+        // Purificacion por regiones (Assets/_Gekko/Purification). Solo se nota dentro
+        // del area de una PurifyRegion: afuera, y en escenas sin PurifyManager, el piso
+        // se ve exactamente igual que antes.
+        [Header(Purificacion)]
+        [HDR] _PurifyCorruptTint ("Tinte corrupto", Color) = (0.80, 0.65, 0.95, 1)
+        _PurifyCorruptSaturation ("Saturacion corrupta", Range(0, 1)) = 0.2
+        _PurifyCorruptDarken ("Brillo corrupto", Range(0, 1.5)) = 0.45
+        _PurifyPathKeep ("Caminos: cuanto color conservan", Range(0, 1)) = 0.5
+        [HDR] _PurifyEdgeColor ("Color del borde de la onda", Color) = (1.0, 0.8, 0.3, 1)
+        _PurifyEdgeIntensity ("Intensidad del borde de la onda", Float) = 2
+        _PurifyNoiseScale ("Escala del ruido de la onda", Float) = 0.3
+        _PurifyNoiseAmount ("Irregularidad del borde (m)", Float) = 2.5
+        // Modo restaurar: para pisos que YA estan pintados corruptos. Se ven tal cual y,
+        // donde pasa la onda, cada capa vuelve a su color sano. Fuera de las regiones no cambian.
+        [Toggle] _PurifyRestore ("Restaurar (el material ya es corrupto)", Float) = 0
+        _PurifyHealthyBaseColor ("Sano: color base", Color) = (0.35, 0.55, 0.28, 1)
+        _PurifyHealthyTex1Color ("Sano: color 1", Color) = (0.86, 0.80, 0.55, 1)
+        _PurifyHealthyTex2Color ("Sano: color 2", Color) = (1, 1, 1, 1)
+        _PurifyHealthyTex3Color ("Sano: color 3", Color) = (1, 1, 1, 1)
+        _PurifyHealthyTex4Color ("Sano: color 4", Color) = (1, 1, 1, 1)
+
         // Las setea PathCanvas por MaterialPropertyBlock, no se tocan a mano.
         // _SplatMask: RGBA = peso de Tex1/Tex2/Tex3/Tex4 (splatmap, no color).
         // _TintMask: RGB = tinte pintado (neutro = mitad), A = fuerza de ese tinte.
@@ -117,6 +138,20 @@ Shader "Gekko/Path Blend"
             float  _BaseNormalStrength;
             float  _Tex1NormalStrength;
             float  _PathCanvasSideEnabled;
+            float4 _PurifyCorruptTint;
+            float4 _PurifyEdgeColor;
+            float  _PurifyCorruptSaturation;
+            float  _PurifyCorruptDarken;
+            float  _PurifyPathKeep;
+            float  _PurifyEdgeIntensity;
+            float  _PurifyNoiseScale;
+            float  _PurifyNoiseAmount;
+            float  _PurifyRestore;
+            float4 _PurifyHealthyBaseColor;
+            float4 _PurifyHealthyTex1Color;
+            float4 _PurifyHealthyTex2Color;
+            float4 _PurifyHealthyTex3Color;
+            float4 _PurifyHealthyTex4Color;
         CBUFFER_END
 
         float PathHash21(float2 p)
@@ -180,6 +215,8 @@ Shader "Gekko/Path Blend"
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DBuffer.hlsl"
+            #include "Assets/_Gekko/Purification/Shaders/PurifyMask.hlsl"
+            #include "Assets/_Gekko/Purification/Shaders/PurifyLook.hlsl"
 
             TEXTURE2D(_BaseTex);    SAMPLER(sampler_BaseTex);
             TEXTURE2D(_Tex1);       SAMPLER(sampler_Tex1);
@@ -451,26 +488,37 @@ Shader "Gekko/Path Blend"
                 float4 weights = rawWeights * rescale;
                 float baseWeight = saturate(1.0 - (weights.r + weights.g + weights.b + weights.a));
 
+                // Purificacion: la mascara se mide antes de mezclar, porque en modo restaurar
+                // cambia el color de cada capa. Sin regiones en la escena no se calcula nada.
+                bool purifyOn = _PurifySphereCount > 0.5;
+                float purifyMask = 1.0, purifyEdge = 0.0, purifyRestore = 0.0;
+                if (purifyOn)
+                {
+                    PurifyMaskFull_float(IN.positionWS, PurifyNoise(IN.positionWS.xz, _PurifyNoiseScale), _PurifyNoiseAmount,
+                                         purifyMask, purifyEdge, purifyRestore);
+                    purifyRestore *= step(0.5, _PurifyRestore);
+                }
+
                 float3 baseColor = SampleLayer(TEXTURE2D_ARGS(_BaseTex, sampler_BaseTex),
-                                                IN.positionWS, N, _BaseTiling) * _BaseColor.rgb;
+                                                IN.positionWS, N, _BaseTiling) * lerp(_BaseColor.rgb, _PurifyHealthyBaseColor.rgb, purifyRestore);
                 float3 tex1Color = SampleLayer(TEXTURE2D_ARGS(_Tex1, sampler_Tex1),
-                                                IN.positionWS, N, _Tex1Tiling) * _Tex1Color.rgb;
+                                                IN.positionWS, N, _Tex1Tiling) * lerp(_Tex1Color.rgb, _PurifyHealthyTex1Color.rgb, purifyRestore);
 
                 float3 albedo = baseColor * baseWeight + tex1Color * weights.r;
 
             #if defined(_TEX2_ON)
                 float3 tex2Color = SampleLayer(TEXTURE2D_ARGS(_Tex2, sampler_Tex2),
-                                                IN.positionWS, N, _Tex2Tiling) * _Tex2Color.rgb;
+                                                IN.positionWS, N, _Tex2Tiling) * lerp(_Tex2Color.rgb, _PurifyHealthyTex2Color.rgb, purifyRestore);
                 albedo += tex2Color * weights.g;
             #endif
             #if defined(_TEX3_ON)
                 float3 tex3Color = SampleLayer(TEXTURE2D_ARGS(_Tex3, sampler_Tex3),
-                                                IN.positionWS, N, _Tex3Tiling) * _Tex3Color.rgb;
+                                                IN.positionWS, N, _Tex3Tiling) * lerp(_Tex3Color.rgb, _PurifyHealthyTex3Color.rgb, purifyRestore);
                 albedo += tex3Color * weights.b;
             #endif
             #if defined(_TEX4_ON)
                 float3 tex4Color = SampleLayer(TEXTURE2D_ARGS(_Tex4, sampler_Tex4),
-                                                IN.positionWS, N, _Tex4Tiling) * _Tex4Color.rgb;
+                                                IN.positionWS, N, _Tex4Tiling) * lerp(_Tex4Color.rgb, _PurifyHealthyTex4Color.rgb, purifyRestore);
                 albedo += tex4Color * weights.a;
             #endif
 
@@ -503,6 +551,25 @@ Shader "Gekko/Path Blend"
                 N = normalize(decalNormalWS);
             #endif
 
+                // Purificacion: despues del decal, asi las flores pintadas tambien se
+                // corrompen. En modo restaurar el color ya se resolvio por capa (arriba): aca
+                // solo se suma el borde de la onda.
+                float3 purifyEmission = 0;
+                if (purifyOn && _PurifyRestore > 0.5)
+                {
+                    purifyEmission = purifyEdge * _PurifyEdgeColor.rgb * _PurifyEdgeIntensity;
+                }
+                else if (purifyOn)
+                {
+                    // El camino pintado conserva parte del color para que se siga leyendo al jugar.
+                    float keep = sharpTotal * _PurifyPathKeep;
+                    float saturation = lerp(_PurifyCorruptSaturation, 1.0, keep);
+                    float darken = lerp(_PurifyCorruptDarken, 1.0, keep * 0.5);
+
+                    PurifyLook_float(albedo, purifyMask, purifyEdge, _PurifyCorruptTint.rgb, saturation, darken,
+                                     _PurifyEdgeColor.rgb, _PurifyEdgeIntensity, albedo, purifyEmission);
+                }
+
                 float4 shadowCoord = TransformWorldToShadowCoord(IN.positionWS);
                 Light mainLight = GetMainLight(shadowCoord);
 
@@ -529,6 +596,7 @@ Shader "Gekko/Path Blend"
 
                 float3 color = albedo * lighting;
                 color += albedo * SampleSH(N) * 0.35;
+                color += purifyEmission;
 
                 color = MixFog(color, IN.fogFactor);
                 return half4(color, 1.0);

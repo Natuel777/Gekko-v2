@@ -29,6 +29,18 @@ Shader "Gekko/Grass"
         _ShadowTint   ("Tinte en sombra", Color) = (0.35, 0.45, 0.55, 1)
         _LightWrap    ("Wrap de luz", Range(0, 1)) = 0.5
         _Translucency ("Translucidez a contraluz", Range(0, 2)) = 0.6
+
+        // Purificacion por regiones (Assets/_Gekko/Purification). Solo se nota dentro
+        // del area de una PurifyRegion; afuera el pasto queda igual que antes.
+        [Header(Purificacion)]
+        [HDR] _PurifyCorruptTint ("Tinte corrupto", Color) = (0.80, 0.65, 0.95, 1)
+        _PurifyCorruptSaturation ("Saturacion corrupta", Range(0, 1)) = 0.2
+        _PurifyCorruptDarken ("Brillo corrupto", Range(0, 1.5)) = 0.45
+        _PurifyDroop ("Pasto caido cuando esta corrupto (m)", Float) = 0.35
+        [HDR] _PurifyEdgeColor ("Color del borde de la onda", Color) = (1.0, 0.8, 0.3, 1)
+        _PurifyEdgeIntensity ("Intensidad del borde de la onda", Float) = 2
+        _PurifyNoiseScale ("Escala del ruido de la onda", Float) = 0.3
+        _PurifyNoiseAmount ("Irregularidad del borde (m)", Float) = 2.5
     }
 
     SubShader
@@ -72,7 +84,18 @@ Shader "Gekko/Grass"
             float  _PushDown;
             float  _LightWrap;
             float  _Translucency;
+            float4 _PurifyCorruptTint;
+            float4 _PurifyEdgeColor;
+            float  _PurifyCorruptSaturation;
+            float  _PurifyCorruptDarken;
+            float  _PurifyDroop;
+            float  _PurifyEdgeIntensity;
+            float  _PurifyNoiseScale;
+            float  _PurifyNoiseAmount;
         CBUFFER_END
+
+        // Despues del CBUFFER: declara sus propios globales (las esferas de las regiones).
+        #include "Assets/_Gekko/Purification/Shaders/PurifyMask.hlsl"
 
         float GrassHash21(float2 p)
         {
@@ -110,6 +133,17 @@ Shader "Gekko/Grass"
             float3 windDir = float3(_WindDirection.x, 0.0, _WindDirection.z);
             windDir = normalize(windDir + float3(1e-5, 0.0, 1e-5));
 
+            // Purificacion: el pasto corrupto queda caido y se levanta cuando pasa la
+            // onda. Se mide antes de moverlo, para que el viento no cambie la region.
+            // Sin regiones en la escena no se calcula nada.
+            float corruption = 0.0;
+            if (_PurifySphereCount > 0.5)
+            {
+                float purifyMask, purifyEdge;
+                PurifyMaskAuto_float(positionWS, _PurifyNoiseScale, _PurifyNoiseAmount, purifyMask, purifyEdge);
+                corruption = 1.0 - purifyMask;
+            }
+
             // Onda grande que recorre el campo: es lo que hace las "olas" de pasto.
             float2 windUV = positionWS.xz * _WindScale - windDir.xz * (_Time.y * _WindSpeed);
             float gust = GrassNoise21(windUV) * 2.0 - 1.0;
@@ -143,6 +177,9 @@ Shader "Gekko/Grass"
                 }
             }
 
+            positionWS.y -= corruption * _PurifyDroop * bend;
+            positionWS += windDir * (corruption * _PurifyDroop * 0.6 * bend);
+
             return positionWS;
         }
         ENDHLSL
@@ -168,6 +205,7 @@ Shader "Gekko/Grass"
             #pragma multi_compile_instancing
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
+            #include "Assets/_Gekko/Purification/Shaders/PurifyLook.hlsl"
 
             struct Attributes
             {
@@ -231,6 +269,16 @@ Shader "Gekko/Grass"
                 // 4) Oclusion en la base: da la sensacion de densidad sin geometria extra.
                 color *= lerp(1.0 - _AmbientOcclusion, 1.0, height);
 
+                // 5) Purificacion: look corrupto dentro de las regiones sin purificar.
+                float3 purifyEmission = 0;
+                if (_PurifySphereCount > 0.5)
+                {
+                    float purifyMask, purifyEdge;
+                    PurifyMaskAuto_float(IN.positionWS, _PurifyNoiseScale, _PurifyNoiseAmount, purifyMask, purifyEdge);
+                    PurifyLook_float(color, purifyMask, purifyEdge, _PurifyCorruptTint.rgb, _PurifyCorruptSaturation,
+                                     _PurifyCorruptDarken, _PurifyEdgeColor.rgb, _PurifyEdgeIntensity, color, purifyEmission);
+                }
+
                 float3 N = normalize(IN.normalWS);
                 float3 V = normalize(GetWorldSpaceViewDir(IN.positionWS));
 
@@ -248,6 +296,7 @@ Shader "Gekko/Grass"
                 // Translucidez: cuando la luz viene de atras, la punta se enciende.
                 float backlight = saturate(dot(-mainLight.direction, V));
                 color += _TopColor.rgb * (pow(backlight, 4.0) * _Translucency * height);
+                color += purifyEmission;
 
                 color = MixFog(color, IN.fogFactor);
                 return half4(color, 1.0);

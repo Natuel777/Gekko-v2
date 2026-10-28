@@ -8,7 +8,7 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: M_Water
-  m_Shader: {fileID: -6465566751694194690, guid: 7fd2f1d7d018b5e4d88d7de87d6dbf5d, type: 3}
+  m_Shader: {fileID: -6465566751694194690, guid: 6cdde271172ebf7478026075d6a898c9, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
@@ -44,6 +44,11 @@ Material:
     - _FoamCutOff: 10
     - _FoamScale: 40
     - _FoamSpeed: 0.2
+    - _PurifyCorruptDarken: 0.35
+    - _PurifyCorruptSaturation: 0.15
+    - _PurifyEdgeIntensity: 2
+    - _PurifyNoiseAmount: 2.5
+    - _PurifyNoiseScale: 0.3
     - _QueueControl: 0
     - _QueueOffset: -10
     - _Strength: 0.007
@@ -51,6 +56,8 @@ Material:
     m_Colors:
     - _DeepWater: {r: 0.21444464, g: 0.38820398, b: 0.5754717, a: 0.27450982}
     - _FoamColor: {r: 1, g: 1, b: 1, a: 0.6039216}
+    - _PurifyCorruptTint: {r: 0.8, g: 0.65, b: 0.95, a: 1}
+    - _PurifyEdgeColor: {r: 1, g: 0.8, b: 0.3, a: 1}
     - _ShallowWater: {r: 0.5913581, g: 0.9150943, b: 0.8235947, a: 0.27450982}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
