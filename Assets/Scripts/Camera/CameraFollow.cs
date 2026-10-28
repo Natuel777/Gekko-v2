@@ -44,18 +44,86 @@ public class CameraFollow : MonoBehaviour
     // Gekko en el piso y la cámara puede mirar hacia arriba desde ahí (ver CameraRotation).
     public bool LookUpAllowed { get; private set; }
 
+    private bool _shakeEnabled = true;
+
+    // Nombres de los ejes tal como aparecen en el inspector del CinemachineInputAxisController de esta cámara.
+    [Header("Sensibilidad de cámara (Opciones)")]
+    [SerializeField] private string _horizontalAxisName = "Horizontal Axis";
+    [SerializeField] private string _verticalAxisName = "Vertical Axis";
+    private float _baseHorizontalGain = 1f;
+    private float _baseVerticalGain = 1f;
+    private float _sensitivity = 1f;
+    private bool _invertY;
+
+    public float CameraSensitivity => _sensitivity;
+    public bool InvertY => _invertY;
+
     private void OnEnable()  => EventManager.Subscribe<float>("OnCameraShake", ShakeCamera);
-   
-    private void ShakeCamera(float force) => _impulseSource?.GenerateImpulse(force);
+
+    private void ShakeCamera(float force)
+    {
+        if (!_shakeEnabled) return;
+        _impulseSource?.GenerateImpulse(force);
+    }
+
+    public bool ShakeEnabled => _shakeEnabled;
+
+    public void SetShakeEnabled(bool value)
+    {
+        _shakeEnabled = value;
+        PlayerPrefs.SetInt(PlayerPrefsKeys.cameraShakeKey, value ? 1 : 0);
+        PlayerPrefs.Save();
+    }
+
+    public void SetCameraSensitivity(float value)
+    {
+        _sensitivity = value;
+        ApplyAxisGains();
+        PlayerPrefs.SetFloat(PlayerPrefsKeys.cameraSensitivityKey, value);
+        PlayerPrefs.Save();
+    }
+
+    public void SetInvertY(bool value)
+    {
+        _invertY = value;
+        ApplyAxisGains();
+        PlayerPrefs.SetInt(PlayerPrefsKeys.invertYKey, value ? 1 : 0);
+        PlayerPrefs.Save();
+    }
+
+    // Multiplica el Gain base de cada eje (tal como está seteado en el inspector) por la sensibilidad guardada, e
+    // invierte el signo del eje vertical si corresponde (Gain negativo = input invertido, ver CinemachineInputAxisController.Reader).
+    private void ApplyAxisGains()
+    {
+        if (!_input) return;
+
+        var horizontal = _input.GetController(_horizontalAxisName);
+        if (horizontal != null) horizontal.Input.Gain = _baseHorizontalGain * _sensitivity;
+
+        var vertical = _input.GetController(_verticalAxisName);
+        if (vertical != null) vertical.Input.Gain = _baseVerticalGain * _sensitivity * (_invertY ? -1f : 1f);
+    }
 
     private void Start()
     {
+        _shakeEnabled = PlayerPrefs.GetInt(PlayerPrefsKeys.cameraShakeKey, 1) == 1;
+
         _pj = GameManager.Instance.Pj.transform;
         _obstacle = GameManager.Instance.Surfaces;
         _baseRadius = _camera.Radius;
         _minVerticalAngle = _camera.VerticalAxis.Range.x;
         _input = GetComponent<CinemachineInputAxisController>();
         _rotation = GetComponent<CameraRotation>();
+
+        // Gain base de cada eje tal como quedó configurado en el inspector, antes de aplicarle la sensibilidad guardada.
+        var horizontal = _input ? _input.GetController(_horizontalAxisName) : null;
+        var vertical = _input ? _input.GetController(_verticalAxisName) : null;
+        if (horizontal != null) _baseHorizontalGain = horizontal.Input.Gain;
+        if (vertical != null) _baseVerticalGain = Mathf.Abs(vertical.Input.Gain);
+
+        _sensitivity = PlayerPrefs.GetFloat(PlayerPrefsKeys.cameraSensitivityKey, 1f);
+        _invertY = PlayerPrefs.GetInt(PlayerPrefsKeys.invertYKey, 0) == 1;
+        ApplyAxisGains();
 
         if(UIManager.Instance != null)
         {

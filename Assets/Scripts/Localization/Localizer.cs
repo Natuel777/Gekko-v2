@@ -46,7 +46,7 @@ public static class Localizer
     {
         { "loading_label", ("CARGANDO", "LOADING") },
 
-        { "tab_game", ("Juego", "Game") },
+        { "tab_game", ("Idioma", "Language") },
         { "tab_graphics", ("Gráficos", "Graphics") },
         { "tab_sound", ("Sonido", "Sound") },
         { "tab_controls", ("Controles", "Controls") },
@@ -57,6 +57,10 @@ public static class Localizer
 
         { "resolution", ("Resolución", "Resolution") },
         { "fullscreen", ("Pantalla completa", "Fullscreen") },
+        { "brightness", ("Brillo", "Brightness") },
+        { "camera_shake", ("Sacudida de cámara", "Camera Shake") },
+        { "camera_sensitivity", ("Sensibilidad de cámara", "Camera Sensitivity") },
+        { "invert_y", ("Invertir cámara Y", "Invert Camera Y") },
 
         { "volume_master", ("Volumen general", "Master Volume") },
         { "volume_music", ("Volumen de música", "Music Volume") },
