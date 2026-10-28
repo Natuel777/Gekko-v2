@@ -18,6 +18,8 @@ public class MenuButtonFX : MonoBehaviour, IPointerEnterHandler, IPointerExitHan
     [Header("Referencias")]
     [SerializeField] private TMP_Text _label;
     [SerializeField] private Image _halo;
+    [Tooltip("Marco/flecha que se prende junto con el hover (ej. el recuadro del escape menu). Opcional.")]
+    [SerializeField] private GameObject _selectionFrame;
 
     [Header("Confirmación (reemplaza al onClick del Button)")]
     [SerializeField] private UnityEvent _onConfirmed;
@@ -148,6 +150,7 @@ public class MenuButtonFX : MonoBehaviour, IPointerEnterHandler, IPointerExitHan
         }
 
         bool lit = (_hovered || _selected) && !_dimmed && interactable;
+        if (_selectionFrame && _selectionFrame.activeSelf != lit) _selectionFrame.SetActive(lit);
         _hover = Mathf.MoveTowards(_hover, lit ? 1f : 0f, dt * _hoverSpeed);
         _alpha = Mathf.MoveTowards(_alpha, _dimmed ? _dimAlpha : 1f, dt * 6f);
 
