@@ -20,6 +20,8 @@ public class AimManager : MonoBehaviour
 
     private bool _lockedIn;
 
+    public Transform CurrentTarget => _target;
+
     void Update()
     {
         if (_pjController.TongueOut) return;
@@ -31,7 +33,13 @@ public class AimManager : MonoBehaviour
             _switchTimer -= Time.deltaTime;
             _pointToLook.position = _target.position;
             _tongue.LookAt(_target.position);
-            if (!StaticMethods.InFOV(transform, _target.position, _viewRange, _viewAngle, _obstacle))
+            // Gira el cuerpo hacia el target lockeado: sin esto, alejar a Gekko con el movimiento rompe el
+            // FOV (chequeado contra transform.forward) y el ShootTongue (un Raycast recto, no un cono) termina
+            // tirando para donde mira el cuerpo en vez de al núcleo. Solo para targets golpeables (núcleos,
+            // barricadas, enemigos): un colectible (arándano, etc.) no lo necesita y no debería hacer girar a Gekko.
+            if(_target.GetComponent<IDamageable>() != null)
+                _pjController.RotateTowards(_target.position);
+            if (!StaticMethods.InFOV(transform, _target.position, _viewRange + GetRangeBonus(_target), _viewAngle + GetAngleBonus(_target), GetObstacleMask(_target)))
                 TargetNull();
         }
         else
@@ -70,22 +78,44 @@ public class AimManager : MonoBehaviour
         //else TargetNull();
     }
 
+    // Margen fijo para que el OverlapSphere (fase amplia) no descarte de entrada un núcleo con _extraCatchRange:
+    // el corte preciso lo sigue haciendo InFOV más abajo, con el rango real de cada candidato.
+    private const float MaxRangeBonusPadding = 10f;
+
     //Candidato a optimizar
     private List<Transform> GetTargets()
     {
-        Collider[] hits = Physics.OverlapSphere(transform.position, _viewRange, _aimableMask);
+        Collider[] hits = Physics.OverlapSphere(transform.position, _viewRange + MaxRangeBonusPadding, _aimableMask);
         List<Transform> targets = new List<Transform>();
 
         foreach (var hit in hits)
         {
             if (hit.TryGetComponent(out IParticleSystemTarget pst) && !pst.CanBeTargeted) continue;
 
-            if (StaticMethods.InFOV(transform, hit.transform.position, _viewRange, _viewAngle, _obstacle))
+            if (StaticMethods.InFOV(transform, hit.transform.position, _viewRange + GetRangeBonus(hit.transform), _viewAngle + GetAngleBonus(hit.transform), GetObstacleMask(hit.transform)))
             {
                 targets.Add(hit.transform);
             }
         }
         return targets;
+    }
+
+    // Bonus de rango/ángulo/línea-de-visión por-objeto (ej. un núcleo en una posición o ángulo incómodo, o con el
+    // propio piso tapándolo): valores neutros (0/_obstacle sin cambios) si no implementa PurificationCore.
+    private float GetRangeBonus(Transform t) => t != null && t.TryGetComponent(out PurificationCore core) ? core.ExtraCatchRange : 0f;
+    private float GetAngleBonus(Transform t) => t != null && t.TryGetComponent(out PurificationCore core) ? core.ExtraCatchAngle : 0f;
+
+    private int _groundLayer = -2; // -2 = sin calcular todavía (NameToLayer puede devolver -1 válidamente si no existe la capa)
+
+    private LayerMask GetObstacleMask(Transform t)
+    {
+        if (t == null || !t.TryGetComponent(out PurificationCore core) || !core.IgnoreGroundOcclusion)
+            return _obstacle;
+
+        if (_groundLayer == -2) _groundLayer = LayerMask.NameToLayer("Ground");
+        if (_groundLayer < 0) return _obstacle;
+
+        return _obstacle & ~(1 << _groundLayer);
     }
     
     public void SwitchTarget(Vector2 scroll)

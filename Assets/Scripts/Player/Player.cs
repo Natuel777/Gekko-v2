@@ -156,6 +156,7 @@ public class Player : MonoBehaviour
 
         _pjTongue = GetComponentInChildren<TongueManager>();
         _pjTongue.GetPlayerController(_pjController);
+        _pjTongue.SetAimManager(_aimM);
 
         _pjController.GetTongueManager(_pjTongue);
 

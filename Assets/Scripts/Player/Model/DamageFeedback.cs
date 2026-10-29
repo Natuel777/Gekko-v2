@@ -174,6 +174,8 @@ public class DamageFeedback : MonoBehaviour
     #endregion
 
     #region Empujón
+    // Bloquea el input mientras dura el empujón: si no, Move() (PlayerController) pisa la velocidad con la
+    // del movimiento que el jugador siga manteniendo apretado, y el empujón nunca se siente.
     private IEnumerator KnockbackRoutine(Vector3 fromDirection)
     {
         if(_player == null || _player.PjController == null) yield break;
@@ -181,6 +183,8 @@ public class DamageFeedback : MonoBehaviour
         Vector3 dir = Vector3.ProjectOnPlane(fromDirection, Vector3.up);
         if(dir.sqrMagnitude < 0.0001f) dir = -transform.forward;
         dir.Normalize();
+
+        _player.Inputs(false);
 
         float elapsed = 0f;
 
@@ -193,6 +197,8 @@ public class DamageFeedback : MonoBehaviour
             _player.PjController.ApplyKnockbackVelocity(dir * speed);
             yield return null;
         }
+
+        _player.Inputs(true);
     }
     #endregion
 

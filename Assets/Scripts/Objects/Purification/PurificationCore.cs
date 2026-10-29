@@ -21,8 +21,19 @@ public class PurificationCore : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
     [Tooltip("Material que recibe la malla de 'Visual' al romperse. Si está asignado, la malla queda visible con este material en vez de ocultarse.")]
     [SerializeField] private Material _purifiedMaterial;
     [SerializeField] private ParticleSystem _indicator;
+    [Tooltip("Metros de más que suma al rango de aimeo (AimManager) solo para ESTE núcleo. 0 = el rango normal del jugador, sin cambios. Para núcleos en posiciones incómodas donde cuesta que la lengua enganche.")]
+    [Min(0f)]
+    [SerializeField] private float _extraCatchRange = 0f;
+    [Tooltip("Grados de más que suma al ángulo de aimeo (AimManager) solo para ESTE núcleo. 0 = el ángulo normal del jugador, sin cambios. Para núcleos en ángulos incómodos (arriba, al costado) donde cuesta engancharlos aunque se esté cerca.")]
+    [Min(0f)]
+    [SerializeField] private float _extraCatchAngle = 0f;
+    [Tooltip("Ignora la capa 'Ground' en el chequeo de línea de visión del AimManager, solo para ESTE núcleo. Para cuando el propio piso (con su malla de colisión irregular) tapa la línea entre Gekko y el núcleo aunque esté a la vista.")]
+    [SerializeField] private bool _ignoreGroundOcclusion = false;
     public bool CanBeTargeted => !IsBroken;
     public ParticleSystem Indicator => _indicator;
+    public float ExtraCatchRange => _extraCatchRange;
+    public float ExtraCatchAngle => _extraCatchAngle;
+    public bool IgnoreGroundOcclusion => _ignoreGroundOcclusion;
 
     [Header("Dissolve (on break)")]
     [Tooltip("Velocidad del disolve en unidades de _Dissolve por segundo: 0.5 = tarda 2 s en ir de 0 a 1, 2 = tarda 0.5 s. Solo corre cuando el núcleo se rompe.")]

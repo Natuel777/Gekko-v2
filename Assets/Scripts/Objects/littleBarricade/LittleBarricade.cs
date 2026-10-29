@@ -1,6 +1,7 @@
 using System.Collections;
 using Unity.Cinemachine;
 using UnityEngine;
+using UnityEngine.Events;
 
 public class LittleBarricade : MonoBehaviour, IDamageable, IParticleSystemTarget
 {
@@ -33,6 +34,9 @@ public class LittleBarricade : MonoBehaviour, IDamageable, IParticleSystemTarget
 
     public bool CanBeTargeted => !_interacted;
 
+    [Tooltip("Se dispara una sola vez al romperse (ej. para avisarle a un PurifyRegion que se purifique).")]
+    public UnityEvent OnPurified = new();
+
     [SerializeField] private GameObject[] CorruptionParticles;
     public void Damage(float dmg)
     {
@@ -48,6 +52,7 @@ public class LittleBarricade : MonoBehaviour, IDamageable, IParticleSystemTarget
             StartCoroutine(RevealCameraRoutine());
             RemoveLinePositions();
             _interacted = true;
+            OnPurified.Invoke();
         }
     }
 

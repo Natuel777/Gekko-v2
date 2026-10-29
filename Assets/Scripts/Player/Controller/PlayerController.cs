@@ -112,6 +112,39 @@ public class PlayerController
         _rb.linearVelocity = Vector3.zero;
         _rb.angularVelocity = Vector3.zero;
         _rb.useGravity = !frozen;
+
+        // Si entra a la cinemática saltando (o manteniendo Espacio apretado), ArtificialFixedUpdate corta en seco
+        // (ver 'if(_frozenForCinematic) return;' más abajo) y con eso también el chequeo de aterrizaje que
+        // llamaría a CancelJump(). Sin esto, _jumpPressed queda pegado en true mientras se sostenga la tecla, y al
+        // soltar el freeze, Gekko dispara un salto solo (en bucle, mientras se siga sosteniendo) apenas detecta
+        // piso. Limpiarlo acá deja la animación/el salto en un estado conocido sin importar en qué momento entró.
+        if(frozen)
+        {
+            _jumpPressed = false;
+            CancelJump();
+
+            // Si quedó en el aire (saltando o cayendo) al arrancar la cinemática, lo bajamos al piso antes de
+            // congelarlo: sin esto quedaba suspendido en el aire durante toda la cutscene.
+            if(!_isGrounded) SnapToGroundBelow();
+        }
+    }
+
+    // Busca piso derecho hacia abajo desde el centro del collider y, si encuentra, teletransporta a Gekko parado
+    // justo encima. No hace nada si no hay piso dentro del rango (ej. cinemática que arranca sobre un pozo).
+    private void SnapToGroundBelow()
+    {
+        float scale = _pjTransform.lossyScale.x;
+        float half = (_collider.height / 2f) * scale;
+        Vector3 origin = _pjTransform.TransformPoint(_collider.center);
+
+        if(!Physics.Raycast(origin, -_currentUp, out RaycastHit groundHit, 50f * scale, _groundRayMask, QueryTriggerInteraction.Ignore))
+            return;
+
+        Vector3 groundedPos = groundHit.point + _currentUp * half;
+        _rb.position = groundedPos;
+        _pjTransform.position = groundedPos;
+        _isGrounded = true;
+        _isSurface = true;
     }
 
     public void Teleport(Vector3 position)
@@ -538,6 +571,11 @@ public class PlayerController
              _pjTransform.rotation = newRot;
         }
     }
+
+    // Para el AimManager: gira el cuerpo hacia un target lockeado (núcleo, etc.), con la misma
+    // suavidad/reglas que el giro por movimiento (respeta _canRotate y el _currentUp de la superficie).
+    public void RotateTowards(Vector3 worldPosition) => Rotate(worldPosition - _pjTransform.position);
+
     public void Jump(float force)
     {
         _isSurface = false;
