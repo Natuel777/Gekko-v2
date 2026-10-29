@@ -17,6 +17,8 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
     [SerializeField] private GameObject _muzzlePS;
     [SerializeField] private AudioSource _purifiedSound;
     [SerializeField] private Animator _animatorCarnivorousPlant;
+    [Tooltip("Objetos a desactivar al purificar la planta (ej. la línea de conexión de corrupción hacia la enredadera).")]
+    [SerializeField] private GameObject[] _hideOnPurified;
 
     [Tooltip("The reference for the 'Selected' Particle System. Variable inherited by IParticleSystemTarget")]
     [SerializeField] private ParticleSystem _indicator;
@@ -260,6 +262,10 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
         if(_purifiedSound != null) _purifiedSound.Play();
         ApplyPurifiedMaterial();
         if (AudioManager.instance) AudioManager.instance.Play(SoundNames.Purify);
+
+        if(_hideOnPurified != null)
+            foreach(GameObject go in _hideOnPurified)
+                if(go != null) go.SetActive(false);
     }
 
     // Cambio de material unidireccional: la purificación de la planta es un estado terminal, no se revierte.

@@ -117,7 +117,13 @@ public class DamageFeedback : MonoBehaviour
 
         yield return new WaitForSecondsRealtime(_hitstopDurationMs / 1000f);
 
-        Time.timeScale = previousScale > 0f ? previousScale : 1f;
+        // Si el jugador pausó durante el hitstop, no restaurar el timeScale: el hitstop usa tiempo real y
+        // termina igual aunque el menú de pausa esté abierto. Restaurarlo acá reanudaría físicas/animaciones
+        // (enredaderas, barricadas, etc.) por detrás del menú; que lo restaure GameManager al despausar.
+        bool isPaused = GameManager.Instance != null && GameManager.Instance.CanPause;
+        if(!isPaused)
+            Time.timeScale = previousScale > 0f ? previousScale : 1f;
+
         _hitstopActive = false;
     }
     #endregion

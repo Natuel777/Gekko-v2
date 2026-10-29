@@ -59,9 +59,6 @@ public class NotificationManager
     {
         _notificationText.text = messageOverride ?? data.Message;
 
-        if(_notificationImage != null && _notificationImage.sprite != data.Icon)
-            _notificationImage.sprite = data.Icon;
-
         if(!_isAccumulating)
         {
             _isAccumulating = true;
@@ -117,9 +114,6 @@ public class NotificationManager
             NotificationSO current = _notificationQueue.Dequeue();
             _notificationText.text = current.Message;
 
-            if(_notificationImage != null && _notificationImage.sprite != current.Icon)
-                _notificationImage.sprite = current.Icon;
-
             yield return _startCoroutine(FadeCanvasGroup(_canvasGroup, true, current.FadeDuration));
             yield return new WaitForSeconds(current.DisplayDuration);
             yield return _startCoroutine(FadeCanvasGroup(_canvasGroup, false, current.FadeDuration));
@@ -131,9 +125,6 @@ public class NotificationManager
     public void ShowRaspberryCollectible(NotificationSO data, int count)
     {
         _raspberryCountText.text = count.ToString();
-
-        if(_raspberryImage == null || _raspberryImage.sprite != data.Icon)
-            _raspberryImage.sprite = data.Icon;
 
         if(!_isRaspberryAccumulating)
         {
