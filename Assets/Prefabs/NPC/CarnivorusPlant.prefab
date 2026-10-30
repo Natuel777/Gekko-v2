@@ -109,9 +109,14 @@ MonoBehaviour:
   _head: {fileID: 7283786708917656112}
   _firePoint: {fileID: 5625072394243308955}
   _purifiedParticle: {fileID: 6084611520021885951}
+  _muzzlePS: {fileID: 0}
   _purifiedSound: {fileID: 0}
   _animatorCarnivorousPlant: {fileID: 1749979985346082821}
+  _hideOnPurified: []
   _indicator: {fileID: 4382122168831265274}
+  _aimJoint: {fileID: 7720723718618553665}
+  _aimJointAxis: {x: 0, y: 0, z: 1}
+  _aimBlendTime: 0.25
 --- !u!1001 &690843989405038279
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -377,5 +382,10 @@ Transform:
 --- !u!4 &7283786708917656112 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -5951155234622990170, guid: 027c378a5e0137949a4799d97ef00a4b, type: 3}
+  m_PrefabInstance: {fileID: 5223061434202096278}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &7720723718618553665 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -6676146765590585385, guid: 027c378a5e0137949a4799d97ef00a4b, type: 3}
   m_PrefabInstance: {fileID: 5223061434202096278}
   m_PrefabAsset: {fileID: 0}
