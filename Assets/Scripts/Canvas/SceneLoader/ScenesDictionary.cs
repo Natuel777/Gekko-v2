@@ -10,6 +10,8 @@ public static class ScenesDictionary
         {ScenesNames.Level1, "LvlOne" },
         {ScenesNames.Level2, "LvlTwo" },
         {ScenesNames.Intentocin, "intentocin" },
+        {ScenesNames.BossLvlOne, "BossLvlOne" },
+        {ScenesNames.Aldea, "Aldea" },
     };
     public static Dictionary<int, ScenesNames> LevelIndex = new Dictionary<int, ScenesNames>
     {
@@ -17,9 +19,25 @@ public static class ScenesDictionary
         {2, ScenesNames.Level2},
     };
 
+    // Escenas que no están en LevelIndex pero cierran un nivel: su "siguiente nivel" va directo acá.
+    // El nivel 1 sigue LvlOne -> BossLvlOne -> Aldea, y el Level Finish de la Aldea manda a LvlTwo.
+    public static Dictionary<ScenesNames, ScenesNames> NextSceneOverride = new Dictionary<ScenesNames, ScenesNames>
+    {
+        {ScenesNames.Aldea, ScenesNames.Level2},
+    };
+
     public static bool TryGetNextLevel(string currentSceneName, out ScenesNames next)
     {
         next = default;
+
+        foreach (var kvp in NextSceneOverride)
+        {
+            if (SceneName[kvp.Key] == currentSceneName)
+            {
+                next = kvp.Value;
+                return true;
+            }
+        }
 
         foreach (var kvp in LevelIndex)
         {

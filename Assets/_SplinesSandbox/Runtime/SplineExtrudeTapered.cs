@@ -92,6 +92,13 @@ public class SplineExtrudeTapered : MonoBehaviour
         set => m_Radius = Mathf.Max(value, .00001f);
     }
 
+    /// <summary>Seccion de la spline a extruir (0-1). Asignarla no reconstruye la malla: llamar a Rebuild.</summary>
+    public Vector2 Range
+    {
+        get => m_Range;
+        set => m_Range = value;
+    }
+
     /// <summary>Multiplicador de radio por knot de la spline principal. Ver SyncKnotRadii.</summary>
     public IList<float> KnotRadiusMultipliers => m_KnotRadiusMultipliers;
 
