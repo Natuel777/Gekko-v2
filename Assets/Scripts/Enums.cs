@@ -4,7 +4,9 @@ public enum ScenesNames
     Menu,
     Level1,
     Level2,
-    Intentocin
+    Intentocin,
+    BossLvlOne,
+    Aldea
 }
 public enum ReafirmCanvas
 {

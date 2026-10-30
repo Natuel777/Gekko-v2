@@ -30,6 +30,8 @@ public class PurificationChallenge : MonoBehaviour
     [Header("Barriers")]
     [Tooltip("Barrera alrededor de la planta: se disuelve un tramo por cada núcleo roto y cae del todo al romper el último.")]
     [SerializeField] private PurificationBarrier _shield;
+    [Tooltip("Escudo de enredaderas (Escudo_Enredadera): se retrae un tramo por cada núcleo roto, igual que _shield. Se puede usar en lugar de _shield o junto con él.")]
+    [SerializeField] private VineShield _vineShield;
     [Tooltip("Barrera que tapa el camino: cae al purificar la planta.")]
     [SerializeField] private PurificationBarrier _pathBarrier;
 
@@ -53,7 +55,7 @@ public class PurificationChallenge : MonoBehaviour
     [SerializeField] private PurificationChallengeHealthbar _healthbar;
 
     [Header("Shield Down")]
-    [Tooltip("Timeline que, al romper el último núcleo, encadena la cámara de 'núcleo roto' con la de la planta enojada (con movimiento propio en vez de un blend automático).")]
+    [Tooltip("Timeline que se reproduce al romper el último núcleo.")]
     [SerializeField] private PlayableDirector _shieldDownDirector;
 
     [Header("Finish")]
@@ -77,6 +79,7 @@ public class PurificationChallenge : MonoBehaviour
     private CinematicSkipHandler _skipHandler;
     private Coroutine _completionBeatRoutine;
     public ChallengeState State { get; private set; } = ChallengeState.Active;
+    public IReadOnlyList<PurificationCore> Cores => _cores;
 
     // (núcleos restantes, núcleos totales)
     public event Action<int, int> CoreBroken;
@@ -119,7 +122,7 @@ public class PurificationChallenge : MonoBehaviour
 
         WarnSharedEnemies();
 
-        if(_shield != null) _plant.SetShielded(true);
+        if(_shield != null || _vineShield != null) _plant.SetShielded(true);
 
         UpdateText();
 
@@ -296,13 +299,12 @@ public class PurificationChallenge : MonoBehaviour
             // Cada núcleo roto disuelve un tramo más del escudo: con 3 núcleos, el primero lo lleva a 1/3 y el segundo a
             // 2/3. El tramo final (el último núcleo) lo hace DropShield.
             if(_shield != null) _shield.DissolveStep(_total - _remaining, _total);
+            if(_vineShield != null) _vineShield.DissolveStep(_total - _remaining, _total);
         }
         else
         {
             DropShield();
             // Solo acá y no en DropShield: si arranca sin núcleos (Start) no hay nada que mostrar.
-            // El timeline encadena la cámara de "núcleo roto" (BossPlantPhases) con la de la planta enojada,
-            // con movimiento propio en vez de un blend automático del CinemachineBrain.
             if(_shieldDownDirector != null) _shieldDownDirector.Play();
         }
     }
@@ -315,11 +317,9 @@ public class PurificationChallenge : MonoBehaviour
 
         // Último tramo: el escudo termina de disolverse (con el mismo ritmo que los anteriores) y cae. Con _total en 0 (sin
         // núcleos) la barrera igual necesita al menos un tramo para disolverse.
-        if(_shield != null)
-        {
-            int steps = Mathf.Max(1, _total);
-            _shield.DissolveStep(steps, steps);
-        }
+        int steps = Mathf.Max(1, _total);
+        if(_shield != null) _shield.DissolveStep(steps, steps);
+        if(_vineShield != null) _vineShield.DissolveStep(steps, steps);
 
         if(_plant != null) _plant.SetShielded(false);
 

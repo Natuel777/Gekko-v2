@@ -2,7 +2,7 @@ using UnityEngine;
 
 public class GekkoHealth : IDamageable
 {
-    private float _maxHealth = 100f, _currentHealth;
+    private float _maxHealth = 5f, _currentHealth;
     private HealthBar _healthBar;
 
     public float CurrentHealth => _currentHealth;
@@ -37,8 +37,10 @@ public class GekkoHealth : IDamageable
         // Ventana de invulnerabilidad del DamageFeedback: ni vida ni efectos.
         if(DamageFeedback.Instance != null && DamageFeedback.Instance.IsInvulnerable) return;
 
-        Debug.Log("Gekko took " + dmg + " damage!");
-        _currentHealth -= dmg;
+        // Sistema por hits: cada golpe cuesta un corazón entero, sin importar cuánto
+        // "daño" declare la fuente (lava, bicho, etc.) — el valor de dmg ya no se usa.
+        Debug.Log("Gekko took a hit!");
+        _currentHealth -= 1f;
         _currentHealth = Mathf.Max(_currentHealth, 0f);
         _healthBar.UpdateHealthBar(_currentHealth, _maxHealth);
         _healthBar.TriggerDamagePulse();

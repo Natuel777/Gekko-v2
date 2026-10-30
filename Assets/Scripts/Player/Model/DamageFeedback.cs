@@ -117,7 +117,13 @@ public class DamageFeedback : MonoBehaviour
 
         yield return new WaitForSecondsRealtime(_hitstopDurationMs / 1000f);
 
-        Time.timeScale = previousScale > 0f ? previousScale : 1f;
+        // Si el jugador pausó durante el hitstop, no restaurar el timeScale: el hitstop usa tiempo real y
+        // termina igual aunque el menú de pausa esté abierto. Restaurarlo acá reanudaría físicas/animaciones
+        // (enredaderas, barricadas, etc.) por detrás del menú; que lo restaure GameManager al despausar.
+        bool isPaused = GameManager.Instance != null && GameManager.Instance.CanPause;
+        if(!isPaused)
+            Time.timeScale = previousScale > 0f ? previousScale : 1f;
+
         _hitstopActive = false;
     }
     #endregion
@@ -174,6 +180,8 @@ public class DamageFeedback : MonoBehaviour
     #endregion
 
     #region Empujón
+    // Bloquea el input mientras dura el empujón: si no, Move() (PlayerController) pisa la velocidad con la
+    // del movimiento que el jugador siga manteniendo apretado, y el empujón nunca se siente.
     private IEnumerator KnockbackRoutine(Vector3 fromDirection)
     {
         if(_player == null || _player.PjController == null) yield break;
@@ -181,6 +189,8 @@ public class DamageFeedback : MonoBehaviour
         Vector3 dir = Vector3.ProjectOnPlane(fromDirection, Vector3.up);
         if(dir.sqrMagnitude < 0.0001f) dir = -transform.forward;
         dir.Normalize();
+
+        _player.Inputs(false);
 
         float elapsed = 0f;
 
@@ -193,6 +203,8 @@ public class DamageFeedback : MonoBehaviour
             _player.PjController.ApplyKnockbackVelocity(dir * speed);
             yield return null;
         }
+
+        _player.Inputs(true);
     }
     #endregion
 

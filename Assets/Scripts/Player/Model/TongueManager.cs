@@ -9,6 +9,9 @@ public class TongueManager : MonoBehaviour
     [SerializeField] private float _maxDistance = 7f;
     [SerializeField] private Transform _mouthTransform;
     [SerializeField] private PlayerViewer _pjViewer;
+    // Para que el alcance del lengüetazo coincida con el del lock-on cuando un PurificationCore tiene
+    // ExtraCatchRange: sin esto, AimManager podía dejar lockeado algo que el Raycast de ShootTongue no alcanzaba.
+    private AimManager _aimManager;
     private SkinnedMeshRenderer _blend;
 
     private Vector3 _startPos;
@@ -187,7 +190,28 @@ public class TongueManager : MonoBehaviour
         _pjViewer.TongueSoundPlay();
 
         float stopDist = 0.05f;
-        if (Physics.Raycast(transform.position, transform.forward, out RaycastHit hit, _maxDistance, ~0, QueryTriggerInteraction.Ignore))
+        float effectiveMaxDistance = GetEffectiveMaxDistance();
+
+        // Si el AimManager tiene un target lockeado (el círculo/indicador ya prendido) y es golpeable, confiar
+        // directo en el lock en vez de recalcular con un Raycast: evita fallos por una diferencia mínima entre
+        // hacia dónde quedó mirando la lengua (LookAt, en Update) y el Raycast de este frame puntual. Lo que se
+        // ve "enganchado" siempre conecta. Los demás tipos de objeto (interactuables, cargables, colectables)
+        // siguen pasando por el Raycast normal de abajo, sin cambios.
+        Transform lockedTarget = _aimManager != null ? _aimManager.CurrentTarget : null;
+        if (lockedTarget != null && lockedTarget.GetComponent<IDamageable>() != null)
+        {
+            _object = lockedTarget;
+
+            if (_object.TryGetComponent(out Collider lockedCol))
+            {
+                _objectRadius = lockedCol.bounds.extents.magnitude;
+                stopDist = _objectRadius + 0.1f;
+            }
+
+            _finalPos = _object.position;
+            _pjViewer.Attack();
+        }
+        else if (Physics.Raycast(transform.position, transform.forward, out RaycastHit hit, effectiveMaxDistance, ~0, QueryTriggerInteraction.Ignore))
         {
             if(hit.transform.GetComponent<BaseObject>() != null || hit.transform.GetComponent<IDamageable>() !=null)
             {
@@ -231,7 +255,7 @@ public class TongueManager : MonoBehaviour
         }
         else
         {
-            _finalPos = transform.position + transform.forward * _maxDistance;
+            _finalPos = transform.position + transform.forward * effectiveMaxDistance;
             _pjViewer.Attack();
         }
 
@@ -324,6 +348,21 @@ public class TongueManager : MonoBehaviour
     public void GetPlayerController(PlayerController pjC)
     {
         _pjController = pjC;
+    }
+    public void SetAimManager(AimManager aimM)
+    {
+        _aimManager = aimM;
+    }
+
+    // Si hay un target lockeado con ExtraCatchRange (ej. un núcleo difícil de encarar), el lengüetazo llega
+    // tan lejos como el lock-on del AimManager, para que lo que se ve lockeado se pueda golpear de verdad.
+    private float GetEffectiveMaxDistance()
+    {
+        Transform target = _aimManager != null ? _aimManager.CurrentTarget : null;
+        if (target != null && target.TryGetComponent(out PurificationCore core))
+            return _maxDistance + core.ExtraCatchRange;
+
+        return _maxDistance;
     }
     private void OnDrawGizmosSelected()
     {
