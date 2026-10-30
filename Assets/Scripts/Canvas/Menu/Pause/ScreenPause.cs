@@ -5,7 +5,7 @@ public class ScreenPause : Screens
 {
     public void Initialize()
     {
-        EventManager.Subscribe("UnPauseEvent", () => Debug.Log("poronga"));
+
     }
 
     public void BTN_Menu()
