@@ -26,6 +26,10 @@ public class FriendGekkoDialogue : DialogueNPC
 
     private bool _leaving;
 
+    // Arranca solo al aparecer (ver BossGekkoReveal), con el player donde haya quedado tras la pelea: si se
+    // cerrara por distancia, terminaría en el primer frame y saltaría directo a la escena siguiente.
+    public override bool CloseByDistance => false;
+
     public override void OnDialogueStart()
     {
         base.OnDialogueStart();

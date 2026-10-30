@@ -29,6 +29,11 @@ public class BossGekkoReveal : MonoBehaviour
     [SerializeField] private LayerMask _groundLayer;
     [Tooltip("Metros de margen sobre el punto de piso encontrado.")]
     [SerializeField] private float _groundClearance = 0.05f;
+    [Tooltip("Arranca el diálogo del gekko apenas aparece, sin que el player tenga que acercarse y apretar interactuar.")]
+    [SerializeField] private bool _autoStartDialogue = true;
+    [Tooltip("Segundos entre que aparece el gekko y arranca el diálogo.")]
+    [Min(0f)]
+    [SerializeField] private float _dialogueDelay = 0.5f;
 
     private int _dissolveId;
     private bool _triggered;
@@ -71,6 +76,15 @@ public class BossGekkoReveal : MonoBehaviour
 
         PlaceNextToPlant(_friendGekko.transform);
         _friendGekko.SetActive(true);
+
+        if(!_autoStartDialogue) yield break;
+
+        // Un frame para que el gekko recién activado termine su Awake/OnEnable antes de hablar.
+        yield return null;
+        if(_dialogueDelay > 0f) yield return new WaitForSeconds(_dialogueDelay);
+
+        if(UIManager.Instance != null && _friendGekko.TryGetComponent(out IDialogueable dialogueable))
+            UIManager.Instance.StartDialogue(dialogueable);
     }
 
     // Posición relativa a la planta, calculada recién ahora (no guardada de antes): si la zona se movió o

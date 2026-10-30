@@ -652,6 +652,8 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 64
   _groundClearance: 0.05
+  _autoStartDialogue: 1
+  _dialogueDelay: 0.5
 --- !u!1 &29824837
 GameObject:
   m_ObjectHideFlags: 0
@@ -4653,15 +4655,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 0.9, g: 0.85, b: 0.2, a: 1}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 0}
-  m_Type: 3
+  m_Sprite: {fileID: -1461250851, guid: b5b5421744545b24d8f920fefaacda0b, type: 3}
+  m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
   m_FillMethod: 0
@@ -30995,18 +30997,30 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.x
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 749486686956627572, guid: 779d4e08007fa6b4ab38cffeb5438254, type: 3}
+      propertyPath: m_Sprite
+      value: 
+      objectReference: {fileID: 2068789664, guid: b5b5421744545b24d8f920fefaacda0b, type: 3}
     - target: {fileID: 2227072866302888744, guid: 779d4e08007fa6b4ab38cffeb5438254, type: 3}
       propertyPath: m_fontAsset
       value: 
-      objectReference: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+      objectReference: {fileID: 11400000, guid: 2e55b29349a03a64a9793946f7121bac, type: 2}
     - target: {fileID: 2227072866302888744, guid: 779d4e08007fa6b4ab38cffeb5438254, type: 3}
       propertyPath: m_sharedMaterial
       value: 
-      objectReference: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+      objectReference: {fileID: -470118723626038596, guid: 2e55b29349a03a64a9793946f7121bac, type: 2}
+    - target: {fileID: 2227072866302888744, guid: 779d4e08007fa6b4ab38cffeb5438254, type: 3}
+      propertyPath: m_hasFontAssetChanged
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2782967162966544091, guid: 779d4e08007fa6b4ab38cffeb5438254, type: 3}
+      propertyPath: m_Type
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 2782967162966544091, guid: 779d4e08007fa6b4ab38cffeb5438254, type: 3}
       propertyPath: m_Sprite
       value: 
-      objectReference: {fileID: 21300000, guid: b3d3a04b4e59e8b4f97ae4ee0a3de393, type: 3}
+      objectReference: {fileID: 2010851734, guid: b5b5421744545b24d8f920fefaacda0b, type: 3}
     - target: {fileID: 2782967162966544091, guid: 779d4e08007fa6b4ab38cffeb5438254, type: 3}
       propertyPath: m_Color.a
       value: 0.87058824
@@ -31046,11 +31060,15 @@ PrefabInstance:
     - target: {fileID: 4821778975888663926, guid: 779d4e08007fa6b4ab38cffeb5438254, type: 3}
       propertyPath: m_fontAsset
       value: 
-      objectReference: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+      objectReference: {fileID: 11400000, guid: 2e55b29349a03a64a9793946f7121bac, type: 2}
     - target: {fileID: 4821778975888663926, guid: 779d4e08007fa6b4ab38cffeb5438254, type: 3}
       propertyPath: m_sharedMaterial
       value: 
-      objectReference: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+      objectReference: {fileID: -470118723626038596, guid: 2e55b29349a03a64a9793946f7121bac, type: 2}
+    - target: {fileID: 4821778975888663926, guid: 779d4e08007fa6b4ab38cffeb5438254, type: 3}
+      propertyPath: m_hasFontAssetChanged
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 5106133507203386943, guid: 779d4e08007fa6b4ab38cffeb5438254, type: 3}
       propertyPath: m_fontAsset
       value: 
@@ -58712,8 +58730,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: "Manten\xE9 E para saltear"
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 2e55b29349a03a64a9793946f7121bac, type: 2}
+  m_sharedMaterial: {fileID: -470118723626038596, guid: 2e55b29349a03a64a9793946f7121bac, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []

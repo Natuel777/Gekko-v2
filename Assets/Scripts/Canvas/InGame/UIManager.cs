@@ -197,6 +197,7 @@ public class UIManager : MonoBehaviour
     public void ArtificialUpdate()
     {
         if(_currentDialogue == null) return;
+        if(_currentDialogue is DialogueNPC npc && !npc.CloseByDistance) return;
 
         Transform player = GameManager.Instance.Pj.transform;
         if(Vector3.Distance(player.position, _currentDialogue.Transform.position) > _closeDistance)

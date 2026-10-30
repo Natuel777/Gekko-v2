@@ -19,4 +19,8 @@ public class DialogueNPC : MonoBehaviour, IDialogueable
     // instancia particular (ej. FriendGekkoDialogue) puede necesitar reaccionar al cierre del diálogo.
     public virtual void OnDialogueStart() { }
     public virtual void OnDialogueEnd() { }
+
+    // Si UIManager corta el diálogo cuando el player se aleja. Los diálogos que arrancan solos
+    // (sin que el player se acerque) pueden apagarlo para no cerrarse en el primer frame.
+    public virtual bool CloseByDistance => true;
 }
