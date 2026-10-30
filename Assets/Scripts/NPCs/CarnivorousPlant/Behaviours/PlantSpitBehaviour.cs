@@ -30,6 +30,9 @@ public class PlantSpitBehaviour
         _muzzlePS = muzzlePS;
     }
 
+    // La planta le está apuntando y disparando a alguien (entre StartSpitting y StopSpitting).
+    public bool IsSpitting => _target != null;
+
     public void StartSpitting(Transform target)
     {
         _target = target;

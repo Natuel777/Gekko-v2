@@ -25,6 +25,15 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
     public bool CanBeTargeted => !IsPurified;
     public ParticleSystem Indicator => _indicator;
 
+    [Header("Head Aim")]
+    [Tooltip("Hueso que rota mirando al player mientras la planta le apunta y le dispara (en el boss, joint7_R). Vacío = la planta no mueve ningún hueso. Usa el Rotation Speed del DataSO y respeta su Rotate To Player.")]
+    [SerializeField] private Transform _aimJoint;
+    [Tooltip("Eje LOCAL del hueso que tiene que apuntar al player. Si la cabeza mira de costado o para otro lado, probá otro eje (±X, ±Y, ±Z). Al seleccionar la planta se ve como una línea cian en la Scene.")]
+    [SerializeField] private Vector3 _aimJointAxis = Vector3.forward;
+    [Tooltip("Segundos que tarda el hueso en pasar de la pose de la animación a mirar al player, y en volver.")]
+    [Min(0f)]
+    [SerializeField] private float _aimBlendTime = 0.25f;
+
     private bool _playerInRange = false;
     private bool _purified = false;
     private int _hits;
@@ -40,6 +49,7 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
 
     #region FSM
     public PlantSpitBehaviour spitBehaviour;
+    private PlantAimBehaviour _aimBehaviour;
     public BugDetection detection;
     public BugDetection biteDetection;
     private StateMachine _eventFSM;
@@ -73,6 +83,10 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
 
         spitBehaviour = new PlantSpitBehaviour(_head, _firePoint, _venomPrefab, data.shootInterval, data.rotateToPlayer, data.rotationSpeed, _muzzlePS, PlaySpit);
 
+        // El aim del hueso es opcional: solo existe si la planta tiene un _aimJoint asignado (hoy, el boss).
+        if(_aimJoint != null && data.rotateToPlayer)
+            _aimBehaviour = new PlantAimBehaviour(_aimJoint, _aimJointAxis, data.rotationSpeed, _aimBlendTime);
+
         if(_head != null)
         {
             _headStartLocalPos = _head.localPosition;
@@ -99,6 +113,19 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
 
         _eventFSM.UpdateState();
         UpdateDetection();
+    }
+
+    // LateUpdate y no Update: el Animator reescribe la pose de los huesos después de Update, así que el giro del hueso tiene
+    // que ir después para que no se lo pise (ver PlantAimBehaviour).
+    private void LateUpdate()
+    {
+        if(_aimBehaviour == null) return;
+
+        // Apunta mientras escupe. Aturdida por un golpe de lengua o purificada no: ahí el hueso vuelve a la animación.
+        // spitBehaviour se lee en cada frame porque BossPlantPhases lo reemplaza al cambiar de fase.
+        bool aiming = !_purified && Time.time >= _staggerUntil && spitBehaviour != null && spitBehaviour.IsSpitting;
+
+        _aimBehaviour.ArtificialLateUpdate(playerTransform, aiming);
     }
 
     private void UpdateDetection()
@@ -280,6 +307,13 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
     #if UNITY_EDITOR
     private void OnDrawGizmosSelected()
     {
+        // El eje del hueso que apunta al player (ver _aimJointAxis): sirve para comprobar que es el eje correcto.
+        if(_aimJoint != null && _aimJointAxis.sqrMagnitude > 0.0001f)
+        {
+            Gizmos.color = Color.cyan;
+            Gizmos.DrawRay(_aimJoint.position, _aimJoint.TransformDirection(_aimJointAxis.normalized) * 3f);
+        }
+
         if(data == null) return;
 
         Gizmos.color = Color.magenta;
