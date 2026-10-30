@@ -200,7 +200,6 @@ public sealed class GekkoGrapple
             _secondJumpEnabled = true;
         }
 
-        else Debug.Log("Jovani gran Jovani Vasquez");
     }
 
     public void ArtificialOnTriggerExit(Collider other)
@@ -215,12 +214,9 @@ public sealed class GekkoGrapple
 
             if(ps != null)
             {
-                Debug.Log("Este es Jovaniiiii");
                 ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear); 
             } 
         }
-
-        else Debug.Log("Eldeeeeennn riiinggg, sqrrrrrrrrr");
     }
 
     // Gekko ya está a _finishDistance o menos del punto de enganche. Los metros valen para un Gekko de escala 1 y se
