@@ -591,7 +591,8 @@ public class PlayerController
             force *= 1.5f;
         }
         else _lastValidDir = _currentUp;
-        _rb.linearVelocity += _lastValidDir * force;
+        //_rb.linearVelocity += _lastValidDir * force;
+        _rb.linearVelocity = Vector3.ProjectOnPlane(_rb.linearVelocity, _lastValidDir) + _lastValidDir * force;
         _canJump = false;
     }
     private bool IsGrounded()
@@ -703,7 +704,7 @@ public class PlayerController
                 float castDist = 0.4f * scale; 
 
                 bool isDown = dir == Vector3.down;
-                if (isDown && !_jumpPressed)
+                if (isDown && _isSurface)
                     castDist = 1f * scale;
 
                 if (_isClimbing && !_nearGround)
@@ -828,7 +829,11 @@ public class PlayerController
         _fallMultiplier = fallMulti;
         _lowJumpMultiplier = lowmulti;
     }
-    public void CancelJump() { _pjViewer.Jump(false); }
+    public void CancelJump() 
+    {
+        _pjViewer.Jump(false);
+        _lastValidDir = Vector3.zero; 
+    }
     public void CancelMovement() 
     {
         // En pleno grapple la velocidad ES la parábola: soltar las teclas de movimiento no la tiene que frenar. (Si Gekko
@@ -849,7 +854,6 @@ public class PlayerController
         _pjViewer.Move(false);
         _isMoving = false;
         _hasRef = false;
-        _lastValidDir = Vector3.zero;
         if (_pjViewer.IsWalkSoundPlaying()) _pjViewer.WalkSoundStop();
         if (_pjViewer.IsTrailPlaying()) _pjViewer.StopTrail();
     }
