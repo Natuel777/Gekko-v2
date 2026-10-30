@@ -513,8 +513,8 @@ public class PlayerController
             _refRight = right.normalized;
 
             Vector3 fwd = Vector3.Cross(_refRight, up).normalized;
-            if (Vector3.Dot(fwd, _camTransform.up) < 0f)
-                fwd = -fwd; // respetamos el up de la cámara
+            //if (Vector3.Dot(fwd, _camTransform.up) < 0f)
+            //    fwd = -fwd; // respetamos el up de la cámara
 
             _refForward = fwd;
             _lastUp = up;
