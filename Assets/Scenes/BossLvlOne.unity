@@ -572,6 +572,7 @@ MonoBehaviour:
   _muzzlePS: {fileID: 1788289455}
   _purifiedSound: {fileID: 0}
   _animatorCarnivorousPlant: {fileID: 905243626}
+  _hideOnPurified: []
   _indicator: {fileID: 406050770}
 --- !u!136 &26294469
 CapsuleCollider:
@@ -6426,6 +6427,9 @@ MonoBehaviour:
   _visual: {fileID: 251703634}
   _purifiedMaterial: {fileID: 2100000, guid: 3eb4a69aa54e3f948b2dd71173349832, type: 2}
   _indicator: {fileID: 1222029308}
+  _extraCatchRange: 0
+  _extraCatchAngle: 0
+  _ignoreGroundOcclusion: 0
   _dissolveSpeed: 0.1667
   _lineControllers:
   - {fileID: 158885044}
@@ -8922,11 +8926,11 @@ MonoBehaviour:
   _segundosTransicion: 6
   _volumeCorrupto: {fileID: 387141964}
   _controlarNiebla: 1
-  _nieblaColorCorrupta: {r: 0.26, g: 0.19, b: 0.33, a: 1}
+  _nieblaColorCorrupta: {r: 0.43242705, g: 0.25164652, b: 0.6132076, a: 1}
   _nieblaDensidadCorrupta: 0.012
   _nieblaFinCorrupta: 60
   _luz: {fileID: 1035787271}
-  _luzIntensidadCorrupta: 0.8
+  _luzIntensidadCorrupta: 0.748
   _luzColorCorrupta: {r: 0.72, g: 0.66, b: 0.88, a: 1}
 --- !u!114 &387141964
 MonoBehaviour:
@@ -8943,7 +8947,7 @@ MonoBehaviour:
   m_IsGlobal: 1
   priority: 5
   blendDistance: 0
-  weight: 1
+  weight: 0.572
   sharedProfile: {fileID: 11400000, guid: 5682b89f3bc49414d922c1d2ac6855ad, type: 2}
 --- !u!4 &387141965
 Transform:
@@ -25261,6 +25265,9 @@ MonoBehaviour:
   _visual: {fileID: 914138331}
   _purifiedMaterial: {fileID: 2100000, guid: 3eb4a69aa54e3f948b2dd71173349832, type: 2}
   _indicator: {fileID: 1618270808}
+  _extraCatchRange: 0
+  _extraCatchAngle: 0
+  _ignoreGroundOcclusion: 0
   _dissolveSpeed: 0.1667
   _lineControllers:
   - {fileID: 1083016919}
@@ -28802,6 +28809,22 @@ PrefabInstance:
       propertyPath: m_Color.a
       value: 0.87058824
       objectReference: {fileID: 0}
+    - target: {fileID: 2938774140106876576, guid: 779d4e08007fa6b4ab38cffeb5438254, type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2938774140106876576, guid: 779d4e08007fa6b4ab38cffeb5438254, type: 3}
+      propertyPath: m_AnchorMin.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2938774140106876576, guid: 779d4e08007fa6b4ab38cffeb5438254, type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2938774140106876576, guid: 779d4e08007fa6b4ab38cffeb5438254, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 3358111438306157177, guid: 779d4e08007fa6b4ab38cffeb5438254, type: 3}
       propertyPath: m_AnchorMax.x
       value: 0
@@ -28836,6 +28859,70 @@ PrefabInstance:
       objectReference: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
     - target: {fileID: 5106133507203386943, guid: 779d4e08007fa6b4ab38cffeb5438254, type: 3}
       propertyPath: m_hasFontAssetChanged
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5438692854205476538, guid: 779d4e08007fa6b4ab38cffeb5438254, type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5438692854205476538, guid: 779d4e08007fa6b4ab38cffeb5438254, type: 3}
+      propertyPath: m_AnchorMin.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5438692854205476538, guid: 779d4e08007fa6b4ab38cffeb5438254, type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5438692854205476538, guid: 779d4e08007fa6b4ab38cffeb5438254, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5653092837898960858, guid: 779d4e08007fa6b4ab38cffeb5438254, type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5653092837898960858, guid: 779d4e08007fa6b4ab38cffeb5438254, type: 3}
+      propertyPath: m_AnchorMin.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5653092837898960858, guid: 779d4e08007fa6b4ab38cffeb5438254, type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5653092837898960858, guid: 779d4e08007fa6b4ab38cffeb5438254, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7474190319174891823, guid: 779d4e08007fa6b4ab38cffeb5438254, type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7474190319174891823, guid: 779d4e08007fa6b4ab38cffeb5438254, type: 3}
+      propertyPath: m_AnchorMin.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7474190319174891823, guid: 779d4e08007fa6b4ab38cffeb5438254, type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7474190319174891823, guid: 779d4e08007fa6b4ab38cffeb5438254, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7480360806393033207, guid: 779d4e08007fa6b4ab38cffeb5438254, type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7480360806393033207, guid: 779d4e08007fa6b4ab38cffeb5438254, type: 3}
+      propertyPath: m_AnchorMin.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7480360806393033207, guid: 779d4e08007fa6b4ab38cffeb5438254, type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7480360806393033207, guid: 779d4e08007fa6b4ab38cffeb5438254, type: 3}
+      propertyPath: m_AnchoredPosition.y
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7481751618779994681, guid: 779d4e08007fa6b4ab38cffeb5438254, type: 3}
@@ -38089,7 +38176,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _mode: 0
-  _fallWatchDuration: 0.65
+  _fallWatchDuration: 0.06
   _irisCloseDuration: 0.6
   _blackHoldDuration: 0.6
   _irisOpenDuration: 0.7
@@ -50811,6 +50898,9 @@ MonoBehaviour:
   _visual: {fileID: 1595928547}
   _purifiedMaterial: {fileID: 2100000, guid: 3eb4a69aa54e3f948b2dd71173349832, type: 2}
   _indicator: {fileID: 1771585862}
+  _extraCatchRange: 0
+  _extraCatchAngle: 0
+  _ignoreGroundOcclusion: 0
   _dissolveSpeed: 0.1667
   _lineControllers:
   - {fileID: 1516954422}
