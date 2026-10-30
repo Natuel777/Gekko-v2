@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.Playables;
+using UnityEngine.SceneManagement;
 
 [RequireComponent(typeof(Collider))]
 [RequireComponent(typeof(PlayableDirector))]
@@ -15,6 +16,11 @@ public class ParkourCinematicTrigger : MonoBehaviour
     [Min(0.1f)]
     [SerializeField] private float _skipHoldSeconds = 3f;
     [SerializeField] private SkipCinematicPrompt _skipPrompt;
+
+    [Header("Cambio de escena (opcional)")]
+    [Tooltip("Si está prendido, al entrar no se reproduce la cinemática: se carga directo _sceneToLoad (pasa por SceneLoader). Lo usa el trigger del boss de LvlOne para ir a BossLvlOne.")]
+    [SerializeField] private bool _loadSceneInstead;
+    [SerializeField] private ScenesNames _sceneToLoad = ScenesNames.BossLvlOne;
 
     private bool _played;
     private CinematicSkipHandler _skipHandler;
@@ -39,6 +45,13 @@ public class ParkourCinematicTrigger : MonoBehaviour
         if(!other.TryGetComponent(out Player player)) return;
 
         _played = true;
+
+        if(_loadSceneInstead)
+        {
+            LoadScene(player);
+            return;
+        }
+
         // SetFrozenForCinematic (no solo Inputs(false)) corta también la gravedad/salto en curso: si Gekko
         // entra a la cinemática en el aire, sin esto seguía cayendo/saltando con la cámara ya cortada.
         player.SetFrozenForCinematic(true);
@@ -46,6 +59,16 @@ public class ParkourCinematicTrigger : MonoBehaviour
         _director.stopped += OnCinematicStopped;
         _director.time = 0;
         _director.Play();
+    }
+
+    // Mismo camino que FriendGekkoDialogue: se guarda la escena destino y se pasa por SceneLoader.
+    private void LoadScene(Player player)
+    {
+        player.SetFrozenForCinematic(true);
+        if (AudioManager.instance) AudioManager.instance.ResetAudio();
+
+        AsyncLoader.SetSceneToLoad(_sceneToLoad);
+        SceneManager.LoadScene(ScenesDictionary.SceneName[ScenesNames.LoadScene]);
     }
 
     private void OnCinematicStopped(PlayableDirector director)
