@@ -17,10 +17,16 @@ public class FriendGekkoDialogue : DialogueNPC
     [SerializeField] private CinemachineCamera _twoShotCamera;
     [Tooltip("Tag con el que CameraStateManager registró esta cámara.")]
     [SerializeField] private string _twoShotCameraTag = "DialogueTwoShot";
-    [Tooltip("Qué tan al costado se para la cámara respecto a la línea que une a los dos gekkos.")]
-    [SerializeField] private float _sideDistance = 3f;
-    [Tooltip("Altura de la cámara sobre el punto medio entre los dos.")]
+    [Tooltip("Distancia mínima al costado de la línea que une a los dos gekkos. Si están muy separados se aleja más sola para que entren los dos (ver _framingPadding).")]
+    [SerializeField] private float _sideDistance = 5f;
+    [Tooltip("Espacio extra a cada lado de los gekkos al calcular cuánto alejarse para que entren los dos en cuadro.")]
+    [Min(0f)]
+    [SerializeField] private float _framingPadding = 1.5f;
+    [Tooltip("Altura extra de la cámara sobre el punto medio entre los dos, sumada a la que da _downAngle.")]
     [SerializeField] private float _heightOffset = 0.6f;
+    [Tooltip("Grados que mira hacia abajo: la cámara sube con la distancia para mantener este ángulo (y no quedar tapada por el pasto).")]
+    [Range(0f, 80f)]
+    [SerializeField] private float _downAngle = 30f;
     [Tooltip("Altura del punto al que apunta, sobre el punto medio entre los dos (en el piso).")]
     [SerializeField] private float _lookHeightOffset = 1f;
 
@@ -72,13 +78,30 @@ public class FriendGekkoDialogue : DialogueNPC
 
         Vector3 mid = (player.position + self.position) * 0.5f;
         Vector3 lookPoint = mid + Vector3.up * _lookHeightOffset;
-        Vector3 camPos = mid + side * _sideDistance + Vector3.up * _heightOffset;
+        float distance = GetFramingDistance(line.magnitude);
+        float height = _lookHeightOffset + distance * Mathf.Tan(_downAngle * Mathf.Deg2Rad) + _heightOffset;
+        Vector3 camPos = mid + side * distance + Vector3.up * height;
 
         Transform camTransform = _twoShotCamera.transform;
         camTransform.position = camPos;
         camTransform.rotation = Quaternion.LookRotation(lookPoint - camPos, Vector3.up);
 
         EventManager.Trigger(_twoShotCameraTag);
+    }
+
+    // Distancia a la que tiene que estar la cámara para que entren los dos gekkos (más _framingPadding a cada lado)
+    // con el FOV horizontal de la cámara de diálogo. Nunca más cerca que _sideDistance.
+    private float GetFramingDistance(float separation)
+    {
+        Camera main = Camera.main;
+        float aspect = main != null ? main.aspect : 16f / 9f;
+        float halfVertical = _twoShotCamera.Lens.FieldOfView * 0.5f * Mathf.Deg2Rad;
+        float halfHorizontal = Mathf.Atan(Mathf.Tan(halfVertical) * aspect);
+
+        float halfWidth = separation * 0.5f + _framingPadding;
+        float needed = halfWidth / Mathf.Max(Mathf.Tan(halfHorizontal), 0.01f);
+
+        return Mathf.Max(_sideDistance, needed);
     }
 
     // Se llama con la pantalla ya en negro: ahí no se nota el corte de escena.
