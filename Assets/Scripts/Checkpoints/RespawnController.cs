@@ -54,6 +54,8 @@ public class RespawnController : MonoBehaviour
     private float _savedYDamping;
     private bool _isRunning;
 
+    public bool IsRunning => _isRunning;
+
     private void Awake()
     {
         Instance = this;
@@ -146,6 +148,9 @@ public class RespawnController : MonoBehaviour
 
         pj.Inputs(true);
         GameManager.Instance.CanPause = false;
+        // Red de seguridad: durante el respawn CanPause queda en true, y cualquier cosa que haya puesto el
+        // timeScale en 0 en el medio (ej. un hitstop) lo deja así creyendo que el juego está pausado.
+        Time.timeScale = 1f;
         _isRunning = false;
     }
 

@@ -47,6 +47,17 @@ public class GekkoHealth : IDamageable
         OnDamaged?.Invoke(_currentHealth);
 
         bool isLethal = _currentHealth <= 0f;
+        bool isRespawning = RespawnController.Instance != null && RespawnController.Instance.IsRunning;
+
+        // Golpe durante el respawn (ej. el costo de vida por caer a una DeathZone): solo baja la vida. El
+        // DamageFeedback no va acá: su hitstop deja el timeScale en 0 (el respawn tiene CanPause en true y lo toma
+        // como pausa) y su empujón devuelve los inputs en medio de la transición. Si es letal, el respawn que ya
+        // está corriendo restaura la vida del checkpoint.
+        if(isRespawning)
+        {
+            if (AudioManager.instance) AudioManager.instance.Play(SoundNames.PlayerHurt);
+            return;
+        }
 
         // Golpe que mata: directo a la transición de respawn (iris), sin el combo de
         // hitstop/empujón/temblor/parpadeo del DamageFeedback (no tiene sentido si ya se muere).
