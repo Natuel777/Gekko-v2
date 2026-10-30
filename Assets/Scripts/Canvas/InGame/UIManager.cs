@@ -22,6 +22,7 @@ public class UIManager : MonoBehaviour
     [SerializeField] private Image _dialogueImage;
 
     private readonly Queue<string> _sentences = new Queue<string>();
+    private readonly Queue<string> _speakerNames = new Queue<string>();
     private IDialogueable _currentDialogue;
     private bool _isTyping;
     private string _currentSentence;
@@ -103,11 +104,16 @@ public class UIManager : MonoBehaviour
         _currentDialogue.OnDialogueStart();
         OnActivatingDialogue?.Invoke();
 
-        if(_dialogueName != null) _dialogueName.text = _currentDialogue.Dialogue.speakerName;
+        Dialogue dialogue = _currentDialogue.Dialogue;
+        bool perLineNames = dialogue.speakerNames != null && dialogue.speakerNames.Length == dialogue.sentences.Length;
 
         _sentences.Clear();
-        foreach(string sentence in _currentDialogue.Dialogue.sentences)
-            _sentences.Enqueue(sentence);
+        _speakerNames.Clear();
+        for(int i = 0; i < dialogue.sentences.Length; i++)
+        {
+            _sentences.Enqueue(dialogue.sentences[i]);
+            _speakerNames.Enqueue(perLineNames ? dialogue.speakerNames[i] : dialogue.speakerName);
+        }
 
         if(_dialogueGroup != null)
             StartCoroutine(FadeDialogue(true));
@@ -140,6 +146,9 @@ public class UIManager : MonoBehaviour
         }
 
         _currentSentence = _sentences.Dequeue();
+
+        if(_dialogueName != null && _speakerNames.Count > 0)
+            _dialogueName.text = _speakerNames.Dequeue();
 
         if(_typing != null) StopCoroutine(_typing);
         _typing = StartCoroutine(TypeLine(_currentSentence));

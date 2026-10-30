@@ -10,6 +10,8 @@ public static class ScenesDictionary
         {ScenesNames.Level1, "LvlOne" },
         {ScenesNames.Level2, "LvlTwo" },
         {ScenesNames.Intentocin, "intentocin" },
+        {ScenesNames.BossLvlOne, "BossLvlOne" },
+        {ScenesNames.Aldea, "Aldea" },
     };
     public static Dictionary<int, ScenesNames> LevelIndex = new Dictionary<int, ScenesNames>
     {

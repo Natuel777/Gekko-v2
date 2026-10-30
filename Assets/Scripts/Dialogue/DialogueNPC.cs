@@ -15,7 +15,8 @@ public class DialogueNPC : MonoBehaviour, IDialogueable
 
     public AudioClip AudioClip => _audioClip;
 
-    // Hooks para futuro (animación de "hablar", girar hacia el player, etc.).
-    public void OnDialogueStart() { }
-    public void OnDialogueEnd() { }
+    // Hooks para futuro (animación de "hablar", girar hacia el player, etc.). Virtual: alguna
+    // instancia particular (ej. FriendGekkoDialogue) puede necesitar reaccionar al cierre del diálogo.
+    public virtual void OnDialogueStart() { }
+    public virtual void OnDialogueEnd() { }
 }
