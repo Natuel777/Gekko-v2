@@ -4,7 +4,7 @@ using UnityEngine.InputSystem;
 public class StrawBerryView : CollectableView
 {
     private Transform _transform;
-    public float amplitude = 1f;
+    public float amplitude = 0.3f;
     public float speed = 2f;
     public float shrinkSpeed = 3f;
 
