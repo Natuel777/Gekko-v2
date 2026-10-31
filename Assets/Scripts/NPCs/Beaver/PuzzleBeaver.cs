@@ -1,63 +1,38 @@
-using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UI;
-using Unity.Cinemachine;
 using System.Collections;
-using System;
 
-public class PuzzleBeaver : MonoBehaviour, IInteractable, IDialogueable
+public class PuzzleBeaver : NPCBase
 {
     private bool _suscribed;
     private Animator _anim;
-    private Transform _cam;
     private bool _started;
     private bool _missionAccepted;
     private bool _finish;
     [Header("Canvas")]
-    [SerializeField] Dialogue[] _dialogues;
-    [SerializeField] Sprite _imagedialogue;
-    [SerializeField] Canvas _canvas;
     [SerializeField] Image _exclamation;
-    [SerializeField] Image _EIndicator;
-    private int _currentDialogue;
-    [SerializeField] private AudioClip _audioTalk;
     [Header("Recompensa")]
     [SerializeField] private NotificationSO _notificationData;
 
     [Header("Rotación hacia el jugador")]
     [SerializeField] private float _detectionRange = 6f;
-    [SerializeField] private float _rotationSpeed = 5f;
 
-    private Transform _playerTransform;
     private BugDetection _playerDetection;
-    private LookAtTarget _lookAtPlayer;
     private bool _playerInRotationRange;
 
-    [Header("Cameras")]
-    [SerializeField] private CinemachineCamera _beaverCam;
-    public Dialogue Dialogue => _dialogues[_currentDialogue];
 
-    public Transform Transform => transform;
-
-    public Sprite Image => _imagedialogue;
-
-    public AudioClip AudioClip => _audioTalk;
-
-    private void Start()
+    protected override void Start()
     {
-        _EIndicator.enabled = false;
+        base.Start();
         _exclamation.enabled = false;
         _anim = GetComponentInChildren<Animator>();
-        _cam = CameraStateManager.Instance.CurrentCamera.transform;
         _suscribed = true;
         Suscribe();
-        _playerTransform = GameManager.Instance.Pj.transform;
         _playerDetection = new BugDetection(transform, _playerTransform, _detectionRange);
-        _lookAtPlayer = new LookAtTarget(_rotationSpeed, transform, lockYAxis: true);
     }
 
 
-    private void Update()
+    protected override void Update()
     {
         if(_exclamation.enabled) FollowPlayer();
         
@@ -93,11 +68,10 @@ public class PuzzleBeaver : MonoBehaviour, IInteractable, IDialogueable
         //_anim.
     }
 
-    public void Interacted()
+    public override void Interacted()
     {
         _exclamation.enabled = false;
-        if (UIManager.Instance == null || UIManager.Instance.HasActiveDialogue()) return;
-        UIManager.Instance.StartDialogue(this);
+        base.Interacted();
     }
 
     private void BridgeFinished()
@@ -108,15 +82,15 @@ public class PuzzleBeaver : MonoBehaviour, IInteractable, IDialogueable
         //animacion o dialogo de terminado y dar frutilla
     }  
 
-    public void OnDialogueStart()
+    public override void OnDialogueStart()
     {
         _anim.SetBool("isTalk",true);
-        _beaverCam.Priority = 30;
+        _cam.Priority = 30;
     }
 
-    public void OnDialogueEnd()
+    public override void OnDialogueEnd()
     {
-        _beaverCam.Priority = 0;
+        _cam.Priority = 0;
         if (_started)
         {
             _started = false;
@@ -146,23 +120,6 @@ public class PuzzleBeaver : MonoBehaviour, IInteractable, IDialogueable
     {
         yield return new WaitForSeconds(1f);
         _anim.SetBool("isTalk", false);
-    }
-
-    private void FollowPlayer()
-    {
-        Vector3 forward = transform.position - _cam.position;
-        Vector3 newForward = new Vector3(forward.x, 0, forward.z);
-        _canvas.transform.forward = newForward;
-    }
-
-    public void ShowInteractUI()
-    {
-        _EIndicator.enabled = true;
-    }
-
-    public void HideInteractUI()
-    {
-        _EIndicator.enabled = false;
     }
     private void OnEnable()
     {

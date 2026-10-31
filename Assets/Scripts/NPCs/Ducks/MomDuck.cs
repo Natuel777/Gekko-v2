@@ -1,56 +1,29 @@
-using System;
-using System.Collections;
-using Unity.Cinemachine;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class MomDuck : MonoBehaviour, IDialogueable, IInteractable
+public class MomDuck : NPCBase
 {
     private bool _suscribed;
-    [SerializeField] private float _rotationSpeed = 5f;
     private Animator _anim;
-    private Transform _cam;
-    private Transform _playerTransform;
     [SerializeField] private int _totalDucks;
     [SerializeField] private Transform _pjTP;
     private int _currentDucks;
     private bool _started;
     private bool _finish;
-    private bool _interacted;
     [Header("Canvas")]
-    [SerializeField] Dialogue[] _dialogue;
-    private int _currentDialogue;
-    [SerializeField] Sprite _imagedialogue;
-    [SerializeField] Canvas _canvas;
-    [SerializeField] Image _EIndicator;
     [SerializeField] Image _exclamation;
-    [SerializeField] private AudioClip _audioTalk;
-    [Header("Cameras")]
-    [SerializeField] private CinemachineCamera _duckCam;
     [Header("Recompensa")]
     [SerializeField] private NotificationSO _notificationData;
 
-    private LookAtTarget _lookAtPlayer;
-    public Dialogue Dialogue => _dialogue[_currentDialogue];
-
-    public Transform Transform => transform;
-
-    public Sprite Image => _imagedialogue;
-
-    public AudioClip AudioClip => _audioTalk;
-
-    void Start()
+    protected override void Start()
     {
+        base.Start();
         _anim = GetComponentInChildren<Animator>();
         _anim.SetBool("DuckisWalk", false);
-        _EIndicator.enabled = false;
-        _playerTransform = GameManager.Instance.Pj.transform;
-        _cam = CameraStateManager.Instance.CurrentCamera.transform;
-        _lookAtPlayer = new LookAtTarget(_rotationSpeed, transform, lockYAxis: true);
         _suscribed = true;
         Suscribe();
     }
-    private void Update()
+    protected override void Update()
     {
         if (_exclamation.enabled) FollowPlayer();
 
@@ -61,7 +34,6 @@ public class MomDuck : MonoBehaviour, IDialogueable, IInteractable
             _lookAtPlayer.ArtificialUpdate();
             _lookAtPlayer.StartLooking(_playerTransform);
         }
-        if (Input.GetKeyDown(KeyCode.H)) DuckFound();
     }
 
     private void DuckFound()
@@ -79,24 +51,17 @@ public class MomDuck : MonoBehaviour, IDialogueable, IInteractable
     }
     private void TPPlayer()
     {
-        
         GameManager.Instance.Pj.PjController.Teleport(_pjTP.position);
     }
     private void StartDialogue()
     {
-
         ScreenFader.Instance.OnFadeMiddle -= TPPlayer;
         ScreenFader.Instance.OnFadeCompleted -= StartDialogue;
         if (UIManager.Instance == null || UIManager.Instance.HasActiveDialogue()) return;
         UIManager.Instance.StartDialogue(this);
     }
-    public void OnDialogueStart()
-    {
-        _interacted = true;
-        _duckCam.Priority = 30;
-    }
 
-    public void OnDialogueEnd()
+    public override void OnDialogueEnd()
     {
         if (!_started)
         {
@@ -117,30 +82,13 @@ public class MomDuck : MonoBehaviour, IDialogueable, IInteractable
             _finish = false;
             _currentDialogue++;
         }
-        _duckCam.Priority = 0;
+        _cam.Priority = 0;
         _interacted = false;
     }
-    private void FollowPlayer()
-    {
-        Vector3 forward = transform.position - _cam.position;
-        Vector3 newForward = new Vector3(forward.x, 0, forward.z);
-        _canvas.transform.forward = newForward;
-    }
-    public void Interacted()
+    public override void Interacted()
     {
         _exclamation.enabled = false;
-        if (UIManager.Instance == null || UIManager.Instance.HasActiveDialogue()) return;
-        UIManager.Instance.StartDialogue(this);
-    }
-
-    public void ShowInteractUI()
-    {
-        _EIndicator.enabled = true;
-    }
-
-    public void HideInteractUI()
-    {
-        _EIndicator.enabled = false;
+        base.Interacted();
     }
     private void OnEnable()
     {

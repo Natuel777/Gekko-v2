@@ -1,65 +1,28 @@
 using System.Collections;
-using Unity.Cinemachine;
 using UnityEngine;
-using UnityEngine.UI;
 
-public class BabyDuck : MonoBehaviour, IDialogueable, IInteractable
+public class BabyDuck : NPCBase
 {
-    [SerializeField] private float _rotationSpeed = 5f;
     [SerializeField] private bool _onWater;
     private Animator _anim;
     private bool _start;
     private bool _found;
-    private Transform _cam;
-    private bool _interacted;
-    private Transform _playerTransform;
     private AudioSource _source;
     [SerializeField] private ParticleSystem _cuack;
 
-    [Header("Canvas")]
-    [SerializeField] Dialogue[] _dialogue;
-    private int _currentDialogue;
-    [SerializeField] Sprite _imagedialogue;
-    [SerializeField] Canvas _canvas;
-    [SerializeField] Image _EIndicator;
-    [SerializeField] private AudioClip _audioTalk;
-    [Header("Cameras")]
-    [SerializeField] private CinemachineCamera _duckCam;
-    private LookAtTarget _lookAtPlayer;
     private bool _suscribed;
 
-    public Dialogue Dialogue => _dialogue[_currentDialogue];
-
-    public Transform Transform => transform;
-
-    public Sprite Image => _imagedialogue;
-
-    public AudioClip AudioClip => _audioTalk;
-
-    private void Start()
+    protected override void Start()
     {
+        base.Start();
         _anim = GetComponentInChildren<Animator>();
         if(!_onWater) _anim.SetBool("BabyDuckisWalk",false);
         else _anim.SetBool("BabyDuckisWalk", true);
-        _cam = CameraStateManager.Instance.CurrentCamera.transform;
-        _playerTransform = GameManager.Instance.Pj.transform;
-        _EIndicator.enabled = false;
-        _lookAtPlayer = new LookAtTarget(_rotationSpeed, transform, lockYAxis: true);
         _suscribed = true;
         Suscribe();
         _source = GetComponent<AudioSource>();
         _source.resource = _audioTalk;
         Cuack(true);
-    }
-    private void Update()
-    {
-        if (_EIndicator.enabled) FollowPlayer();
-        if (_interacted)
-        {
-            _lookAtPlayer.ArtificialUpdate();
-            _lookAtPlayer.StartLooking(_playerTransform);
-        }
-
     }
     private void Cuack(bool activate)
     {
@@ -81,12 +44,6 @@ public class BabyDuck : MonoBehaviour, IDialogueable, IInteractable
             yield return new WaitForSeconds(2);
         }
     }
-    private void FollowPlayer()
-    {
-        Vector3 forward = transform.position - _cam.position;
-        Vector3 newForward = new Vector3(forward.x, 0, forward.z);
-        _canvas.transform.forward = newForward;
-    }
     private void Teleport()
     {
         Transform pos = LevelOneManager.Instance.DuckFound();
@@ -95,18 +52,17 @@ public class BabyDuck : MonoBehaviour, IDialogueable, IInteractable
         transform.rotation = pos.rotation;
         ScreenFader.Instance.OnFadeMiddle -= Teleport;
     }
-    public void OnDialogueStart()
+    public override void OnDialogueStart()
     {
         Cuack(false);
-        _interacted = true;
-        _duckCam.Priority = 30;
+        base.OnDialogueStart();
     }
 
-    public void OnDialogueEnd()
+    public override void OnDialogueEnd()
     {
         if (!_start)
         {
-            _duckCam.Priority = 0;
+            _cam.Priority = 0;
             Cuack(true);
         }
         else if (!_found)
@@ -118,7 +74,7 @@ public class BabyDuck : MonoBehaviour, IDialogueable, IInteractable
             ScreenFader.Instance.StartFade();
             _currentDialogue++;
         }
-        else _duckCam.Priority = 0;
+        else _cam.Priority = 0;
         _interacted = false;
     }
     private void MissionStarted()
@@ -128,25 +84,9 @@ public class BabyDuck : MonoBehaviour, IDialogueable, IInteractable
     }
     private void FinishCam()
     {
-        _duckCam.Priority = 0;
+        _cam.Priority = 0;
         ScreenFader.Instance.OnFadeCompleted -= FinishCam;
     }
-    public void Interacted()
-    {
-        if (UIManager.Instance == null || UIManager.Instance.HasActiveDialogue()) return;
-        UIManager.Instance.StartDialogue(this);
-    }
-
-    public void ShowInteractUI()
-    {
-        _EIndicator.enabled = true;
-    }
-
-    public void HideInteractUI()
-    {
-        _EIndicator.enabled = false;
-    }
-
     private void OnEnable()
     {
         if (_suscribed) Suscribe();
