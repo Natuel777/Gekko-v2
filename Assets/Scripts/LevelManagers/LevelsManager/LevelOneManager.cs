@@ -9,7 +9,6 @@ public class LevelOneManager : MonoBehaviour
     public event Action OnBridgeConstructed;
     public event Action OnMissionDuckStarted;
     public event Action OnDuckFound;
-    public event Action OnMissionDuckFinish;
     public event Action OnChallengeStart;
 
     [SerializeField] private DuckPosition[] _positionsForDucks;
@@ -30,7 +29,6 @@ public class LevelOneManager : MonoBehaviour
         OnDuckFound?.Invoke();
         return GetDuckPosition();
     }
-    public void MissionDuckFinish() => OnMissionDuckFinish?.Invoke();
     public void ChallengeStart() => OnChallengeStart?.Invoke();
 
     public void StartSong()

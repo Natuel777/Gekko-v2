@@ -19,7 +19,7 @@ public class NPCBase : MonoBehaviour, IDialogueable, IInteractable
     [Header("Cameras")]
     [SerializeField] protected CinemachineCamera _cam;
 
-    public Dialogue Dialogue => _dialogue[_currentDialogue];
+    public virtual Dialogue Dialogue => _dialogue[_currentDialogue];
     public Transform Transform => transform;
     public Sprite Image => _imagedialogue;
     public AudioClip AudioClip => _audioTalk;

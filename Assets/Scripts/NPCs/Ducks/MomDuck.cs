@@ -46,7 +46,6 @@ public class MomDuck : NPCBase
             ScreenFader.Instance.OnFadeMiddle += TPPlayer;
             ScreenFader.Instance.OnFadeCompleted += StartDialogue;
             ScreenFader.Instance.StartFade();
-            LevelOneManager.Instance.MissionDuckFinish();
         }
     }
     private void TPPlayer()
