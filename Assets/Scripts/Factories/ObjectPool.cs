@@ -26,14 +26,18 @@ public class ObjectPool<T> where T : MonoBehaviour
 
     public T Get()
     {
-        T x;
+        T x = null;
 
-        if(_stock.Count > 0)
+        // Un objeto del stock puede haberse destruido por fuera del pool: típicamente al descargarse la escena donde se lo
+        // instanció mientras el pool sigue vivo (ShooteableObjectFactory es DontDestroyOnLoad, pero sus balas no). Esos se
+        // descartan y, si no queda ninguno vivo, se crea uno nuevo.
+        while(x == null && _stock.Count > 0)
         {
             x = _stock[0];
             _stock.RemoveAt(0);
         }
-        else x = _Factory();
+
+        if(x == null) x = _Factory();
 
         _active.Add(x);
         _On(x);

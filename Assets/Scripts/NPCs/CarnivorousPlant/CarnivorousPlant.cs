@@ -50,6 +50,7 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
     #region FSM
     public PlantSpitBehaviour spitBehaviour;
     private PlantAimBehaviour _aimBehaviour;
+    private PlantBiteWindup _biteWindup;
     public BugDetection detection;
     public BugDetection biteDetection;
     private StateMachine _eventFSM;
@@ -87,6 +88,9 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
         if(_aimJoint != null && data.rotateToPlayer)
             _aimBehaviour = new PlantAimBehaviour(_aimJoint, _aimJointAxis, data.rotationSpeed, _aimBlendTime);
 
+        // La preparación del mordisco también es opcional: solo existe si la planta tiene el componente PlantBiteWindup (hoy, el boss).
+        _biteWindup = GetComponent<PlantBiteWindup>();
+
         if(_head != null)
         {
             _headStartLocalPos = _head.localPosition;
@@ -105,6 +109,10 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
 
     public bool IsPlayerInBiteRange() => biteDetection.IsTargetInRange();
 
+    // Animación de preparación del mordisco (PlantBiteWindup). Null si esta planta no la tiene, está apagada o no encontró sus
+    // huesos: en ese caso PlantBiteState muerde de una, como siempre.
+    public PlantBiteWindup BiteWindup => _biteWindup != null && _biteWindup.IsAvailable ? _biteWindup : null;
+
     private void Update()
     {
         if(_purified) return;
@@ -122,8 +130,11 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
         if(_aimBehaviour == null) return;
 
         // Apunta mientras escupe. Aturdida por un golpe de lengua o purificada no: ahí el hueso vuelve a la animación.
+        // Tampoco mientras corre la preparación del mordisco: los huesos son de esa animación y el aim retoma cuando termina
+        // (sube desde cero, sin salto), así no se pelean por joint7_R.
         // spitBehaviour se lee en cada frame porque BossPlantPhases lo reemplaza al cambiar de fase.
-        bool aiming = !_purified && Time.time >= _staggerUntil && spitBehaviour != null && spitBehaviour.IsSpitting;
+        bool windupPlaying = _biteWindup != null && _biteWindup.IsPlaying;
+        bool aiming = !_purified && Time.time >= _staggerUntil && !windupPlaying && spitBehaviour != null && spitBehaviour.IsSpitting;
 
         _aimBehaviour.ArtificialLateUpdate(playerTransform, aiming);
     }
@@ -167,7 +178,13 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
             PlayHurt();
 
             if(data.hurtStaggerSeconds > 0f)
+            {
                 _staggerUntil = Time.time + data.hurtStaggerSeconds;
+
+                // Aturdida: el FSM se frena, así que se corta la preparación del mordisco (si estaba en eso). PlantBiteState la
+                // retoma de cero al terminar el aturdimiento.
+                if(_biteWindup != null) _biteWindup.Cancel();
+            }
 
             return;
         }
@@ -307,7 +324,6 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
     #if UNITY_EDITOR
     private void OnDrawGizmosSelected()
     {
-        // El eje del hueso que apunta al player (ver _aimJointAxis): sirve para comprobar que es el eje correcto.
         if(_aimJoint != null && _aimJointAxis.sqrMagnitude > 0.0001f)
         {
             Gizmos.color = Color.cyan;
