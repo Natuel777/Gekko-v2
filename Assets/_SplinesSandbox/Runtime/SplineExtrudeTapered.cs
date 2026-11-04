@@ -69,7 +69,7 @@ public class SplineExtrudeTapered : MonoBehaviour
     [SerializeField, Tooltip("En que extremo(s) la malla termina en punta.")]
     TaperEnds m_TaperEnds = TaperEnds.Final;
 
-    [SerializeField, Range(0.001f, 0.5f), Tooltip("Fraccion de la spline (0-1) sobre la que se angosta hasta terminar en punta.")]
+    [SerializeField, Range(0.001f, 0.5f), Tooltip("Fraccion de la spline (0-1) sobre la que se angosta hasta terminar en punta. Se mide desde los extremos del Range, asi que la punta se mantiene aunque se achique el Range.")]
     float m_TaperLength = 0.12f;
 
     Mesh m_Mesh;
@@ -265,7 +265,9 @@ public class SplineExtrudeTapered : MonoBehaviour
                 isMainSpline ? m_KnotRadiusMultipliers : null,
                 isMainSpline && taperStart,
                 isMainSpline && taperEnd,
-                m_TaperLength);
+                m_TaperLength,
+                m_Range.x,
+                m_Range.y);
 
             int segmentCount = Mathf.Max(Mathf.CeilToInt(spline.GetLength() * span * m_SegmentsPerUnit), 2);
 

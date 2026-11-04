@@ -25,6 +25,12 @@ internal class TaperedKnotCircleShape : IExtrudeShape
     bool m_TaperEnd;
     float m_TaperLength = 0.12f;
 
+    // Extremos de la seccion extruida (Range de SplineExtrudeTapered). La punta se mide desde aca y no desde 0/1 de la
+    // spline: asi, si se achica el Range (ej. VineShield retrayendo las enredaderas), la punta acompaña al extremo en vez
+    // de quedar afuera y que la malla termine "cortada".
+    float m_RangeStart;
+    float m_RangeEnd = 1f;
+
     float m_CurrentMultiplier = 1f;
 
     public int SideCount
@@ -33,12 +39,20 @@ internal class TaperedKnotCircleShape : IExtrudeShape
         set => m_Sides = value;
     }
 
-    public void Configure(List<float> knotRadiusMultipliers, bool taperStart, bool taperEnd, float taperLength)
+    public void Configure(List<float> knotRadiusMultipliers, bool taperStart, bool taperEnd, float taperLength,
+        float rangeStart = 0f, float rangeEnd = 1f)
     {
         m_KnotRadiusMultipliers = knotRadiusMultipliers;
         m_TaperStart = taperStart;
         m_TaperEnd = taperEnd;
-        m_TaperLength = Mathf.Max(taperLength, 0.0001f);
+        m_RangeStart = Mathf.Clamp01(Mathf.Min(rangeStart, rangeEnd));
+        m_RangeEnd = Mathf.Clamp01(Mathf.Max(rangeStart, rangeEnd));
+
+        // Si el tramo visible queda mas corto que la punta, la punta se comprime para que entre (con las dos puntas,
+        // cada una ocupa como mucho la mitad) y la malla sigue terminando en pico en vez de cortarse.
+        float span = m_RangeEnd - m_RangeStart;
+        float maxLength = taperStart && taperEnd ? span * 0.5f : span;
+        m_TaperLength = Mathf.Max(Mathf.Min(taperLength, maxLength), 0.0001f);
     }
 
     public void Setup(ISpline path, int segmentCount)
@@ -78,10 +92,10 @@ internal class TaperedKnotCircleShape : IExtrudeShape
         float factor = 1f;
 
         if(m_TaperStart)
-            factor *= Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(t / m_TaperLength));
+            factor *= Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((t - m_RangeStart) / m_TaperLength));
 
         if(m_TaperEnd)
-            factor *= Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((1f - t) / m_TaperLength));
+            factor *= Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((m_RangeEnd - t) / m_TaperLength));
 
         return factor;
     }

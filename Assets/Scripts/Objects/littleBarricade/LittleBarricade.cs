@@ -149,7 +149,7 @@ public class LittleBarricade : MonoBehaviour, IDamageable, IParticleSystemTarget
         if (AudioManager.instance) AudioManager.instance.Play(SoundNames.Purify);
         EventManager.Trigger<float>("OnCameraShake", _revealShakeForce);
 
-        StartCoroutine(DissolveRoutine(new[] { _head.material }));
+        StartCoroutine(DissolveRoutine(GetCoreMaterials()));
         BeginCoreCam();
         yield return new WaitForSeconds(_coreCamSeconds);
 
@@ -207,19 +207,32 @@ public class LittleBarricade : MonoBehaviour, IDamageable, IParticleSystemTarget
         camTransform.rotation = Quaternion.LookRotation(core - camPos, Vector3.up);
     }
 
-    // Materiales de la enredadera sin el núcleo, que ya se está disolviendo por su cuenta.
+    // Materiales del núcleo y de sus hijos (las hojas "HojaG_*"), para que se disuelvan a la misma vez que el núcleo.
+    private Material[] GetCoreMaterials()
+    {
+        var materialList = new System.Collections.Generic.List<Material>();
+
+        foreach (var rend in _head.GetComponentsInChildren<MeshRenderer>())
+            materialList.AddRange(rend.materials);
+
+        return materialList.ToArray();
+    }
+
+    // Materiales de la enredadera sin el núcleo ni sus hojas, que ya se están disolviendo por su cuenta.
     private Material[] GetVineMaterials()
     {
         var materialList = new System.Collections.Generic.List<Material>();
 
         foreach (var rend in _barricade.GetComponentsInChildren<MeshRenderer>())
         {
-            if (rend == _head) continue;
+            if (IsCoreRenderer(rend)) continue;
             materialList.AddRange(rend.materials);
         }
 
         return materialList.ToArray();
     }
+
+    private bool IsCoreRenderer(Renderer rend) => rend.transform == _head.transform || rend.transform.IsChildOf(_head.transform);
 
     private IEnumerator Disapear()
     {
@@ -232,12 +245,14 @@ public class LittleBarricade : MonoBehaviour, IDamageable, IParticleSystemTarget
 
         foreach (var rend in renderers)
         {
+            if (IsCoreRenderer(rend)) continue;
+
             foreach (var mat in rend.materials)
             {
                 materialList.Add(mat);
             }
         }
-        materialList.Add(_head.material);
+        materialList.AddRange(GetCoreMaterials());
         materials = materialList.ToArray();
 
         yield return DissolveRoutine(materials, () => _barricade.SetActive(false));
