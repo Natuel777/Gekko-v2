@@ -13,6 +13,11 @@ using UnityEngine;
 // Las rotaciones son LOCALES, las mismas que muestra el Inspector en el Transform de cada hueso. En joint7_R el eje Z no sigue
 // el camino base -> objetivo: durante el Windup barre de Z From a Z To (ver JointPose.sweepZ).
 //
+// Además, durante el Windup gira la planta entera (el transform raíz) hacia el player, sobre su eje vertical y a velocidad
+// limitada (Root Turn Speed). Es lo que apunta el HitBox del mordisco: como los huesos vuelven a su pose base en el Return, la
+// dirección en la que muerde la define este giro. En el Return la planta queda quieta, así que el player puede esquivar el
+// mordisco saliendo de la zona (o corriendo más rápido de lo que ella gira). La planta se queda mirando hacia donde terminó.
+//
 // El Animator reescribe estos huesos en cada frame (Idle, nibble y spittle tienen curvas de todos), así que la pose se aplica
 // en LateUpdate, después de él. El Execution Order la deja además después del LateUpdate de CarnivorousPlant, que es donde se
 // aplica el aim de joint7_R: mientras corre la preparación gana esta pose.
@@ -76,6 +81,13 @@ public class PlantBiteWindup : MonoBehaviour
     [Min(0f)]
     [SerializeField] private float _blendInTime = 0.15f;
 
+    [Header("Root Rotation")]
+    [Tooltip("Grados por segundo a los que gira toda la planta hacia el player mientras dura el Windup (solo sobre su eje vertical). En el Return queda quieta. 0 = no gira.")]
+    [Min(0f)]
+    [SerializeField] private float _rootTurnSpeed = 90f;
+    [Tooltip("Eje LOCAL de la planta que tiene que quedar apuntando al player (hacia donde muerde). Si gira para el lado equivocado o queda de costado, probá otro eje (±X, ±Z).")]
+    [SerializeField] private Vector3 _rootFacingAxis = Vector3.forward;
+
     [Header("Curves")]
     [Tooltip("Avance del Windup (0 = base, 1 = objetivo) a lo largo del tiempo normalizado de la fase.")]
     [SerializeField] private AnimationCurve _windupCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
@@ -97,6 +109,7 @@ public class PlantBiteWindup : MonoBehaviour
     private Phase _phase;
     private float _elapsed;
     private bool _cancelled;
+    private Transform _target; // hacia quién gira la planta durante el Windup
 
     // El componente está activo y encontró al menos un hueso. Si no, PlantBiteState muerde de una, como siempre.
     public bool IsAvailable => isActiveAndEnabled && _bones.Length > 0;
@@ -134,12 +147,14 @@ public class PlantBiteWindup : MonoBehaviour
         Completed = false;
     }
 
-    // Arranca la preparación desde la pose base. false si no se puede ahora: apagado, sin huesos, o todavía volviendo de
-    // una preparación cortada (quien llama reintenta en el próximo frame).
-    public bool Play()
+    // Arranca la preparación desde la pose base. lookTarget es hacia quién gira la planta entera durante el Windup (null = no
+    // gira). false si no se puede ahora: apagado, sin huesos, o todavía volviendo de una preparación cortada (quien llama
+    // reintenta en el próximo frame).
+    public bool Play(Transform lookTarget = null)
     {
         if(!IsAvailable || _phase != Phase.Idle) return false;
 
+        _target = lookTarget;
         _phase = Phase.Windup;
         _elapsed = 0f;
         _cancelled = false;
@@ -166,8 +181,28 @@ public class PlantBiteWindup : MonoBehaviour
         else UpdateReturn();
     }
 
+    // Gira la planta entera hacia el player, solo sobre su propio eje vertical (así conserva la inclinación que tenga en la
+    // escena) y a velocidad limitada: por eso un player que se mueve rápido se le escapa de la zona.
+    private void TurnRoot()
+    {
+        if(_target == null || _rootTurnSpeed <= 0f || _rootFacingAxis.sqrMagnitude < 0.0001f) return;
+
+        Vector3 up = transform.up;
+        Vector3 facing = Vector3.ProjectOnPlane(transform.TransformDirection(_rootFacingAxis), up);
+        Vector3 toTarget = Vector3.ProjectOnPlane(_target.position - transform.position, up);
+
+        if(facing.sqrMagnitude < 0.0001f || toTarget.sqrMagnitude < 0.0001f) return;
+
+        float maxStep = _rootTurnSpeed * Time.deltaTime;
+        float step = Mathf.Clamp(Vector3.SignedAngle(facing, toTarget, up), -maxStep, maxStep);
+
+        transform.Rotate(up, step, Space.World);
+    }
+
     private void UpdateWindup()
     {
+        TurnRoot();
+
         float progress = Progress(_windupDuration);
         float k = _windupCurve.Evaluate(progress);
 
