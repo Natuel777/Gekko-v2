@@ -71,6 +71,13 @@ Para cientos de objetos (pasto, flores dispersas con `ScatterField`), usá el sh
   niebla y la luz direccional, según cuántas regiones están purificadas. El estado "sano" son los valores que ya
   tiene la escena.
 - **`PurifyRegionVolume`** (opcional): un Volume local por región que se apaga con su onda.
+- **`PurifyZoneAtmosphere`** (niveles con zonas sanas, como LvlOne): cambia el skybox al corrupto
+  (`Materials/M_Skybox2_Corrupto`, mismo shader que el de la escena) y sube un Volume global corrupto **solo
+  mientras Gekko está dentro de una región corrupta**, de forma progresiva. Al salir, o cuando la onda de esa región lo
+  alcanza (se rompió el núcleo), vuelve a sano. No usarlo junto con `PurifyAtmosphere` sobre el mismo Volume.
+  También prende de a poco las `Luces Corruptas` (hasta la intensidad que tienen en la escena) y las `Particulas
+  Corruptas` (hasta su emisión configurada). En LvlOne, `AtmosferaZonas/SeguirJugador` acompaña a Gekko con esporas
+  violetas emissive (`Materials/M_EsporasCorruptas`, brillan con el Bloom) y una luz puntual violeta.
 
 ---
 

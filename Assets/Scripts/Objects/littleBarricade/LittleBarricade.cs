@@ -43,8 +43,9 @@ public class LittleBarricade : MonoBehaviour, IDamageable, IParticleSystemTarget
     [SerializeField] private Transform[] _linePositionsGroups;
 
     [Header("Touch Hazard")]
-    [Tooltip("Empuje al Gekko si choca contra la barricada mientras sigue en pie.")]
-    [SerializeField] private float _touchPushForce = 3.5f;
+    [Tooltip("Metros que se aleja el Gekko de la barricada al chocarla mientras sigue en pie (empujón corto, no lo deja trabado).")]
+    [Min(0f)]
+    [SerializeField] private float _touchPushDistance = 1f;
     [Tooltip("Daño al Gekko si choca contra la barricada mientras sigue en pie.")]
     [SerializeField] private float _touchDamage = 5f;
 
@@ -81,19 +82,37 @@ public class LittleBarricade : MonoBehaviour, IDamageable, IParticleSystemTarget
         }
     }
 
-    // Empuje + daño leve al chocar de frente contra la barricada en pie, para que no sea gratis caminar contra
-    // ella en vez de romperla con la lengua. Misma convención que CarnivorousPlant.ApplyBiteHit.
-    private void OnCollisionEnter(Collision collision)
+    // La barricada no tiene Rigidbody: los choques contra los colliders de los hijos (ej. "barricadita") le
+    // llegan a cada hijo y no a este script. Se les agrega un relay para que también cuenten.
+    private void Awake()
+    {
+        foreach(Collider col in GetComponentsInChildren<Collider>(true))
+        {
+            if(col.gameObject == gameObject || col.isTrigger) continue;
+            if(!col.TryGetComponent(out LittleBarricadeTouchRelay relay))
+                relay = col.gameObject.AddComponent<LittleBarricadeTouchRelay>();
+            relay.Owner = this;
+        }
+    }
+
+    private void OnCollisionEnter(Collision collision) => HandleTouch(collision);
+    private void OnCollisionStay(Collision collision) => HandleTouch(collision);
+
+    // Daño + empujón corto al chocar contra la barricada en pie, para que no sea gratis caminar contra ella en vez
+    // de romperla con la lengua. El empujón lo hace DamageFeedback, alejando al Gekko del punto de contacto (no
+    // hacia atrás de donde mira, que lo podía empujar contra la barricada y dejarlo trabado). Durante la
+    // invulnerabilidad no hace nada: así seguir apoyado no lo vuelve a frenar a cada frame.
+    public void HandleTouch(Collision collision)
     {
         if(_interacted) return;
-        if(!collision.gameObject.TryGetComponent(out Player player)) return;
+        if(collision.rigidbody == null || !collision.rigidbody.TryGetComponent(out Player player)) return;
+        if(DamageFeedback.Instance != null && DamageFeedback.Instance.IsInvulnerable) return;
 
-        if(player.TryGetComponent(out Rigidbody rb))
-        {
-            Vector3 dir = (player.transform.position - transform.position).normalized;
-            rb.AddForce(dir * _touchPushForce, ForceMode.Impulse);
-        }
+        Vector3 contacto = collision.contactCount > 0 ? collision.GetContact(0).point : transform.position;
+        Vector3 dir = Vector3.ProjectOnPlane(player.transform.position - contacto, Vector3.up);
+        if(dir.sqrMagnitude < 0.0001f) dir = Vector3.ProjectOnPlane(player.transform.position - transform.position, Vector3.up);
 
+        DamageFeedback.Instance?.SetNextHitKnockback(dir, _touchPushDistance);
         EventManager.Trigger<float>("OnPlayerDamaged", _touchDamage);
     }
 

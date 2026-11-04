@@ -39,6 +39,10 @@ public class ScreenFader : MonoBehaviour
         GameManager.Instance.CanPause = false;
     }
 
+    // Para secuencias que manejan sus propios pasos (ej. MomDuck): solo el fundido, sin tocar inputs ni pausa.
+    public IEnumerator FadeToBlack() => Fade(0f, 1f);
+    public IEnumerator FadeFromBlack() => Fade(1f, 0f);
+
     private IEnumerator Fade(float from, float to)
     {
         float elapsed = 0f;
