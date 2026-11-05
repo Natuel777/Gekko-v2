@@ -50,8 +50,8 @@ public class PlantBiteState : IState
 
             _windingUp = false;
 
-            // Si la cortó algo de afuera (un golpe de lengua que aturde) no hay mordisco: vuelve a prepararse.
             if(windup != null && windup.Completed) BiteNow();
+
             else _biteTimer = 0f;
 
             return;
@@ -64,6 +64,7 @@ public class PlantBiteState : IState
         // Sin preparación muerde de una. Con preparación la arranca; si Play() dice que no (todavía vuelve de una cortada)
         // se reintenta en el próximo frame.
         if(windup == null) BiteNow();
+        
         else _windingUp = windup.Play(_plant.playerTransform);
     }
 
