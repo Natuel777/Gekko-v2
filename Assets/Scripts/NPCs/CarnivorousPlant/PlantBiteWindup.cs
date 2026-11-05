@@ -94,6 +94,9 @@ public class PlantBiteWindup : MonoBehaviour
     [Tooltip("Avance del Return (0 = donde estaba, 1 = base) a lo largo del tiempo normalizado de la fase.")]
     [SerializeField] private AnimationCurve _returnCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
 
+    [Header("Feedback")]
+    [SerializeField] private ParticleSystem _preparingAttackPS;
+    
     private enum Phase { Idle, Windup, Return }
 
     private sealed class Bone
@@ -154,6 +157,8 @@ public class PlantBiteWindup : MonoBehaviour
     {
         if(!IsAvailable || _phase != Phase.Idle) return false;
 
+        // Implementaciòn actual, luego reemplazar por GenericPS.Play()
+        _preparingAttackPS.Play();
         _target = lookTarget;
         _phase = Phase.Windup;
         _elapsed = 0f;

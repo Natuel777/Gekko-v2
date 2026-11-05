@@ -90,7 +90,6 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
         if(_aimJoint != null && data.rotateToPlayer)
             _aimBehaviour = new PlantAimBehaviour(_aimJoint, _aimJointAxis, data.rotationSpeed, _aimBlendTime);
 
-        // La preparación del mordisco también es opcional: solo existe si la planta tiene el componente PlantBiteWindup (hoy, el boss).
         _biteWindup = GetComponent<PlantBiteWindup>();
 
         // El HitBox del mordisco también es opcional: solo existe si el prefab tiene un hijo con PlantBiteHitBox (hoy, el boss).
@@ -134,8 +133,6 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
         if(_hitBox != null) _hitBox.gameObject.SetActive(active);
     }
 
-    // Animación de preparación del mordisco (PlantBiteWindup). Null si esta planta no la tiene, está apagada o no encontró sus
-    // huesos: en ese caso PlantBiteState muerde de una, como siempre.
     public PlantBiteWindup BiteWindup => _biteWindup != null && _biteWindup.IsAvailable ? _biteWindup : null;
 
     private void Update()
