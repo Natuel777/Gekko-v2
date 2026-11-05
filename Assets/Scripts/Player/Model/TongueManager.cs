@@ -166,6 +166,11 @@ public class TongueManager : MonoBehaviour
     {
         _damageApplied = target is IHitOncePerLick;
         _object = null;
+
+        // Antes del Damage, así el objetivo ve su estado de este instante: puede ignorar el golpe (planta invulnerable) y aun
+        // así querer marcar dónde pegó la lengua.
+        if(target is ITongueContactListener listener) listener.OnTongueContact(_startPos, _currentPos);
+
         target.Damage(1);
     }
 

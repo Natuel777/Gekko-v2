@@ -2,7 +2,7 @@ using System.Collections;
 using UnityEngine;
 
 [RequireComponent(typeof(Collider))]
-public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IParticleSystemTarget
+public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IParticleSystemTarget, ITongueContactListener, IServiceConsumer
 {
     public CarnivorousPlantDataSO data;
     public Transform playerTransform;
@@ -34,12 +34,20 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
     [Min(0f)]
     [SerializeField] private float _aimBlendTime = 0.25f;
 
+    [Header("Blocked Hit Feedback")]
+    [Tooltip("Sprite que aparece donde pega la lengua del Gekko cuando la planta es invulnerable (preparando el mordisco, embistiendo, etc.). Lo crea el SpriteRendererFactory de la escena.")]
+    [SerializeField] private SRType _blockedHitMarker = SRType.Cross;
+    [Tooltip("Cuánto se adelanta la marca hacia la cámara desde la superficie del collider, para que la malla de la planta no la tape.")]
+    [Min(0f)]
+    [SerializeField] private float _blockedHitMarkerOffset = 0.2f;
+
     private bool _playerInRange = false;
     private bool _purified = false;
     private int _hits;
     private float _staggerUntil;
     private bool _hasHurtTrigger;
     private SkinnedMeshRenderer[] _skinnedMeshRenderers;
+    private SpriteRendererFactory _spriteRendererFactory;
 
     public bool IsPurified => _purified;
     public bool IsShielded { get; private set; }
@@ -190,6 +198,58 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
     // En plena embestida nunca. Y si la data lo pide, solo dentro del intervalo entre mordiscos: no mientras se prepara
     // (Windup + Return), ni escupiendo, ni con el player fuera del rango de mordisco.
     private bool CanBeHit => !_isLunging && (!data.vulnerableOnlyInBiteInterval || InBiteInterval);
+
+    // IServiceConsumer. Se resuelve recién cuando hace falta (un golpe bloqueado), no en Start: así las plantas de escenas sin
+    // SpriteRendererFactory no llenan la consola de warnings del ServiceLocator.
+    public bool TryResolveService()
+    {
+        if(_spriteRendererFactory != null) return true;
+
+        return ServiceLocator.Instance.TryGet(out _spriteRendererFactory);
+    }
+
+    // ITongueContactListener. La punta de la lengua llegó a la planta (TongueManager avisa justo antes del Damage). Si en este
+    // instante es invulnerable, el golpe no hace nada, pero se marca con un sprite dónde pegó la lengua. Escudada o purificada
+    // no: eso ya se ve por otro lado.
+    public void OnTongueContact(Vector3 tongueStart, Vector3 tongueTip)
+    {
+        if(_purified || IsShielded || CanBeHit) return;
+
+        ShowBlockedHit(TongueEntryPoint(tongueStart, tongueTip));
+    }
+
+    // Por dónde entró la lengua en la planta: la lengua apunta al pivote, así que la punta termina adentro del collider y el
+    // punto de impacto es donde el recorrido (start -> tip) cruza su superficie. Si no lo cruza (arrancó adentro), el punto del
+    // collider más cercano a la punta.
+    private Vector3 TongueEntryPoint(Vector3 start, Vector3 tip)
+    {
+        Collider col = GetComponent<Collider>();
+        Vector3 path = tip - start;
+        float length = path.magnitude;
+
+        if(length > 0.0001f && col.Raycast(new Ray(start, path / length), out RaycastHit hit, length + 0.1f))
+            return hit.point;
+
+        return col.ClosestPoint(tip);
+    }
+
+    private void ShowBlockedHit(Vector3 point)
+    {
+        if(!TryResolveService()) return;
+
+        // De frente a la cámara, y un poco adelantado de la superficie para que la malla no lo tape.
+        Camera cam = Camera.main;
+        Quaternion rotation = Quaternion.identity;
+
+        if(cam != null)
+        {
+            rotation = cam.transform.rotation;
+            point += (cam.transform.position - point).normalized * _blockedHitMarkerOffset;
+        }
+
+        // El sprite vuelve solo al pool pasado su Return Time (GenericSR).
+        _spriteRendererFactory.Create(_blockedHitMarker, point, rotation);
+    }
 
     public void Damage(float dmg)
     {
