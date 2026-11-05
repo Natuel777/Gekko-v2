@@ -19,10 +19,13 @@ public class PlantBiteState : IState
         _plant.spitBehaviour.StopSpitting();
         _biteTimer = 0f; // arranca el mordisco (con su preparación, si tiene) ni bien entra al rango
         _windingUp = false;
+        _plant.SetInBiteInterval(false);
     }
 
     public void Exit()
     {
+        _plant.SetInBiteInterval(false);
+
         // Se fue del rango (o la planta cambió de estado) en plena preparación: no hay mordisco y la pose vuelve sola a la base.
         if(!_windingUp) return;
 
@@ -61,6 +64,9 @@ public class PlantBiteState : IState
 
         if(_biteTimer > 0f) return;
 
+        // Se acabó el intervalo: de acá hasta el próximo mordisco (preparación + embestida) la planta no se puede dañar.
+        _plant.SetInBiteInterval(false);
+
         // Sin preparación muerde de una. Con preparación la arranca; si Play() dice que no (todavía vuelve de una cortada)
         // se reintenta en el próximo frame.
         if(windup == null) BiteNow();
@@ -73,6 +79,9 @@ public class PlantBiteState : IState
         _plant.Bite();
         if (AudioManager.instance) AudioManager.instance.Play(SoundNames.PlantGrowl);
         _biteTimer = _plant.data.biteInterval;
+
+        // Arranca el Bite Interval: la ventana en la que Gekko puede dañarla (la embestida en sí sigue siendo intocable).
+        _plant.SetInBiteInterval(true);
     }
 
     public void HandleEvent(CreatureEvent evt, object data = null)

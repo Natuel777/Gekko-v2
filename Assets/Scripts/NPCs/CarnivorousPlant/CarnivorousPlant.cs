@@ -125,6 +125,7 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
         // Apagada en plena embestida: la corrutina muere con ella, así que el hitbox no puede quedar prendido ni la planta
         // "embistiendo" para siempre.
         _isLunging = false;
+        InBiteInterval = false;
         SetHitBoxActive(false);
     }
 
@@ -181,12 +182,18 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
     public void SetState(IState state) => _eventFSM.SetState(state);
     public void SendEvent(CreatureEvent e) => _eventFSM.SendEvent(e);
 
-    // Purificación con la lengua: TongueManager llama Damage() sobre cualquier IDamageable.
+    // Intervalo entre mordiscos (lo marca PlantBiteState): la única ventana en la que se puede dañar a una planta cuya data pide
+    // vulnerableOnlyInBiteInterval (hoy, el boss). La embestida nunca cuenta, aunque corra dentro del intervalo.
+    public bool InBiteInterval { get; private set; }
+    public void SetInBiteInterval(bool value) => InBiteInterval = value;
+
+    // En plena embestida nunca. Y si la data lo pide, solo dentro del intervalo entre mordiscos: no mientras se prepara
+    // (Windup + Return), ni escupiendo, ni con el player fuera del rango de mordisco.
+    private bool CanBeHit => !_isLunging && (!data.vulnerableOnlyInBiteInterval || InBiteInterval);
+
     public void Damage(float dmg)
     {
-        if(_purified) return;
-
-        if(IsShielded) return;
+        if(_purified || IsShielded || !CanBeHit) return;
 
         int hitsNeeded = Mathf.Max(1, data.hitsToPurify);
         _hits++;
@@ -212,13 +219,12 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
         }
 
         _purified = true;
-        SetHitBoxActive(false); // purificada en plena embestida: el hitbox no pega más
+        SetHitBoxActive(false);
         EventManager.Trigger<float>("OnPlayerDamaged", data.purifyHealthCost);
         SetState(PurifiedState);
         Purified?.Invoke();
     }
 
-    // Lanza la embestida del head. Solo el _head se mueve; la base queda quieta.
     public void Bite()
     {
         if(_purified || _head == null || _isLunging) return;
@@ -303,13 +309,11 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
         EventManager.Trigger<float>("OnPlayerDamaged", data.biteDamage);
     }
 
-    // Lo llama PlantSpitBehaviour cada vez que sale un proyectil. El nombre del trigger en AC_carnivorousPlant es "splittle".
     private void PlaySpit()
     {
         if(_animatorCarnivorousPlant != null) _animatorCarnivorousPlant.SetTrigger("splittle");
     }
 
-    // El escudo del desafío de purificación bloquea los golpes hasta que se rompen todos los núcleos.
     public void SetShielded(bool shielded) => IsShielded = shielded;
 
     // El Animator original solo tiene "nibble": el trigger "hurt" es opcional.
@@ -330,7 +334,8 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
     private void PlayHurt()
     {
         if(_hasHurtTrigger) _animatorCarnivorousPlant.SetTrigger("hurt");
-        if (AudioManager.instance) AudioManager.instance.Play(SoundNames.PlantHurt);
+
+        if(AudioManager.instance) AudioManager.instance.Play(SoundNames.PlantHurt);
     }
 
     public void PlayPurifiedFeedback()
