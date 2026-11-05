@@ -32,6 +32,8 @@ public class CarnivorousPlantDataSO : ScriptableObject
     public float biteKnockbackForce = 8f;
     public float biteLungeDistance = 0.6f;
     public float biteLungeDuration = 0.2f;
+    [Tooltip("Si está activo, a la planta solo se la puede dañar y purificar durante el Bite Interval (entre mordiscos): no mientras se prepara, no en plena embestida, ni escupiendo o fuera del rango de mordisco. Apagado = se la puede golpear siempre, salvo en plena embestida.")]
+    public bool vulnerableOnlyInBiteInterval = false;
 
     [Header("Purified")]
     public Material purifiedMaterial;

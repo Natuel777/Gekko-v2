@@ -12,7 +12,7 @@ GameObject:
   m_Layer: 0
   m_Name: Firepoint
   m_TagString: Untagged
-  m_Icon: {fileID: 0}
+  m_Icon: {fileID: 1206586993520771344, guid: 0000000000000000d000000000000000, type: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
@@ -24,12 +24,12 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3102116521388178746}
   serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -0.119, y: 2.5954294, z: 1.2608615}
-  m_LocalScale: {x: 0.3741513, y: 0.3741513, z: 0.3741513}
+  m_LocalRotation: {x: -0.049748246, y: -0.00021417439, z: 0.0042997897, w: -0.99875253}
+  m_LocalPosition: {x: -0.09672797, y: 0.09313926, z: 1.3556576}
+  m_LocalScale: {x: 0.37415135, y: 0.37415123, z: 0.3741513}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 2175871929686554591}
+  m_Father: {fileID: 7720723718618553665}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &9080451185393299464
 GameObject:
@@ -62,7 +62,6 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 5625072394243308955}
   - {fileID: 5761990474622952829}
   - {fileID: 2457441213741879701}
   - {fileID: 2630051963506633821}
@@ -117,6 +116,8 @@ MonoBehaviour:
   _aimJoint: {fileID: 7720723718618553665}
   _aimJointAxis: {x: 0, y: 0, z: 1}
   _aimBlendTime: 0.25
+  _blockedHitMarker: 0
+  _blockedHitMarkerOffset: 0.2
 --- !u!1001 &690843989405038279
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -341,7 +342,10 @@ PrefabInstance:
       objectReference: {fileID: 2100000, guid: 27806842143f8604fba6fd7bfbe6a4ce, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
-    m_AddedGameObjects: []
+    m_AddedGameObjects:
+    - targetCorrespondingSourceObject: {fileID: -6676146765590585385, guid: 027c378a5e0137949a4799d97ef00a4b, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 5625072394243308955}
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 027c378a5e0137949a4799d97ef00a4b, type: 3}
       insertIndex: -1
