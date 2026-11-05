@@ -18,6 +18,10 @@ using UnityEngine;
 // dirección en la que muerde la define este giro. En el Return la planta queda quieta, así que el player puede esquivar el
 // mordisco saliendo de la zona (o corriendo más rápido de lo que ella gira). La planta se queda mirando hacia donde terminó.
 //
+// La usa también PlantSpitBehaviour: antes de cada escupida la planta hace esta misma preparación y escupe recién cuando
+// termina. Eso lo elige Play(..., forSpit: true), y entonces la animación entera (Windup, Return y mezcla) corre Spit Speed
+// Multiplier veces más rápido. El mordisco la sigue usando a velocidad normal.
+//
 // El Animator reescribe estos huesos en cada frame (Idle, nibble y spittle tienen curvas de todos), así que la pose se aplica
 // en LateUpdate, después de él. El Execution Order la deja además después del LateUpdate de CarnivorousPlant, que es donde se
 // aplica el aim de joint7_R: mientras corre la preparación gana esta pose.
@@ -80,9 +84,12 @@ public class PlantBiteWindup : MonoBehaviour
     [Tooltip("Segundos de mezcla con la pose del Animator al arrancar, para que no haya un salto (sobre todo en el Z de joint7_R). 0 = sin mezcla.")]
     [Min(0f)]
     [SerializeField] private float _blendInTime = 0.15f;
+    [Tooltip("Velocidad de la preparación cuando es para escupir (PlantSpitBehaviour) y no para el mordisco. 2 = el doble de rápido: Windup, Return y mezcla duran la mitad. 1 = igual que el mordisco.")]
+    [Min(0.01f)]
+    [SerializeField] private float _spitSpeedMultiplier = 2f;
 
     [Header("Root Rotation")]
-    [Tooltip("Grados por segundo a los que gira toda la planta hacia el player mientras dura el Windup (solo sobre su eje vertical). En el Return queda quieta. 0 = no gira.")]
+    [Tooltip("Grados por segundo a los que gira toda la planta hacia el player mientras dura el Windup (solo sobre su eje vertical). En el Return queda quieta. 0 = no gira. Al escupir, que la animación corre más rápida, gira proporcionalmente más rápido (por Spit Speed Multiplier) para llegar a la misma orientación que en el mordisco.")]
     [Min(0f)]
     [SerializeField] private float _rootTurnSpeed = 90f;
     [Tooltip("Eje LOCAL de la planta que tiene que quedar apuntando al player (hacia donde muerde). Si gira para el lado equivocado o queda de costado, probá otro eje (±X, ±Z).")]
@@ -111,6 +118,7 @@ public class PlantBiteWindup : MonoBehaviour
     private Bone[] _bones = Array.Empty<Bone>();
     private Phase _phase;
     private float _elapsed;
+    private float _speed = 1f; // 1 para el mordisco, Spit Speed Multiplier para la escupida
     private bool _cancelled;
     private Transform _target; // hacia quién gira la planta durante el Windup
 
@@ -151,15 +159,19 @@ public class PlantBiteWindup : MonoBehaviour
     }
 
     // Arranca la preparación desde la pose base. lookTarget es hacia quién gira la planta entera durante el Windup (null = no
-    // gira). false si no se puede ahora: apagado, sin huesos, o todavía volviendo de una preparación cortada (quien llama
-    // reintenta en el próximo frame).
-    public bool Play(Transform lookTarget = null)
+    // gira). forSpit = la preparación es para escupir (PlantSpitBehaviour) y no para el mordisco: corre Spit Speed Multiplier
+    // veces más rápido, y la planta gira hacia lookTarget igual que en el mordisco (con la velocidad de giro escalada por lo
+    // mismo, así llega a la misma orientación). La partícula de la preparación (Preparing Attack PS) es solo del mordisco: al
+    // escupir no sale. false si no se puede ahora: apagado, sin huesos, o todavía volviendo de una preparación cortada (quien
+    // llama reintenta en el próximo frame).
+    public bool Play(Transform lookTarget = null, bool forSpit = false)
     {
         if(!IsAvailable || _phase != Phase.Idle) return false;
 
         // Implementaciòn actual, luego reemplazar por GenericPS.Play()
-        _preparingAttackPS.Play();
+        if(_preparingAttackPS != null && !forSpit) _preparingAttackPS.Play();
         _target = lookTarget;
+        _speed = forSpit ? _spitSpeedMultiplier : 1f;
         _phase = Phase.Windup;
         _elapsed = 0f;
         _cancelled = false;
@@ -180,14 +192,16 @@ public class PlantBiteWindup : MonoBehaviour
     {
         if(_phase == Phase.Idle) return;
 
-        _elapsed += Time.deltaTime;
+        _elapsed += Time.deltaTime * _speed;
 
         if(_phase == Phase.Windup) UpdateWindup();
         else UpdateReturn();
     }
 
     // Gira la planta entera hacia el player, solo sobre su propio eje vertical (así conserva la inclinación que tenga en la
-    // escena) y a velocidad limitada: por eso un player que se mueve rápido se le escapa de la zona.
+    // escena) y a velocidad limitada: por eso un player que se mueve rápido se le escapa de la zona. La velocidad se escala por
+    // _speed (igual que el tiempo de la animación): al escupir, el Windup dura menos y gira proporcionalmente más rápido, así
+    // llega a la misma orientación que en el mordisco.
     private void TurnRoot()
     {
         if(_target == null || _rootTurnSpeed <= 0f || _rootFacingAxis.sqrMagnitude < 0.0001f) return;
@@ -198,7 +212,7 @@ public class PlantBiteWindup : MonoBehaviour
 
         if(facing.sqrMagnitude < 0.0001f || toTarget.sqrMagnitude < 0.0001f) return;
 
-        float maxStep = _rootTurnSpeed * Time.deltaTime;
+        float maxStep = _rootTurnSpeed * _speed * Time.deltaTime;
         float step = Mathf.Clamp(Vector3.SignedAngle(facing, toTarget, up), -maxStep, maxStep);
 
         transform.Rotate(up, step, Space.World);

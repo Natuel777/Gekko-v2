@@ -92,13 +92,14 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
         BiteState = new PlantBiteState(this);
         PurifiedState = new PlantPurifiedState(this);
 
-        spitBehaviour = new PlantSpitBehaviour(_head, _firePoint, _venomPrefab, data.shootInterval, data.rotateToPlayer, data.rotationSpeed, _muzzlePS, PlaySpit);
+        // La preparación del mordisco es opcional (hoy, solo el boss) y también la usa la escupida, por eso se busca antes.
+        _biteWindup = GetComponent<PlantBiteWindup>();
+
+        spitBehaviour = new PlantSpitBehaviour(_head, _firePoint, _venomPrefab, data.shootInterval, data.rotateToPlayer, data.rotationSpeed, _muzzlePS, PlaySpit, _biteWindup);
 
         // El aim del hueso es opcional: solo existe si la planta tiene un _aimJoint asignado (hoy, el boss).
         if(_aimJoint != null && data.rotateToPlayer)
             _aimBehaviour = new PlantAimBehaviour(_aimJoint, _aimJointAxis, data.rotationSpeed, _aimBlendTime);
-
-        _biteWindup = GetComponent<PlantBiteWindup>();
 
         // El HitBox del mordisco también es opcional: solo existe si el prefab tiene un hijo con PlantBiteHitBox (hoy, el boss).
         // Sin él la planta muerde como siempre (daño en el pico de la embestida). Arranca apagado: se prende únicamente durante

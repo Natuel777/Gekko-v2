@@ -107,9 +107,13 @@ public class BossPlantPhases : MonoBehaviour
         // Si estaba atacando, el nuevo comportamiento retoma el blanco; si no, el FSM lo arranca al entrar en rango.
         bool wasInRange = _plant.detection != null && _plant.detection.IsTargetInRange();
 
+        // El comportamiento viejo se descarta: si estaba en plena preparación del disparo, se corta (los huesos vuelven solos).
+        if(_plant.spitBehaviour != null) _plant.spitBehaviour.StopSpitting();
+
+        // Mismo PlantBiteWindup que usa la planta (si lo tiene): cada escupida va precedida de su preparación.
         PlantSpitBehaviour spit = new PlantSpitBehaviour(_head, _firePoint, _venomPrefab, interval,
                                                          _plant.data.rotateToPlayer, _plant.data.rotationSpeed,
-                                                         _muzzlePS, PlaySpit);
+                                                         _muzzlePS, PlaySpit, _plant.GetComponent<PlantBiteWindup>());
         if(wasInRange) spit.StartSpitting(_plant.playerTransform);
 
         _plant.spitBehaviour = spit;
