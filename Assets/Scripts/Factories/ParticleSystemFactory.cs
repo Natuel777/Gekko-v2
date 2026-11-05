@@ -34,6 +34,9 @@ public class ParticleSystemFactory : Factory<GenericPS, PSType>
     public override GenericPS Create(PSType type, Vector3 position, Quaternion rotation)
     {
         var pool = GetOrCreatePool(type);
+        
+        if(pool == null) return null;
+
         var ps = pool.Get(p => p.transform.SetPositionAndRotation(position, rotation));
         return ps;
     }

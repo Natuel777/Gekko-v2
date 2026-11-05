@@ -1413,7 +1413,6 @@ Transform:
   m_LocalScale: {x: 2.2092, y: 2.2092, z: 2.2092}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 1700126779}
   - {fileID: 905243625}
   - {fileID: 406050768}
   - {fileID: 8558520833005103344}
@@ -65524,6 +65523,7 @@ GameObject:
   - component: {fileID: 1423595114}
   - component: {fileID: 1423595113}
   - component: {fileID: 1423595115}
+  - component: {fileID: 1423595116}
   m_Layer: 0
   m_Name: Factories
   m_TagString: Untagged
@@ -65574,6 +65574,21 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _SRPrefabs:
   - {fileID: 6080012042412365406, guid: bb02f2378694e1f468eb54f4b192a440, type: 3}
+  _initialStockPerType: 6
+--- !u!114 &1423595116
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1423595112}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fbccd57c472a8d740a1adaf12519c8aa, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _PSPrefabs:
+  - {fileID: 7373510355921652563, guid: ad67ba9947ced2d438ec8eb5971f3e24, type: 3}
   _initialStockPerType: 6
 --- !u!1 &1423648219
 GameObject:
@@ -75816,7 +75831,7 @@ GameObject:
   m_Layer: 0
   m_Name: Firepoint
   m_TagString: Untagged
-  m_Icon: {fileID: 0}
+  m_Icon: {fileID: 1206586993520771344, guid: 0000000000000000d000000000000000, type: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
@@ -75828,12 +75843,12 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1700126778}
   serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -0.119, y: 2.5954294, z: 1.2608615}
-  m_LocalScale: {x: 0.3741513, y: 0.3741513, z: 0.3741513}
+  m_LocalRotation: {x: -0.049748246, y: -0.00021417439, z: 0.0042997897, w: -0.99875253}
+  m_LocalPosition: {x: -0.09672797, y: 0.09313926, z: 1.3556576}
+  m_LocalScale: {x: 0.37415135, y: 0.37415123, z: 0.3741513}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 26294467}
+  m_Father: {fileID: 1728382584}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1704431243
 GameObject:
@@ -76636,6 +76651,7 @@ Transform:
   - {fileID: 1084222237}
   - {fileID: 1788289454}
   - {fileID: 3572428581233616915}
+  - {fileID: 1700126779}
   m_Father: {fileID: 188620854}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1729624875

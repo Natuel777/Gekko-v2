@@ -60,7 +60,11 @@ public class BugBullet : ShooteableObject
 
     private void Impact()
     {
-        if(_hitEffect != null) _hitEffect.Play();
+        if(TryResolveService())
+        {
+            GenericPS ps = PSFactory.Create(PSType.VenomHit, transform.position, transform.rotation);
+            ps?.Initialize();
+        }
 
         ShooteableObjectFactory.Instance?.ReturnBullet(this);
     }

@@ -195,12 +195,8 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
     public bool InBiteInterval { get; private set; }
     public void SetInBiteInterval(bool value) => InBiteInterval = value;
 
-    // En plena embestida nunca. Y si la data lo pide, solo dentro del intervalo entre mordiscos: no mientras se prepara
-    // (Windup + Return), ni escupiendo, ni con el player fuera del rango de mordisco.
     private bool CanBeHit => !_isLunging && (!data.vulnerableOnlyInBiteInterval || InBiteInterval);
 
-    // IServiceConsumer. Se resuelve recién cuando hace falta (un golpe bloqueado), no en Start: así las plantas de escenas sin
-    // SpriteRendererFactory no llenan la consola de warnings del ServiceLocator.
     public bool TryResolveService()
     {
         if(_spriteRendererFactory != null) return true;
@@ -208,9 +204,6 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
         return ServiceLocator.Instance.TryGet(out _spriteRendererFactory);
     }
 
-    // ITongueContactListener. La punta de la lengua llegó a la planta (TongueManager avisa justo antes del Damage). Si en este
-    // instante es invulnerable, el golpe no hace nada, pero se marca con un sprite dónde pegó la lengua. Escudada o purificada
-    // no: eso ya se ve por otro lado.
     public void OnTongueContact(Vector3 tongueStart, Vector3 tongueTip)
     {
         if(_purified || IsShielded || CanBeHit) return;
@@ -218,9 +211,6 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
         ShowBlockedHit(TongueEntryPoint(tongueStart, tongueTip));
     }
 
-    // Por dónde entró la lengua en la planta: la lengua apunta al pivote, así que la punta termina adentro del collider y el
-    // punto de impacto es donde el recorrido (start -> tip) cruza su superficie. Si no lo cruza (arrancó adentro), el punto del
-    // collider más cercano a la punta.
     private Vector3 TongueEntryPoint(Vector3 start, Vector3 tip)
     {
         Collider col = GetComponent<Collider>();

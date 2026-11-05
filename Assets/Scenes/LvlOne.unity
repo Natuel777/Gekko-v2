@@ -412240,6 +412240,7 @@ GameObject:
   - component: {fileID: 1675776542}
   - component: {fileID: 1675776541}
   - component: {fileID: 1675776543}
+  - component: {fileID: 1675776544}
   m_Layer: 0
   m_Name: Factories
   m_TagString: Untagged
@@ -412291,6 +412292,21 @@ MonoBehaviour:
   _SRPrefabs:
   - {fileID: 6080012042412365406, guid: bb02f2378694e1f468eb54f4b192a440, type: 3}
   _initialStockPerType: 0
+--- !u!114 &1675776544
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1675776540}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fbccd57c472a8d740a1adaf12519c8aa, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _PSPrefabs:
+  - {fileID: 7373510355921652563, guid: ad67ba9947ced2d438ec8eb5971f3e24, type: 3}
+  _initialStockPerType: 6
 --- !u!1 &1676326883
 GameObject:
   m_ObjectHideFlags: 0
@@ -561362,7 +561378,7 @@ GameObject:
   m_Layer: 0
   m_Name: Firepoint
   m_TagString: Untagged
-  m_Icon: {fileID: 0}
+  m_Icon: {fileID: 1206586993520771344, guid: 0000000000000000d000000000000000, type: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
@@ -650797,7 +650813,6 @@ Transform:
   m_LocalScale: {x: 2.2092, y: 2.2092, z: 2.2092}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 7627278458363857412}
   - {fileID: 7511862461720154850}
   - {fileID: 2322182429506250089}
   - {fileID: 2531410341606759764}
@@ -697700,6 +697715,7 @@ Transform:
   - {fileID: 3612267988206999093}
   - {fileID: 1739971302}
   - {fileID: 4547476335987494695}
+  - {fileID: 7627278458363857412}
   m_Father: {fileID: 6487023321997938536}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!4 &5547122154537564961
@@ -735724,12 +735740,12 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 920179463210683045}
   serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -0.119, y: 2.5954294, z: 1.2608615}
-  m_LocalScale: {x: 0.3741513, y: 0.3741513, z: 0.3741513}
+  m_LocalRotation: {x: -0.049748246, y: -0.00021417439, z: 0.0042997897, w: -0.99875253}
+  m_LocalPosition: {x: -0.09672797, y: 0.09313926, z: 1.3556576}
+  m_LocalScale: {x: 0.37415135, y: 0.37415123, z: 0.3741513}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 4178200462686404672}
+  m_Father: {fileID: 5542886064320883422}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &7628143215100742231
 GameObject:
