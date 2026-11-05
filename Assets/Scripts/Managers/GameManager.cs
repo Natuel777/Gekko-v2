@@ -2,7 +2,8 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using System.Collections.Generic;
 
-public class GameManager : MonoBehaviour
+[DefaultExecutionOrder(-500)]
+public class GameManager : MonoBehaviour , IGameManager
 {
     public static GameManager Instance;
     public Player Pj;
@@ -35,6 +36,8 @@ public class GameManager : MonoBehaviour
         }
 
         else Destroy(gameObject);
+
+        ServiceLocator.Instance.Register<IGameManager>(this);
     }
 
     private void OnDestroy()
