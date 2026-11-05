@@ -12,6 +12,7 @@ public class PlayerController
     private PlayerViewer _pjViewer;
     private TongueManager _tongueM;
     private GekkoSwinging _swinging;
+    private GekkoGroundCheck _groundCheck;
     private Transform _pjTransform;
     private Transform _camTransform;
     private Transform _head;
@@ -91,6 +92,7 @@ public class PlayerController
         _head = head;
         _pjViewer = pjV;
         _surfaces = _climbRayMask | _groundRayMask;
+        _groundCheck = new GekkoGroundCheck(_pjTransform, _collider, _groundRayMask, _blockMask);
         // Arrancamos sin boost: el post proceso de viento empieza apagado.
         WindEffectController.SetActive(false);
     }
@@ -169,11 +171,13 @@ public class PlayerController
         _smoothedInput = Vector2.SmoothDamp(_smoothedInput, _rawInput, ref _smoothedVelocity, _smoothInputSpeed);
         _pjViewer.Floor(_isSurface);
     }
+    
     public void ArtificialLateUpdate()
     {
        // if (_tongueM != null && _tongueM.IsAttached)
        //     _tongueM.MoveObject();
     }
+
     public void ArtificialFixedUpdate()
     {
         if (_frozenForCinematic)
@@ -204,7 +208,7 @@ public class PlayerController
         if (_jumpGraceTime <= 0f)
             DetectSurface();
 
-        _isGrounded = IsGrounded();
+        _isGrounded = _groundCheck.IsGrounded(_currentUp);
         OnWater();
 
         _tongueM.CanUseTongue = _isSurface;
@@ -595,28 +599,6 @@ public class PlayerController
         _rb.linearVelocity = Vector3.ProjectOnPlane(_rb.linearVelocity, _lastValidDir) + _lastValidDir * force;
         _canJump = false;
     }
-    private bool IsGrounded()
-    {
-        float scale = _pjTransform.lossyScale.x;
-        float half = ((_collider.height / 2f) - _collider.radius) * scale;
-        Vector3 center = _pjTransform.TransformPoint(_collider.center);
-        Vector3 realCenter = _pjTransform.TransformPoint(_collider.center) - new Vector3(0, 0, -0.3f * scale);
-
-        Vector3 front = center + _pjTransform.forward * half;
-        Vector3 back = center - _pjTransform.forward * half;
-        float dist = 0.15f * scale;
-        float radius = _collider.radius * 0.9f * scale;
-
-        bool g1 = CastSurface(front, radius, -_currentUp, dist, _groundRayMask, out RaycastHit h1);
-        bool g2 = CastSurface(center, radius, -_currentUp, dist, _groundRayMask, out RaycastHit h2);
-        bool g3 = CastSurface(back, radius, -_currentUp, dist, _groundRayMask, out RaycastHit h3);
-
-        if (!g1 && !g2 && !g3) return false;
-
-        RaycastHit validHit = g2 ? h2 : (g1 ? h1 : h3);
-        float angle = Vector3.Angle(validHit.normal, Vector3.up);
-        return angle < 60f;
-    }
     private bool WallOnAir(out Vector3 wallNormal)
     {
         wallNormal = Vector3.zero;
@@ -659,15 +641,6 @@ public class PlayerController
             _collider.material.dynamicFriction = 1f;
             _collider.material.staticFriction = 1f;
         }
-    }
-    private bool CastSurface(Vector3 origin, float radius, Vector3 dir, float dist, LayerMask validMask, out RaycastHit hit)
-    {
-        if (Physics.SphereCast(origin, radius, dir, out hit, dist, _blockMask, QueryTriggerInteraction.Ignore))
-        {
-            // Solo cuenta si lo PRIMERO que golpeó es una superficie válida
-            return (validMask.value & (1 << hit.collider.gameObject.layer)) != 0;
-        }
-        return false;
     }
     private void DetectSurface()
     {
@@ -716,7 +689,7 @@ public class PlayerController
                         castDist = (isLongDir ? 2f : 0.6f) * scale;
                     }
                 }
-                if (CastSurface(origin, _collider.radius * 0.4f * scale, dir, castDist, _surfaces, out RaycastHit hit))
+                if (_groundCheck.CastSurface(origin, _collider.radius * 0.4f * scale, dir, castDist, _surfaces, out RaycastHit hit))
                 {
                     float normalUpDot = Vector3.Dot(hit.normal, Vector3.up);
                     float groundBonus = 0f;
@@ -741,7 +714,7 @@ public class PlayerController
         bool nearEdge = false;
         if (_isClimbing)
         {
-            nearEdge = !CastSurface(front, _collider.radius * 0.4f * scale, _pjTransform.forward, 0.4f * scale, _surfaces, out _);
+            nearEdge = !_groundCheck.CastSurface(front, _collider.radius * 0.4f * scale, _pjTransform.forward, 0.4f * scale, _surfaces, out _);
         }
         if (!_isGrounded && !_nearGround && nearEdge)
         {
@@ -749,7 +722,7 @@ public class PlayerController
 
             Vector3 forwardDown = (-_pjTransform.forward - _currentUp).normalized;
 
-            if (CastSurface(headPos, _collider.radius * 0.4f * scale, forwardDown, 4f * scale, _surfaces, out RaycastHit hitDown))
+            if (_groundCheck.CastSurface(headPos, _collider.radius * 0.4f * scale, forwardDown, 4f * scale, _surfaces, out RaycastHit hitDown))
             {
                 float distScore = 1f - (hitDown.distance / (4f* scale));
                 float score = distScore - Mathf.Clamp01(Vector3.Dot(hitDown.normal, Vector3.up)) * 0.3f + 0.4f ;

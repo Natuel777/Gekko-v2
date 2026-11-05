@@ -68,8 +68,6 @@ public sealed class GekkoSwinging
 
     private RotateGekkoWhileSwingin _gekkoRotation;
     private GekkoGrapple _grappleBehaviour;
-
-    // Qué hay delante de la cámara para engancharse: un swing, un GrapplePoint o nada (ver GekkoDetection).
     private GekkoDetection _detection;
     
     #region Properties
@@ -99,12 +97,7 @@ public sealed class GekkoSwinging
         _forwardThrustForce = forwardThrustForce;
         _horizontalThrustForce = horizontalThrustForce;
         _extendCableSpeed = extendCableSpeed;
-
-        // La detección es un objeto aparte: se queda con las capas, el indicador y el alcance del SphereCast. Las capas que
-        // llegan son las de los ganchos de swing; la de los GrapplePoint la suma la propia detección.
         _detection = new GekkoDetection(cam, layers, predictionPoint, predictionSphereRadius, maxTongueDistance);
-
-        // Mathf.Max(1, ...) garantiza al menos un hilo y evita dividir por cero en UpdateLineRenderer (delta = i / _quality).
         _quality = Mathf.Max(1, quality);
         _springDamper = springDamper;
         _springStrength = springStrength;
@@ -112,9 +105,6 @@ public sealed class GekkoSwinging
         _waveCount = waveCount;
         _waveHeight = waveHeight;
         _waveAffectCurve = waveAffectCurve;
-
-        // El Spring del latigazo se configura una sola vez, porque estos valores no cambian mientras se juega.
-        // Su "target" es 0: siempre quiere volver a "sin onda", por eso el latigazo se apaga solo.
         _spring = new Spring();
         _spring.SetTarget(0);
         _spring.SetDamper(_springDamper);
@@ -130,19 +120,14 @@ public sealed class GekkoSwinging
         // La tensión visual es un porcentaje: de 0 a 1.
         _ropeSlack = Mathf.Max(MinRopeSlack, ropeSlack);
         _ropeTautness = Mathf.Clamp01(ropeTautness);
-
-        // Resorte, amortiguador y tope no pueden ser negativos: un valor negativo empujaría a Gekko hacia ARRIBA.
         _heightLimitOffset = heightLimitOffset;
         _heightLimitSpring = Mathf.Max(0f, heightLimitSpring);
         _heightLimitDamper = Mathf.Max(0f, heightLimitDamper);
         _heightLimitMaxPull = Mathf.Max(0f, heightLimitMaxPull);
-
         _gekkoRotation = new RotateGekkoWhileSwingin(this, _rb);
     }
 
-    // Click derecho (lo llama PlayerInputs al apretar el botón de enganche). Engancha la lengua a lo que apunta la cámara, y lo
-    // que pasa depende de lo que sea (ver GekkoDetection): un gancho de swing arranca el swing; un GrapplePoint arranca el
-    // grapple. Si no apunta a nada que se pueda enganchar, no hace nada.
+    // Click derecho (lo llama PlayerInputs al apretar el botón de enganche)
     public void AttachTongue()
     {
         // En pleno grapple no se puede enganchar nada nuevo: habría dos sistemas manejando a Gekko a la vez. La excepción
@@ -151,7 +136,6 @@ public sealed class GekkoSwinging
 
         if(IsGrappling && !interruptsSecondJump) return;
 
-        // Se detecta ahora y no se usa lo del último frame: la cámara pudo moverse desde entonces.
         switch(_detection.Detect())
         {
             case GekkoDetection.TargetType.Swing:
@@ -185,7 +169,6 @@ public sealed class GekkoSwinging
         _joint.spring = 4.5f; //Consultar motivo del valor
         _joint.damper = 7f; //Consultar motivo del valor
         _joint.massScale = 4.5f; //Consultar motivo del valor
-
         BeginTongue();
     }
 

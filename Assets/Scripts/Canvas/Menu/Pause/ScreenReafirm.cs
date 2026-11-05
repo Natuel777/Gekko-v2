@@ -16,20 +16,23 @@ public class ScreenReafirm : Screens
     }
     public void SetValues(ReafirmCanvas change)
     {
-        _button.onClick.RemoveAllListeners();
+        // Con MenuButtonFX el onClick dispara el efecto (Click) y la acción real va en OnConfirmed
+        var fx = _button.GetComponent<MenuButtonFX>();
+        UnityEngine.Events.UnityEvent action = fx ? fx.OnConfirmed : _button.onClick;
+        action.RemoveAllListeners();
         if (change == ReafirmCanvas.GoToMenu)
         {
-            _button.onClick.AddListener(BTN_Menu);
+            action.AddListener(BTN_Menu);
             _text.text = "Are you sure you want to go back to the menu. You will lose all your progress";
         }
         else if (change == ReafirmCanvas.RestartLevel)
         {
-            _button.onClick.AddListener(BTN_RestartLvl);
+            action.AddListener(BTN_RestartLvl);
             _text.text = "Restart the level. You will lose all your progress ";
         }
         else if (change == ReafirmCanvas.ExitGame)
         {
-            _button.onClick.AddListener(BTN_ExitGame);
+            action.AddListener(BTN_ExitGame);
             _text.text = "Exit the game";
         }
     }

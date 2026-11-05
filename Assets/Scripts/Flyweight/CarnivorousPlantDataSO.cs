@@ -25,6 +25,7 @@ public class CarnivorousPlantDataSO : ScriptableObject
     public float rotationSpeed = 5f;
 
     [Header("Bite")]
+    [Tooltip("Rango en el que el player queda a tiro del ataque cuerpo a cuerpo: es lo que dispara la preparación del mordisco. Lo que pega es el BoxCollider del GameObject HitBox del prefab (si la planta tiene uno).")]
     public float biteRange = 2f;
     public float biteDamage = 8f;
     public float biteInterval = 1.2f;

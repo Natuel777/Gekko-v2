@@ -9,6 +9,8 @@ public class LevelOneManager : MonoBehaviour
     public event Action OnBridgeConstructed;
     public event Action OnMissionDuckStarted;
     public event Action OnDuckFound;
+    // Con el patito que volvió, para que MomDuck lo ubique en la fila y arme el plano de la familia.
+    public event Action<BabyDuck> OnDuckReturned;
     public event Action OnChallengeStart;
 
     [SerializeField] private DuckPosition[] _positionsForDucks;
@@ -24,11 +26,14 @@ public class LevelOneManager : MonoBehaviour
     public void BridgeFinish() => OnBridgeConstructed?.Invoke();
     public void BeaverMissionTaken() => OnBeaverMission?.Invoke();
     public void MissionDuck() => OnMissionDuckStarted?.Invoke();
-    public Transform DuckFound()
+    public void DuckReturned(BabyDuck baby)
     {
         OnDuckFound?.Invoke();
-        return GetDuckPosition();
+        OnDuckReturned?.Invoke(baby);
     }
+
+    // Lugar armado a mano en la escena, para cuando MomDuck no encuentra piso para la fila.
+    public Transform ReserveDuckPosition() => GetDuckPosition();
     public void ChallengeStart() => OnChallengeStart?.Invoke();
 
     public void StartSong()

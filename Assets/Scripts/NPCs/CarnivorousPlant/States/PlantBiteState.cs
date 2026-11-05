@@ -1,7 +1,8 @@
 using UnityEngine;
 
-// Ataque melee por proximidad (segundo umbral). No aplica daño directo: dispara la
-// embestida del head (el daño + knockback ocurre en el pico del lunge, en el host).
+// Ataque melee por proximidad (segundo umbral, biteRange). No aplica daño directo: dispara la embestida del head, y el daño +
+// knockback lo aplica el HitBox (que la planta prende durante la embestida) si el Gekko está adentro en ese momento. Estar en
+// biteRange alcanza para que la planta ataque, pero no para que pegue: hay que estar también dentro del HitBox.
 //
 // Si la planta tiene PlantBiteWindup (hoy, el boss), cada mordisco va precedido de su animación de preparación: el mordisco
 // sale recién cuando ésta termina. Sin el componente (o apagado) muerde de una, como siempre.
@@ -49,8 +50,8 @@ public class PlantBiteState : IState
 
             _windingUp = false;
 
-            // Si la cortó algo de afuera (un golpe de lengua que aturde) no hay mordisco: vuelve a prepararse.
             if(windup != null && windup.Completed) BiteNow();
+
             else _biteTimer = 0f;
 
             return;
@@ -63,7 +64,8 @@ public class PlantBiteState : IState
         // Sin preparación muerde de una. Con preparación la arranca; si Play() dice que no (todavía vuelve de una cortada)
         // se reintenta en el próximo frame.
         if(windup == null) BiteNow();
-        else _windingUp = windup.Play();
+        
+        else _windingUp = windup.Play(_plant.playerTransform);
     }
 
     private void BiteNow()

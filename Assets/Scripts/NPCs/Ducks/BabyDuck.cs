@@ -44,13 +44,15 @@ public class BabyDuck : NPCBase
             yield return new WaitForSeconds(2);
         }
     }
-    private void Teleport()
+    // Lo llama MomDuck con la pantalla en negro: el patito aparece en su lugar de la fila. La cámara de diálogo
+    // se baja acá porque es hija del patito y, si no, viajaría con él hasta mamá.
+    public void PlaceNextToMom(Vector3 position, Quaternion rotation)
     {
-        Transform pos = LevelOneManager.Instance.DuckFound();
+        _cam.Priority = 0;
         if(_onWater) _anim.SetBool("BabyDuckisWalk", false);
-        transform.position = pos.position;
-        transform.rotation = pos.rotation;
-        ScreenFader.Instance.OnFadeMiddle -= Teleport;
+        transform.SetPositionAndRotation(position, rotation);
+        _source.Play();
+        _cuack.Play();
     }
     public override void OnDialogueStart()
     {
@@ -69,10 +71,9 @@ public class BabyDuck : NPCBase
         {
             _found = true;
             Cuack(false);
-            ScreenFader.Instance.OnFadeMiddle += Teleport;
-            ScreenFader.Instance.OnFadeCompleted += FinishCam;
-            ScreenFader.Instance.StartFade();
             _currentDialogue++;
+            // MomDuck arma la secuencia: fundido, el patito en la fila y el plano de la familia.
+            LevelOneManager.Instance.DuckReturned(this);
         }
         else _cam.Priority = 0;
         _interacted = false;
@@ -81,11 +82,6 @@ public class BabyDuck : NPCBase
     {
         _currentDialogue++;
         _start = true;
-    }
-    private void FinishCam()
-    {
-        _cam.Priority = 0;
-        ScreenFader.Instance.OnFadeCompleted -= FinishCam;
     }
     private void OnEnable()
     {

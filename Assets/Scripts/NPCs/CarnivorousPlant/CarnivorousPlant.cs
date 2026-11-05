@@ -68,6 +68,8 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
     private Vector3 _headStartLocalPos;
     private Quaternion _headStartLocalRot;
     private bool _isLunging = false;
+    private PlantBiteHitBox _hitBox;
+    private bool _biteHitApplied;
     #endregion
 
     private void Awake()
@@ -88,8 +90,17 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
         if(_aimJoint != null && data.rotateToPlayer)
             _aimBehaviour = new PlantAimBehaviour(_aimJoint, _aimJointAxis, data.rotationSpeed, _aimBlendTime);
 
-        // La preparación del mordisco también es opcional: solo existe si la planta tiene el componente PlantBiteWindup (hoy, el boss).
         _biteWindup = GetComponent<PlantBiteWindup>();
+
+        // El HitBox del mordisco también es opcional: solo existe si el prefab tiene un hijo con PlantBiteHitBox (hoy, el boss).
+        // Sin él la planta muerde como siempre (daño en el pico de la embestida). Arranca apagado: se prende únicamente durante
+        // la embestida.
+        _hitBox = GetComponentInChildren<PlantBiteHitBox>(true);
+        if(_hitBox != null)
+        {
+            _hitBox.Initialize(this);
+            _hitBox.gameObject.SetActive(false);
+        }
 
         if(_head != null)
         {
@@ -109,8 +120,19 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
 
     public bool IsPlayerInBiteRange() => biteDetection.IsTargetInRange();
 
-    // Animación de preparación del mordisco (PlantBiteWindup). Null si esta planta no la tiene, está apagada o no encontró sus
-    // huesos: en ese caso PlantBiteState muerde de una, como siempre.
+    private void OnDisable()
+    {
+        // Apagada en plena embestida: la corrutina muere con ella, así que el hitbox no puede quedar prendido ni la planta
+        // "embistiendo" para siempre.
+        _isLunging = false;
+        SetHitBoxActive(false);
+    }
+
+    private void SetHitBoxActive(bool active)
+    {
+        if(_hitBox != null) _hitBox.gameObject.SetActive(active);
+    }
+
     public PlantBiteWindup BiteWindup => _biteWindup != null && _biteWindup.IsAvailable ? _biteWindup : null;
 
     private void Update()
@@ -190,6 +212,7 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
         }
 
         _purified = true;
+        SetHitBoxActive(false); // purificada en plena embestida: el hitbox no pega más
         EventManager.Trigger<float>("OnPlayerDamaged", data.purifyHealthCost);
         SetState(PurifiedState);
         Purified?.Invoke();
@@ -199,13 +222,20 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
     public void Bite()
     {
         if(_purified || _head == null || _isLunging) return;
+
         StartCoroutine(BiteLungeRoutine());
+        
         if(_animatorCarnivorousPlant != null) _animatorCarnivorousPlant.SetTrigger("nibble");
     }
 
     private IEnumerator BiteLungeRoutine()
     {
         _isLunging = true;
+
+        // Acá sale el mordisco de verdad (la preparación ya terminó): se prende el HitBox y el daño lo aplica
+        // OnBiteHitBoxContact si el Gekko está adentro. Se apaga al terminar la embestida. Sin HitBox, el daño sale en el pico.
+        _biteHitApplied = false;
+        SetHitBoxActive(true);
 
         Vector3 toPlayer = (playerTransform.position - _head.position);
         toPlayer.Normalize();
@@ -219,7 +249,6 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
         Quaternion lungeRot = Quaternion.LookRotation(toPlayer);
 
         float half = data.biteLungeDuration * 0.5f;
-        bool hitApplied = false;
 
         // Fase ida: avanza y rota hacia el player.
         float t = 0f;
@@ -232,12 +261,8 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
             yield return null;
         }
 
-        // Pico de la embestida: daño + knockback una sola vez.
-        if(!hitApplied)
-        {
-            ApplyBiteHit();
-            hitApplied = true;
-        }
+        // Pico de la embestida. Con HitBox el daño lo aplica el trigger; sin él (plantas chicas) sale acá, una sola vez.
+        if(_hitBox == null) OnBiteHitBoxContact(GameManager.Instance.Pj);
 
         // Fase vuelta: regresa a la pose original.
         t = 0f;
@@ -253,14 +278,22 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
         // Asegurar la pose base exacta al terminar.
         _head.localPosition = _headStartLocalPos;
         _head.localRotation = _headStartLocalRot;
+        SetHitBoxActive(false);
         _isLunging = false;
     }
 
-    private void ApplyBiteHit()
+    // Lo llama PlantBiteHitBox cuando el Gekko está dentro del hitbox prendido (o la embestida, en plantas sin HitBox).
+    // Daño + knockback una sola vez por mordisco.
+    public void OnBiteHitBoxContact(Player player)
     {
-        Player player = GameManager.Instance.Pj;
-        if(_purified || player == null) return;
+        if(_purified || _biteHitApplied || player == null) return;
 
+        _biteHitApplied = true;
+        ApplyBiteHit(player);
+    }
+
+    private void ApplyBiteHit(Player player)
+    {
         if(player.TryGetComponent(out Rigidbody rb))
         {
             Vector3 dir = (player.transform.position - transform.position).normalized;
@@ -337,6 +370,9 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
 
         Gizmos.color = Color.red;
         Gizmos.DrawWireSphere(transform.position, data.biteRange);
+
+        PlantBiteHitBox hitBox = _hitBox != null ? _hitBox : GetComponentInChildren<PlantBiteHitBox>(true);
+        if(hitBox != null) hitBox.DrawGizmo(Color.yellow);
     }
     #endif
 }

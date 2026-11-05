@@ -93,14 +93,40 @@ public class DamageFeedback : MonoBehaviour
     [ContextMenu("Debug/Probar golpe")]
     private void DebugTriggerHit() => TriggerHit();
 
+    // Empujón pedido por la fuente del golpe (ej. LittleBarricade) antes de mandar "OnPlayerDamaged", que solo
+    // lleva el monto. Vale solo para el golpe de este mismo frame: si el daño no llega (invulnerable, respawn),
+    // no queda colgado para el próximo.
+    private Vector3 _pendingDirection;
+    private float _pendingDistance;
+    private int _pendingFrame = -1;
+
+    public void SetNextHitKnockback(Vector3 direction, float distance)
+    {
+        _pendingDirection = direction;
+        _pendingDistance = distance;
+        _pendingFrame = Time.frameCount;
+    }
+
     // Sin dirección conocida (la mayoría de las fuentes de daño actuales solo mandan
     // el monto, no de dónde vino el golpe): empuja hacia atrás según hacia dónde mira Gekko.
-    public void TriggerHit() => TriggerHit(-transform.forward);
+    public void TriggerHit()
+    {
+        if(_pendingFrame == Time.frameCount)
+        {
+            _pendingFrame = -1;
+            TriggerHit(_pendingDirection, _pendingDistance);
+            return;
+        }
 
-    public void TriggerHit(Vector3 fromDirection)
+        TriggerHit(-transform.forward);
+    }
+
+    public void TriggerHit(Vector3 fromDirection) => TriggerHit(fromDirection, _knockbackDistance);
+
+    public void TriggerHit(Vector3 fromDirection, float knockbackDistance)
     {
         StartCoroutine(HitstopRoutine());
-        StartCoroutine(KnockbackRoutine(fromDirection));
+        StartCoroutine(KnockbackRoutine(fromDirection, knockbackDistance));
         StartCoroutine(InvulnerabilityRoutine());
         ShakeCamera();
         StartFlash();
@@ -182,7 +208,7 @@ public class DamageFeedback : MonoBehaviour
     #region Empujón
     // Bloquea el input mientras dura el empujón: si no, Move() (PlayerController) pisa la velocidad con la
     // del movimiento que el jugador siga manteniendo apretado, y el empujón nunca se siente.
-    private IEnumerator KnockbackRoutine(Vector3 fromDirection)
+    private IEnumerator KnockbackRoutine(Vector3 fromDirection, float knockbackDistance)
     {
         if(_player == null || _player.PjController == null) yield break;
 
@@ -199,7 +225,7 @@ public class DamageFeedback : MonoBehaviour
             elapsed += Time.unscaledDeltaTime;
             float u = Mathf.Clamp01(elapsed / _knockbackDuration);
             // Derivada de una posición ease-out cúbica: arranca rápido, frena hasta 0.
-            float speed = (3f * _knockbackDistance / _knockbackDuration) * (1f - u) * (1f - u);
+            float speed = (3f * knockbackDistance / _knockbackDuration) * (1f - u) * (1f - u);
             _player.PjController.ApplyKnockbackVelocity(dir * speed);
             yield return null;
         }
