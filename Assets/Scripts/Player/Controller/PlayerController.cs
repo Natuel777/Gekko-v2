@@ -31,6 +31,10 @@ public class PlayerController
     private float _rotationSpeed = 15f;
     private float _speedMultiplier = 1f;
     private float _moveAlignThreshold = 0.8f;
+    // m/s² a los que la velocidad horizontal sube hacia su objetivo (ver Move()): a _speed por defecto (4.5), llega
+    // al tope en ~0.15s en vez de saltar ahí de golpe.
+    private float _horizontalAcceleration = 30f;
+    private float _currentHorizontalSpeed;
 
     private bool _isGrounded = false;
     private bool _isSurface = false;
@@ -70,10 +74,18 @@ public class PlayerController
     public Vector2 RawInput { get { return _rawInput; } set { _rawInput = value; } }
     public bool CanInteract => !_talking && !TongueOut && _isSurface;
     public bool Grounded => _isGrounded;
+    // Trepando una pared o techo (no piso): para que la cámara (CameraFollow.SmoothCameraUp) solo siga la
+    // orientación de la superficie cuando Gekko está realmente adherido, no en un roce breve contra una pared en el aire.
+    public bool IsClimbing => _isClimbing;
     // En el aire: sin ninguna superficie debajo (ni piso ni pared), o colgado de la lengua / en pleno grapple. Durante el
     // swing y el grapple el controller no corre DetectSurface (ver ArtificialFixedUpdate) y _isSurface queda congelado en
     // su último valor, por eso esos dos casos se chequean aparte.
     public bool InAir => !_isSurface || (_swinging != null && (_swinging.IsSwinging || _swinging.IsGrappling));
+    // Para CameraFollow: abre el radio de la órbita durante el swing/grapple (ver PushCameraFromGeometry) para que se
+    // vea el arco del péndulo o el vuelo hacia la mariquita, no solo si hay o no superficie debajo.
+    public bool IsSwingingOrGrappling => _swinging != null && (_swinging.IsSwinging || _swinging.IsGrappling);
+    // Para el FOV dinámico de CameraFollow: velocidad horizontal actual (sin la componente vertical de salto/caída).
+    public float HorizontalSpeed => new Vector3(_rb.linearVelocity.x, 0f, _rb.linearVelocity.z).magnitude;
     #endregion
 
     public PlayerController(Rigidbody rb, Transform pjTransform, CapsuleCollider col, Transform camTransform, PlayerViewer pjV, Transform head)
@@ -240,7 +252,7 @@ public class PlayerController
                 if (rotDiff > 1f)
                 {
                     Quaternion targetRot = Quaternion.LookRotation(projectedForward, _currentUp);
-                    _pjTransform.rotation = Quaternion.Slerp(_pjTransform.rotation, targetRot, 8f * Time.fixedDeltaTime);
+                    _pjTransform.rotation = Quaternion.Slerp(_pjTransform.rotation, targetRot, _rotationSpeed * Time.fixedDeltaTime);
                 }
             }
             if (!_nearGround && _jumpGraceTime <= 0f)
@@ -266,7 +278,7 @@ public class PlayerController
                 if (projectedForward.sqrMagnitude > 0.01f)
                 {
                     Quaternion targetRot = Quaternion.LookRotation(projectedForward, _currentUp);
-                    Quaternion newRot = Quaternion.Slerp(_pjTransform.rotation, targetRot, 5f * Time.deltaTime);
+                    Quaternion newRot = Quaternion.Slerp(_pjTransform.rotation, targetRot, _rotationSpeed * Time.deltaTime);
 
                     //if (_tongueM != null && _tongueM.IsAttached)
                     //{
@@ -334,8 +346,12 @@ public class PlayerController
         _isMoving = true;
 
         Vector3 moveDir = GetMoveDirection(dir, out float alignment);
-        float currentSpeed = (_tongueM != null && _tongueOut ? _speed * 0.8f : _speed) * _speedMultiplier * alignment;
-        Vector3 targetPos = _rb.position + moveDir * currentSpeed * Time.fixedDeltaTime;
+        float targetSpeed = (_tongueM != null && _tongueOut ? _speed * 0.8f : _speed) * _speedMultiplier * alignment;
+        // Rampa de arranque: la velocidad horizontal sube hacia targetSpeed en vez de saltar directo ahí, para que
+        // arrancar a caminar tenga un poco de peso en vez de ser instantáneo. CancelMovement la resetea a 0 al
+        // soltar el input, así el próximo arranque vuelve a rampear (no sigue en el tope de velocidad anterior).
+        _currentHorizontalSpeed = Mathf.MoveTowards(_currentHorizontalSpeed, targetSpeed, _horizontalAcceleration * Time.fixedDeltaTime);
+        Vector3 targetPos = _rb.position + moveDir * _currentHorizontalSpeed * Time.fixedDeltaTime;
 
         LayerMask blockMask = ~(1 << _pjTransform.gameObject.layer);
 
@@ -850,6 +866,7 @@ public class PlayerController
         _isMoving = false;
         _hasRef = false;
         _lastValidDir = Vector3.zero;
+        _currentHorizontalSpeed = 0f;
         if (_pjViewer.IsWalkSoundPlaying()) _pjViewer.WalkSoundStop();
         if (_pjViewer.IsTrailPlaying()) _pjViewer.StopTrail();
     }

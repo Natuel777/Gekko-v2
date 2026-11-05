@@ -212,7 +212,7 @@ MonoBehaviour:
         InputAction: {fileID: 0}
         Gain: 0
         LegacyInput: Mouse X
-        LegacyGain: 400
+        LegacyGain: 200
         CancelDeltaTime: 0
       InputValue: 0
       Driver:
@@ -225,7 +225,7 @@ MonoBehaviour:
         InputAction: {fileID: 0}
         Gain: 0
         LegacyInput: Mouse Y
-        LegacyGain: -400
+        LegacyGain: -200
         CancelDeltaTime: 0
       InputValue: 0
       Driver:
@@ -262,12 +262,12 @@ MonoBehaviour:
   _pj: {fileID: 0}
   _cameraBlockers:
     serializedVersion: 2
-    m_Bits: 193
+    m_Bits: 30145
   _impulseSource: {fileID: 0}
+  _airMinVerticalAngle: -30
+  _verticalRangeSpeed: 90
   _upThreshold: 0.98
-  cameraUpLerpSpeed: 0.5
-  _angleChange: 120
-  _newAngle: 0
+  cameraUpLerpSpeed: 2.5
   _worldUpReference: {fileID: 0}
 --- !u!114 &4718293046152837461
 MonoBehaviour:

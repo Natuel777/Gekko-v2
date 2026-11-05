@@ -120,9 +120,17 @@ public class PlayerInputs
         _swinging.ThrustInput = Vector2.zero;
     }
 
-    private void RotateInput(InputAction.CallbackContext value) => _cam.MovingCamera = true;
+    private void RotateInput(InputAction.CallbackContext value)
+    {
+        _cam.MovingCamera = true;
+        _cam.LookDelta = value.ReadValue<Vector2>();
+    }
 
-    private void RotateCancel(InputAction.CallbackContext value) => _cam.MovingCamera = false;
+    private void RotateCancel(InputAction.CallbackContext value)
+    {
+        _cam.MovingCamera = false;
+        _cam.LookDelta = Vector2.zero;
+    }
 
     private void JumpInput(InputAction.CallbackContext value)
     {

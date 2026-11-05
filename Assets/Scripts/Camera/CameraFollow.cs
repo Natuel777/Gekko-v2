@@ -1,64 +1,103 @@
 using Unity.Cinemachine;
 using UnityEngine;
 
-public class CameraFollow : MonoBehaviour
+// Cámara de tercera persona 100% manejada a mano: posición y rotación se calculan acá cada frame y se escriben
+// directo en CameraState.RawPosition/RawOrientation (ver PostPipelineStageCallback). No hay CinemachineOrbitalFollow
+// ni CinemachineInputAxisController en el vcam: Cinemachine solo aporta el CinemachineCamera (así
+// CameraStateManager puede seguir cambiando entre cámaras para cinemáticas/boss, y el blend sigue andando) y el
+// CinemachineImpulseListener (shake), que son independientes de cómo se calculó la posición/rotación.
+//
+// Por qué: CinemachineOrbitalFollow recalculaba su órbita en coordenadas esféricas relativas a un "world up" que le
+// cambiábamos por abajo (_worldUpReference) para acompañar paredes/techos, y ese recálculo no lo controlábamos -
+// cualquier ajuste terminaba siendo un parche. Acá el "up" de la cámara (_cameraUp, mismo sistema ya probado) entra
+// directo en la fórmula de nuestra propia rotación, sin una capa intermedia reinterpretando ejes.
+public class CameraFollow : CinemachineExtension
 {
-    public CinemachineOrbitalFollow _camera;
     public Transform _pj;
     private PlayerController _pjC;
     [SerializeField] private LayerMask _cameraBlockers;
     [SerializeField] private CinemachineImpulseSource _impulseSource;
-    private CinemachineInputAxisController _input;
-    //public float _autoAlignSpeed = 30f;
-    //public float _alignDeadzone = 15f;
-    //public float _alignDelay = 0.5f;
+    private CinemachineCamera _vcam;
+
+    [Header("Brazo de la cámara")]
+    [Tooltip("Altura sobre la posición de Gekko a la que pivotea el brazo (reemplaza al perfil de 3 anillos de OrbitalFollow; v1 usa un solo valor, no varía con el ángulo).")]
+    [SerializeField] private Vector3 _pivotOffset = new Vector3(0f, 1.5f, 0f);
+    [Tooltip("Distancia base de la cámara al pivote.")]
+    [SerializeField, Min(0.1f)] private float _baseRadius = 3f;
+    [Tooltip("Multiplica el radio base mientras Gekko está colgado del swing o en pleno grapple, para que se vea el arco/vuelo entero. La colisión de abajo lo sigue recortando si hay geometría de por medio.")]
+    [SerializeField, Min(1f)] private float _swingRadiusMultiplier = 1.5f;
+    private float _radius;
+    private const float MaxPitch = 80f;
+    private float _pitch = 35f;
+
+    [Header("Mirar hacia arriba desde el piso")]
+    [Tooltip("Máximo que se inclina la vista hacia arriba (grados) con la cámara a ras del piso.")]
+    [SerializeField, Range(0f, 89f)] private float _maxLookUpAngle = 45f;
+    [Tooltip("Grados que se inclina la vista por cada grado que el input intenta bajar más allá del piso. 1 = misma sensibilidad que mirar normal.")]
+    [SerializeField, Min(0f)] private float _lookUpSensitivity = 1f;
+    [Tooltip("Velocidad (grados/s) a la que la vista vuelve a 0 cuando ya no se puede mirar hacia arriba (por ejemplo, al saltar).")]
+    [SerializeField, Min(0f)] private float _lookUpReturnSpeed = 120f;
+    private float _lookUpTilt;
+
+    [Header("FOV dinámico por velocidad")]
+    [Tooltip("Grados que se le suman al FOV base cuando Gekko va a _fovReferenceSpeed o más.")]
+    [SerializeField] private float _speedFovBoost = 8f;
+    [Tooltip("Velocidad horizontal (m/s) a la que el FOV llega a su boost máximo. Un poco por encima de la velocidad normal de caminata, así se nota más con el boost de arándanos o corriendo a fondo.")]
+    [SerializeField, Min(0.01f)] private float _fovReferenceSpeed = 6f;
+    [SerializeField, Min(0.01f)] private float _fovLerpSpeed = 3f;
+    private float _baseFov;
+
     [SerializeField] private float _upThreshold = 0.98f;
 
-    // Paneo vertical (ver UpdateVerticalRange). Grados: 0 = a la altura de Gekko (su transform.position), negativo = por debajo.
+    // Paneo vertical (ver UpdateVerticalRange). Grados: 0 = a la altura de Gekko, negativo = por debajo.
     [Tooltip("Cuánto puede bajar la cámara (en grados, por debajo de Gekko) cuando Gekko está en el aire.")]
     [SerializeField] private float _airMinVerticalAngle = -30f;
     [Tooltip("Velocidad (grados/s) a la que sube el límite de abajo al apoyarse, por ejemplo al aterrizar con la cámara por debajo de Gekko.")]
     [SerializeField, Min(0.01f)] private float _verticalRangeSpeed = 90f;
     private float _minVerticalAngle;
 
-    // Mirar hacia arriba desde el piso (lo hace CameraRotation). Mientras se puede, el eje vertical tiene este margen de
-    // grados por debajo del piso: así el input puede "empujar" más allá y CameraRotation lo convierte en inclinación.
-    // Alcanza con que sea mayor a lo que el mouse puede mover el eje en un frame.
-    private const float LookUpInputMargin = 90f;
-    private CameraRotation _rotation;
-
     public float cameraUpLerpSpeed = 2f;
-    [SerializeField] private float _angleChange = 120f;
-    [SerializeField] private float _newAngle = 90f;
+    [Tooltip("Hasta dónde se acomoda el 'up' de la cámara hacia el de la pared/techo al trepar: 0 = nunca se mueve del horizonte del mundo, 1 = coincide del todo con la superficie. Un valor alto en superficies chicas (donde el up cambia mucho de golpe) se siente muy brusco.")]
+    [SerializeField, Range(0f, 1f)] private float _maxCameraUpBlend = 0.45f;
+    [Tooltip("Segundos que IsClimbing tiene que estar sostenido antes de que la cámara empiece a inclinarse. En el borde de una plataforma, agarrarse al piso o a la pared puede dudar frame a frame; sin este delay esa duda se le contagia a la cámara.")]
+    [SerializeField, Min(0f)] private float _climbTiltDelay = 0.15f;
+    private float _climbingDuration;
     private Vector3 _cameraUp = Vector3.up;
+    private Vector3 _lastCameraUp = Vector3.up;
+
+    // Reemplaza al "yaw" de OrbitalFollow: en vez de un ángulo contra un eje mundial fijo (que se rompía en
+    // techo/pared), es un vector que se transporta frame a frame siguiendo a _cameraUp (ver SmoothCameraUp) antes de
+    // sumarle el input — la misma técnica que ya usa PlayerController.GetClimbDirection para _refRight/_refForward.
+    private Vector3 _cameraForwardRef = Vector3.forward;
 
     private bool _movingCamera;
-    public Transform _worldUpReference;
+    private Vector2 _lookDelta;
+    private bool _inputEnabled = true;
 
-    private LayerMask _obstacle;
-    private float _baseRadius;
     public bool MovingCamera { set { _movingCamera = value; } }
     public Vector3 CameraUp { get { return _cameraUp; } }
     // Límite de abajo real de la órbita (grados). Con Gekko en el piso es 0°: la cámara a ras del piso.
     public float VerticalBottom => _minVerticalAngle;
-    // Gekko en el piso y la cámara puede mirar hacia arriba desde ahí (ver CameraRotation).
     public bool LookUpAllowed { get; private set; }
 
     private bool _shakeEnabled = true;
 
-    // Nombres de los ejes tal como aparecen en el inspector del CinemachineInputAxisController de esta cámara.
     [Header("Sensibilidad de cámara (Opciones)")]
-    [SerializeField] private string _horizontalAxisName = "Horizontal Axis";
-    [SerializeField] private string _verticalAxisName = "Vertical Axis";
-    private float _baseHorizontalGain = 1f;
-    private float _baseVerticalGain = 1f;
+    [Tooltip("Grados de giro por cada unidad de delta de mouse (píxeles), antes de aplicar la sensibilidad.")]
+    [SerializeField, Min(0.001f)] private float _lookSpeed = 0.15f;
     private float _sensitivity = 1f;
     private bool _invertY;
 
     public float CameraSensitivity => _sensitivity;
     public bool InvertY => _invertY;
 
-    private void OnEnable()  => EventManager.Subscribe<float>("OnCameraShake", ShakeCamera);
+    // Lo llama PlayerInputs en cada evento de la action "Rotation" (delta de mouse real, ver RotateInput/RotateCancel).
+    public Vector2 LookDelta { set { _lookDelta = value; } }
+
+    private Vector3 _finalPosition;
+    private Quaternion _finalRotation;
+
+    private void OnEnable() => EventManager.Subscribe<float>("OnCameraShake", ShakeCamera);
 
     private void ShakeCamera(float force)
     {
@@ -78,7 +117,6 @@ public class CameraFollow : MonoBehaviour
     public void SetCameraSensitivity(float value)
     {
         _sensitivity = value;
-        ApplyAxisGains();
         PlayerPrefs.SetFloat(PlayerPrefsKeys.cameraSensitivityKey, value);
         PlayerPrefs.Save();
     }
@@ -86,22 +124,8 @@ public class CameraFollow : MonoBehaviour
     public void SetInvertY(bool value)
     {
         _invertY = value;
-        ApplyAxisGains();
         PlayerPrefs.SetInt(PlayerPrefsKeys.invertYKey, value ? 1 : 0);
         PlayerPrefs.Save();
-    }
-
-    // Multiplica el Gain base de cada eje (tal como está seteado en el inspector) por la sensibilidad guardada, e
-    // invierte el signo del eje vertical si corresponde (Gain negativo = input invertido, ver CinemachineInputAxisController.Reader).
-    private void ApplyAxisGains()
-    {
-        if (!_input) return;
-
-        var horizontal = _input.GetController(_horizontalAxisName);
-        if (horizontal != null) horizontal.Input.Gain = _baseHorizontalGain * _sensitivity;
-
-        var vertical = _input.GetController(_verticalAxisName);
-        if (vertical != null) vertical.Input.Gain = _baseVerticalGain * _sensitivity * (_invertY ? -1f : 1f);
     }
 
     private void Start()
@@ -109,23 +133,18 @@ public class CameraFollow : MonoBehaviour
         _shakeEnabled = PlayerPrefs.GetInt(PlayerPrefsKeys.cameraShakeKey, 1) == 1;
 
         _pj = GameManager.Instance.Pj.transform;
-        _obstacle = GameManager.Instance.Surfaces;
-        _baseRadius = _camera.Radius;
-        _minVerticalAngle = _camera.VerticalAxis.Range.x;
-        _input = GetComponent<CinemachineInputAxisController>();
-        _rotation = GetComponent<CameraRotation>();
+        _vcam = GetComponent<CinemachineCamera>();
+        _baseFov = _vcam.Lens.FieldOfView;
+        _radius = _baseRadius;
+        _minVerticalAngle = 0f;
 
-        // Gain base de cada eje tal como quedó configurado en el inspector, antes de aplicarle la sensibilidad guardada.
-        var horizontal = _input ? _input.GetController(_horizontalAxisName) : null;
-        var vertical = _input ? _input.GetController(_verticalAxisName) : null;
-        if (horizontal != null) _baseHorizontalGain = horizontal.Input.Gain;
-        if (vertical != null) _baseVerticalGain = Mathf.Abs(vertical.Input.Gain);
+        Vector3 initialForward = Vector3.ProjectOnPlane(_pj.forward, Vector3.up);
+        _cameraForwardRef = (initialForward.sqrMagnitude > 0.0001f ? initialForward : Vector3.forward).normalized;
 
         _sensitivity = PlayerPrefs.GetFloat(PlayerPrefsKeys.cameraSensitivityKey, 1f);
         _invertY = PlayerPrefs.GetInt(PlayerPrefsKeys.invertYKey, 0) == 1;
-        ApplyAxisGains();
 
-        if(UIManager.Instance != null)
+        if (UIManager.Instance != null)
         {
             UIManager.Instance.OnActivatingDialogue += DeactivateInput;
             UIManager.Instance.OnDeactivatingDialogue += ActivateInput;
@@ -138,122 +157,99 @@ public class CameraFollow : MonoBehaviour
         EventManager.Subscribe("UnPauseEvent", ActivateInput);
     }
 
-
-    void Update()
+    private void Update()
     {
-        //bool playerIsMoving = _pjC.IsMoving;
-        //
-        //if (playerIsMoving)
-        //    _timeSincePjMoved = 0f;
-        //else
-        //    _timeSincePjMoved += Time.deltaTime;
-
-        //if (!_movingCamera && _timeSincePjMoved < _alignDelay)
-        //{
-        //    AutoAlign();
-        //}
         SmoothCameraUp();
+        ReadLookInput();
     }
+
     private void LateUpdate()
     {
-        PushCameraFromGeometry();
         UpdateVerticalRange();
+        ComputeOrbit();
+        UpdateSpeedFov();
     }
+
+    // Suma el delta de mouse de este frame a _cameraForwardRef (yaw) y a _pitch, escalado por sensibilidad/invertY.
+    // _lookDelta ya viene en 0 si el mouse no se movió este frame (ver RotateCancel en PlayerInputs), así que no
+    // hace falta resetearlo acá.
+    private void ReadLookInput()
+    {
+        if (!_inputEnabled || _lookDelta.sqrMagnitude < 0.0000001f) return;
+
+        float yawDelta = _lookDelta.x * _lookSpeed * _sensitivity;
+        float pitchDelta = _lookDelta.y * _lookSpeed * _sensitivity * (_invertY ? -1f : 1f);
+
+        _cameraForwardRef = Quaternion.AngleAxis(yawDelta, _cameraUp) * _cameraForwardRef;
+        _pitch += pitchDelta;
+    }
+
+    // El "up" de la cámara acompaña a la superficie donde Gekko está parado: en el piso queda como el up del mundo,
+    // y se inclina hacia el up de la pared/techo mientras lo trepa. _upThreshold (el mismo que separa piso de pared
+    // en UpdateVerticalRange) decide el peso del blend. Solo sigue a la superficie con IsClimbing sostenido
+    // (_climbTiltDelay): un roce breve contra una pared en pleno salto no tiene que inclinar la cámara.
+    // _maxCameraUpBlend tapa qué tan lejos llega ese acompañamiento (nunca al 100%): en superficies chicas el up
+    // real puede cambiar mucho de golpe, y seguirlo del todo se siente muy brusco.
     private void SmoothCameraUp()
     {
         Vector3 targetUp = _pjC.CurrentUp;
+        float alignment = Vector3.Dot(targetUp.normalized, Vector3.up);
 
-        float angleDiff = Vector3.Angle(Vector3.up, targetUp);
-        float angleFromWorld = Vector3.Angle(Vector3.up, targetUp);
-        // Solo rotamos si el �ngulo es mayor a X grados
-        if (angleDiff > _angleChange) // ajust� este valor
+        _climbingDuration = _pjC.IsClimbing ? _climbingDuration + Time.deltaTime : 0f;
+        float climbRamp = Mathf.Clamp01(_climbingDuration / Mathf.Max(0.0001f, _climbTiltDelay));
+
+        float blend = climbRamp > 0f
+            ? (1f - Mathf.Clamp01(Mathf.InverseLerp(0f, _upThreshold, alignment))) * _maxCameraUpBlend * climbRamp
+            : 0f;
+
+        Vector3 targetCameraUp = TiltUpTowards(targetUp, blend);
+        _lastCameraUp = _cameraUp;
+        _cameraUp = Vector3.Slerp(_cameraUp, targetCameraUp, cameraUpLerpSpeed * Time.deltaTime);
+
+        // Transporta la referencia de yaw junto con el cambio de "up" de este frame, para que el input de mouse
+        // (sumado después en ReadLookInput) siga girando alrededor del up actual y no se desalinee.
+        if (Vector3.Angle(_lastCameraUp, _cameraUp) > 0.001f)
         {
-            Vector3 clampedUp = Vector3.Slerp(Vector3.up, targetUp, _newAngle / angleFromWorld);
-            _cameraUp = Vector3.Slerp(
-                _cameraUp,
-                clampedUp,
-                cameraUpLerpSpeed * Time.deltaTime
-            );
-            _worldUpReference.up = _cameraUp;
+            Quaternion delta = Quaternion.FromToRotation(_lastCameraUp, _cameraUp);
+            _cameraForwardRef = delta * _cameraForwardRef;
         }
-        else
-        {
-            _cameraUp = Vector3.Slerp(
-                _cameraUp,
-                Vector3.up,
-                cameraUpLerpSpeed * Time.deltaTime
-            );
-            _worldUpReference.up = _cameraUp;
-        }
+        _cameraForwardRef = Vector3.ProjectOnPlane(_cameraForwardRef, _cameraUp).normalized;
     }
-    //void AutoAlign()
-    //{
-    //    // �ngulo actual de la c�mara en Y (world space)
-    //    float cameraAngle = _camera.HorizontalAxis.Value;
-    //
-    //    // �ngulo al que mira el jugador
-    //    float playerAngle = _pj.eulerAngles.y;
-    //
-    //    // Diferencia angular (teniendo en cuenta el wrap de 360�)
-    //    float delta = Mathf.DeltaAngle(cameraAngle, playerAngle);
-    //
-    //    // Solo corregir si supera la deadzone
-    //    if (Mathf.Abs(delta) > _alignDeadzone)
-    //    {
-    //        float correction = Mathf.Sign(delta)
-    //            * Mathf.Min(_autoAlignSpeed * Time.deltaTime, Mathf.Abs(delta));
-    //
-    //        _camera.HorizontalAxis.Value += correction;
-    //    }
-    //}
-    //void PushCameraFromGeometry()
-    //{
-    //    Vector3 dirToCamera = (_camera.transform.position - _pj.position).normalized;
-    //
-    //    if (dirToCamera.sqrMagnitude < 0.01f) return;
-    //
-    //    // Chequeamos si hay geometr�a en la direcci�n actual de la c�mara
-    //    if (Physics.SphereCast(_pj.position, 0.3f, dirToCamera,
-    //        out RaycastHit hit, _baseRadius, _obstacle))
-    //    {
-    //        float targetRadius = Mathf.Max(hit.distance - 0.3f, 1f); // m�nimo radio de 1
-    //        _camera.Radius = Mathf.Lerp(_camera.Radius, targetRadius, 10f * Time.deltaTime);
-    //    }
-    //    else
-    //    {
-    //        // Restauramos hacia el radio base pero m�s lento para no hacer zoom brusco
-    //        _camera.Radius = Mathf.Lerp(_camera.Radius, _baseRadius, 2f * Time.deltaTime);
-    //    }
-    //}
-    private void PushCameraFromGeometry()
+
+    // Inclina Vector3.up un 'blend' del ángulo total hacia targetUp, pero SIEMPRE alrededor del eje horizontal
+    // perpendicular a hacia dónde YA está mirando la cámara (su forward actual, proyectado al piso), nunca con el
+    // eje que elegiría Vector3.Slerp(Vector3.up, targetUp, blend) por su cuenta ni con el forward de Gekko:
+    // trepando una pared, el forward de Gekko apunta a lo largo de la pared (hacia donde está subiendo), no en una
+    // dirección horizontal estable. Usando el forward de la cámara el giro siempre pasa por lo que ya se está
+    // viendo en pantalla: se inclina adelante/atrás (pitch) respecto de lo que el jugador ya tiene encuadrado,
+    // nunca un giro lateral random.
+    private Vector3 TiltUpTowards(Vector3 targetUp, float blend)
     {
-        Vector3 dirToCamera = (_camera.transform.position - _pj.position).normalized;
+        if (blend <= 0f) return Vector3.up;
 
-        if (Physics.SphereCast(_pj.position, 0.3f, dirToCamera,
-            out RaycastHit hit, _baseRadius, _cameraBlockers, QueryTriggerInteraction.Ignore))
-        {
-            // Forzar la cámara antes del hit
-            float safeRadius = Mathf.Max(hit.distance - 0.3f, 1f);
-            _camera.Radius = Mathf.Lerp(_camera.Radius, safeRadius, 10f * Time.deltaTime);
-        }
-        else
-        {
-            _camera.Radius = Mathf.Lerp(_camera.Radius, _baseRadius, 2f * Time.deltaTime);
-        }
+        Vector3 facing = Vector3.ProjectOnPlane(_cameraForwardRef, Vector3.up);
+        if (facing.sqrMagnitude < 0.0001f) facing = Vector3.forward;
+        facing.Normalize();
+
+        Vector3 axis = Vector3.Cross(Vector3.up, facing).normalized;
+        float angle = Vector3.Angle(Vector3.up, targetUp) * blend;
+
+        // Las dos inclinaciones posibles alrededor de ese eje (adelante o atrás); nos quedamos con la que de verdad
+        // se acerca a targetUp, así no depende de la convención de mano del producto cruz.
+        Vector3 tiltForward = Quaternion.AngleAxis(angle, axis) * Vector3.up;
+        Vector3 tiltBackward = Quaternion.AngleAxis(-angle, axis) * Vector3.up;
+        return Vector3.Dot(tiltForward, targetUp) >= Vector3.Dot(tiltBackward, targetUp) ? tiltForward : tiltBackward;
     }
-    // Límite de abajo del paneo vertical (VerticalAxis de la órbita, en grados; 0 = a la altura de Gekko):
-    //  - En el aire (salto, caída, swing, grapple): hasta _airMinVerticalAngle por debajo de Gekko. Lo que frena a la
-    //    cámara contra el piso es la colisión (PushCameraFromGeometry y el CinemachineDecollider), no este límite.
-    //  - Apoyado en el piso: igual que antes, no baja de 0°.
-    //  - Apoyado en una pared o techo: igual que antes, hasta -80°.
-    // Bajar el límite es instantáneo (no mueve la cámara). Subirlo es de a poco: Cinemachine recorta el valor del eje al
-    // rango en cada frame, y si el límite saltara de golpe (al aterrizar con la cámara por debajo de 0°) la cámara pegaría
-    // un salto. Así sube acompañando al límite.
+
+    // Límite de abajo del paneo vertical (grados; 0 = a la altura de Gekko):
+    //  - En el aire (salto, caída, swing, grapple): hasta _airMinVerticalAngle por debajo de Gekko. Lo que frena a
+    //    la cámara contra el piso es la colisión (ComputeOrbit), no este límite.
+    //  - Apoyado en el piso: no baja de 0°. Apoyado en una pared o techo: hasta -80°.
+    // Bajar el límite es instantáneo (no mueve la cámara). Subirlo es de a poco, para no pegar un salto al aterrizar
+    // con la cámara por debajo de 0°.
     //
-    // Con Gekko en el piso, y ya con el límite asentado en 0°, se habilita mirar hacia arriba (LookUpAllowed): el rango
-    // real del eje se abre LookUpInputMargin por debajo del piso y CameraRotation se encarga de que la cámara no baje de
-    // ahí (convierte ese extra en inclinación). Solo si CameraRotation está presente y activa: sin ella nadie frenaría
-    // a la cámara y bajaría del piso.
+    // Con Gekko en el piso, y el límite ya asentado en 0°, se habilita mirar hacia arriba (LookUpAllowed): seguir
+    // empujando el pitch más abajo del piso se convierte en _lookUpTilt en vez de bajar la cámara del piso.
     private void UpdateVerticalRange()
     {
         float targetMin;
@@ -274,18 +270,89 @@ public class CameraFollow : MonoBehaviour
         else _minVerticalAngle = Mathf.MoveTowards(_minVerticalAngle, targetMin, _verticalRangeSpeed * Time.deltaTime);
 
         // Mientras el límite todavía sube (recién aterrizado) no: la cámara tiene que subir con él, no inclinarse.
-        LookUpAllowed = onFloor && Mathf.Approximately(_minVerticalAngle, targetMin)
-                        && _rotation != null && _rotation.isActiveAndEnabled;
+        LookUpAllowed = onFloor && Mathf.Approximately(_minVerticalAngle, targetMin);
 
-        float rangeMin = LookUpAllowed ? _minVerticalAngle - LookUpInputMargin : _minVerticalAngle;
-        _camera.VerticalAxis.Range = new Vector2(rangeMin, 80f);
+        if (!LookUpAllowed)
+        {
+            _lookUpTilt = Mathf.MoveTowards(_lookUpTilt, 0f, _lookUpReturnSpeed * Time.deltaTime);
+        }
+        else if (_pitch < _minVerticalAngle)
+        {
+            // El input quiso bajar la cámara más allá del piso: eso se vuelve inclinación y la cámara se queda en el piso.
+            _lookUpTilt += (_minVerticalAngle - _pitch) * _lookUpSensitivity;
+            _pitch = _minVerticalAngle;
+        }
+        else if (_pitch > _minVerticalAngle && _lookUpTilt > 0f && _lookUpSensitivity > 0f)
+        {
+            // El input sube la cámara: primero se gasta en deshacer la inclinación, y solo lo que sobra orbita.
+            float undo = Mathf.Min(_lookUpTilt, (_pitch - _minVerticalAngle) * _lookUpSensitivity);
+            _lookUpTilt -= undo;
+            _pitch -= undo / _lookUpSensitivity;
+        }
+        _lookUpTilt = Mathf.Clamp(_lookUpTilt, 0f, _maxLookUpAngle);
+
+        _pitch = Mathf.Clamp(_pitch, _minVerticalAngle, MaxPitch);
     }
-    private void DeactivateInput() { _input.enabled = false; }
-    private void ActivateInput() { _input.enabled = true; }
+
+    // Arma la rotación/posición final del brazo y resuelve la colisión contra geometría. Reemplaza tanto a
+    // OrbitalFollow (posición) como al Aim stage (rotación) de Cinemachine.
+    private void ComputeOrbit()
+    {
+        Quaternion baseRot = Quaternion.LookRotation(_cameraForwardRef, _cameraUp);
+        // Positivo en X mira hacia abajo en Unity, por eso el ángulo total (pitch + lo que sobró como tilt) va con
+        // signo negativo para mirar hacia arriba.
+        _finalRotation = baseRot * Quaternion.AngleAxis(-(_pitch + _lookUpTilt), Vector3.right);
+
+        Vector3 pivot = _pj.position + _pivotOffset;
+        Vector3 camDir = -(_finalRotation * Vector3.forward);
+
+        // Colgado del swing o en pleno grapple el radio objetivo se abre (_swingRadiusMultiplier) para mostrar el
+        // arco/vuelo entero; el SphereCast de acá abajo lo sigue recortando si hay geometría de por medio, así el
+        // zoom-out nunca atraviesa una pared.
+        float desiredRadius = _pjC != null && _pjC.IsSwingingOrGrappling ? _baseRadius * _swingRadiusMultiplier : _baseRadius;
+
+        // El margen (0.4) queda un poco por encima del Near Clip Plane de la cámara (0.3): con los dos iguales el
+        // colchón era casi nulo y en ángulos rasantes contra una pared la cámara igual llegaba a clipear.
+        const float geometryMargin = 0.4f;
+        if (Physics.SphereCast(pivot, geometryMargin, camDir, out RaycastHit hit, desiredRadius, _cameraBlockers, QueryTriggerInteraction.Ignore))
+        {
+            float safeRadius = Mathf.Max(hit.distance - geometryMargin, 1f);
+            _radius = Mathf.Lerp(_radius, safeRadius, 10f * Time.deltaTime);
+        }
+        else
+        {
+            _radius = Mathf.Lerp(_radius, desiredRadius, 2f * Time.deltaTime);
+        }
+
+        _finalPosition = pivot + camDir * _radius;
+    }
+
+    // Abre un poco el FOV con la velocidad horizontal de Gekko (caminar/correr, boost de arándanos), para que se
+    // note la velocidad como en Spyro. Nunca lo bajamos por debajo de _baseFov: parado, el FOV queda como siempre.
+    private void UpdateSpeedFov()
+    {
+        float speedT = Mathf.Clamp01(_pjC.HorizontalSpeed / _fovReferenceSpeed);
+        float targetFov = _baseFov + _speedFovBoost * speedT;
+
+        LensSettings lens = _vcam.Lens;
+        lens.FieldOfView = Mathf.Lerp(lens.FieldOfView, targetFov, _fovLerpSpeed * Time.deltaTime);
+        _vcam.Lens = lens;
+    }
+
+    protected override void PostPipelineStageCallback(CinemachineVirtualCameraBase vcam, CinemachineCore.Stage stage, ref CameraState state, float deltaTime)
+    {
+        if (stage == CinemachineCore.Stage.Body) state.RawPosition = _finalPosition;
+        else if (stage == CinemachineCore.Stage.Aim) state.RawOrientation = _finalRotation;
+    }
+
+    private void DeactivateInput() { _inputEnabled = false; _lookDelta = Vector2.zero; }
+    private void ActivateInput() { _inputEnabled = true; }
+
     public void SetPJC(PlayerController pjc)
     {
         _pjC = pjc;
     }
+
     private void OnDisable()
     {
         EventManager.Unsubscribe<float>("OnCameraShake", ShakeCamera);
