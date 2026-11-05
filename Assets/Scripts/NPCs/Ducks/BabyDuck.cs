@@ -51,8 +51,6 @@ public class BabyDuck : NPCBase
         _cam.Priority = 0;
         if(_onWater) _anim.SetBool("BabyDuckisWalk", false);
         transform.SetPositionAndRotation(position, rotation);
-        _source.Play();
-        _cuack.Play();
     }
     public override void OnDialogueStart()
     {
