@@ -412266,6 +412266,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _bullets:
   - {fileID: -7193035914480385921, guid: 4d65ab56e51ee024f9630b4f50093ed4, type: 3}
+  - {fileID: 2485854813334281198, guid: 846c3aa2f103fdf4e9860a5c6a57334d, type: 3}
 --- !u!4 &1675776542
 Transform:
   m_ObjectHideFlags: 0
@@ -627157,6 +627158,7 @@ MonoBehaviour:
   _windupDuration: 2.5
   _returnDuration: 0.5
   _blendInTime: 0.15
+  _spitSpeedMultiplier: 2
   _rootTurnSpeed: 90
   _rootFacingAxis: {x: 0, y: 0, z: 1}
   _windupCurve:
@@ -652341,6 +652343,63 @@ Transform:
   - {fileID: 9031275888718145425}
   m_Father: {fileID: 5524596984700674652}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1001 &4327464092124667593
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 701751509799253935, guid: 012e764c3b11e584ca2bd7a30ab01bbb, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -9.178444
+      objectReference: {fileID: 0}
+    - target: {fileID: 701751509799253935, guid: 012e764c3b11e584ca2bd7a30ab01bbb, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0.811
+      objectReference: {fileID: 0}
+    - target: {fileID: 701751509799253935, guid: 012e764c3b11e584ca2bd7a30ab01bbb, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -14.254908
+      objectReference: {fileID: 0}
+    - target: {fileID: 701751509799253935, guid: 012e764c3b11e584ca2bd7a30ab01bbb, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 701751509799253935, guid: 012e764c3b11e584ca2bd7a30ab01bbb, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 701751509799253935, guid: 012e764c3b11e584ca2bd7a30ab01bbb, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 701751509799253935, guid: 012e764c3b11e584ca2bd7a30ab01bbb, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 701751509799253935, guid: 012e764c3b11e584ca2bd7a30ab01bbb, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 701751509799253935, guid: 012e764c3b11e584ca2bd7a30ab01bbb, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 701751509799253935, guid: 012e764c3b11e584ca2bd7a30ab01bbb, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4738009380783624473, guid: 012e764c3b11e584ca2bd7a30ab01bbb, type: 3}
+      propertyPath: m_Name
+      value: ChallengeStoneTurret
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 012e764c3b11e584ca2bd7a30ab01bbb, type: 3}
 --- !u!199 &4328946529055378128
 ParticleSystemRenderer:
   serializedVersion: 6
@@ -775242,3 +775301,4 @@ SceneRoots:
   - {fileID: 825589702}
   - {fileID: 740462526}
   - {fileID: 324273740}
+  - {fileID: 4327464092124667593}

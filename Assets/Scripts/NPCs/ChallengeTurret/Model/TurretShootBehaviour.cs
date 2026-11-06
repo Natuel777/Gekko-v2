@@ -2,13 +2,12 @@ using UnityEngine;
 
 public class TurretShootBehaviour : IShooteable, IActivable, IServiceConsumer
 {
-    private readonly float _xRotation, _fireRate;
+    private readonly float _xRotation, _fireRate, _detectionRange;
     private BugDetection _detection;
     private GameManager _gm;
     private bool _initialized = false;
     private Transform _transform, _target, _muzzle;
     private ShooteableObjectFactory _bulletFactory;
-    private Vector3 _direction = Vector3.zero;
     private float _timer = 0f;
     private TurretBullet _bulletPrefab;
 
@@ -20,18 +19,26 @@ public class TurretShootBehaviour : IShooteable, IActivable, IServiceConsumer
     {
         _xRotation = xRot;
         _transform = t;
-        _target = _gm.Pj.transform;
         _muzzle = muzzle;
         _fireRate = fireRate;
+        _detectionRange = detectionRange;
         _bulletPrefab = prefab;
+    }
 
-        if(TryResolveService())
-            _detection = new BugDetection(_transform, _target, detectionRange);
+    private bool TryResolveTarget()
+    {
+        if(_detection != null) return true;
+
+        if(!TryResolveGameManager() || _gm.Pj == null) return false;
+
+        _target = _gm.Pj.transform;
+        _detection = new BugDetection(_transform, _target, _detectionRange);
+        return true;
     }
 
     public void ArtificialUpdate()
     {
-        if(!_initialized) return;
+        if(!_initialized || !TryResolveTarget()) return;
 
         if(_detection.IsTargetInRange())
         {
@@ -40,7 +47,8 @@ public class TurretShootBehaviour : IShooteable, IActivable, IServiceConsumer
             if(_timer >= _fireRate)
             {
                 //Play PS
-                Shoot(_direction);
+                Vector3 dir = CalculateDirection(_transform.position, _target.position);
+                Shoot(dir.normalized);
                 _timer = 0f;
                 return;
             }
@@ -51,12 +59,12 @@ public class TurretShootBehaviour : IShooteable, IActivable, IServiceConsumer
 
     private void LookAtTarget()
     {
-        Vector3 _direction = _target.position - _transform.position;
-        _direction.y = 0f;
+        Vector3 toTarget = CalculateDirection(_transform.position, _target.position);
+        toTarget.y = 0f;
 
-        if(_direction.sqrMagnitude > 0.01f)
+        if(toTarget.sqrMagnitude > 0.01f)
         {
-            Quaternion targetRotation = Quaternion.LookRotation(_direction);
+            Quaternion targetRotation = Quaternion.LookRotation(toTarget.normalized);
 
             _transform.rotation = Quaternion.RotateTowards(
                 _transform.rotation,
@@ -92,11 +100,12 @@ public class TurretShootBehaviour : IShooteable, IActivable, IServiceConsumer
         return false;
     }
 
-
     public bool TryResolveService()
     {
         if(_bulletFactory != null) return true;
 
         return ServiceLocator.Instance.TryGet(out _bulletFactory);
     }
+
+    private Vector3 CalculateDirection(Vector3 a, Vector3 b) => b - a;
 }

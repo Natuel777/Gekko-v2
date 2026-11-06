@@ -3,10 +3,11 @@ using UnityEngine;
 public class TurretBullet : ShooteableObject
 {
     private Vector3 _direction;
+    [SerializeField] private float _lifetime = 3.5f;
     private float _currentLifetime;
     private ShooteableObjectFactory _bulletFactory;
-    
-    [SerializeField] private float _speed;
+
+    private void OnEnable() {_currentLifetime = _lifetime;}
 
     public void Shoot(Vector3 direction)
     {
@@ -15,7 +16,7 @@ public class TurretBullet : ShooteableObject
 
     private void Update()
     {
-        transform.position += _direction * _speed * Time.deltaTime;
+        transform.position += _direction * data.speed * Time.deltaTime;
         _currentLifetime -= Time.deltaTime;
 
         if(_currentLifetime <= 0 && TryResolveBulletFactory())
