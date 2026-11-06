@@ -4577,6 +4577,7 @@ Transform:
   m_Children:
   - {fileID: 1001587944}
   - {fileID: 1160878801}
+  - {fileID: 398545145}
   m_Father: {fileID: 1171642305}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!4 &217619758 stripped
@@ -9240,6 +9241,37 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 574904805213843218, guid: 8f63417cb6a2dd04d94dd64f4c4fb784, type: 3}
   m_PrefabInstance: {fileID: 397734032}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &398545144
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 398545145}
+  m_Layer: 0
+  m_Name: pjSpot
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &398545145
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 398545144}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 1, z: 0, w: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 6.42}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 215928383}
+  m_LocalEulerAnglesHint: {x: 0, y: 180, z: 0}
 --- !u!1 &399297562
 GameObject:
   m_ObjectHideFlags: 0
@@ -27271,7 +27303,8 @@ GameObject:
   - component: {fileID: 1012531023}
   - component: {fileID: 1012531025}
   - component: {fileID: 1012531024}
-  m_Layer: 0
+  - component: {fileID: 1012531026}
+  m_Layer: 11
   m_Name: NPC_H&S
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -27310,20 +27343,38 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _rotationSpeed: 5
   _dialogue:
-  - speakerName: 
-    sentences: []
+  - speakerName: Frederic
+    sentences:
+    - Hi!! Let's play a game!!
+    - I'm gonna hide and you have to find me.
+    - Ready? Start!!!!
     speakerNames: []
-  - speakerName: 
-    sentences: []
+  - speakerName: Frederic
+    sentences:
+    - Oh boy, you found me yaaay!
+    - Take this and let's play again!!
     speakerNames: []
-  - speakerName: 
-    sentences: []
+  - speakerName: Frederic
+    sentences:
+    - Oh! oh!!! you wanna play again?
+    - Yaaay, I'll hide, don't peek!
+    speakerNames: []
+  - speakerName: Frederic
+    sentences:
+    - You found me again!! You are really good!
+    - This is for you. I'll rest for now but let's play again in the future!!
+    speakerNames: []
+  - speakerName: Frederic
+    sentences:
+    - ZZZ
     speakerNames: []
   _imagedialogue: {fileID: -694802106, guid: 24afd743cd98c06438c9dd6b18ffc3a4, type: 3}
   _canvas: {fileID: 1762215774}
   _EIndicator: {fileID: 812346089}
   _audioTalk: {fileID: 8300000, guid: 0bae85a1c32ae684ea9c34c54797aa55, type: 3}
   _cam: {fileID: 2042988567}
+  _spawn: {fileID: 215928383}
+  _PjSpawn: {fileID: 398545145}
   _hidingSpots:
   - {fileID: 1001587944}
   - {fileID: 1160878801}
@@ -27352,6 +27403,121 @@ CapsuleCollider:
   m_Height: 4.81
   m_Direction: 1
   m_Center: {x: 0, y: 2.05, z: 0.36}
+--- !u!82 &1012531026
+AudioSource:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1012531022}
+  m_Enabled: 1
+  serializedVersion: 4
+  OutputAudioMixerGroup: {fileID: -3641121057675481807, guid: 6cc19a69159110d4d9086ce96851b244, type: 2}
+  m_audioClip: {fileID: 0}
+  m_Resource: {fileID: 8300000, guid: 115f866af70f23147a9d76127b1589ec, type: 3}
+  m_PlayOnAwake: 0
+  m_Volume: 0.3
+  m_Pitch: 1
+  Loop: 0
+  Mute: 0
+  Spatialize: 0
+  SpatializePostEffects: 0
+  Priority: 128
+  DopplerLevel: 1
+  MinDistance: 1.72
+  MaxDistance: 10.57
+  Pan2D: 0
+  rolloffMode: 2
+  BypassEffects: 0
+  BypassListenerEffects: 0
+  BypassReverbZones: 0
+  rolloffCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0.07996458
+      value: 0.91698074
+      inSlope: -1.1485775
+      outSlope: -1.1485775
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0.6897449
+    - serializedVersion: 3
+      time: 0.2550143
+      value: 0.74386597
+      inSlope: -1.2097858
+      outSlope: -1.2097858
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 0.80577445
+      value: 0.089141846
+      inSlope: -0.30244645
+      outSlope: -0.30244645
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 0
+      inSlope: -0.20681359
+      outSlope: -0.20681359
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  panLevelCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  spreadCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  reverbZoneMixCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
 --- !u!1001 &1012622026
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -48326,7 +48492,7 @@ Camera:
     height: 1
   near clip plane: 0.3
   far clip plane: 295
-  field of view: 60.000004
+  field of view: 70
   orthographic: 0
   orthographic size: 5
   m_Depth: -1
@@ -48352,8 +48518,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1454149301}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.011850326, y: -0.9815605, z: 0.17943299, w: 0.06482538}
-  m_LocalPosition: {x: 23.78464, y: 9.293899, z: -140.16449}
+  m_LocalRotation: {x: 0.020718668, y: 0.9514506, z: -0.29999113, w: 0.06571124}
+  m_LocalPosition: {x: -1.6578336, y: 1.030729, z: 1.1941245}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -48374,16 +48540,16 @@ MonoBehaviour:
   ShowDebugText: 0
   ShowCameraFrustum: 1
   IgnoreTimeScale: 0
-  WorldUpOverride: {fileID: 429191320}
+  WorldUpOverride: {fileID: 0}
   ChannelMask: -1
-  UpdateMethod: 2
+  UpdateMethod: 1
   BlendUpdateMethod: 1
   LensModeOverride:
     Enabled: 0
     DefaultMode: 2
   DefaultBlend:
     Style: 1
-    Time: 2
+    Time: 1
     CustomCurve:
       serializedVersion: 2
       m_Curve: []
@@ -62685,7 +62851,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Priority:
     Enabled: 1
-    m_Value: 10
+    m_Value: 5
   OutputChannel: 1
   StandbyUpdate: 2
   m_StreamingVersion: 20241001
