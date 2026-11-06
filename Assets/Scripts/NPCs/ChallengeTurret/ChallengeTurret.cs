@@ -17,6 +17,13 @@ public class ChallengeTurret : MonoBehaviour
     public TurretShootBehaviour shoot;
     #endregion
 
+    #region Purification
+    public bool IsPurified { get; private set; }
+
+    // Para que un desafío (MirrorChallenge) cuente las torretas purificadas.
+    public event System.Action<ChallengeTurret> Purified;
+    #endregion
+
     #region Initialization
     private void Awake()
     {
@@ -32,7 +39,8 @@ public class ChallengeTurret : MonoBehaviour
 
     private void Start() 
     {
-        _stateMachine.SetState(activeState);
+        // Si la purificaron antes de arrancar, nace ya purificada y no dispara.
+        _stateMachine.SetState(IsPurified ? purifiedState : activeState);
     }
     #endregion
 
@@ -43,4 +51,22 @@ public class ChallengeTurret : MonoBehaviour
 
     public void SetState(IState state) => _stateMachine.SetState(state);
     public void SendEvent(CreatureEvent e) => _stateMachine.SendEvent(e);
+
+    // La purifica quien la alcance (más adelante, la bala que le devuelve el espejo). Pasa a TurretPurifiedState: al salir de
+    // TurretActiveState deja de disparar. Una sola vez.
+    public void Purify()
+    {
+        if(IsPurified) return;
+
+        IsPurified = true;
+        SendEvent(CreatureEvent.ChallengeTurretPurified);
+        Purified?.Invoke(this);
+    }
+
+    // Para probarlo desde el Inspector (menú de tres puntos del componente) sin la bala devuelta.
+    [ContextMenu("Purificar (Play Mode)")]
+    private void TestPurify()
+    {
+        if(Application.isPlaying) Purify();
+    }
 }
