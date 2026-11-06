@@ -21,7 +21,6 @@ public class BabyDuck : NPCBase
         _suscribed = true;
         Suscribe();
         _source = GetComponent<AudioSource>();
-        _source.resource = _audioTalk;
         Cuack(true);
     }
     private void Cuack(bool activate)

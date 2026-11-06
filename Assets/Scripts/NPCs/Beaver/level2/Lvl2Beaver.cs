@@ -13,6 +13,8 @@ public class Lvl2Beaver : NPCBase
     private MissionCollectiblesManager _collMan;
     [Header("Mission Collectibles")]
     [SerializeField] private Transform _collParent;
+    [Header("Recompensa")]
+    [SerializeField] private NotificationSO _notificationData;
     public override Dialogue Dialogue 
     { 
         get
@@ -28,7 +30,9 @@ public class Lvl2Beaver : NPCBase
     protected override void Start()
     {
         base.Start();
-       // _collMan = new MissionCollectiblesManager(_collParent);
+        _collMan = new MissionCollectiblesManager(_collParent);
+        _collMan.OnAllCollected += AllCollected;
+        _collMan.ArtificialOnEnable();
     }
     protected override void Update()
     {
@@ -79,19 +83,27 @@ public class Lvl2Beaver : NPCBase
         {
             _currentDialogue++;
             _allCollected = false;
+            CollectiblesRegister.RegisterCollectible(_notificationData.Name);
+            int count = CollectiblesRegister.GetCollectibleCount(_notificationData.Name);
+            UIManager.Instance.notifications.ShowRaspberryCollectible(_notificationData, count);
+
+            var pj = GameManager.Instance.Pj;
+            pj.health.SetHealth(pj.health.MaxHealth);
+            pj.BlueberryTracker.ActivateBoost(_notificationData.SpeedBoostMultiplier, _notificationData.SpeedBoostTimer);
         }
         base.OnDialogueEnd();
     }
     private void OnEnable()
     {
         _dam.OnTouched += DamTouched;
-       // _collMan.OnAllCollected += AllCollected;
-       // _collMan.ArtificialOnEnable();
+        if (_collMan == null) return;
+        _collMan.OnAllCollected += AllCollected;
+        _collMan.ArtificialOnEnable();
     }
     private void OnDisable()
     {
         _dam.OnTouched -= DamTouched;
-       // _collMan.OnAllCollected -= AllCollected;
-       // _collMan.ArtificialOnDisable();
+        _collMan.OnAllCollected -= AllCollected;
+        _collMan.ArtificialOnDisable();
     }
 }

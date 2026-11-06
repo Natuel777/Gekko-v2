@@ -20,8 +20,12 @@ public class MissionCollectiblesManager
     public void ObjectCollected()
     {
         _totalCollected++;
+        Debug.Log(_totalCollected);
         if(_totalCollected >= _collectibles.Length)
+        {
             OnAllCollected?.Invoke();
+            Debug.Log("all");
+        }
     }
     public void ArtificialOnEnable()
     {
