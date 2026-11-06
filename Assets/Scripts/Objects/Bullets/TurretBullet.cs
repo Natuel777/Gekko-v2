@@ -26,6 +26,19 @@ public class TurretBullet : ShooteableObject
         }
     }
 
+    private void OnTriggerEnter(Collider other)
+    {
+        if(other.TryGetComponent(out Player player))
+        {
+            Debug.Log("La yuta, la yuta...");
+            EventManager.Trigger<float>("OnPlayerDamaged", data.damage);
+
+            //if(_hitEffect != null) _hitEffect.Play();
+            
+            _bulletFactory.ReturnBullet(this);
+        }
+    }
+
     private bool TryResolveBulletFactory()
     {
         if(_bulletFactory != null) return true;

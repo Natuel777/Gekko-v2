@@ -2,7 +2,7 @@ using UnityEngine;
 
 public class BugBullet : ShooteableObject
 {
-    [SerializeField] private ParticleSystem _hitEffect;
+    //[SerializeField] private ParticleSystem _hitEffect;
     private Vector3 _direction;
     [SerializeField] private float _lifetime = 3.5f;
     private float _timer;
@@ -47,7 +47,11 @@ public class BugBullet : ShooteableObject
             Debug.Log("La yuta, la yuta...");
             EventManager.Trigger<float>("OnPlayerDamaged", data.damage);
 
-            if(_hitEffect != null) _hitEffect.Play();
+            if(TryResolveService())
+            {
+                GenericPS ps = PSFactory.Create(PSType.VenomHit, transform.position, transform.rotation);
+                ps?.Initialize();
+            }
             
             ShooteableObjectFactory.Instance?.ReturnBullet(this);
         }
