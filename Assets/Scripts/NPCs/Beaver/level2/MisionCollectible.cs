@@ -6,10 +6,10 @@ public class MisionCollectible : MonoBehaviour
     public event Action OnCollected;
     private bool _collected = false;
 
-    private void OnCollisionEnter(Collision collision)
+    private void OnTriggerEnter(Collider other)
     {
         if (_collected) return;
-        if (collision.gameObject.GetComponent<Player>())
+        if (other.GetComponent<Player>())
         {
             OnCollected?.Invoke();
             _collected = true;

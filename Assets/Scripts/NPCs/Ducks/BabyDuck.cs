@@ -21,7 +21,6 @@ public class BabyDuck : NPCBase
         _suscribed = true;
         Suscribe();
         _source = GetComponent<AudioSource>();
-        _source.resource = _audioTalk;
         Cuack(true);
     }
     private void Cuack(bool activate)
@@ -51,8 +50,6 @@ public class BabyDuck : NPCBase
         _cam.Priority = 0;
         if(_onWater) _anim.SetBool("BabyDuckisWalk", false);
         transform.SetPositionAndRotation(position, rotation);
-        _source.Play();
-        _cuack.Play();
     }
     public override void OnDialogueStart()
     {
