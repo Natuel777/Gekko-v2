@@ -29,7 +29,7 @@ public class SimonPuzzle : MonoBehaviour, IActivable
             _mats[i] = _pieces[i].GetComponentInChildren<Renderer>().material;
         }
     }
-    public void Activated()
+    public void Activated(bool active = true)
     {
         if(_showing || _hearing || _finish) return;
 

@@ -4,7 +4,7 @@ using UnityEngine;
 // boss), cada escupida va precedida de su animación de preparación, que corre más rápida que la del mordisco:
 // cooldown -> preparación -> disparo -> cooldown. La bala sale recién cuando la preparación termina. Sin PlantBiteWindup
 // dispara apenas se cumple el cooldown, como siempre.
-public class PlantSpitBehaviour
+public class PlantSpitBehaviour : IShooteable
 {
     private readonly Transform _head;
     private readonly Transform _firePoint;
@@ -114,7 +114,7 @@ public class PlantSpitBehaviour
         _windingUp = _windup.Play(_target, true);
     }
 
-    private void Shoot(Vector3 direction)
+    public void Shoot(Vector3 direction)
     {
         BugBullet venom = ShooteableObjectFactory.Instance.GetBullet<BugBullet>(_venom, _firePoint.position, Quaternion.identity);
 

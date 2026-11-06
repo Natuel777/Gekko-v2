@@ -17,6 +17,8 @@ public class ShooteableObjectFactory : Factory<ShooteableObject, BulletType>
         }
 
         else Destroy(gameObject);
+
+        ServiceLocator.Instance.Register<ShooteableObjectFactory>(this);
         
         foreach(ShooteableObject bullet in _bullets)
         {

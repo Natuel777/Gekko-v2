@@ -13,5 +13,6 @@ public enum CreatureEvent
     ChargeHitPlayer,
     ChargeHitWall,
     ChargeMissed,
-    DazeExpired
+    DazeExpired,
+    ChallengeTurretPurified
 }

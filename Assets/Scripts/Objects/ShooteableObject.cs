@@ -22,5 +22,6 @@ public class ShooteableObject : MonoBehaviour, IServiceConsumer
 public enum BulletType
 {
     CarniborusPlantVenom,
-    BugBullet
+    BugBullet,
+    StoneTurretBullet
 }

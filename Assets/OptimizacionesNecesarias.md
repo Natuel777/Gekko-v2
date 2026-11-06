@@ -7,3 +7,5 @@
 4) Reemplazar ints por ushort donde sea posible/necesario
 
 5) CarniborousPlant no es más SOLID ni MVC, corregir (maldito Claudio)
+
+3) BugDetection es un script de uso génerico pero su nombre no lo representa, cambiar nombre en todas las clases que lo invocan

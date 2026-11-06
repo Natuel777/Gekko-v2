@@ -1,6 +1,4 @@
-using UnityEngine;
-
 public interface IActivable
 {
-    public void Activated();
+    public void Activated(bool active = true);
 }
