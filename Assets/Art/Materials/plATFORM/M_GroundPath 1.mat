@@ -13,6 +13,7 @@ Material:
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords:
   - _TEX2_ON
+  - _TEX3_ON
   - _TRIPLANAR_ON
   m_InvalidKeywords: []
   m_LightmapFlags: 4
@@ -58,7 +59,7 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _Tex3:
-        m_Texture: {fileID: 0}
+        m_Texture: {fileID: 2800000, guid: 94a7c9792134389468b25c4e698053d1, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _Tex4:
@@ -86,11 +87,12 @@ Material:
     - _PurifyNoiseAmount: 2.5
     - _PurifyNoiseScale: 0.3
     - _PurifyPathKeep: 0
+    - _PurifyRestore: 0
     - _Tex1NormalStrength: 1
     - _Tex1Tiling: 0.25
     - _Tex2Enabled: 1
     - _Tex2Tiling: 0.25
-    - _Tex3Enabled: 0
+    - _Tex3Enabled: 1
     - _Tex3Tiling: 0.25
     - _Tex4Enabled: 0
     - _Tex4Tiling: 0.25
@@ -103,10 +105,15 @@ Material:
     - _PathCanvasSize: {r: 1, g: 1, b: 0, a: 0}
     - _PurifyCorruptTint: {r: 0.24, g: 0.18, b: 0.36, a: 1}
     - _PurifyEdgeColor: {r: 1, g: 0.8, b: 0.3, a: 1}
+    - _PurifyHealthyBaseColor: {r: 0.34999996, g: 0.54999995, b: 0.27999997, a: 1}
+    - _PurifyHealthyTex1Color: {r: 0.86, g: 0.8, b: 0.54999995, a: 1}
+    - _PurifyHealthyTex2Color: {r: 1, g: 1, b: 1, a: 1}
+    - _PurifyHealthyTex3Color: {r: 1, g: 1, b: 1, a: 1}
+    - _PurifyHealthyTex4Color: {r: 1, g: 1, b: 1, a: 1}
     - _ShadowTint: {r: 0.34, g: 0.42, b: 0.55, a: 1}
     - _Tex1Color: {r: 0.9528302, g: 0.76304704, b: 0.6067551, a: 1}
     - _Tex2Color: {r: 0.764151, g: 0.4799974, b: 0.24870951, a: 1}
-    - _Tex3Color: {r: 1, g: 1, b: 1, a: 1}
+    - _Tex3Color: {r: 1, g: 0.99595255, b: 0.8537736, a: 1}
     - _Tex4Color: {r: 1, g: 1, b: 1, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
