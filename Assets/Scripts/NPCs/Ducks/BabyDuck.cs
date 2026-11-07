@@ -22,6 +22,18 @@ public class BabyDuck : NPCBase
         Suscribe();
         _source = GetComponent<AudioSource>();
         Cuack(true);
+
+        if (SaveManager.Instance)
+            if (SaveManager.Instance.Has(StrawberryFlags.Lvl1_Ducks.ToString()))
+            {
+                _currentDialogue = 2;
+                Cuack(false);
+                _start = true;
+                _found = true;
+                LevelOneManager.Instance.DucksFinishedBefore(this);
+                return;
+            }
+
     }
     private void Cuack(bool activate)
     {

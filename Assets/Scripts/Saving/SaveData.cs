@@ -3,5 +3,5 @@ using UnityEngine;
 [SerializeField]
 public class SaveData
 {
-    //public List<int> levelsWon = new();
+    public List<string> flags = new();
 }

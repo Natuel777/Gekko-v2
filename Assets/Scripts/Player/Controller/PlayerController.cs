@@ -71,6 +71,7 @@ public class PlayerController
     public Vector2 RawInput { get { return _rawInput; } set { _rawInput = value; } }
     public bool CanInteract => !_talking && !TongueOut && _isSurface;
     public bool Grounded => _isGrounded;
+    public bool Climbing => _isClimbing;
     // En el aire: sin ninguna superficie debajo (ni piso ni pared), o colgado de la lengua / en pleno grapple. Durante el
     // swing y el grapple el controller no corre DetectSurface (ver ArtificialFixedUpdate) y _isSurface queda congelado en
     // su último valor, por eso esos dos casos se chequean aparte.

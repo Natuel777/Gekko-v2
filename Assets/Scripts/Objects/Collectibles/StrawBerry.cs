@@ -2,6 +2,7 @@ using UnityEngine;
 
 public class StrawBerry : Collectible
 {
+    [SerializeField] private StrawberryFlags _id;
     private StrawBerryView _sv;
     [SerializeField] private GameObject mainStar;
     [SerializeField] private GameObject starParticles;
@@ -9,6 +10,9 @@ public class StrawBerry : Collectible
 
     private void Start()
     {
+        if (SaveManager.Instance)
+            if (SaveManager.Instance.Has(_id.ToString())) Destroy(gameObject);
+
         _sv = new StrawBerryView(transform, this);
     }
     public override CollectibleType CollectibleType => CollectibleType.StrawBerry;
@@ -32,7 +36,8 @@ public class StrawBerry : Collectible
         var pj = GameManager.Instance.Pj;
         pj.health.SetHealth(pj.health.MaxHealth);
         pj.BlueberryTracker.ActivateBoost(_notificationData.SpeedBoostMultiplier, _notificationData.SpeedBoostTimer);
-
+        if (SaveManager.Instance)
+            SaveManager.Instance.Set(_id.ToString());
         _sv.Collect();
     }
     public void Particles()

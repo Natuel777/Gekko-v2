@@ -61,6 +61,15 @@ public class MomDuck : NPCBase
 
         _homePosition = transform.position;
         _homeForward = Vector3.ProjectOnPlane(transform.forward, Vector3.up).normalized;
+
+        if (SaveManager.Instance)
+            if (SaveManager.Instance.Has(StrawberryFlags.Lvl1_Ducks.ToString()))
+            {
+                _currentDialogue = 7;
+                _exclamation.enabled = false;
+                _started = true;
+                return;
+            }
     }
     protected override void Update()
     {
@@ -85,6 +94,13 @@ public class MomDuck : NPCBase
         if (last) _finish = true;
 
         StartCoroutine(FamilyRoutine(baby, last));
+    }
+    private void FinishedBefore(BabyDuck baby)
+    {
+        _currentDucks++;
+        _family.Add(baby);
+        GetSlot(_family.Count - 1, out Vector3 slotPos, out Quaternion slotRot);
+        baby.PlaceNextToMom(slotPos, slotRot);
     }
 
     // Fundido -> el patito aparece en la fila -> plano de la familia. Si faltan patitos, fundido y corte de vuelta
@@ -226,6 +242,10 @@ public class MomDuck : NPCBase
             pj.BlueberryTracker.ActivateBoost(_notificationData.SpeedBoostMultiplier, _notificationData.SpeedBoostTimer);
             _finish = false;
             _currentDialogue++;
+            if (SaveManager.Instance)
+            {
+                SaveManager.Instance.Set(StrawberryFlags.Lvl1_Ducks.ToString());
+            }
         }
         _cam.Priority = 0;
         _interacted = false;
@@ -245,11 +265,14 @@ public class MomDuck : NPCBase
         if (LevelOneManager.Instance == null) return;
         LevelOneManager.Instance.OnDuckReturned -= DuckReturned;
         LevelOneManager.Instance.OnDuckReturned += DuckReturned;
+        LevelOneManager.Instance.OnDuckFound -= FinishedBefore;
+        LevelOneManager.Instance.OnDuckFound += FinishedBefore;
     }
 
     private void OnDisable()
     {
         if (LevelOneManager.Instance == null) return;
         LevelOneManager.Instance.OnDuckReturned -= DuckReturned;
+        LevelOneManager.Instance.OnDuckFound -= FinishedBefore;
     }
 }

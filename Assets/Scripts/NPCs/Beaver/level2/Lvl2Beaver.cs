@@ -30,9 +30,19 @@ public class Lvl2Beaver : NPCBase
     protected override void Start()
     {
         base.Start();
+
+        if (SaveManager.Instance) 
+            if (SaveManager.Instance.Has(StrawberryFlags.Lvl2_Beaver.ToString()))
+            {
+                _exclamation.enabled = false;
+                Destroy(_collParent.gameObject);
+                _currentDialogue = 2;
+                return;
+            }
         _collMan = new MissionCollectiblesManager(_collParent);
         _collMan.OnAllCollected += AllCollected;
         _collMan.ArtificialOnEnable();
+
     }
     protected override void Update()
     {
@@ -90,6 +100,10 @@ public class Lvl2Beaver : NPCBase
             var pj = GameManager.Instance.Pj;
             pj.health.SetHealth(pj.health.MaxHealth);
             pj.BlueberryTracker.ActivateBoost(_notificationData.SpeedBoostMultiplier, _notificationData.SpeedBoostTimer);
+            if (SaveManager.Instance)
+            {
+                SaveManager.Instance.Set(StrawberryFlags.Lvl2_Beaver.ToString());
+            }
         }
         base.OnDialogueEnd();
     }
@@ -103,6 +117,7 @@ public class Lvl2Beaver : NPCBase
     private void OnDisable()
     {
         _dam.OnTouched -= DamTouched;
+        if (_collMan == null) return;
         _collMan.OnAllCollected -= AllCollected;
         _collMan.ArtificialOnDisable();
     }

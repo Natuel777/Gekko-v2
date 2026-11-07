@@ -1,5 +1,6 @@
 public enum ScenesNames
 {
+    None = -1,
     LoadScene,
     Menu,
     Level1,
@@ -10,6 +11,7 @@ public enum ScenesNames
 }
 public enum ReafirmCanvas
 {
+    None = -1,
     ExitGame,
     RestartLevel,
     GoToMenu
@@ -40,4 +42,21 @@ public enum SoundNames
     Shock,
     PlantGrowl,
     PlantShoot,
+}
+
+public enum StrawberryFlags
+{
+    None = -1,
+    Lvl1_01,
+    Lvl1_02,
+    Lvl1_Ducks,
+    Lvl1_03,
+    Lvl1_04,
+    Lvl1_05,
+    Lvl2_Beaver,
+    Lvl2_01,
+    Lvl2_02,
+    Lvl2_03,
+    Lvl2_HideSeek_1,
+    Lvl2_HideSeek_2,
 }

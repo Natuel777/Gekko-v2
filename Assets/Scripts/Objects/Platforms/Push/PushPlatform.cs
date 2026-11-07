@@ -5,6 +5,8 @@ public class PushPlatform : SlipperyPlatform
     [SerializeField] private Vector3 _direction;
     protected override void OnCollisionStay(Collision col)
     {
+        if (col.gameObject.TryGetComponent( out Player pj)) 
+            if(pj.Swinging.IsSwinging || pj.PjController.Climbing) return;
         if (col.gameObject.TryGetComponent(out Rigidbody rb))
         {
             if(_direction != Vector3.zero)

@@ -1,12 +1,14 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using System.IO;
+using System.Collections.Generic;
 
 
 public class SaveManager : MonoBehaviour, ISaveLoad
 {
     public static SaveManager Instance { get; private set; }
     [SerializeField] public SaveData saveData = new SaveData();
+    private HashSet<string> _flags = new HashSet<string>();
     protected string path;
 
     public delegate void SavingGame();
@@ -36,22 +38,22 @@ public class SaveManager : MonoBehaviour, ISaveLoad
     {
         LoadGame();
     }
-
+    public bool Has(string id) => _flags.Contains(id);
+    public void Set(string id) => _flags.Add(id);
     public void SaveGame()
     {
-
         OnSave?.Invoke();
+        saveData.flags = new List<string>(_flags);
         string json = JsonUtility.ToJson(saveData, true);
         File.WriteAllText(path, json);
     }
     public void LoadGame()
     {
-
         if (File.Exists(path))
         {
-
             string json = File.ReadAllText(path);
             JsonUtility.FromJsonOverwrite(json, saveData);
+            _flags = new HashSet<string>(saveData.flags);
         }
         OnLoad?.Invoke();
     }
@@ -63,12 +65,12 @@ public class SaveManager : MonoBehaviour, ISaveLoad
         //GameManager.Instance.Reset();
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
     }
-    protected void OnApplicationPause(bool pause)
-    {
-        if (pause) SaveGame();
-    }
-    protected void OnApplicationQuit()
-    {
-        SaveGame();
-    }
+    //protected void OnApplicationPause(bool pause)
+    //{
+    //    if (pause) SaveGame();
+    //}
+    //protected void OnApplicationQuit()
+    //{
+    //    SaveGame();
+    //}
 }

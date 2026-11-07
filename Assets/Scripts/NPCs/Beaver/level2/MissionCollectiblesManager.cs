@@ -7,7 +7,7 @@ public class MissionCollectiblesManager
     private int _totalCollected;
     public event Action OnAllCollected;
     public int TotalCollected => _totalCollected;
-    public int GetLength() => _collectibles.Length;
+    public int GetLength => _collectibles.Length;
     public MissionCollectiblesManager(Transform objParent)
     {
         _collectibles = objParent.GetComponentsInChildren<MisionCollectible>();
