@@ -662,8 +662,21 @@ MonoBehaviour:
   _indicator: {fileID: 4706435831884681430}
   _revealCamera: {fileID: 0}
   _revealSeconds: 3
-  _revealShakeForce: 1.5
+  _revealShakeForce: 0
   _focusCoreFirst: 1
+  _coreCamera: {fileID: 0}
+  _coreCamSeconds: 2
+  _coreCamDistance: 4
+  _coreCamHeight: 1.5
+  _vineDissolveDelay: 0.8
+  _lineControllers: []
+  _linePositionsGroups: []
+  _touchPushDistance: 1
+  _touchDamage: 5
+  OnPurified:
+    m_PersistentCalls:
+      m_Calls: []
+  CorruptionParticles: []
 --- !u!1 &9184703200281895147
 GameObject:
   m_ObjectHideFlags: 0
