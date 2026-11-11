@@ -155,6 +155,9 @@ public sealed class GekkoGrapple
     {
         if(!_secondJumpEnabled) return false;
 
+        // En el agua no hay segundo salto (el grapple en sí ya no arranca en el agua: lo corta GekkoDetection).
+        if(GekkoWater.IsInWater(_transform)) return false;
+
         // Sin dirección, o sin un grapple previo que haya medido algo, no hay alcance.
         if(direction.sqrMagnitude <= 0.0001f || _grappleDistance <= 0.0001f) return false;
 
