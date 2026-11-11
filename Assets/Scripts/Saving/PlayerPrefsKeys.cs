@@ -16,4 +16,5 @@ public class PlayerPrefsKeys : MonoBehaviour
     public const string brightnessKey = "Brightness";
     public const string cameraSensitivityKey = "CameraSensitivity";
     public const string invertYKey = "InvertCameraY";
+    public const string aldeaZonasPurificadasKey = "AldeaZonasPurificadas";
 }

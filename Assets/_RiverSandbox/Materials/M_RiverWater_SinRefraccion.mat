@@ -9,7 +9,7 @@ Material:
   m_PrefabAsset: {fileID: 0}
   m_Name: M_RiverWater_SinRefraccion
   m_Shader: {fileID: 4800000, guid: 39348a288a566cf41ad5c09013a49b6a, type: 3}
-  m_Parent: {fileID: 0}
+  m_Parent: {fileID: 2100000, guid: 3aa023010ad96e44490e692468bad2b6, type: 2}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
   m_InvalidKeywords: []
@@ -25,40 +25,19 @@ Material:
     m_TexEnvs: []
     m_Ints: []
     m_Floats:
-    - _CausticsDepthFade: 2.2
-    - _CausticsScale: 0.8
-    - _CausticsSpeed: 0.6
     - _CausticsStrength: 0.7
     - _DepthMaxDistance: 2
-    - _EdgeFade: 0.05
-    - _FlowPeriod: 3
-    - _FoamDistance: 0.3
-    - _FoamLineSpacing: 0.45
-    - _FoamLineSpeed: 0.35
-    - _FoamLines: 0.55
-    - _FoamNoiseScale: 2.2
-    - _FresnelPower: 4
-    - _FresnelStrength: 0.3
-    - _NoiseScale: 0.55
-    - _NormalStrength: 0.7
+    - _FresnelPower: 0.5
+    - _FresnelStrength: 0.206
+    - _NormalStrength: 0.97
     - _Refraction: 0
-    - _RefractionStrength: 0.02
-    - _RippleFoam: 0.9
-    - _RippleNormal: 1.2
-    - _ShadowStrength: 0.35
-    - _ShallowTint: 0.5
-    - _SparkleScale: 5
+    - _RefractionStrength: 0.027
+    - _ShallowTint: 0
     - _SparkleStrength: 0.7
-    - _SparkleThreshold: 0.96
-    - _SpecularSize: 0.985
-    - _SpecularStrength: 0.9
-    - _StreakStretch: 0.35
-    - _SurfaceFoamCutoff: 0.9
-    - _SurfaceFoamStrength: 0.45
-    - _WaveAmplitude: 0.025
-    - _WaveFrequency: 0.8
+    - _StreakStretch: 0.213
+    - _SurfaceFoamCutoff: 1
+    - _SurfaceFoamStrength: 0.102
     m_Colors:
-    - _CausticsColor: {r: 1, g: 1, b: 0.95, a: 1}
     - _DeepColor: {r: 0.02, g: 0.36, b: 0.66, a: 0.92}
     - _FoamColor: {r: 1, g: 1, b: 1, a: 1}
     - _ReflectionColor: {r: 0.78, g: 0.94, b: 1, a: 1}

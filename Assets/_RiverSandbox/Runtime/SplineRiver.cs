@@ -84,6 +84,7 @@ public class SplineRiver : MonoBehaviour
         public float HalfWidth;
         public float Distance;
         public float SpeedMultiplier;
+        public float Steepness;  // 0 = plano, 1 = cascada (segun la bajada de la spline)
         public float TurnRadius; // radio de curvatura (infinito en recta)
         public float TurnSign;   // +1 gira a la derecha (lado interior = +Right), -1 a la izquierda
 
@@ -115,6 +116,7 @@ public class SplineRiver : MonoBehaviour
                 HalfWidth = Mathf.Lerp(a.HalfWidth, b.HalfWidth, t),
                 Distance = Mathf.Lerp(a.Distance, b.Distance, t),
                 SpeedMultiplier = Mathf.Lerp(a.SpeedMultiplier, b.SpeedMultiplier, t),
+                Steepness = Mathf.Lerp(a.Steepness, b.Steepness, t),
                 TurnRadius = t < 0.5f ? a.TurnRadius : b.TurnRadius,
                 TurnSign = t < 0.5f ? a.TurnSign : b.TurnSign
             };
@@ -152,8 +154,17 @@ public class SplineRiver : MonoBehaviour
     [SerializeField, Min(0.1f), Tooltip("Secciones de malla por metro de rio.")]
     float _segmentsPerUnit = 1.5f;
 
-    [SerializeField, Range(2, 32), Tooltip("Subdivisiones a lo ancho del agua.")]
+    [SerializeField, Range(1, 32), Tooltip("Subdivisiones a lo ancho del agua. La superficie es plana de borde a borde: 1 alcanza si no se usa cauce (ondas y vetas son por pixel).")]
     int _crossSegments = 8;
+
+    [SerializeField, Tooltip("Menos triangulos: secciones densas solo donde la forma cambia (curvas, labios de cascada, ancho), largas en las rectas.")]
+    bool _adaptiveSegments = true;
+
+    [SerializeField, Range(0.5f, 20f), Tooltip("Grados de cambio de direccion permitidos entre secciones (muestreo adaptativo).")]
+    float _angleTolerance = 6f;
+
+    [SerializeField, Min(0.5f), Tooltip("Largo maximo de una seccion en tramos rectos (muestreo adaptativo).")]
+    float _maxSegmentLength = 10f;
 
     [SerializeField, Tooltip("Mantener la superficie horizontal (ignora el giro/roll de la spline).")]
     bool _flatSurface = true;
@@ -171,6 +182,16 @@ public class SplineRiver : MonoBehaviour
 
     [SerializeField, Tooltip("Invertir el sentido de la corriente respecto de la spline.")]
     bool _reverseFlow;
+
+    [Header("Cascada")]
+    [SerializeField, Range(0f, 89f), Tooltip("Grados de bajada de la spline donde el agua empieza a verse como cascada.")]
+    float _waterfallStartAngle = 25f;
+
+    [SerializeField, Range(1f, 90f), Tooltip("Grados de bajada desde donde es cascada completa.")]
+    float _waterfallFullAngle = 55f;
+
+    [SerializeField, Min(1f), Tooltip("Multiplicador de velocidad del agua en la cascada.")]
+    float _waterfallSpeedBoost = 3f;
 
     [Header("Cauce")]
     [SerializeField, Tooltip("Generar lecho + orillas (para probar sin terreno).")]
@@ -346,6 +367,59 @@ public class SplineRiver : MonoBehaviour
 
     // ------------------------------------------------------------------ API publica
 
+    [ContextMenu("Agregar knots (subdividir tramos largos)")]
+    void SubdivideKnotsMenu() => SubdivideKnots(5f);
+
+    // Agrega knots SOBRE la curva actual donde dos knots seguidos estan a mas de maxKnotSpacing metros, para tener mas
+    // puntos de control sin cambiar la forma. Los anchos por knot se reparten interpolando los que ya habia.
+    // Los tramos cortos (labios y bases de cascada) no se tocan. Con Undo en el Editor.
+    public void SubdivideKnots(float maxKnotSpacing)
+    {
+        Spline spline = MainSpline;
+        if(spline == null || spline.Count < 2 || maxKnotSpacing <= 0f)
+            return;
+
+#if UNITY_EDITOR
+        UnityEditor.Undo.RecordObject(_container, "Agregar knots");
+        UnityEditor.Undo.RecordObject(this, "Agregar knots");
+#endif
+        SyncKnotWidths();
+        int count = spline.Count;
+        bool closed = spline.Closed;
+        int curves = closed ? count : count - 1;
+        var positions = new List<float3>();
+        var widths = new List<float>();
+
+        for(int i = 0; i < curves; i++)
+        {
+            int next = (i + 1) % count;
+            int parts = Mathf.Max(1, Mathf.CeilToInt(spline.GetCurveLength(i) / maxKnotSpacing));
+            for(int p = 0; p < parts; p++)
+            {
+                float f = p / (float)parts;
+                positions.Add(p == 0 ? spline[i].Position : spline.EvaluatePosition(spline.CurveToSplineT(i + f)));
+                widths.Add(Mathf.Lerp(_knotWidthMultipliers[i], _knotWidthMultipliers[next], f));
+            }
+        }
+        if(!closed)
+        {
+            positions.Add(spline[count - 1].Position);
+            widths.Add(_knotWidthMultipliers[count - 1]);
+        }
+
+        spline.Clear();
+        foreach(float3 position in positions)
+            spline.Add(position, TangentMode.AutoSmooth);
+        spline.Closed = closed;
+
+        _knotWidthMultipliers = widths;
+        Rebuild();
+#if UNITY_EDITOR
+        UnityEditor.EditorUtility.SetDirty(_container);
+        UnityEditor.EditorUtility.SetDirty(this);
+#endif
+    }
+
     [ContextMenu("Regenerar")]
     public void Rebuild()
     {
@@ -371,7 +445,7 @@ public class SplineRiver : MonoBehaviour
         for(int i = 0; i < _sections.Count; i++)
         {
             Vector3 d = _sections[i].Position - local;
-            float distance = d.x * d.x + d.z * d.z + d.y * d.y * 0.25f;
+            float distance = d.sqrMagnitude; // 3D: en una cascada vertical arriba y abajo comparten X/Z
             if(distance < bestDistance)
             {
                 bestDistance = distance;
@@ -510,6 +584,7 @@ public class SplineRiver : MonoBehaviour
         int segments = Mathf.Max(2, Mathf.CeilToInt(length * _segmentsPerUnit));
 
         Vector3 previousForward = Vector3.forward;
+        Vector3 previousRight = Vector3.right;
         Vector3 previousPosition = Vector3.zero;
         float distance = 0f;
 
@@ -520,24 +595,48 @@ public class SplineRiver : MonoBehaviour
 
             Vector3 position = transform.InverseTransformPoint(splineSpace.TransformPoint(p));
             Vector3 forward = transform.InverseTransformDirection(splineSpace.TransformDirection(tan));
-            Vector3 upVector = _flatSurface
-                ? Vector3.up
-                : transform.InverseTransformDirection(splineSpace.TransformDirection(up)).normalized;
-
-            if(_flatSurface)
-                forward.y = 0f;
             if(forward.sqrMagnitude < 1e-6f)
                 forward = previousForward;
             forward.Normalize();
 
-            Vector3 right = Vector3.Cross(upVector, forward).normalized;
-            if(!_flatSurface)
+            Vector3 right;
+            Vector3 upVector;
+            if(_flatSurface)
+            {
+                // Sin roll: el borde lateral siempre horizontal. La superficie SI sigue la pendiente de la
+                // spline (rampas y caidas verticales = cascada). En un tramo vertical la direccion horizontal
+                // se pierde, asi que se conserva el "right" anterior.
+                // En tramos casi verticales la componente horizontal es chica y ruidosa: el borde solo la sigue en
+                // la medida en que es confiable (peso por su largo), si no la lamina se tuerce en la caida.
+                // Borde "transportado": el de la seccion anterior, corregido lo minimo para quedar perpendicular a la
+                // corriente y horizontal. En una caida vertical no gira nada (antes se seguia una componente horizontal
+                // minuscula y ruidosa, que se acumulaba seccion a seccion y torcia la lamina de canto).
+                Vector3 flat = new Vector3(forward.x, 0f, forward.z);
+                Vector3 exact = flat.sqrMagnitude > 1e-6f ? Vector3.Cross(Vector3.up, flat.normalized).normalized : previousRight;
+                Vector3 transported = previousRight - forward * Vector3.Dot(previousRight, forward);
+                transported.y = 0f;
+                transported = transported.sqrMagnitude > 1e-6f ? transported.normalized : previousRight;
+                // Donde la corriente tiene direccion horizontal clara (no es cascada vertical) se usa la exacta.
+                float clear = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.3f, 0.6f, flat.magnitude));
+                right = i == 0 ? exact : Vector3.Slerp(transported, exact, clear).normalized;
                 upVector = Vector3.Cross(forward, right).normalized;
+            }
+            else
+            {
+                upVector = transform.InverseTransformDirection(splineSpace.TransformDirection(up)).normalized;
+                right = Vector3.Cross(upVector, forward).normalized;
+                upVector = Vector3.Cross(forward, right).normalized;
+            }
 
             if(i > 0)
                 distance += Vector3.Distance(position, previousPosition);
 
+            // Cascada: 0 en tramos planos, 1 desde _waterfallFullAngle de bajada.
+            float dropAngle = Mathf.Asin(Mathf.Clamp(-forward.y, -1f, 1f)) * Mathf.Rad2Deg;
+            float steepness = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(_waterfallStartAngle, _waterfallFullAngle, dropAngle));
+
             float widthMultiplier = WidthMultiplierAt(spline, t);
+            float speed = _narrowIsFaster ? Mathf.Clamp(1f / widthMultiplier, 0.35f, 3f) : 1f;
             _sections.Add(new Section
             {
                 Position = position,
@@ -546,14 +645,55 @@ public class SplineRiver : MonoBehaviour
                 Up = upVector,
                 HalfWidth = _width * 0.5f * widthMultiplier,
                 Distance = distance,
-                SpeedMultiplier = _narrowIsFaster ? Mathf.Clamp(1f / widthMultiplier, 0.35f, 3f) : 1f
+                SpeedMultiplier = speed * (1f + steepness * (_waterfallSpeedBoost - 1f)),
+                Steepness = steepness
             });
 
             previousForward = forward;
+            previousRight = right;
             previousPosition = position;
         }
 
+        if(_adaptiveSegments)
+            SimplifySections();
+
         ComputeCurvature();
+    }
+
+    // Muestreo adaptativo: de las secciones densas (segmentsPerUnit) se queda solo con las necesarias. Una seccion se
+    // puede saltear si, yendo directo de la ultima conservada a la siguiente, no se pierde forma: direccion, borde,
+    // ancho, pendiente (cascada) y velocidad casi iguales, y sin pasar el largo maximo.
+    void SimplifySections()
+    {
+        int count = _sections.Count;
+        if(count < 3)
+            return;
+
+        var kept = new List<Section>(count) { _sections[0] };
+        Section last = _sections[0];
+        for(int i = 1; i < count - 1; i++)
+        {
+            if(!NeedsSection(last, _sections[i + 1]))
+                continue;
+
+            kept.Add(_sections[i]);
+            last = _sections[i];
+        }
+        kept.Add(_sections[count - 1]);
+
+        _sections.Clear();
+        _sections.AddRange(kept);
+    }
+
+    bool NeedsSection(Section from, Section to)
+    {
+        if(to.Distance - from.Distance > _maxSegmentLength) return true;
+        if(Vector3.Angle(from.Forward, to.Forward) > _angleTolerance) return true;
+        if(Vector3.Angle(from.Right, to.Right) > _angleTolerance) return true;
+        if(Mathf.Abs(to.HalfWidth - from.HalfWidth) > from.HalfWidth * 0.03f) return true;
+        if(Mathf.Abs(to.Steepness - from.Steepness) > 0.12f) return true;
+        if(Mathf.Abs(to.SpeedMultiplier - from.SpeedMultiplier) > from.SpeedMultiplier * 0.08f) return true;
+        return false;
     }
 
     // Radio de curvatura por seccion (minimo en una ventana de +-2 secciones, para no subestimar
@@ -567,9 +707,21 @@ public class SplineRiver : MonoBehaviour
         {
             int a = Mathf.Max(0, i - 1);
             int b = Mathf.Min(count - 1, i + 1);
-            float angle = Vector3.SignedAngle(_sections[a].Forward, _sections[b].Forward, _sections[i].Up) * Mathf.Deg2Rad;
+            // Solo el giro LATERAL: cuanto rota el borde (Right) alrededor del eje vertical. Comparar los Forward con
+            // SignedAngle mezclaba el cambio de pendiente: en el labio de una cascada (de horizontal a vertical) daba
+            // una "curva" de radio minimo y CompressOffset aplastaba un costado de la lamina.
+            Vector3 axis = _flatSurface ? Vector3.up : _sections[i].Up;
+            Vector3 ra = Vector3.ProjectOnPlane(_sections[a].Right, axis);
+            Vector3 rb = Vector3.ProjectOnPlane(_sections[b].Right, axis);
+            float angle = ra.sqrMagnitude > 1e-6f && rb.sqrMagnitude > 1e-6f
+                ? Vector3.SignedAngle(ra, rb, axis) * Mathf.Deg2Rad
+                : 0f;
+            // Largo a lo largo del rio (3D): la lamina se pliega en su propio plano, no en la vista desde arriba.
             float length = _sections[b].Distance - _sections[a].Distance;
             radius[i] = Mathf.Abs(angle) > 1e-4f && length > 1e-4f ? length / Mathf.Abs(angle) : float.PositiveInfinity;
+            // Una lamina de cascada no se pliega por giros laterales chicos: sin compresion ahi (queda pareja).
+            if(_sections[i].Steepness > 0.3f)
+                radius[i] = float.PositiveInfinity;
             sign[i] = Mathf.Abs(angle) > 1e-4f ? Mathf.Sign(angle) : 0f;
         }
 
@@ -655,6 +807,7 @@ public class SplineRiver : MonoBehaviour
         var tangents = new List<Vector4>();
         var uv0 = new List<Vector2>();
         var uv1 = new List<Vector2>();
+        var uv2 = new List<Vector2>(); // x = cascada (0..1)
         var waterTriangles = new List<int>();
         var bedTriangles = new List<int>();
 
@@ -672,6 +825,7 @@ public class SplineRiver : MonoBehaviour
                 tangents.Add(new Vector4(s.Forward.x, s.Forward.y, s.Forward.z, 1f));
                 uv0.Add(new Vector2(offset, s.Distance));
                 uv1.Add(new Vector2(a, s.SpeedMultiplier));
+                uv2.Add(new Vector2(s.Steepness, 0f));
             }
         }
         AddGridTriangles(waterTriangles, 0, _sections.Count, columns);
@@ -694,6 +848,7 @@ public class SplineRiver : MonoBehaviour
                     tangents.Add(new Vector4(s.Forward.x, s.Forward.y, s.Forward.z, 1f));
                     uv0.Add(new Vector2(0.5f, gradient));
                     uv1.Add(new Vector2(0f, 1f));
+                    uv2.Add(Vector2.zero);
                 }
             }
             AddGridTriangles(bedTriangles, bedStart, _sections.Count, bedColumns);
@@ -721,6 +876,7 @@ public class SplineRiver : MonoBehaviour
                         tangents.Add(new Vector4(s.Right.x, s.Right.y, s.Right.z, 1f));
                         uv0.Add(new Vector2(0.5f, 0.25f));
                         uv1.Add(new Vector2(0f, 1f));
+                        uv2.Add(Vector2.zero);
                     }
 
                     for(int k = 0; k < profile.Count - 1; k++)
@@ -743,6 +899,7 @@ public class SplineRiver : MonoBehaviour
         _mesh.SetTangents(tangents);
         _mesh.SetUVs(0, uv0);
         _mesh.SetUVs(1, uv1);
+        _mesh.SetUVs(2, uv2);
         _mesh.subMeshCount = _generateBed ? 2 : 1;
         _mesh.SetTriangles(waterTriangles, 0);
         if(_generateBed)
@@ -990,15 +1147,14 @@ public class SplineRiver : MonoBehaviour
             var chunk = new GameObject("Chunk " + start);
             chunk.layer = 2;
             chunk.transform.SetParent(_volumeRoot.transform, false);
-            Vector3 flatAlong = along;
-            if(_flatSurface)
-                flatAlong.y = 0f;
+            // Orientado sobre la pendiente real (rampas y cascadas incluidas).
+            Vector3 chunkUp = Vector3.Lerp(a.Up, b.Up, 0.5f).normalized;
             chunk.transform.localPosition = (a.Position + b.Position) * 0.5f;
-            chunk.transform.localRotation = Quaternion.LookRotation(flatAlong.sqrMagnitude > 1e-6f ? flatAlong : a.Forward, a.Up);
+            chunk.transform.localRotation = Quaternion.LookRotation(along, chunkUp);
 
             var box = chunk.AddComponent<BoxCollider>();
             box.isTrigger = true;
-            float height = bottom + _triggerHeightAbove + Mathf.Abs(b.Position.y - a.Position.y);
+            float height = bottom + _triggerHeightAbove;
             box.size = new Vector3((halfWidth + EdgeTolerance) * 2f, height, length + 0.6f);
             box.center = new Vector3(0f, (_triggerHeightAbove - bottom) * 0.5f, 0f);
 

@@ -276,6 +276,20 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
         Purified?.Invoke();
     }
 
+    // Debug (Alt+8, ver DebugController): purifica de una, sin escudo, sin contar golpes y sin costo de vida.
+    // Sigue el mismo camino que el último golpe, así la cinemática, el desafío y el gekko amigo reaccionan igual.
+    public void DebugPurify()
+    {
+        if(_purified) return;
+
+        if(_biteWindup != null) _biteWindup.Cancel();
+        _hits = Mathf.Max(1, data.hitsToPurify);
+        _purified = true;
+        SetHitBoxActive(false);
+        SetState(PurifiedState);
+        Purified?.Invoke();
+    }
+
     public void Bite()
     {
         if(_purified || _head == null || _isLunging) return;

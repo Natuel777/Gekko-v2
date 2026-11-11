@@ -62,6 +62,28 @@ Shader "Gekko/River Stylized"
         _RippleFoam("Espuma de ondas", Range(0, 1)) = 0.9
         _RippleNormal("Distorsion de ondas", Range(0, 3)) = 1.2
 
+        [Header(Cascada (tramos en pendiente))]
+        _WaterfallDepthTone("Tono de cascada (0 = como agua poco profunda, 1 = como agua profunda)", Range(0, 1)) = 0.3
+        _WaterfallStreakScale("Escala de vetas", Float) = 1.3
+        _WaterfallStreakCutoff("Corte de vetas blancas", Range(0, 1)) = 0.66
+        _WaterfallEdgeFoam("Espuma en los bordes", Range(0, 0.5)) = 0.16
+        _WaterfallLipFoam("Espuma arriba y al pie", Range(0, 1)) = 1
+
+        [Header(Modo estanque (mallas comunes, sin SplineRiver))]
+        [Toggle(_POOL_MODE)] _PoolMode("Modo estanque", Float) = 0
+        _PoolDepth("Profundidad simulada (m)", Float) = 1.2
+        _PoolFlow("Corriente del estanque (X, Z en m/s)", Vector) = (0.05, 0.2, 0, 0)
+
+        [Header(Purificacion (zonas corruptas del PurifyManager))]
+        [HDR] _PurifyCorruptTint("Tinte corrupto", Color) = (0.8, 0.65, 0.95, 1)
+        _PurifyCorruptSaturation("Saturacion corrupta", Range(0, 1)) = 0.15
+        _PurifyCorruptDarken("Brillo corrupto", Range(0, 1.5)) = 0.35
+        _PurifyCorruptMurk("Agua corrupta turbia (no deja ver el fondo)", Range(0, 1)) = 0.6
+        [HDR] _PurifyEdgeColor("Color del borde de la onda", Color) = (1, 0.8, 0.3, 1)
+        _PurifyEdgeIntensity("Intensidad del borde de la onda", Float) = 2
+        _PurifyNoiseScale("Escala del ruido de la onda", Float) = 0.3
+        _PurifyNoiseAmount("Irregularidad del borde (m)", Float) = 2.5
+
         [Header(Iluminacion)]
         _ShadowStrength("Intensidad de sombra", Range(0, 1)) = 0.35
         _EdgeFade("Suavizado del borde", Float) = 0.05
@@ -93,6 +115,7 @@ Shader "Gekko/River Stylized"
 
             #pragma multi_compile_fog
             #pragma shader_feature_local _REFRACTION_ON
+            #pragma shader_feature_local _POOL_MODE
             #pragma multi_compile _ _MAIN_LIGHT_SHADOWS _MAIN_LIGHT_SHADOWS_CASCADE
             #pragma multi_compile_fragment _ _SHADOWS_SOFT _SHADOWS_SOFT_LOW _SHADOWS_SOFT_MEDIUM _SHADOWS_SOFT_HIGH
 
@@ -100,6 +123,8 @@ Shader "Gekko/River Stylized"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareDepthTexture.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareOpaqueTexture.hlsl"
+            // Sistema de purificacion del proyecto: mismas globales (las sube PurifyManager) y mismo look que el resto.
+            #include "Assets/_Gekko/Purification/Shaders/PurifyLook.hlsl"
 
             #define RIVER_MAX_RIPPLES 16
 
@@ -145,9 +170,33 @@ Shader "Gekko/River Stylized"
                 half _RippleFoam;
                 half _RippleNormal;
 
+                half _WaterfallDepthTone;
+                float _WaterfallStreakScale;
+                half _WaterfallStreakCutoff;
+                half _WaterfallEdgeFoam;
+                half _WaterfallLipFoam;
+
+                float _PoolDepth;
+                float4 _PoolFlow;
+
+                half4 _PurifyCorruptTint;
+                half _PurifyCorruptSaturation;
+                half _PurifyCorruptDarken;
+                half _PurifyCorruptMurk;
+                half4 _PurifyEdgeColor;
+                half _PurifyEdgeIntensity;
+                float _PurifyNoiseScale;
+                float _PurifyNoiseAmount;
+
                 half _ShadowStrength;
                 float _EdgeFade;
             CBUFFER_END
+
+            // Version corrupta de un color del agua (mismo PurifyCorruptColor que piso, hojas y M_Water). mask: 1 sano, 0 corrupto.
+            half3 PurifyWater(half3 c, float mask)
+            {
+                return lerp(PurifyCorruptColor(c, _PurifyCorruptTint.rgb, _PurifyCorruptSaturation, _PurifyCorruptDarken), c, saturate(mask));
+            }
 
             // Fuera del CBUFFER: los escribe SplineRiver por MaterialPropertyBlock.
             float _RiverFlowSpeed;
@@ -162,6 +211,7 @@ Shader "Gekko/River Stylized"
                 float4 tangentOS : TANGENT;
                 float2 uv0 : TEXCOORD0;
                 float2 uv1 : TEXCOORD1;
+                float2 uv2 : TEXCOORD2; // x = cascada (0..1)
             };
 
             struct Varyings
@@ -173,6 +223,7 @@ Shader "Gekko/River Stylized"
                 float4 uv : TEXCOORD3; // xy = uv0, zw = uv1
                 float eyeDepth : TEXCOORD4;
                 float fogFactor : TEXCOORD5;
+                float steep : TEXCOORD6;
             };
 
             // ---------- ruido ----------
@@ -284,6 +335,13 @@ Shader "Gekko/River Stylized"
                 OUT.uv = float4(IN.uv0, IN.uv1);
                 OUT.eyeDepth = -TransformWorldToView(positionWS).z;
                 OUT.fogFactor = ComputeFogFactor(OUT.positionCS.z);
+                OUT.steep = IN.uv2.x;
+            #if _POOL_MODE
+                // Malla comun (estanque/lago): coordenadas de mundo en metros, sin cascada.
+                OUT.uv = float4(positionWS.xz, 0.5, 1.0);
+                OUT.flowWS = float3(0.0, 0.0, 1.0);
+                OUT.steep = 0.0;
+            #endif
                 return OUT;
             }
 
@@ -312,7 +370,11 @@ Shader "Gekko/River Stylized"
                 float p1 = frac(phaseT + 0.5);
                 float wA = 1.0 - abs(1.0 - 2.0 * p0);
                 float wB = 1.0 - wA;
+            #if _POOL_MODE
+                float2 flowOffset = _PoolFlow.xy * period;
+            #else
                 float2 flowOffset = float2(0.0, speed * period);
+            #endif
                 float2 uvA = IN.uv.xy - flowOffset * p0;
                 float2 uvB = IN.uv.xy - flowOffset * p1 + float2(3.7, 5.1);
 
@@ -352,6 +414,11 @@ Shader "Gekko/River Stylized"
                 float rawDepth = RawToDevice(SampleSceneDepth(screenUV));
                 float sceneEye = LinearEyeDepth(rawDepth, _ZBufferParams);
                 float viewDepthDiff = max(0.0, sceneEye - IN.eyeDepth);
+            #if _POOL_MODE
+                // En los estanques el piso esta a ras del agua: con la profundidad real todo seria "orilla" (blanco y
+                // transparente). Se usa una profundidad simulada para color, espuma y transparencia.
+                viewDepthDiff = max(viewDepthDiff, _PoolDepth);
+            #endif
 
                 float2 sampleUV = screenUV;
             #if _REFRACTION_ON
@@ -363,12 +430,35 @@ Shader "Gekko/River Stylized"
                 float sampleRaw = RawToDevice(SampleSceneDepth(sampleUV));
                 float3 bedWS = ComputeWorldSpacePosition(sampleUV, sampleRaw, UNITY_MATRIX_I_VP);
                 float waterDepth = max(0.0, IN.positionWS.y - bedWS.y);
+            #if _POOL_MODE
+                waterDepth = _PoolDepth;
+            #endif
+
+                // ---------- purificacion (PurifyManager / PurifyRegion del proyecto) ----------
+                // mask 1 = sano, 0 = corrupto; edge = frente de la onda. Sin PurifyManager en la escena todo queda sano.
+                // Se corrompe solo lo que aporta el agua (sus colores, espuma, causticas, reflejo): el fondo que se ve a
+                // traves ya lo corrompe su propio shader (Path Blend, SG_PurifyLit...), si no se oscureceria dos veces.
+                float purifyMask = 1.0;
+                float purifyEdge = 0.0;
+                if (_PurifySphereCount > 0.5)
+                {
+                    float purified;
+                    PurifyMaskFull_float(IN.positionWS, PurifyNoise(IN.positionWS.xz, _PurifyNoiseScale), _PurifyNoiseAmount,
+                                         purifyMask, purifyEdge, purified);
+                }
+                half3 shallowColor = PurifyWater(_ShallowColor.rgb, purifyMask);
+                half3 deepColor = PurifyWater(_DeepColor.rgb, purifyMask);
+                half3 foamColor = PurifyWater(_FoamColor.rgb, purifyMask);
+                half3 reflectionColor = PurifyWater(_ReflectionColor.rgb, purifyMask);
+                half3 causticsTint = PurifyWater(_CausticsColor.rgb, purifyMask);
 
                 // ---------- color por profundidad ----------
                 float depth01 = saturate(waterDepth / max(_DepthMaxDistance, 1e-3));
                 float depthCurve = 1.0 - (1.0 - depth01) * (1.0 - depth01);
-                half3 waterColor = lerp(_ShallowColor.rgb, _DeepColor.rgb, depthCurve);
+                half3 waterColor = lerp(shallowColor, deepColor, depthCurve);
                 half opacity = lerp(_ShallowColor.a, _DeepColor.a, depthCurve);
+                // El agua corrupta es turbia: deja ver menos el fondo.
+                opacity = lerp(max(opacity, _PurifyCorruptMurk), opacity, purifyMask);
 
                 // ---------- luz principal ----------
                 float4 shadowCoord = TransformWorldToShadowCoord(IN.positionWS);
@@ -383,12 +473,12 @@ Shader "Gekko/River Stylized"
                 float v2 = VoronoiF1(cp * 1.35 - float2(ct * 0.2, ct * 0.3) + 5.2, ct * 2.3);
                 float caustics = smoothstep(0.3, 0.7, min(v1, v2));
                 float causticsMask = saturate(1.0 - waterDepth / max(_CausticsDepthFade, 1e-3)) * saturate(waterDepth * 6.0);
-                half3 causticsColor = caustics * causticsMask * _CausticsStrength * _CausticsColor.rgb * mainLight.color * mainLight.shadowAttenuation;
+                half3 causticsColor = caustics * causticsMask * _CausticsStrength * causticsTint * mainLight.color * lerp(0.35, 1.0, purifyMask) * mainLight.shadowAttenuation;
 
                 half3 color;
             #if _REFRACTION_ON
                 half3 sceneColor = SampleSceneColor(sampleUV);
-                half3 tinted = sceneColor * lerp(half3(1, 1, 1), _ShallowColor.rgb * 1.3, _ShallowTint) + causticsColor;
+                half3 tinted = sceneColor * lerp(half3(1, 1, 1), shallowColor * 1.3, _ShallowTint) + causticsColor;
                 color = lerp(tinted, waterColor * lightColor * shadow, opacity);
             #else
                 color = waterColor * lightColor * shadow + causticsColor * (1.0 - opacity);
@@ -396,7 +486,7 @@ Shader "Gekko/River Stylized"
 
                 // ---------- fresnel ----------
                 half fresnel = pow(1.0 - saturate(dot(normalWS, V)), _FresnelPower) * _FresnelStrength;
-                color = lerp(color, _ReflectionColor.rgb * lightColor, fresnel);
+                color = lerp(color, reflectionColor * lightColor, fresnel);
 
                 // ---------- espuma ----------
                 float foamNoise = ValueNoise(IN.positionWS.xz * _FoamNoiseScale + float2(time * 0.15, -time * 0.1));
@@ -415,7 +505,34 @@ Shader "Gekko/River Stylized"
                 float rippleFoam = smoothstep(0.12, 0.3, rippleAmount - h * 0.15) * _RippleFoam;
 
                 float foam = saturate(shoreFoam + lines + streaks + rippleFoam) * _FoamColor.a;
-                color = lerp(color, _FoamColor.rgb * lightColor * shadow, foam);
+                color = lerp(color, foamColor * lightColor * shadow, foam);
+
+                // ---------- cascada (tramos en pendiente: SplineRiver pasa la pendiente en uv2.x) ----------
+                // Azul intenso con bandas claras y vetas blancas muy estiradas que caen con la corriente (las fases
+                // uvA/uvB ya traen la velocidad, que en la cascada es mayor), bordes laterales blancos y espuma en
+                // el labio de arriba y al pie (donde la pendiente cambia).
+                float steep = saturate(IN.steep);
+                if (steep > 0.001)
+                {
+                    float2 fallScale = float2(_WaterfallStreakScale, _WaterfallStreakScale * 0.12);
+                    float fallNoise = ValueNoise(uvA * fallScale) * wA + ValueNoise(uvB * fallScale + 7.3) * wB;
+                    float bands = smoothstep(0.35, 0.65, fallNoise);
+                    // Mismos colores que el agua del rio (Shallow/Deep del material): la cascada no es "otra agua".
+                    half3 fallBase = lerp(shallowColor, deepColor, _WaterfallDepthTone);
+                    half3 fallLight = lerp(shallowColor, PurifyWater(half3(1, 1, 1), purifyMask), 0.25);
+                    half3 fallColor = lerp(fallBase, fallLight, bands) * lightColor * shadow;
+
+                    float fallStreaks = smoothstep(_WaterfallStreakCutoff, _WaterfallStreakCutoff + 0.05, fallNoise);
+                    float side = abs(IN.uv.z * 2.0 - 1.0) + (fallNoise - 0.5) * 0.15;
+                    float edgeFoam = smoothstep(1.0 - _WaterfallEdgeFoam, 1.0 - _WaterfallEdgeFoam * 0.4, side);
+                    float lip = steep * (1.0 - steep) * 4.0;
+                    lip = smoothstep(0.35, 0.85, lip + (fallNoise - 0.5) * 0.5) * _WaterfallLipFoam;
+                    float fallFoam = saturate(fallStreaks + edgeFoam + lip);
+
+                    fallColor = lerp(fallColor, foamColor * lightColor * shadow, fallFoam);
+                    color = lerp(color, fallColor, steep);
+                    foam = lerp(foam, fallFoam, steep);
+                }
 
                 // ---------- brillos ----------
                 float3 H = normalize(mainLight.direction + V);
@@ -427,7 +544,11 @@ Shader "Gekko/River Stylized"
                 float sparkle = smoothstep(_SparkleThreshold, _SparkleThreshold + 0.03, s1 * s2 * 1.6)
                               * saturate(NdotH * 2.0 - 0.6) * _SparkleStrength * distanceFade;
 
-                color += (specular + sparkle) * mainLight.color * mainLight.shadowAttenuation * (1.0 - foam);
+                // En lo corrupto el agua brilla menos.
+                color += (specular + sparkle) * mainLight.color * mainLight.shadowAttenuation * (1.0 - foam) * lerp(0.3, 1.0, purifyMask);
+
+                // Frente de la onda de purificacion (mismo brillo que el resto de los materiales).
+                color += purifyEdge * _PurifyEdgeColor.rgb * _PurifyEdgeIntensity;
 
                 // ---------- alpha ----------
                 half edgeAlpha = saturate(viewDepthDiff / max(_EdgeFade, 1e-4));
@@ -436,6 +557,8 @@ Shader "Gekko/River Stylized"
             #else
                 half alpha = saturate(max(opacity, foam)) * edgeAlpha;
             #endif
+                // La cascada es casi opaca (no se ve "a traves" de una caida de agua).
+                alpha = lerp(alpha, max(alpha, 0.95), saturate(IN.steep));
 
                 color = MixFog(color, IN.fogFactor);
                 return half4(color, alpha);
