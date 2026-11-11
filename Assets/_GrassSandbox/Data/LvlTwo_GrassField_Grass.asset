@@ -1,0 +1,669 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7959e0c133d48ba4f9a4fe40d250f7f5, type: 3}
+  m_Name: LvlTwo_GrassField_Grass
+  m_EditorClassIdentifier: 
+  _blades:
+  - Position: {x: 8.9950485, y: -0.7686429, z: -18.182674}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.52317166
+    Width: 0.07337139
+    Yaw: 169.6866
+    Variation: 0.05148972
+  - Position: {x: 10.387941, y: -0.76864266, z: -18.544197}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.5652282
+    Width: 0.08959806
+    Yaw: 286.66235
+    Variation: 0.32462075
+  - Position: {x: 9.455065, y: -0.76864266, z: -15.670792}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.6247447
+    Width: 0.073539294
+    Yaw: 83.990524
+    Variation: 0.0727774
+  - Position: {x: 9.690057, y: -0.76864266, z: -17.71326}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.5464896
+    Width: 0.050049294
+    Yaw: 42.45439
+    Variation: 0.6380926
+  - Position: {x: 10.133436, y: -0.76864266, z: -18.16055}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.6813554
+    Width: 0.062517665
+    Yaw: 90.11061
+    Variation: 0.14868523
+  - Position: {x: 12.108645, y: -0.76864266, z: -18.949688}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.58834046
+    Width: 0.08001617
+    Yaw: 161.10263
+    Variation: 0.970942
+  - Position: {x: 9.823731, y: -0.76864266, z: -15.917969}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.5853077
+    Width: 0.071111016
+    Yaw: 43.803604
+    Variation: 0.74125034
+  - Position: {x: 10.123263, y: -0.76864266, z: -15.876467}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.46356148
+    Width: 0.08498041
+    Yaw: 248.3704
+    Variation: 0.61848754
+  - Position: {x: 11.340175, y: -0.76864266, z: -18.107185}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.54028827
+    Width: 0.08591649
+    Yaw: 107.061874
+    Variation: 0.4722796
+  - Position: {x: 10.937135, y: -0.7686429, z: -19.219265}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.5394559
+    Width: 0.06836691
+    Yaw: 272.99332
+    Variation: 0.44634765
+  - Position: {x: 12.090502, y: -0.7686422, z: -19.077827}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.40583497
+    Width: 0.06163522
+    Yaw: 340.29886
+    Variation: 0.7719666
+  - Position: {x: 11.512405, y: -0.76864266, z: -18.485624}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.6872987
+    Width: 0.05015174
+    Yaw: 87.26192
+    Variation: 0.28880194
+  - Position: {x: 11.721244, y: -0.7686422, z: -18.110723}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.5536276
+    Width: 0.05316638
+    Yaw: 280.97906
+    Variation: 0.24652031
+  - Position: {x: 8.860275, y: -0.76864266, z: -18.484364}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.5017734
+    Width: 0.082547195
+    Yaw: 25.759249
+    Variation: 0.79706347
+  - Position: {x: 9.028023, y: -0.76864266, z: -17.149603}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.6342041
+    Width: 0.0796278
+    Yaw: 137.42603
+    Variation: 0.33441237
+  - Position: {x: 12.237162, y: -0.76864266, z: -17.776272}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.43318823
+    Width: 0.073368944
+    Yaw: 140.75299
+    Variation: 0.12612392
+  - Position: {x: 10.702525, y: -0.76864266, z: -19.731495}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.5854924
+    Width: 0.058956698
+    Yaw: 140.3196
+    Variation: 0.9617013
+  - Position: {x: 8.330273, y: -0.76864266, z: -18.425724}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.5206491
+    Width: 0.05576217
+    Yaw: 329.5184
+    Variation: 0.11821701
+  - Position: {x: 11.743633, y: -0.7686422, z: -16.162642}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.6955889
+    Width: 0.07568593
+    Yaw: 348.45676
+    Variation: 0.2934045
+  - Position: {x: 8.835849, y: -0.76864266, z: -17.5684}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.52559525
+    Width: 0.07526023
+    Yaw: 297.6027
+    Variation: 0.089223154
+  - Position: {x: 11.160303, y: -0.76864266, z: -19.110191}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.5300512
+    Width: 0.07677393
+    Yaw: 35.185047
+    Variation: 0.17900206
+  - Position: {x: 10.068391, y: -0.76864266, z: -19.396736}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.5757437
+    Width: 0.08778093
+    Yaw: 144.62735
+    Variation: 0.5637794
+  - Position: {x: 9.558672, y: -0.7686429, z: -15.512489}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.38881856
+    Width: 0.07138407
+    Yaw: 198.61807
+    Variation: 0.93494165
+  - Position: {x: 11.037385, y: -0.76864266, z: -16.78293}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.63880503
+    Width: 0.084371395
+    Yaw: 212.29404
+    Variation: 0.5318337
+  - Position: {x: 10.278383, y: -0.7686429, z: -18.803883}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.49494302
+    Width: 0.05836594
+    Yaw: 140.4489
+    Variation: 0.170442
+  - Position: {x: 8.866597, y: -0.76864266, z: -19.647095}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.6066034
+    Width: 0.081831396
+    Yaw: 26.579103
+    Variation: 0.024939422
+  - Position: {x: 12.497974, y: -0.7686422, z: -18.954998}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.622624
+    Width: 0.07801816
+    Yaw: 314.42816
+    Variation: 0.6641615
+  - Position: {x: 11.58094, y: -0.76864266, z: -18.59639}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.6167017
+    Width: 0.0648832
+    Yaw: 182.48285
+    Variation: 0.36400107
+  - Position: {x: 8.969775, y: -0.76864266, z: -17.813116}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.68067044
+    Width: 0.06351723
+    Yaw: 354.55377
+    Variation: 0.5081528
+  - Position: {x: 9.6951885, y: -0.76864266, z: -19.630732}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.60192573
+    Width: 0.0656548
+    Yaw: 218.50676
+    Variation: 0.52981657
+  - Position: {x: 10.148688, y: -0.76864266, z: -17.272875}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.5382379
+    Width: 0.059362594
+    Yaw: 4.116354
+    Variation: 0.7590997
+  - Position: {x: 9.663883, y: -0.76864266, z: -17.6619}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.5847776
+    Width: 0.06568772
+    Yaw: 279.5567
+    Variation: 0.7665385
+  - Position: {x: 11.8319435, y: -0.76864266, z: -16.100298}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.5689792
+    Width: 0.08154764
+    Yaw: 165.40974
+    Variation: 0.87238586
+  - Position: {x: 10.065702, y: -0.76864266, z: -16.997704}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.3777129
+    Width: 0.08610491
+    Yaw: 132.20833
+    Variation: 0.27970746
+  - Position: {x: 12.27917, y: -0.76864266, z: -16.56788}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.5719903
+    Width: 0.06144418
+    Yaw: 44.440468
+    Variation: 0.96905804
+  - Position: {x: 12.151716, y: -0.76864266, z: -19.05838}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.6028235
+    Width: 0.05589973
+    Yaw: 48.603214
+    Variation: 0.10962869
+  - Position: {x: 9.554047, y: -0.76864266, z: -18.363632}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.62545514
+    Width: 0.06921531
+    Yaw: 297.78403
+    Variation: 0.2743856
+  - Position: {x: 9.049354, y: -0.76864266, z: -16.295351}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.4281016
+    Width: 0.07304858
+    Yaw: 15.567112
+    Variation: 0.20769098
+  - Position: {x: 11.26581, y: -0.76864266, z: -17.069355}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.42458642
+    Width: 0.07847294
+    Yaw: 356.04883
+    Variation: 0.5481731
+  - Position: {x: 11.775251, y: -0.76864266, z: -19.191292}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.4151859
+    Width: 0.07210199
+    Yaw: 126.16615
+    Variation: 0.5603189
+  - Position: {x: 9.693576, y: -0.7686429, z: -15.840461}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.6178784
+    Width: 0.08184051
+    Yaw: 18.573631
+    Variation: 0.6845972
+  - Position: {x: 8.887539, y: -0.76864266, z: -17.572987}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.5439958
+    Width: 0.05816307
+    Yaw: 110.16324
+    Variation: 0.90953386
+  - Position: {x: 8.256339, y: -0.76864266, z: -17.65597}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.47860724
+    Width: 0.079230316
+    Yaw: 297.67868
+    Variation: 0.041770104
+  - Position: {x: 12.192746, y: -0.76864266, z: -17.757153}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.65885514
+    Width: 0.059130542
+    Yaw: 114.701706
+    Variation: 0.86056054
+  - Position: {x: 9.952749, y: -0.76864266, z: -16.687176}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.47730324
+    Width: 0.05880895
+    Yaw: 286.46832
+    Variation: 0.03594244
+  - Position: {x: 9.129306, y: -0.76864266, z: -16.3861}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.6070818
+    Width: 0.05039465
+    Yaw: 91.80981
+    Variation: 0.5237238
+  - Position: {x: 9.335501, y: -0.76864266, z: -16.57948}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.41448724
+    Width: 0.07626911
+    Yaw: 332.66876
+    Variation: 0.034610752
+  - Position: {x: 10.836282, y: -0.76864266, z: -16.242796}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.50828815
+    Width: 0.074356034
+    Yaw: 18.536724
+    Variation: 0.81761277
+  - Position: {x: 8.347667, y: -0.76864266, z: -18.60362}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.45442206
+    Width: 0.08797714
+    Yaw: 179.68361
+    Variation: 0.17430271
+  - Position: {x: 8.936445, y: -0.7686422, z: -15.875946}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.37485275
+    Width: 0.07323936
+    Yaw: 18.31425
+    Variation: 0.43017203
+  - Position: {x: 12.275524, y: -0.76864266, z: -18.81619}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.56753796
+    Width: 0.085704274
+    Yaw: 354.28024
+    Variation: 0.79177916
+  - Position: {x: 11.600343, y: -0.7686429, z: -19.316416}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.4557783
+    Width: 0.05091058
+    Yaw: 24.007616
+    Variation: 0.46268827
+  - Position: {x: 7.8745303, y: -0.76864266, z: -18.386463}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.69376403
+    Width: 0.055162646
+    Yaw: 201.66296
+    Variation: 0.8890015
+  - Position: {x: 12.305399, y: -0.76864266, z: -16.365591}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.41472763
+    Width: 0.06257442
+    Yaw: 141.37686
+    Variation: 0.5738767
+  - Position: {x: 11.67678, y: -0.76864266, z: -19.343575}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.57530445
+    Width: 0.081291884
+    Yaw: 108.82969
+    Variation: 0.2584243
+  - Position: {x: 9.25794, y: -0.76864266, z: -16.470148}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.61837244
+    Width: 0.08666131
+    Yaw: 333.15024
+    Variation: 0.44098967
+  - Position: {x: 11.001524, y: -0.76864266, z: -19.73681}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.6063082
+    Width: 0.07445027
+    Yaw: 259.30026
+    Variation: 0.7669718
+  - Position: {x: 9.056472, y: -0.76864266, z: -17.331354}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.4135445
+    Width: 0.0837845
+    Yaw: 36.78639
+    Variation: 0.84921956
+  - Position: {x: 10.967239, y: -0.76864266, z: -16.15817}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.6943609
+    Width: 0.089973226
+    Yaw: 293.20908
+    Variation: 0.127661
+  - Position: {x: 10.264463, y: -0.76864266, z: -15.736142}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.36106277
+    Width: 0.088424385
+    Yaw: 0.09625912
+    Variation: 0.12162413
+  - Position: {x: 12.167293, y: -0.7686429, z: -18.783285}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.47473338
+    Width: 0.05190456
+    Yaw: 167.85631
+    Variation: 0.57903296
+  - Position: {x: 9.853782, y: -0.76864266, z: -16.07739}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.35312507
+    Width: 0.057987243
+    Yaw: 128.49419
+    Variation: 0.3745456
+  - Position: {x: 11.907402, y: -0.76864266, z: -16.189594}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.6426561
+    Width: 0.054593902
+    Yaw: 194.19522
+    Variation: 0.8133768
+  - Position: {x: 11.630685, y: -0.76864266, z: -18.946522}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.51383626
+    Width: 0.078173436
+    Yaw: 342.854
+    Variation: 0.09342254
+  - Position: {x: 9.937967, y: -0.76864266, z: -18.953253}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.37525538
+    Width: 0.07212928
+    Yaw: 167.8854
+    Variation: 0.45882744
+  - Position: {x: 10.680184, y: -0.76864266, z: -15.42396}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.52706116
+    Width: 0.059298743
+    Yaw: 205.72137
+    Variation: 0.23557022
+  - Position: {x: 10.173712, y: -0.76864266, z: -15.5180855}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.50591886
+    Width: 0.06664463
+    Yaw: 278.01157
+    Variation: 0.014030816
+  - Position: {x: 10.61746, y: -0.76864266, z: -18.582039}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.6857707
+    Width: 0.055549547
+    Yaw: 254.95538
+    Variation: 0.5979982
+  - Position: {x: 11.944483, y: -0.76864266, z: -16.00845}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.4477967
+    Width: 0.06312274
+    Yaw: 126.33035
+    Variation: 0.6350494
+  - Position: {x: 11.341542, y: -0.76864266, z: -19.18485}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.64805967
+    Width: 0.08943279
+    Yaw: 325.20322
+    Variation: 0.28024903
+  - Position: {x: 9.203832, y: -0.76864266, z: -18.855171}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.3711267
+    Width: 0.056767467
+    Yaw: 351.29492
+    Variation: 0.45943218
+  - Position: {x: 8.949402, y: -0.7686429, z: -19.929655}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.5716563
+    Width: 0.0829538
+    Yaw: 6.472578
+    Variation: 0.07305861
+  - Position: {x: 8.208964, y: -0.76864266, z: -18.562923}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.45620576
+    Width: 0.05505489
+    Yaw: 171.30502
+    Variation: 0.6038372
+  - Position: {x: 9.0745945, y: -0.76864266, z: -17.875265}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.5134337
+    Width: 0.07964746
+    Yaw: 0.54330826
+    Variation: 0.95097566
+  - Position: {x: 8.159155, y: -0.76864266, z: -17.134684}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.6135957
+    Width: 0.065933175
+    Yaw: 287.33792
+    Variation: 0.76682985
+  - Position: {x: 8.17639, y: -0.76864266, z: -18.693014}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.49040765
+    Width: 0.081376545
+    Yaw: 14.314027
+    Variation: 0.32305387
+  - Position: {x: 8.721831, y: -0.76864266, z: -18.678637}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.68252325
+    Width: 0.07000105
+    Yaw: 62.300934
+    Variation: 0.72392195
+  - Position: {x: 10.463124, y: -0.76864266, z: -15.863659}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.38247576
+    Width: 0.058779217
+    Yaw: 351.59695
+    Variation: 0.79073787
+  - Position: {x: 9.470044, y: -0.76864266, z: -17.773075}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.36053127
+    Width: 0.05377119
+    Yaw: 291.78513
+    Variation: 0.63743955
+  - Position: {x: 10.147953, y: -0.76864266, z: -15.970301}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.5211785
+    Width: 0.06533727
+    Yaw: 322.56882
+    Variation: 0.6580855
+  - Position: {x: 11.346931, y: -0.76864266, z: -19.411562}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.56627125
+    Width: 0.07442609
+    Yaw: 92.641464
+    Variation: 0.5717129
+  - Position: {x: 7.9599395, y: -0.76864266, z: -17.1029}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.6728864
+    Width: 0.08565597
+    Yaw: 62.348057
+    Variation: 0.44259483
+  - Position: {x: 9.629227, y: -0.76864266, z: -16.618694}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.5920201
+    Width: 0.059273437
+    Yaw: 101.61862
+    Variation: 0.9902177
+  - Position: {x: 8.523627, y: -0.76864266, z: -18.841368}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.52677715
+    Width: 0.0592508
+    Yaw: 136.30894
+    Variation: 0.60553175
+  - Position: {x: 8.693136, y: -0.76864266, z: -18.570223}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.63349533
+    Width: 0.08028377
+    Yaw: 284.3254
+    Variation: 0.036491636
+  - Position: {x: 10.702494, y: -0.76864266, z: -19.35783}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.49779516
+    Width: 0.07231736
+    Yaw: 191.50781
+    Variation: 0.19093028
+  - Position: {x: 9.528479, y: -0.76864266, z: -18.106424}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.68210196
+    Width: 0.08551771
+    Yaw: 74.16205
+    Variation: 0.7594205
+  - Position: {x: 11.418512, y: -0.76864266, z: -17.21481}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.6427874
+    Width: 0.07339943
+    Yaw: 345.95102
+    Variation: 0.102322474
+  - Position: {x: 9.086741, y: -0.7686422, z: -17.348305}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.36971855
+    Width: 0.059487555
+    Yaw: 9.579692
+    Variation: 0.3147091
+  - Position: {x: 10.260805, y: -0.76864266, z: -17.220783}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.48980758
+    Width: 0.07002352
+    Yaw: 248.66472
+    Variation: 0.6109311
+  - Position: {x: 9.562995, y: -0.76864266, z: -15.992399}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.5923422
+    Width: 0.074907415
+    Yaw: 209.5221
+    Variation: 0.9261792
+  - Position: {x: 9.140542, y: -0.7686422, z: -19.435444}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.66128594
+    Width: 0.06908091
+    Yaw: 243.21088
+    Variation: 0.027257089
+  - Position: {x: 9.832516, y: -0.76864266, z: -19.648436}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.5971395
+    Width: 0.08537582
+    Yaw: 305.5973
+    Variation: 0.9755124
+  - Position: {x: 11.03176, y: -0.76864266, z: -16.776115}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.44485125
+    Width: 0.07477592
+    Yaw: 321.30838
+    Variation: 0.65137845
+  - Position: {x: 9.455264, y: -0.76864266, z: -18.232227}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.3961441
+    Width: 0.0780122
+    Yaw: 155.26242
+    Variation: 0.45485586
+  - Position: {x: 8.482604, y: -0.76864266, z: -17.75722}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.63244975
+    Width: 0.07942683
+    Yaw: 201.12369
+    Variation: 0.9191718
+  - Position: {x: 11.874508, y: -0.76864266, z: -17.627754}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.64301354
+    Width: 0.08158694
+    Yaw: 234.65282
+    Variation: 0.5299043
+  - Position: {x: 9.992914, y: -0.76864266, z: -20.039738}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.50989974
+    Width: 0.082138225
+    Yaw: 48.739
+    Variation: 0.96387684
+  - Position: {x: 11.097721, y: -0.76864266, z: -15.991861}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.3704157
+    Width: 0.07387161
+    Yaw: 317.1565
+    Variation: 0.6095244
+  - Position: {x: 9.999257, y: -0.76864266, z: -16.2118}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.40647587
+    Width: 0.08124525
+    Yaw: 144.30501
+    Variation: 0.5730044
+  - Position: {x: 8.741709, y: -0.76864266, z: -17.03484}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.5873505
+    Width: 0.05803351
+    Yaw: 205.45032
+    Variation: 0.033195738
+  - Position: {x: 11.955729, y: -0.76864266, z: -16.858719}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.6911725
+    Width: 0.06361965
+    Yaw: 171.15182
+    Variation: 0.9373951
+  - Position: {x: 11.364732, y: -0.76864266, z: -19.463846}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.57480836
+    Width: 0.05066855
+    Yaw: 336.4751
+    Variation: 0.5180127
+  - Position: {x: 10.12503, y: -0.76864266, z: -17.13592}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.42589033
+    Width: 0.0863615
+    Yaw: 312.67203
+    Variation: 0.5180302
+  - Position: {x: 11.274775, y: -0.76864266, z: -18.639107}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.65421116
+    Width: 0.06272851
+    Yaw: 232.36325
+    Variation: 0.2486948
+  - Position: {x: 11.954289, y: -0.76864266, z: -17.511868}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.5651344
+    Width: 0.05031959
+    Yaw: 343.62253
+    Variation: 0.8524847
+  - Position: {x: 10.239967, y: -0.76864266, z: -16.663738}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.44886172
+    Width: 0.066099614
+    Yaw: 189.27219
+    Variation: 0.6746462
+  - Position: {x: 10.218884, y: -0.76864266, z: -16.868317}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.47118664
+    Width: 0.060935102
+    Yaw: 201.58382
+    Variation: 0.03590608
+  - Position: {x: 11.716175, y: -0.76864266, z: -19.709099}
+    Normal: {x: 0, y: 1, z: 0}
+    Height: 0.6386899
+    Width: 0.05838097
+    Yaw: 204.0391
+    Variation: 0.26427725
