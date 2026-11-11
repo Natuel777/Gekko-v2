@@ -17,7 +17,7 @@ public class CarnivorousPlantDataSO : ScriptableObject
     public int hitsToPurify = 1;
     [Tooltip("Daño al player en los golpes NO finales (el golpe final cobra Purify Health Cost).")]
     public float hitHealthCost = 0f;
-    [Tooltip("Segundos que la planta pausa su ataque tras un golpe no final.")]
+    [Tooltip("Segundos que la planta pausa su ataque tras un golpe no final. Si la planta tiene PlantHurtReaction, la pausa dura como mínimo lo que dura esa animación.")]
     public float hurtStaggerSeconds = 0f;
 
     [Header("Aim")]

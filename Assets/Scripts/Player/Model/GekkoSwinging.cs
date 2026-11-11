@@ -97,7 +97,7 @@ public sealed class GekkoSwinging
         _forwardThrustForce = forwardThrustForce;
         _horizontalThrustForce = horizontalThrustForce;
         _extendCableSpeed = extendCableSpeed;
-        _detection = new GekkoDetection(cam, layers, predictionPoint, predictionSphereRadius, maxTongueDistance);
+        _detection = new GekkoDetection(transform, cam, layers, predictionPoint, predictionSphereRadius, maxTongueDistance);
         _quality = Mathf.Max(1, quality);
         _springDamper = springDamper;
         _springStrength = springStrength;
