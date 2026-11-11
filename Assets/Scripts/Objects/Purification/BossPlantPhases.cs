@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using Gekko.Purification;
 using Unity.Cinemachine;
 using UnityEngine;
 
@@ -38,6 +39,22 @@ public class BossPlantPhases : MonoBehaviour
     [Tooltip("Altura de la cámara sobre el núcleo.")]
     [SerializeField] private float _coreCamHeight = 1.5f;
 
+    [Header("Region Camera (primero: la zona purificándose)")]
+    [Tooltip("Al romperse un núcleo, mostrar la zona que purifica (su PurifyRegion) mientras avanza la onda, antes de la planta.")]
+    [SerializeField] private bool _showRegion = true;
+    [Tooltip("Segundos en la zona (la onda de las regiones del boss dura 3 s).")]
+    [Min(0f)]
+    [SerializeField] private float _regionCamSeconds = 3.2f;
+    [Tooltip("Distancia hacia afuera de la zona (del lado opuesto a la planta), en radios de la región.")]
+    [SerializeField] private float _regionCamBack = 1.1f;
+    [Tooltip("Altura de la cámara sobre el centro de la zona, en radios de la región.")]
+    [SerializeField] private float _regionCamHeight = 1f;
+    [Tooltip("Hacia dónde mira: el centro de la zona corrido hacia la planta, en radios (así la planta queda al fondo).")]
+    [SerializeField] private float _regionLookTowardPlant = 0.25f;
+    [Tooltip("Cuánto se acerca la cámara durante el plano (fracción de la distancia).")]
+    [Range(0f, 0.5f)]
+    [SerializeField] private float _regionPushIn = 0.15f;
+
     [Header("Core Broken Camera (después: la planta)")]
     [Tooltip("Cámara que muestra la planta cada vez que se rompe un núcleo. El blend lo hace el CinemachineBrain.")]
     [SerializeField] private CinemachineVirtualCameraBase _camCoreBroken;
@@ -52,6 +69,8 @@ public class BossPlantPhases : MonoBehaviour
     [SerializeField] private VineShield _vineShield;
 
     private readonly HashSet<PurificationCore> _seenBroken = new();
+    private CinemachineCamera _regionCam; // se crea por código la primera vez
+    private bool _frozen;
     private CinemachineVirtualCameraBase _activeCam;
     private int _camBasePriority;
     private Coroutine _camRoutine;
@@ -133,11 +152,31 @@ public class BossPlantPhases : MonoBehaviour
         if(_plantAnimator != null) _plantAnimator.SetTrigger("splittle");
     }
 
-    // Primero el núcleo purificándose, después la planta: recién ahí las enredaderas bajan y la planta muerde.
-    // No bloquea el input: la planta sigue atacando mientras se muestra.
+    // Primero la zona del núcleo purificándose (o el núcleo, si hay _camCore), después la planta: recién ahí las
+    // enredaderas bajan y la planta muerde. Mientras dura, Gekko y la planta quedan congelados ("OnCinematicStart"):
+    // si no, la planta le seguía escupiendo con la cámara en otro lado.
     private IEnumerator CoreBrokenCamRoutine(PurificationCore core)
     {
-        if(core != null && _camCore != null)
+        Freeze(true);
+
+        PurifyRegion region = _showRegion ? FindRegion(core) : null;
+        if(region != null)
+        {
+            CinemachineCamera cam = GetRegionCam();
+            FrameRegion(region, out Vector3 from, out Vector3 to, out Vector3 look);
+            cam.transform.SetPositionAndRotation(from, Quaternion.LookRotation(look - from, Vector3.up));
+            SetCam(cam);
+
+            // Acercamiento lento mientras avanza la onda.
+            for(float t = 0f; t < _regionCamSeconds; t += Time.deltaTime)
+            {
+                float k = Mathf.SmoothStep(0f, 1f, t / _regionCamSeconds);
+                Vector3 pos = Vector3.Lerp(from, to, k);
+                cam.transform.SetPositionAndRotation(pos, Quaternion.LookRotation(look - pos, Vector3.up));
+                yield return null;
+            }
+        }
+        else if(core != null && _camCore != null)
         {
             FrameCore(core.transform);
             SetCam(_camCore);
@@ -156,6 +195,100 @@ public class BossPlantPhases : MonoBehaviour
 
         _camRoutine = null;
         EndCam();
+    }
+
+    // Región que purifica este núcleo: la del PurifyTrigger que lo tiene asignado.
+    private static PurifyRegion FindRegion(PurificationCore core)
+    {
+        if(core == null) return null;
+
+        foreach(PurifyTrigger trigger in FindObjectsByType<PurifyTrigger>(FindObjectsSortMode.None))
+            if(trigger.Nucleo == core) return trigger.Region;
+
+        return null;
+    }
+
+    // Desde afuera de la zona (del lado opuesto a la planta), en alto, mirando hacia la planta: se ve la onda avanzar en
+    // primer plano y la planta al fondo, que es el plano que sigue.
+    private void FrameRegion(PurifyRegion region, out Vector3 from, out Vector3 to, out Vector3 look)
+    {
+        Vector3 center = Vector3.zero;
+        float radius = 0f;
+        int count = Mathf.Max(1, region.CantidadNodos);
+        for(int i = 0; i < region.CantidadNodos; i++)
+        {
+            region.ObtenerNodo(i, out Vector3 c, out _, out float r);
+            center += c;
+            radius = Mathf.Max(radius, r);
+        }
+        center /= count;
+        if(radius <= 0f) radius = 10f;
+
+        Vector3 toPlant = _plant != null ? _plant.transform.position - center : Vector3.forward;
+        toPlant.y = 0f;
+        toPlant = toPlant.sqrMagnitude > 0.0001f ? toPlant.normalized : Vector3.forward;
+
+        look = center + toPlant * radius * _regionLookTowardPlant;
+
+        // Primero el lado opuesto a la planta; si algo (piedras, árboles, el terreno) tapa la vista al centro, se prueba
+        // rodeando la zona. Si ninguno queda limpio, se usa el primero.
+        from = RegionCamPosition(center, toPlant, radius, 0f);
+        foreach(float angle in RegionCamAngles)
+        {
+            Vector3 candidate = RegionCamPosition(center, toPlant, radius, angle);
+            if(HasClearView(candidate, center) && HasClearView(candidate, look))
+            {
+                from = candidate;
+                look = center + Quaternion.Euler(0f, angle, 0f) * toPlant * radius * _regionLookTowardPlant;
+                break;
+            }
+        }
+
+        to = Vector3.Lerp(from, look, _regionPushIn);
+    }
+
+    private static readonly float[] RegionCamAngles = { 0f, 25f, -25f, 50f, -50f, 75f, -75f };
+
+    private Vector3 RegionCamPosition(Vector3 center, Vector3 toPlant, float radius, float angle)
+    {
+        Vector3 dir = Quaternion.Euler(0f, angle, 0f) * toPlant;
+        return center - dir * radius * _regionCamBack + Vector3.up * radius * _regionCamHeight;
+    }
+
+    private static bool HasClearView(Vector3 from, Vector3 to)
+    {
+        if(Physics.CheckSphere(from, 0.5f, ~0, QueryTriggerInteraction.Ignore)) return false;
+
+        // Termina un poco antes: lo que haya justo en el centro (el núcleo, el piso) no cuenta como obstáculo.
+        Vector3 dir = to - from;
+        float dist = dir.magnitude;
+        return !Physics.SphereCast(from, 0.6f, dir / dist, out _, Mathf.Max(0f, dist - 3f), ~0, QueryTriggerInteraction.Ignore);
+    }
+
+    private CinemachineCamera GetRegionCam()
+    {
+        if(_regionCam != null) return _regionCam;
+
+        // Se arma apagada para que no le gane a la cámara de juego ni un frame antes de tener prioridad.
+        var go = new GameObject("CM_RegionPurifying");
+        go.SetActive(false);
+        go.transform.SetParent(transform, false);
+        _regionCam = go.AddComponent<CinemachineCamera>();
+        if(_camCoreBroken is CinemachineCamera plantCam) _regionCam.Lens = plantCam.Lens;
+        _regionCam.Priority = 0;
+        go.SetActive(true);
+        return _regionCam;
+    }
+
+    // Congela a Gekko y avisa a los NPCs (la planta, los escarabajos) igual que una cinemática del nivel.
+    private void Freeze(bool frozen)
+    {
+        if(_frozen == frozen) return;
+        _frozen = frozen;
+
+        Player pj = GameManager.Instance != null ? GameManager.Instance.Pj : null;
+        if(pj != null) pj.SetFrozenForCinematic(frozen);
+        EventManager.Trigger(frozen ? "OnCinematicStart" : "OnCinematicEnd");
     }
 
     // Del lado del player (para que se entienda qué núcleo se rompió), un poco más arriba, mirando al núcleo.
@@ -202,5 +335,6 @@ public class BossPlantPhases : MonoBehaviour
 
         RestoreCam();
         if(_vineShield != null) _vineShield.Release();
+        Freeze(false);
     }
 }

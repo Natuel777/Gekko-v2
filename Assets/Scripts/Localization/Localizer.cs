@@ -81,5 +81,9 @@ public static class Localizer
         { "ctrl_pause", ("Pausa", "Pause") },
         { "ctrl_reset", ("Restablecer controles", "Reset Controls") },
         { "ctrl_press_key", ("Presioná una tecla...", "Press a key...") },
+
+        // Cartel de presentación del boss (BossTitleCard)
+        { "boss1_name", ("Planta Corrupta", "Corrupted Plant") },
+        { "boss1_subtitle", ("Guardiana del claro", "Guardian of the Glade") },
     };
 }

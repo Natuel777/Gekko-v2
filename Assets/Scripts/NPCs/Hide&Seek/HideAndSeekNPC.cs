@@ -20,6 +20,21 @@ public class HideAndSeekNPC : NPCBase
     {
         base.Start();
         _source = GetComponent<AudioSource>();
+        if (SaveManager.Instance)
+        {
+            if (SaveManager.Instance.Has(StrawberryFlags.Lvl2_HideSeek_2.ToString()))
+            {
+                _currentDialogue = 4;
+                _exclamation.enabled = false;
+                _finish = true;
+                return;
+            }
+            else if (SaveManager.Instance.Has(StrawberryFlags.Lvl2_HideSeek_1.ToString()))
+            {
+                _currentDialogue = 2;
+                _currentHide++;
+            }
+        }   
     }
     protected override void Update()
     {
@@ -59,8 +74,9 @@ public class HideAndSeekNPC : NPCBase
         if (_found)
         {
             _found = false;
-            _currentHide++;
             GiveStrawberry();
+            _currentHide++;
+            if(!_finish)
             _exclamation.enabled = true;
         }
         else if (!_hiding && !_finish)
@@ -101,6 +117,15 @@ public class HideAndSeekNPC : NPCBase
         var pj = GameManager.Instance.Pj;
         pj.health.SetHealth(pj.health.MaxHealth);
         pj.BlueberryTracker.ActivateBoost(_notificationData.SpeedBoostMultiplier, _notificationData.SpeedBoostTimer);
+
+        if (SaveManager.Instance)
+        {
+            if(_currentHide == 0)
+                SaveManager.Instance.Set(StrawberryFlags.Lvl2_HideSeek_1.ToString());
+            else if (_currentHide == 1)
+                SaveManager.Instance.Set(StrawberryFlags.Lvl2_HideSeek_2.ToString());
+        }
+
     }
     private void Laugh(bool activate)
     {

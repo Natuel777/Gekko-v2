@@ -59,6 +59,7 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
     public PlantSpitBehaviour spitBehaviour;
     private PlantAimBehaviour _aimBehaviour;
     private PlantBiteWindup _biteWindup;
+    private PlantHurtReaction _hurtReaction;
     public BugDetection detection;
     public BugDetection biteDetection;
     private StateMachine _eventFSM;
@@ -95,6 +96,9 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
         // La preparación del mordisco es opcional (hoy, solo el boss) y también la usa la escupida, por eso se busca antes.
         _biteWindup = GetComponent<PlantBiteWindup>();
 
+        // La reacción a los golpes que no purifican también es opcional (hoy, solo el boss).
+        _hurtReaction = GetComponent<PlantHurtReaction>();
+
         spitBehaviour = new PlantSpitBehaviour(_head, _firePoint, _venomPrefab, data.shootInterval, data.rotateToPlayer, data.rotationSpeed, _muzzlePS, PlaySpit, _biteWindup);
 
         // El aim del hueso es opcional: solo existe si la planta tiene un _aimJoint asignado (hoy, el boss).
@@ -129,8 +133,25 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
 
     public bool IsPlayerInBiteRange() => biteDetection.IsTargetInRange();
 
+    // Mientras corre una cinemática (ParkourCinematicTrigger, cámaras del boss al romper un núcleo) la planta no ataca:
+    // se saltea el FSM, igual que HeavyBeetle. Sin esto seguía escupiéndole a Gekko congelado con la cámara en otro lado.
+    private bool _frozenForCinematic;
+
+    private void OnEnable()
+    {
+        EventManager.Subscribe("OnCinematicStart", FreezeForCinematic);
+        EventManager.Subscribe("OnCinematicEnd", UnfreezeForCinematic);
+    }
+
+    private void FreezeForCinematic() => _frozenForCinematic = true;
+    private void UnfreezeForCinematic() => _frozenForCinematic = false;
+
     private void OnDisable()
     {
+        EventManager.Unsubscribe("OnCinematicStart", FreezeForCinematic);
+        EventManager.Unsubscribe("OnCinematicEnd", UnfreezeForCinematic);
+        _frozenForCinematic = false;
+
         // Apagada en plena embestida: la corrutina muere con ella, así que el hitbox no puede quedar prendido ni la planta
         // "embistiendo" para siempre.
         _isLunging = false;
@@ -148,6 +169,8 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
     private void Update()
     {
         if(_purified) return;
+
+        if(_frozenForCinematic) return;
 
         if(Time.time < _staggerUntil) return;
 
@@ -196,7 +219,11 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
     public bool InBiteInterval { get; private set; }
     public void SetInBiteInterval(bool value) => InBiteInterval = value;
 
-    private bool CanBeHit => !_isLunging && (!data.vulnerableOnlyInBiteInterval || InBiteInterval);
+    // Mientras corre la reacción a un golpe (PlantHurtReaction) la planta no se puede dañar, igual que durante la preparación del
+    // mordisco. Cuenta también para la marca de golpe bloqueado de OnTongueContact.
+    private bool IsHurtReacting => _hurtReaction != null && _hurtReaction.IsPlaying;
+
+    private bool CanBeHit => !_isLunging && !IsHurtReacting && (!data.vulnerableOnlyInBiteInterval || InBiteInterval);
 
     public bool TryResolveService()
     {
@@ -257,9 +284,14 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
 
             PlayHurt();
 
-            if(data.hurtStaggerSeconds > 0f)
+            // Con PlantHurtReaction el golpe dispara su animación, y el ataque se pausa lo que ella dure para que no peleen por los
+            // huesos (se toma el mayor entre eso y el aturdimiento del DataSO). Mientras corre la planta es invulnerable: CanBeHit.
+            float pauseSeconds = data.hurtStaggerSeconds;
+            if(_hurtReaction != null && _hurtReaction.Play()) pauseSeconds = Mathf.Max(pauseSeconds, _hurtReaction.Duration);
+
+            if(pauseSeconds > 0f)
             {
-                _staggerUntil = Time.time + data.hurtStaggerSeconds;
+                _staggerUntil = Time.time + pauseSeconds;
 
                 // Aturdida: el FSM se frena, así que se corta la preparación del mordisco (si estaba en eso). PlantBiteState la
                 // retoma de cero al terminar el aturdimiento.
@@ -272,6 +304,21 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
         _purified = true;
         SetHitBoxActive(false);
         EventManager.Trigger<float>("OnPlayerDamaged", data.purifyHealthCost);
+        SetState(PurifiedState);
+        Purified?.Invoke();
+    }
+
+    // Debug (Alt+8, ver DebugController): purifica de una, sin escudo, sin contar golpes y sin costo de vida.
+    // Sigue el mismo camino que el último golpe, así la cinemática, el desafío y el gekko amigo reaccionan igual.
+    public void DebugPurify()
+    {
+        if(_purified) return;
+
+        if(_biteWindup != null) _biteWindup.Cancel();
+        if(_hurtReaction != null) _hurtReaction.Cancel();
+        _hits = Mathf.Max(1, data.hitsToPurify);
+        _purified = true;
+        SetHitBoxActive(false);
         SetState(PurifiedState);
         Purified?.Invoke();
     }

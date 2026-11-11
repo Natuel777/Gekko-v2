@@ -71,6 +71,7 @@ public class PlayerController
     public Vector2 RawInput { get { return _rawInput; } set { _rawInput = value; } }
     public bool CanInteract => !_talking && !TongueOut && _isSurface;
     public bool Grounded => _isGrounded;
+    public bool Climbing => _isClimbing;
     // En el aire: sin ninguna superficie debajo (ni piso ni pared), o colgado de la lengua / en pleno grapple. Durante el
     // swing y el grapple el controller no corre DetectSurface (ver ArtificialFixedUpdate) y _isSurface queda congelado en
     // su último valor, por eso esos dos casos se chequean aparte.
@@ -631,7 +632,9 @@ public class PlayerController
         float half = ((_collider.height / 2f) - _collider.radius) * scale;
         Vector3 center = _pjTransform.TransformPoint(_collider.center);
 
-        if(Physics.Raycast(_pjTransform.position, Vector3.down, out RaycastHit nearHit, 1f * scale, 1 <<4, QueryTriggerInteraction.Ignore))
+        // La condición está en GekkoWater. La fricción solo se saca sobre colliders de la layer Water: las WaterZone (agua
+        // visual, sin collider) no la tocan.
+        if(GekkoWater.IsOnWaterSurface(_pjTransform))
         {
             _collider.material.dynamicFriction = 0f;
             _collider.material.staticFriction = 0f;

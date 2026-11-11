@@ -7,6 +7,9 @@ using UnityEngine;
 // Con el click derecho, GekkoSwinging mira ese resultado: Swing arranca el swing (GekkoSwinging) y Grapple arranca el
 // grapple (GekkoGrapple). Antes esto era CheckForSwingPoints, dentro de GekkoSwinging.
 //
+// En el agua (ver GekkoWater) no detecta nada: ni swing ni grapple. Como todo el enganche arranca de lo que devuelve Detect,
+// con eso solo Gekko no puede enganchar nada mientras está en el agua, y el indicador se apaga.
+//
 // También mueve el indicador (_predictionPoint): una partícula que se queda sobre el ancla que se está apuntando.
 public sealed class GekkoDetection
 {
@@ -16,7 +19,7 @@ public sealed class GekkoDetection
     // Gancho y GrapplePoint lo tienen.
     private const string AnchorName = "GrapplePoint";
 
-    private readonly Transform _camera, _predictionPoint;
+    private readonly Transform _camera, _predictionPoint, _gekko;
     private readonly LayerMask _mask;
     private readonly float _sphereRadius, _maxDistance;
 
@@ -32,8 +35,9 @@ public sealed class GekkoDetection
     // Dónde está el ancla de lo apuntado. Solo vale si Type no es None.
     public Vector3 Point { get; private set; }
 
-    public GekkoDetection(Transform camera, LayerMask swingLayers, Transform predictionPoint, float sphereRadius, float maxDistance)
+    public GekkoDetection(Transform gekko, Transform camera, LayerMask swingLayers, Transform predictionPoint, float sphereRadius, float maxDistance)
     {
+        _gekko = gekko;
         _camera = camera;
         _mask = BuildMask(swingLayers);
         _predictionPoint = predictionPoint;
@@ -64,6 +68,9 @@ public sealed class GekkoDetection
     public TargetType Detect()
     {
         Type = TargetType.None;
+
+        // En el agua no se engancha nada, apunte adonde apunte: se corta antes del SphereCast.
+        if(GekkoWater.IsInWater(_gekko)) return Type;
 
         if(!SphereCast(_camera, _sphereRadius, _maxDistance, _mask, out RaycastHit hit)) return Type;
 

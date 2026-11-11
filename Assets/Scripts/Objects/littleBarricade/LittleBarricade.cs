@@ -137,10 +137,37 @@ public class LittleBarricade : MonoBehaviour, IDamageable, IParticleSystemTarget
     {
         if(_revealCamera == null) yield break;
 
+        bool turnedOn = EnableRevealCamera();
         _revealCamera.Priority = 30;
         EventManager.Trigger<float>("OnCameraShake", _revealShakeForce);
         yield return new WaitForSeconds(_revealSeconds);
         _revealCamera.Priority = 0;
+        if(turnedOn) StartCoroutine(DisableWhenNotLive(_revealCamera));
+    }
+
+    // La Reveal Camera suele ser una cámara de la cinemática del parkour, que queda apagada (GameObject inactivo)
+    // fuera de su timeline. Subirle la prioridad a una cámara apagada no hace nada: hay que prenderla.
+    // Devuelve true si la prendió acá, para volver a apagarla al terminar.
+    private bool EnableRevealCamera()
+    {
+        if(_revealCamera == null || _revealCamera.gameObject.activeSelf) return false;
+
+        _revealCamera.gameObject.SetActive(true);
+        return true;
+    }
+
+    // Se apaga recién cuando el CinemachineBrain terminó el blend de vuelta: apagarla antes corta el blend.
+    private IEnumerator DisableWhenNotLive(CinemachineCamera cam)
+    {
+        float timeout = 6f;
+
+        while(cam != null && CinemachineCore.IsLive(cam) && timeout > 0f)
+        {
+            timeout -= Time.deltaTime;
+            yield return null;
+        }
+
+        if(cam != null && cam.Priority.Value <= 0) cam.gameObject.SetActive(false);
     }
     // Primero la cámara del núcleo mientras se disuelve, después la Reveal Camera y recién ahí se disuelve la
     // enredadera, para que se vea qué se abrió. Sin Reveal Camera la enredadera igual se disuelve, sin cámara.
@@ -153,6 +180,7 @@ public class LittleBarricade : MonoBehaviour, IDamageable, IParticleSystemTarget
         BeginCoreCam();
         yield return new WaitForSeconds(_coreCamSeconds);
 
+        bool turnedOn = EnableRevealCamera();
         if(_revealCamera != null) _revealCamera.Priority = 30;
         EndCoreCam();
         yield return new WaitForSeconds(_vineDissolveDelay);
@@ -161,6 +189,7 @@ public class LittleBarricade : MonoBehaviour, IDamageable, IParticleSystemTarget
         yield return new WaitForSeconds(Mathf.Max(0f, _revealSeconds - _vineDissolveDelay));
 
         if(_revealCamera != null) _revealCamera.Priority = 0;
+        if(turnedOn) StartCoroutine(DisableWhenNotLive(_revealCamera));
         if(_runtimeCoreCam != null) Destroy(_runtimeCoreCam.gameObject);
     }
 
