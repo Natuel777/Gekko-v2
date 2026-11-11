@@ -55,6 +55,8 @@ namespace Gekko.Purification
 
         /// <summary>La región asignada, o la del mismo objeto si no hay ninguna (también en Edit Mode).</summary>
         public PurifyRegion Region => _region != null ? _region : GetComponent<PurifyRegion>();
+        /// <summary>Núcleo que dispara esta región (null si no tiene). Lo usa BossPlantPhases para mostrar la zona.</summary>
+        public PurificationCore Nucleo => _nucleo;
         /// <summary>Si tiene algún núcleo o desafío asignado (si no, solo dispara por UnityEvent).</summary>
         public bool TieneFuente => _nucleo != null || _desafio != null;
 

@@ -129,8 +129,25 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
 
     public bool IsPlayerInBiteRange() => biteDetection.IsTargetInRange();
 
+    // Mientras corre una cinemática (ParkourCinematicTrigger, cámaras del boss al romper un núcleo) la planta no ataca:
+    // se saltea el FSM, igual que HeavyBeetle. Sin esto seguía escupiéndole a Gekko congelado con la cámara en otro lado.
+    private bool _frozenForCinematic;
+
+    private void OnEnable()
+    {
+        EventManager.Subscribe("OnCinematicStart", FreezeForCinematic);
+        EventManager.Subscribe("OnCinematicEnd", UnfreezeForCinematic);
+    }
+
+    private void FreezeForCinematic() => _frozenForCinematic = true;
+    private void UnfreezeForCinematic() => _frozenForCinematic = false;
+
     private void OnDisable()
     {
+        EventManager.Unsubscribe("OnCinematicStart", FreezeForCinematic);
+        EventManager.Unsubscribe("OnCinematicEnd", UnfreezeForCinematic);
+        _frozenForCinematic = false;
+
         // Apagada en plena embestida: la corrutina muere con ella, así que el hitbox no puede quedar prendido ni la planta
         // "embistiendo" para siempre.
         _isLunging = false;
@@ -148,6 +165,8 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
     private void Update()
     {
         if(_purified) return;
+
+        if(_frozenForCinematic) return;
 
         if(Time.time < _staggerUntil) return;
 

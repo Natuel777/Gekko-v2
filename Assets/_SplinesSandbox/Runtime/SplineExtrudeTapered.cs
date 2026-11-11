@@ -19,7 +19,9 @@ using UnityEngine.Splines;
 // paquete, asi que esto usa unicamente la API publica: un IExtrudeShape custom
 // (TaperedKnotCircleShape) + SplineMesh.Extrude por spline, combinados con Mesh.CombineMeshes.
 // A cambio de eso, se dejaron afuera del original cosas que esta demo no necesita: asignar un
-// Mesh externo (targetMesh) y la sincronizacion automatica de colliders.
+// Mesh externo (targetMesh).
+// Si el objeto tiene un MeshCollider, se le reasigna la malla generada despues de cada rebuild
+// (la malla es HideAndDontSave, asi que la referencia del collider no sobrevive guardar/recargar).
 [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
 [AddComponentMenu("Splines/Spline Extrude (Tapered)")]
 [ExecuteAlways]
@@ -191,6 +193,18 @@ public class SplineExtrudeTapered : MonoBehaviour
         }
     }
 
+    // Reasigna la malla al MeshCollider (si hay) para que recalcule su forma. Se pone en null
+    // primero porque reasignar la misma malla no fuerza el recalculo.
+    void SyncCollider()
+    {
+        if(!TryGetComponent<MeshCollider>(out var col))
+            return;
+
+        col.sharedMesh = null;
+        if(m_Mesh != null && m_Mesh.vertexCount > 0)
+            col.sharedMesh = m_Mesh;
+    }
+
     void CleanupMesh()
     {
         if(TryGetComponent<MeshFilter>(out var filter))
@@ -198,6 +212,9 @@ public class SplineExtrudeTapered : MonoBehaviour
             filter.hideFlags = HideFlags.None;
             filter.sharedMesh = null;
         }
+
+        if(TryGetComponent<MeshCollider>(out var col))
+            col.sharedMesh = null;
 
         if(m_Mesh != null)
         {
@@ -297,6 +314,7 @@ public class SplineExtrudeTapered : MonoBehaviour
             DestroyImmediate(tempMesh);
 
         m_Mesh.RecalculateBounds();
+        SyncCollider();
         m_NextScheduledRebuild = Time.time + 1f / Mathf.Max(m_RebuildFrequency, 1);
         m_RebuildRequested = false;
     }
