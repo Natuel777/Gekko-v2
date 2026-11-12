@@ -264,6 +264,11 @@ namespace Gekko.PaintTools
                 return;
             }
 
+            if (!IsVisibleToCamera(camera))
+            {
+                return;
+            }
+
             GeometryUtility.CalculateFrustumPlanes(camera, _frustumPlanes);
 
             Vector3 viewer = camera.transform.position;
@@ -297,6 +302,50 @@ namespace Gekko.PaintTools
                         camera);
                 }
             }
+        }
+
+        /// <summary>
+        /// Decide si este field le corresponde a la camara que esta por renderizar.
+        ///
+        /// POR QUE HACE FALTA: Graphics.DrawMeshInstanced no pasa por el sistema de
+        /// escenas/stages de Unity. Un MeshRenderer comun pertenece a una escena y la
+        /// camara del Prefab Mode lo descarta con su scene culling mask; un DrawMesh*
+        /// en cambio se dibuja en CUALQUIER camara que se le pase. Como
+        /// beginCameraRendering se dispara tambien para la camara de la Scene view
+        /// cuando esta abierto un prefab, todos los props de la escena aparecian
+        /// adentro de cualquier prefab que se abriera.
+        ///
+        /// Reglas (solo en editor; en un build no hay stages y siempre se dibuja):
+        /// - La camara tiene que renderizar el stage/escena donde vive este field
+        ///   (cubre Prefab Mode aislado, preview scenes y camaras de otros stages).
+        /// - En la Scene view, ademas, el stage abierto tiene que ser el del field:
+        ///   asi tampoco se cuela en Prefab Mode "In Context", donde la camara sigue
+        ///   viendo la escena de fondo.
+        /// - En la Scene view se respeta el ojito de visibilidad de la jerarquia.
+        /// </summary>
+        private bool IsVisibleToCamera(Camera camera)
+        {
+#if UNITY_EDITOR
+            if (!UnityEditor.SceneManagement.StageUtility.IsGameObjectRenderedByCamera(gameObject, camera))
+            {
+                return false;
+            }
+
+            if (camera.cameraType == CameraType.SceneView)
+            {
+                if (UnityEditor.SceneManagement.StageUtility.GetStage(gameObject) !=
+                    UnityEditor.SceneManagement.StageUtility.GetCurrentStage())
+                {
+                    return false;
+                }
+
+                if (UnityEditor.SceneVisibilityManager.instance.IsHidden(gameObject))
+                {
+                    return false;
+                }
+            }
+#endif
+            return true;
         }
 
         private struct MeshPart
