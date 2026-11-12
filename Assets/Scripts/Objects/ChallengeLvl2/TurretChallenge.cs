@@ -9,7 +9,7 @@ public class TurretChallenge : MonoBehaviour
     [SerializeField] private float _shootRange;
     [SerializeField] private float _shootAngle;
 
-    [SerializeField] private Bullet _bulletPrefab;
+    [SerializeField] private TurretBullet _bulletPrefab;
 
 
     private void Start()
