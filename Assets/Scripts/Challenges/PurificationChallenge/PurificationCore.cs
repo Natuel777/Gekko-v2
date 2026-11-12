@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 [RequireComponent(typeof(Collider))]
-public class PurificationCore : MonoBehaviour, IDamageable, IHitOncePerLick, IParticleSystemTarget
+public class PurificationCore : MonoBehaviour, IDamageable, IHitOncePerLick, IParticleSystemTarget, IShieldBreaker
 {
     // Propiedad del shader S_Enredaderas (la usan M_Enredaderas y Nucleo): 0 = entero, 1 = disuelto.
     private static readonly int DissolveId = Shader.PropertyToID("_Dissolve");
@@ -58,6 +58,14 @@ public class PurificationCore : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
     public bool IsBroken { get; private set; }
     public event Action<PurificationCore> Broken;
 
+    // Como destructor de escudo (ShieldBreakerChallenge) avisa lo mismo que Broken.
+    event Action<IShieldBreaker> IShieldBreaker.ShieldBreakerBroken
+    {
+        add => _shieldBreakerBroken += value;
+        remove => _shieldBreakerBroken -= value;
+    }
+    private Action<IShieldBreaker> _shieldBreakerBroken;
+
     [SerializeField] private GameObject[] CorruptionParticles;
     private void Awake()
     {
@@ -105,6 +113,7 @@ public class PurificationCore : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
         SetActiveAll(_activeWhenBroken, true);
         RemoveLinePositions();
         Broken?.Invoke(this);
+        _shieldBreakerBroken?.Invoke(this);
     }
 
     private void RemoveLinePositions()

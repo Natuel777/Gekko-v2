@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class ChallengeTurret : MonoBehaviour
+public class ChallengeTurret : MonoBehaviour, IShieldBreaker
 {
     [SerializeField] private ChallengeTurretSO _data;
     [SerializeField] private Transform _muzzle;
@@ -22,7 +22,36 @@ public class ChallengeTurret : MonoBehaviour
 
     // Para que un desafío (MirrorChallenge) cuente las torretas purificadas.
     public event System.Action<ChallengeTurret> Purified;
+
+    // Como destructor de escudo, "rota" = purificada.
+    bool IShieldBreaker.IsBroken => IsPurified;
+    event System.Action<IShieldBreaker> IShieldBreaker.ShieldBreakerBroken
+    {
+        add => _shieldBreakerBroken += value;
+        remove => _shieldBreakerBroken -= value;
+    }
+    private System.Action<IShieldBreaker> _shieldBreakerBroken;
     #endregion
+
+    // Mientras corre una cinemática (la cámara mostrando la planta al purificar una torreta) no dispara, igual que la planta:
+    // si no, le tiraba a Gekko congelado con la cámara en otro lado.
+    private bool _frozenForCinematic;
+
+    private void OnEnable()
+    {
+        EventManager.Subscribe("OnCinematicStart", FreezeForCinematic);
+        EventManager.Subscribe("OnCinematicEnd", UnfreezeForCinematic);
+    }
+
+    private void OnDisable()
+    {
+        EventManager.Unsubscribe("OnCinematicStart", FreezeForCinematic);
+        EventManager.Unsubscribe("OnCinematicEnd", UnfreezeForCinematic);
+        _frozenForCinematic = false;
+    }
+
+    private void FreezeForCinematic() => _frozenForCinematic = true;
+    private void UnfreezeForCinematic() => _frozenForCinematic = false;
 
     #region Initialization
     private void Awake()
@@ -44,8 +73,10 @@ public class ChallengeTurret : MonoBehaviour
     }
     #endregion
 
-    private void Update() 
+    private void Update()
     {
+        if(_frozenForCinematic) return;
+
         _stateMachine.UpdateState();
     }
 
@@ -61,6 +92,7 @@ public class ChallengeTurret : MonoBehaviour
         IsPurified = true;
         SendEvent(CreatureEvent.ChallengeTurretPurified);
         Purified?.Invoke(this);
+        _shieldBreakerBroken?.Invoke(this);
     }
 
     // Para probarlo desde el Inspector (menú de tres puntos del componente) sin la bala devuelta.
@@ -69,4 +101,11 @@ public class ChallengeTurret : MonoBehaviour
     {
         if(Application.isPlaying) Purify();
     }
+
+    #if UNITY_EDITOR
+    private void OnDrawGizmos() 
+    {
+        Gizmos.DrawWireSphere(transform.position, _data.detectionRange);
+    }
+    #endif
 }

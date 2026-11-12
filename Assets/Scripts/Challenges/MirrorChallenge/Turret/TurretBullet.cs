@@ -8,6 +8,10 @@ public class TurretBullet : ShooteableObject, IReflectable
     private ShooteableObjectFactory _bulletFactory;
     private int _lastReflectFrame = -1;
 
+    // Un espejo la devolvió (ver Reflect): desde ahí es una bala purificada. No daña a Gekko y, si alcanza a una torreta, la
+    // purifica. Se apaga en OnEnable porque la pool reutiliza las balas.
+    private bool _reflected;
+
     // La bala es un trigger que se mueve por transform: sin un Rigidbody de por medio Unity no avisa (OnTriggerEnter) cuando
     // toca un collider estático, como el de un espejo. Cinemático y sin gravedad: no se mueve por física, solo habilita los eventos.
     private void Awake()
@@ -18,7 +22,11 @@ public class TurretBullet : ShooteableObject, IReflectable
         rb.useGravity = false;
     }
 
-    private void OnEnable() {_currentLifetime = _lifetime;}
+    private void OnEnable()
+    {
+        _currentLifetime = _lifetime;
+        _reflected = false;
+    }
 
     public void Shoot(Vector3 direction)
     {
@@ -33,6 +41,7 @@ public class TurretBullet : ShooteableObject, IReflectable
 
         _lastReflectFrame = Time.frameCount;
         _direction = -_direction;
+        _reflected = true;
     }
 
     private void Update()
@@ -49,16 +58,34 @@ public class TurretBullet : ShooteableObject, IReflectable
 
     private void OnTriggerEnter(Collider other)
     {
+        // Devuelta por un espejo: ya está purificada, así que no daña a Gekko. Si alcanza a una torreta (el collider puede estar
+        // en un hijo), la purifica y la bala vuelve a la pool. Cualquier otra cosa se ignora.
+        if(_reflected)
+        {
+            ChallengeTurret turret = other.GetComponentInParent<ChallengeTurret>();
+
+            if(turret == null) return;
+
+            turret.Purify();
+            ReturnToPool();
+            return;
+        }
+
         if(other.TryGetComponent(out Player player))
         {
             Debug.Log("La yuta, la yuta...");
             EventManager.Trigger<float>("OnPlayerDamaged", data.damage);
 
             //if(_hitEffect != null) _hitEffect.Play();
-            
-            // _bulletFactory recién se resuelve en Update cuando se acaba la vida: si pega antes, acá todavía es null.
-            if(TryResolveBulletFactory()) _bulletFactory.ReturnBullet(this);
+
+            ReturnToPool();
         }
+    }
+
+    // _bulletFactory recién se resuelve en Update cuando se acaba la vida: si pega antes, todavía es null.
+    private void ReturnToPool()
+    {
+        if(TryResolveBulletFactory()) _bulletFactory.ReturnBullet(this);
     }
 
     private bool TryResolveBulletFactory()

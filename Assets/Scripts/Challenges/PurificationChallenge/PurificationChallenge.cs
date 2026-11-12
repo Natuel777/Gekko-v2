@@ -162,6 +162,7 @@ public class PurificationChallenge : Challenge
         UpdateText();
         if(_healthbar != null) _healthbar.RemoveCorruptedRune();
         CoreBroken?.Invoke(_remaining, _total);
+        NotifyBreakerBroken(core, _remaining, _total);
 
         if(_remaining > 0)
         {

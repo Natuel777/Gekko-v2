@@ -1,20 +1,21 @@
-public class MirrorActiveState : IState
+public class MirrorInactiveState : IState
 {
     private readonly Mirror _parent;
 
-    public MirrorActiveState(Mirror parent)
+    public MirrorInactiveState(Mirror parent)
     {
         _parent = parent;
     }
 
     public void Enter()
     {
-        _parent.reflect.Activated(true);
+        _parent.reflect.Activated(false);
+        _parent.raise.Activated(false);
     }
 
     public void Exit()
     {
-        _parent.reflect.Activated(false);
+
     }
 
     public void Update()

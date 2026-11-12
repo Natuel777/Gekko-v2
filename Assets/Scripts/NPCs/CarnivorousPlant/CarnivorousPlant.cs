@@ -51,6 +51,7 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
 
     public bool IsPurified => _purified;
     public bool IsShielded { get; private set; }
+    public Animator Animator => _animatorCarnivorousPlant;
     // (golpes recibidos, golpes necesarios)
     public event System.Action<int, int> Hit;
     public event System.Action Purified;

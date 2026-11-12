@@ -48,7 +48,7 @@ public abstract class Challenge : MonoBehaviour
     [SerializeField] private Transform _canvas;
 
     [Header("Shield Down")]
-    [Tooltip("Timeline que se reproduce al caer el escudo, si el desafío lo pide con PlayShieldDownTimeline (PurificationChallenge: al romper el último núcleo).")]
+    [Tooltip("Timeline que se reproduce al caer el escudo, si el desafío lo pide con PlayShieldDownTimeline (PurificationChallenge: al romper el último núcleo; MirrorChallenge: al purificar la última torreta).")]
     [SerializeField] private PlayableDirector _shieldDownDirector;
 
     [Header("Finish")]
@@ -73,8 +73,13 @@ public abstract class Challenge : MonoBehaviour
     public event Action ShieldDropped;
     public event Action Completed;
 
+    // Se rompió un destructor de escudo (núcleo, torreta...): (el destructor, restantes, total). Llega ANTES de que el escudo
+    // baje su tramo, así quien muestre la cinemática (ShieldBreakCinematic) puede retener el VineShield hasta encuadrarlo.
+    public event Action<IShieldBreaker, int, int> BreakerBroken;
+
     protected ChallengeDataSO Data => _data;
-    protected CarnivorousPlant Plant => _plant;
+    public CarnivorousPlant Plant => _plant;
+    public VineShield VineShield => _vineShield;
 
     // Duración de la cinemática de cierre cuando no hay timeline.
     private float CompletionBeatSeconds => _data != null ? _data.completionBeatSeconds : 3f;
@@ -218,6 +223,12 @@ public abstract class Challenge : MonoBehaviour
     protected void PlayShieldDownTimeline()
     {
         if(_shieldDownDirector != null) _shieldDownDirector.Play();
+    }
+
+    // Las hijas lo llaman al romperse un destructor, antes de DissolveShield / DropShield.
+    protected void NotifyBreakerBroken(IShieldBreaker breaker, int remaining, int total)
+    {
+        BreakerBroken?.Invoke(breaker, remaining, total);
     }
     #endregion
 
