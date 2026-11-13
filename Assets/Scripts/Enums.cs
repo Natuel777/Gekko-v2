@@ -33,6 +33,8 @@ public enum SoundNames
     PlayerSwingAttach,
     PlayerSwing,
     PlayerHurt,
+    PlayerSplash,
+    PlayerSwim,
     BeaverVoice,
     Duck,
     MushroomBoing,
@@ -42,6 +44,9 @@ public enum SoundNames
     Shock,
     PlantGrowl,
     PlantShoot,
+    RuneActivation,
+    TurretShoot,
+    TurretBullet,
 }
 
 public enum StrawberryFlags

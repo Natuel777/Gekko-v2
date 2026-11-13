@@ -23,6 +23,10 @@ public static class GekkoWater
         float scale = gekko.lossyScale.x;
         return Physics.Raycast(gekko.position, Vector3.down, 1f * scale, 1 << WaterLayer, QueryTriggerInteraction.Ignore);
     }
+    public static bool IsOnWaterSurface(Vector3 gekko, float scale)
+    {
+        return Physics.Raycast(gekko, Vector3.down, 1f * scale, 1 << WaterLayer, QueryTriggerInteraction.Ignore);
+    }
 
     // Gekko está en el agua, de cualquiera de los dos tipos: sobre un collider de la layer Water o dentro de un
     // WaterZone. Es lo que usan las mecánicas que no se pueden hacer en el agua.
