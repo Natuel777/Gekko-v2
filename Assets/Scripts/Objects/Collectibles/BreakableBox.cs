@@ -22,7 +22,7 @@ public class BreakableBox : MonoBehaviour, IDamageable
         if (_life <= 0) yield break;
         yield return null;
         int quantity = Random.Range(_minQuant, _maxQuant + 1); // el máximo es exclusivo en int, por eso el +1
-
+        if (AudioManager.instance) AudioManager.instance.Play(SoundNames.PlankPlaced);
         for (int i = 0; i < quantity; i++)
         {
             GameObject prefab = InstantiatePrefab();
