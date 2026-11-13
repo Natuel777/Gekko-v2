@@ -63,7 +63,7 @@ public abstract class Challenge : MonoBehaviour
 
     private readonly List<Material> _dissolveMaterials = new();
     private Camera _mainCamera;
-    private bool _beatActive, _inputLocked, _subscribed;
+    private bool _beatActive, _inputLocked, _subscribed, _completionBeatStarted;
     private bool _suscribed;
     private CinematicSkipHandler _skipHandler;
     private Coroutine _completionBeatRoutine;
@@ -72,6 +72,13 @@ public abstract class Challenge : MonoBehaviour
 
     public event Action ShieldDropped;
     public event Action Completed;
+
+    // Terminó la cinemática de cierre (la de la planta purificada): ya se devolvió el input. Lo usa lo que quiera mostrarse
+    // recién después, como las enredaderas del árbol de LvlTwo (VinesRevealCinematic).
+    public event Action CompletionBeatFinished;
+
+    // Planta purificada y su cinemática de cierre ya terminada.
+    public bool CompletionBeatDone => State == ChallengeState.Completed && !_beatActive && _completionBeatStarted;
 
     // Se rompió un destructor de escudo (núcleo, torreta...): (el destructor, restantes, total). Llega ANTES de que el escudo
     // baje su tramo, así quien muestre la cinemática (ShieldBreakCinematic) puede retener el VineShield hasta encuadrarlo.
@@ -280,6 +287,7 @@ public abstract class Challenge : MonoBehaviour
     private IEnumerator CompletionBeat()
     {
         _beatActive = true;
+        _completionBeatStarted = true;
 
         Player pj = GameManager.Instance != null ? GameManager.Instance.Pj : null;
 
@@ -321,6 +329,8 @@ public abstract class Challenge : MonoBehaviour
         }
 
         if(_canvas != null) _canvas.gameObject.SetActive(false);
+
+        CompletionBeatFinished?.Invoke();
     }
     #endregion
 

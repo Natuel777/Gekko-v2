@@ -1,14 +1,25 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-// Enredaderas decorativas que se disuelven cuando cae el escudo de un PurificationChallenge (todos sus núcleos rotos).
-// Va en el objeto padre (ej. "Enredaderas" en BossLvlOne): toma los renderers de todos sus hijos que tengan la propiedad
-// de dissolve, sube el valor de a poco y al terminar los oculta. Solo baja, nunca vuelve a aparecer.
+// Enredaderas decorativas que se disuelven con un desafío de la planta (PurificationChallenge, MirrorChallenge...): cuando
+// cae el escudo (ej. "Enredaderas" en BossLvlOne) o cuando se purifica la planta (ej. las del árbol de la Second Zone en
+// LvlTwo). Va en el objeto padre: toma los renderers de todos sus hijos que tengan la propiedad de dissolve, sube el valor
+// de a poco y al terminar los oculta y avisa con Dissolved. Solo baja, nunca vuelve a aparecer.
 public class ChallengeVinesDissolve : MonoBehaviour
 {
-    [Tooltip("Desafío cuyo ShieldDropped (todos los núcleos rotos) dispara la disolución.")]
-    [SerializeField] private PurificationChallenge _challenge;
+    public enum DissolveTrigger
+    {
+        ShieldDropped,  // Cae el escudo de la planta (todos los núcleos rotos / todas las torretas purificadas).
+        PlantPurified,  // Se purifica la planta: el desafío se completa.
+        AfterPurifiedCinematic // Termina la cinemática de la planta purificada (para mostrarlas con su propia cámara).
+    }
+
+    [Tooltip("Desafío que dispara la disolución.")]
+    [SerializeField] private Challenge _challenge;
+    [Tooltip("Cuándo se disuelven: al caer el escudo de la planta o al purificarla.")]
+    [SerializeField] private DissolveTrigger _trigger = DissolveTrigger.ShieldDropped;
 
     [Header("Dissolve")]
     [Tooltip("Propiedad expuesta del shader (Thorns.mat disuelve con _Dissolve: 0.03 entera -> 1 disuelta).")]
@@ -17,7 +28,7 @@ public class ChallengeVinesDissolve : MonoBehaviour
     [SerializeField] private float _dissolveFrom = 0.03f;
     [Tooltip("Valor con las enredaderas disueltas.")]
     [SerializeField] private float _dissolveTo = 1f;
-    [Tooltip("Segundos de espera desde que se rompe el último núcleo hasta que empiezan a disolverse.")]
+    [Tooltip("Segundos de espera desde que se dispara (cae el escudo o se purifica la planta) hasta que empiezan a disolverse.")]
     [Min(0f)]
     [SerializeField] private float _delay = 0f;
     [Tooltip("Segundos que tarda en disolverse de punta a punta.")]
@@ -32,6 +43,10 @@ public class ChallengeVinesDissolve : MonoBehaviour
     private float _progress;
     private Coroutine _routine;
 
+    // Ya terminaron de disolverse y están ocultas.
+    public bool IsDissolved => _finished;
+    public event Action Dissolved;
+
     private void Awake()
     {
         EnsureInit();
@@ -42,20 +57,30 @@ public class ChallengeVinesDissolve : MonoBehaviour
     {
         if(_challenge == null)
         {
-            Debug.LogWarning($"[{name}] ChallengeVinesDissolve sin PurificationChallenge asignado: las enredaderas no se van a disolver.", this);
+            Debug.LogWarning($"[{name}] ChallengeVinesDissolve sin Challenge asignado: las enredaderas no se van a disolver.", this);
             return;
         }
 
-        _challenge.ShieldDropped += OnShieldDropped;
+        switch(_trigger)
+        {
+            case DissolveTrigger.ShieldDropped: _challenge.ShieldDropped += OnTriggered; break;
+            case DissolveTrigger.PlantPurified: _challenge.Completed += OnTriggered; break;
+            default: _challenge.CompletionBeatFinished += OnTriggered; break;
+        }
 
-        // Si el escudo ya había caído (o se reactiva a mitad de la disolución), se retoma desde donde quedó.
-        if(_challenge.State != PurificationChallenge.ChallengeState.Active || (_dissolving && !_finished))
+        // Si ya había pasado (o se reactiva a mitad de la disolución), se retoma desde donde quedó.
+        if(AlreadyTriggered() || (_dissolving && !_finished))
             StartDissolve();
     }
 
     private void OnDisable()
     {
-        if(_challenge != null) _challenge.ShieldDropped -= OnShieldDropped;
+        if(_challenge != null)
+        {
+            _challenge.ShieldDropped -= OnTriggered;
+            _challenge.Completed -= OnTriggered;
+            _challenge.CompletionBeatFinished -= OnTriggered;
+        }
 
         if(_routine == null) return;
 
@@ -103,7 +128,15 @@ public class ChallengeVinesDissolve : MonoBehaviour
         return false;
     }
 
-    private void OnShieldDropped() => StartDissolve();
+    // El escudo cae antes de purificar la planta: con ShieldDropped alcanza con que el desafío ya no esté activo.
+    private bool AlreadyTriggered() => _trigger switch
+    {
+        DissolveTrigger.ShieldDropped => _challenge.State != Challenge.ChallengeState.Active,
+        DissolveTrigger.PlantPurified => _challenge.State == Challenge.ChallengeState.Completed,
+        _ => _challenge.CompletionBeatDone
+    };
+
+    private void OnTriggered() => StartDissolve();
 
     private void StartDissolve()
     {
@@ -156,6 +189,8 @@ public class ChallengeVinesDissolve : MonoBehaviour
         // Solo se ocultan los renderers: los GameObjects siguen activos.
         foreach(Renderer r in _renderers)
             if(r != null) r.enabled = false;
+
+        Dissolved?.Invoke();
     }
 
     private void ApplyProgress()
