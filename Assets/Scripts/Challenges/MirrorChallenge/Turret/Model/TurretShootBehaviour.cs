@@ -42,7 +42,7 @@ public class TurretShootBehaviour : IShooteable, IActivable, IServiceConsumer
 
         if(_detection.IsTargetInRange())
         {
-            LookAtTarget();
+            //LookAtTarget();
 
             if(_timer >= _fireRate)
             {
