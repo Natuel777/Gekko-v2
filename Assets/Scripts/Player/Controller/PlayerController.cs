@@ -38,6 +38,7 @@ public class PlayerController
     private bool _wasSurface = false;
     private bool _isClimbing;
     private bool _wasClimbing = false;
+    private bool _wasOnWater = false;
     private bool _isMoving = false;
     private bool _nearGround = false;
     private bool _canRotate = true;
@@ -423,6 +424,8 @@ public class PlayerController
         if (!_pjViewer.IsWalkSoundPlaying() && _isSurface) _pjViewer.WalkSoundPlay();
         else if (_pjViewer.IsWalkSoundPlaying() && !_isSurface) _pjViewer.WalkSoundStop();
 
+        if (!_pjViewer.IsWaterSoundPlaying() && _wasOnWater)  _pjViewer.WaterSoundPlay();
+        else if (_pjViewer.IsWaterSoundPlaying() && !_wasOnWater) _pjViewer.WaterSoundStop();
 
         if (_isClimbing)
         {
@@ -634,15 +637,19 @@ public class PlayerController
 
         // La condición está en GekkoWater. La fricción solo se saca sobre colliders de la layer Water: las WaterZone (agua
         // visual, sin collider) no la tocan.
-        if(GekkoWater.IsOnWaterSurface(_pjTransform))
+        if (GekkoWater.IsOnWaterSurface(center, scale))
         {
             _collider.material.dynamicFriction = 0f;
             _collider.material.staticFriction = 0f;
+
+            if (!_wasOnWater) _pjViewer.SplashSound();
+            _wasOnWater = true;
         }
         else
         {
             _collider.material.dynamicFriction = 1f;
             _collider.material.staticFriction = 1f;
+            _wasOnWater = false;
         }
     }
     private void DetectSurface()
@@ -831,6 +838,7 @@ public class PlayerController
         _isMoving = false;
         _hasRef = false;
         if (_pjViewer.IsWalkSoundPlaying()) _pjViewer.WalkSoundStop();
+        if (_pjViewer.IsWaterSoundPlaying()) _pjViewer.WaterSoundStop();
         if (_pjViewer.IsTrailPlaying()) _pjViewer.StopTrail();
     }
     public void GetTongueManager(TongueManager tongue) { _tongueM = tongue; }

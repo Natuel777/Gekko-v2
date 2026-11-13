@@ -9,6 +9,7 @@ public class PlayerViewer : MonoBehaviour
     [SerializeField] private ParticleSystem _trail;
     [Header("Sounds")]
     [SerializeField] private AudioSource _walkSound; 
+    [SerializeField] private AudioSource _waterSound;
     private void Awake()
     {
         _anim = GetComponent<Animator>();
@@ -45,8 +46,11 @@ public class PlayerViewer : MonoBehaviour
     #endregion
     #region sounds
     public bool IsWalkSoundPlaying() => _walkSound.isPlaying;
+    public bool IsWaterSoundPlaying() => _waterSound.isPlaying;
     public void WalkSoundPlay() => _walkSound.Play();
     public void WalkSoundStop() => _walkSound.Stop();
+    public void WaterSoundPlay() => _waterSound.Play();
+    public void WaterSoundStop() => _waterSound.Stop();
     public void LandingSoundPlay()
     {
         if (AudioManager.instance != null) AudioManager.instance.Play(SoundNames.PlayerLanding);
@@ -62,6 +66,10 @@ public class PlayerViewer : MonoBehaviour
     public void TongueSoundPlay()
     {
         if (AudioManager.instance != null) AudioManager.instance.Play(SoundNames.PlayerTongueOut);
+    }
+    public void SplashSound()
+    {
+        if (AudioManager.instance) AudioManager.instance.Play(SoundNames.PlayerSplash);
     }
     #endregion
 
