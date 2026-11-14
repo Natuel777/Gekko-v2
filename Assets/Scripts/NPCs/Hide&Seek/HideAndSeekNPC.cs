@@ -22,14 +22,14 @@ public class HideAndSeekNPC : NPCBase
         _source = GetComponent<AudioSource>();
         if (SaveManager.Instance)
         {
-            if (SaveManager.Instance.Has(StrawberryFlags.Lvl2_HideSeek_2.ToString()))
+            if (SaveManager.Instance.Has(LevelFlags.Lvl2_HideSeek_2.ToString()))
             {
                 _currentDialogue = 4;
                 _exclamation.enabled = false;
                 _finish = true;
                 return;
             }
-            else if (SaveManager.Instance.Has(StrawberryFlags.Lvl2_HideSeek_1.ToString()))
+            else if (SaveManager.Instance.Has(LevelFlags.Lvl2_HideSeek_1.ToString()))
             {
                 _currentDialogue = 2;
                 _currentHide++;
@@ -121,9 +121,9 @@ public class HideAndSeekNPC : NPCBase
         if (SaveManager.Instance)
         {
             if(_currentHide == 0)
-                SaveManager.Instance.Set(StrawberryFlags.Lvl2_HideSeek_1.ToString());
+                SaveManager.Instance.Set(LevelFlags.Lvl2_HideSeek_1.ToString());
             else if (_currentHide == 1)
-                SaveManager.Instance.Set(StrawberryFlags.Lvl2_HideSeek_2.ToString());
+                SaveManager.Instance.Set(LevelFlags.Lvl2_HideSeek_2.ToString());
         }
 
     }

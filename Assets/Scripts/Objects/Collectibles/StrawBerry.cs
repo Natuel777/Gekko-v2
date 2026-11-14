@@ -2,7 +2,7 @@ using UnityEngine;
 
 public class StrawBerry : Collectible
 {
-    [SerializeField] private StrawberryFlags _id;
+    [SerializeField] private LevelFlags _id;
     private StrawBerryView _sv;
     [SerializeField] private GameObject mainStar;
     [SerializeField] private GameObject starParticles;

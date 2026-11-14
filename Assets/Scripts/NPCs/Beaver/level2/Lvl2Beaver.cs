@@ -32,7 +32,7 @@ public class Lvl2Beaver : NPCBase
         base.Start();
 
         if (SaveManager.Instance) 
-            if (SaveManager.Instance.Has(StrawberryFlags.Lvl2_Beaver.ToString()))
+            if (SaveManager.Instance.Has(LevelFlags.Lvl2_Beaver.ToString()))
             {
                 _exclamation.enabled = false;
                 Destroy(_collParent.gameObject);
@@ -102,7 +102,7 @@ public class Lvl2Beaver : NPCBase
             pj.BlueberryTracker.ActivateBoost(_notificationData.SpeedBoostMultiplier, _notificationData.SpeedBoostTimer);
             if (SaveManager.Instance)
             {
-                SaveManager.Instance.Set(StrawberryFlags.Lvl2_Beaver.ToString());
+                SaveManager.Instance.Set(LevelFlags.Lvl2_Beaver.ToString());
             }
         }
         base.OnDialogueEnd();
