@@ -63,7 +63,7 @@ public class MomDuck : NPCBase
         _homeForward = Vector3.ProjectOnPlane(transform.forward, Vector3.up).normalized;
 
         if (SaveManager.Instance)
-            if (SaveManager.Instance.Has(StrawberryFlags.Lvl1_Ducks.ToString()))
+            if (SaveManager.Instance.Has(LevelFlags.Lvl1_Ducks.ToString()))
             {
                 _currentDialogue = 7;
                 _exclamation.enabled = false;
@@ -244,7 +244,7 @@ public class MomDuck : NPCBase
             _currentDialogue++;
             if (SaveManager.Instance)
             {
-                SaveManager.Instance.Set(StrawberryFlags.Lvl1_Ducks.ToString());
+                SaveManager.Instance.Set(LevelFlags.Lvl1_Ducks.ToString());
             }
         }
         _cam.Priority = 0;

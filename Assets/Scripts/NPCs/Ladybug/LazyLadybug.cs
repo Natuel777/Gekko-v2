@@ -9,6 +9,16 @@ public class LazyLadybug : NPCBase
 
     protected override void Start()
     {
+        if (SaveManager.Instance)
+            if (SaveManager.Instance.Has(LevelFlags.Lvl1_ladybug.ToString()))
+            {
+                transform.position = _finalPos.position;
+                gameObject.layer = 16;
+                _EIndicator.enabled = false;
+                Destroy(this);
+                return;
+            }
+
         _playerTransform = GameManager.Instance.Pj.transform;
         _EIndicator.enabled = false;
         _PJCam = CameraStateManager.Instance.CurrentCamera.transform;
@@ -37,6 +47,10 @@ public class LazyLadybug : NPCBase
                 GameManager.Instance.Pj.Inputs(true);
                 _cam.Priority = 0;
                 gameObject.layer = 16;
+                if (SaveManager.Instance)
+                {
+                    SaveManager.Instance.Set(LevelFlags.Lvl1_ladybug.ToString());
+                }
                 Destroy(this);
             }
             yield return new WaitForEndOfFrame();

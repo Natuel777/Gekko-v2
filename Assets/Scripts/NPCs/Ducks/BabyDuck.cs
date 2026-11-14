@@ -24,7 +24,7 @@ public class BabyDuck : NPCBase
         Cuack(true);
 
         if (SaveManager.Instance)
-            if (SaveManager.Instance.Has(StrawberryFlags.Lvl1_Ducks.ToString()))
+            if (SaveManager.Instance.Has(LevelFlags.Lvl1_Ducks.ToString()))
             {
                 _currentDialogue = 2;
                 Cuack(false);

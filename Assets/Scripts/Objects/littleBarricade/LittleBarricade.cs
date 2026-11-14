@@ -5,6 +5,7 @@ using UnityEngine.Events;
 
 public class LittleBarricade : MonoBehaviour, IDamageable, IParticleSystemTarget
 {
+    [SerializeField] private LevelFlags _flag;
     [SerializeField] private float _life = 1;
     [SerializeField] private MeshRenderer _head;
     [SerializeField] private GameObject _barricade;
@@ -86,7 +87,22 @@ public class LittleBarricade : MonoBehaviour, IDamageable, IParticleSystemTarget
     // llegan a cada hijo y no a este script. Se les agrega un relay para que también cuenten.
     private void Awake()
     {
-        foreach(Collider col in GetComponentsInChildren<Collider>(true))
+        if (SaveManager.Instance)
+             if (SaveManager.Instance.Has(_flag.ToString()))
+             {
+                 RemoveLinePositions();
+                foreach (var mat in GetMaterials())
+                {
+                    if (mat.HasProperty("_Dissolve"))
+                    {
+                        mat.SetFloat("_Dissolve", 1);
+                    }
+                }
+                Destroy(gameObject);
+                 return;
+             }
+
+        foreach (Collider col in GetComponentsInChildren<Collider>(true))
         {
             if(col.gameObject == gameObject || col.isTrigger) continue;
             if(!col.TryGetComponent(out LittleBarricadeTouchRelay relay))
@@ -253,6 +269,12 @@ public class LittleBarricade : MonoBehaviour, IDamageable, IParticleSystemTarget
     private IEnumerator Disapear()
     {
         if (AudioManager.instance) AudioManager.instance.Play(SoundNames.Purify);
+       
+        
+        yield return DissolveRoutine(GetMaterials(), () => _barricade.SetActive(false));
+    }
+    private Material[] GetMaterials()
+    {
         MeshRenderer[] renderers = _barricade.GetComponentsInChildren<MeshRenderer>();
 
 
@@ -269,9 +291,8 @@ public class LittleBarricade : MonoBehaviour, IDamageable, IParticleSystemTarget
         materialList.Add(_head.material);
         materials = materialList.ToArray();
 
-        yield return DissolveRoutine(materials, () => _barricade.SetActive(false));
+        return materials;
     }
-
     private IEnumerator DissolveRoutine(Material[] materials, System.Action onFinished = null)
     {
         float dissolve = 0f;
@@ -290,7 +311,10 @@ public class LittleBarricade : MonoBehaviour, IDamageable, IParticleSystemTarget
 
             yield return null;
         }
-
+        if (SaveManager.Instance)
+        {
+            SaveManager.Instance.Set(_flag.ToString());
+        }
         onFinished?.Invoke();
     }
 } 
