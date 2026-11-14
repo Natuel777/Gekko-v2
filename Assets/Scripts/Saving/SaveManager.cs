@@ -59,7 +59,6 @@ public class SaveManager : MonoBehaviour, ISaveLoad
             CollectiblesRegister.SetCollectibleCount("BlueBerry", saveData.blueberryCount);
             CollectiblesRegister.SetCollectibleCount("RaspBerry", saveData.strawberryCount);
         }
-        Debug.Log(CollectiblesRegister.GetCollectibleCount("RaspBerry"));
         OnLoad?.Invoke();
     }
     public void DeleteData()

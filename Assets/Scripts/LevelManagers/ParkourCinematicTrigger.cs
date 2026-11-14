@@ -6,6 +6,7 @@ using UnityEngine.SceneManagement;
 [RequireComponent(typeof(PlayableDirector))]
 public class ParkourCinematicTrigger : MonoBehaviour
 {
+    [SerializeField] private LevelFlags _flag;
     [SerializeField] private PlayableDirector _director;
     [SerializeField] private bool _playOnce = true;
     // Objetos (ej. split cams) que solo deben estar prendidos mientras corre la cinemática.
@@ -27,7 +28,10 @@ public class ParkourCinematicTrigger : MonoBehaviour
 
     private void Awake()
     {
-        if(!_director) _director = GetComponent<PlayableDirector>();
+        if (SaveManager.Instance)
+            if (SaveManager.Instance.Has(_flag.ToString())) Destroy(this);
+
+        if (!_director) _director = GetComponent<PlayableDirector>();
         SetCinematicObjectsActive(false);
         _skipHandler = new CinematicSkipHandler(_skipHoldSeconds, _skipPrompt);
     }
