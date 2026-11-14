@@ -98,6 +98,7 @@ public class LittleBarricade : MonoBehaviour, IDamageable, IParticleSystemTarget
                         mat.SetFloat("_Dissolve", 1);
                     }
                 }
+                OnPurified.Invoke();
                 Destroy(gameObject);
                  return;
              }

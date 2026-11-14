@@ -100,7 +100,7 @@ public class GameManager : MonoBehaviour , IGameManager
     public void RestartLvl()
     {
         if (AudioManager.instance) AudioManager.instance.ResetAudio();
-        CollectiblesRegister.Clear();
+        //CollectiblesRegister.Clear();
 
         if(AsyncLoader.sceneToLoad == ScenesNames.LoadScene) SceneManager.LoadScene(SceneManager.GetActiveScene().name);
         else SceneManager.LoadScene(ScenesDictionary.SceneName[ScenesNames.LoadScene]);
@@ -108,7 +108,7 @@ public class GameManager : MonoBehaviour , IGameManager
     public void NextLevel()
     {
         if (AudioManager.instance) AudioManager.instance.ResetAudio();
-        CollectiblesRegister.Clear();
+        //CollectiblesRegister.Clear();
 
         string current = SceneManager.GetActiveScene().name;
 

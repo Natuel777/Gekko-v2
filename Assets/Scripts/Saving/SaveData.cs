@@ -4,4 +4,6 @@ using UnityEngine;
 public class SaveData
 {
     public List<string> flags = new();
+    public int blueberryCount;
+    public int strawberryCount;
 }

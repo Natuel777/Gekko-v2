@@ -44,6 +44,8 @@ public class SaveManager : MonoBehaviour, ISaveLoad
     {
         OnSave?.Invoke();
         saveData.flags = new List<string>(_flags);
+        saveData.blueberryCount = CollectiblesRegister.GetCollectibleCount("BlueBerry");
+        saveData.strawberryCount = CollectiblesRegister.GetCollectibleCount("RaspBerry");
         string json = JsonUtility.ToJson(saveData, true);
         File.WriteAllText(path, json);
     }
@@ -54,7 +56,10 @@ public class SaveManager : MonoBehaviour, ISaveLoad
             string json = File.ReadAllText(path);
             JsonUtility.FromJsonOverwrite(json, saveData);
             _flags = new HashSet<string>(saveData.flags);
+            CollectiblesRegister.SetCollectibleCount("BlueBerry", saveData.blueberryCount);
+            CollectiblesRegister.SetCollectibleCount("RaspBerry", saveData.strawberryCount);
         }
+        Debug.Log(CollectiblesRegister.GetCollectibleCount("RaspBerry"));
         OnLoad?.Invoke();
     }
     public void DeleteData()

@@ -13,6 +13,6 @@ public static class CollectiblesRegister
 
     public static int GetCollectibleCount(string collectibleName) =>
         _counts.TryGetValue(collectibleName, out int c) ? c : 0;
-
+    public static void SetCollectibleCount(string collectibleName, int quant) => _counts[collectibleName] = quant;
     public static void Clear() => _counts.Clear();
 }

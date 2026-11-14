@@ -19,7 +19,7 @@ public class LevelStats : MonoBehaviour
     private void Awake()
     {
         Instance = this;
-        CollectiblesRegister.Clear();
+        //CollectiblesRegister.Clear();
     }
 
     private void Start()
