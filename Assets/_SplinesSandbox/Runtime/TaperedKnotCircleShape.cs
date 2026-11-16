@@ -25,6 +25,11 @@ internal class TaperedKnotCircleShape : IExtrudeShape
     bool m_TaperEnd;
     float m_TaperLength = 0.12f;
 
+    // Extremos reales de la malla (Range de SplineExtrudeTapered). La punta se mide desde aca y no desde 0/1 de la
+    // spline: si el Range se acorta (VineShield retrae la enredadera), el extremo nuevo sigue terminando en punta.
+    float m_RangeStart;
+    float m_RangeEnd = 1f;
+
     float m_CurrentMultiplier = 1f;
 
     public int SideCount
@@ -33,12 +38,15 @@ internal class TaperedKnotCircleShape : IExtrudeShape
         set => m_Sides = value;
     }
 
-    public void Configure(List<float> knotRadiusMultipliers, bool taperStart, bool taperEnd, float taperLength)
+    public void Configure(List<float> knotRadiusMultipliers, bool taperStart, bool taperEnd, float taperLength,
+        Vector2 range)
     {
         m_KnotRadiusMultipliers = knotRadiusMultipliers;
         m_TaperStart = taperStart;
         m_TaperEnd = taperEnd;
         m_TaperLength = Mathf.Max(taperLength, 0.0001f);
+        m_RangeStart = Mathf.Min(range.x, range.y);
+        m_RangeEnd = Mathf.Max(range.x, range.y);
     }
 
     public void Setup(ISpline path, int segmentCount)
@@ -77,11 +85,12 @@ internal class TaperedKnotCircleShape : IExtrudeShape
     {
         float factor = 1f;
 
+        // m_TaperLength es fraccion de la spline entera: la punta mide lo mismo aunque el Range se acorte.
         if(m_TaperStart)
-            factor *= Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(t / m_TaperLength));
+            factor *= Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((t - m_RangeStart) / m_TaperLength));
 
         if(m_TaperEnd)
-            factor *= Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((1f - t) / m_TaperLength));
+            factor *= Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((m_RangeEnd - t) / m_TaperLength));
 
         return factor;
     }

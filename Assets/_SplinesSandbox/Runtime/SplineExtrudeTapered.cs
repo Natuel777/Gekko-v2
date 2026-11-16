@@ -282,7 +282,8 @@ public class SplineExtrudeTapered : MonoBehaviour
                 isMainSpline ? m_KnotRadiusMultipliers : null,
                 isMainSpline && taperStart,
                 isMainSpline && taperEnd,
-                m_TaperLength);
+                m_TaperLength,
+                m_Range);
 
             int segmentCount = Mathf.Max(Mathf.CeilToInt(spline.GetLength() * span * m_SegmentsPerUnit), 2);
 

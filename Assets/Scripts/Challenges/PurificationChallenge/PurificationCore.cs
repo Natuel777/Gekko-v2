@@ -8,6 +8,8 @@ public class PurificationCore : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
 {
     // Propiedad del shader S_Enredaderas (la usan M_Enredaderas y Nucleo): 0 = entero, 1 = disuelto.
     private static readonly int DissolveId = Shader.PropertyToID("_Dissolve");
+    // URP Lit (Plantas.mat de las HojaG): no tiene _Dissolve, así que se desvanece bajando el alfa de _BaseColor.
+    private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
 
     [Header("Config")]
     [SerializeField] private int _hitsToBreak = 1;
@@ -102,7 +104,7 @@ public class PurificationCore : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
         // Si no, cambia al instante (núcleos con un material común, sin disolve).
         List<Renderer> dissolving = GetDissolveTargets();
 
-        if(dissolving.Count > 0) StartCoroutine(DissolveRoutine(dissolving));
+        if(dissolving.Count > 0) StartCoroutine(DissolveRoutine(dissolving, GetFadeTargets()));
         else ApplyBrokenVisual();
 
         if(_breakParticle != null) _breakParticle.Play();
@@ -129,9 +131,11 @@ public class PurificationCore : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
     }
 
     // Sube _Dissolve de 0 a 1 a _dissolveSpeed por segundo (0.5 = 2 s). Corre una sola vez, al romperse el núcleo.
-    private IEnumerator DissolveRoutine(List<Renderer> targets)
+    // Las hojas (fadeTargets) se desvanecen a la par: mismo avance, del alfa original a 0.
+    private IEnumerator DissolveRoutine(List<Renderer> targets, List<Renderer> fadeTargets)
     {
         List<Material> materials = GetDissolveMaterials(targets);
+        List<Material> fadeMaterials = GetFadeMaterials(fadeTargets, out List<float> startAlphas);
         float dissolve = 0f;
         float speed = Mathf.Max(_dissolveSpeed, 0.01f);
 
@@ -141,8 +145,12 @@ public class PurificationCore : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
         {
             dissolve = Mathf.MoveTowards(dissolve, 1f, speed * Time.deltaTime);
             SetDissolve(materials, dissolve);
+            SetFade(fadeMaterials, startAlphas, dissolve);
             yield return null;
         }
+
+        foreach(Renderer r in fadeTargets)
+            if(r != null) r.enabled = false;
 
         // Ya disuelto del todo no se ve: se apaga para no seguir dibujándolo. La malla que recibe el material
         // purificado queda afuera, porque ApplyBrokenVisual() la vuelve a mostrar con el material nuevo.
@@ -178,6 +186,59 @@ public class PurificationCore : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
     {
         foreach(Material material in materials)
             if(material != null) material.SetFloat(DissolveId, value);
+    }
+
+    // Igual que GetDissolveMaterials, pero para los renderers sin _Dissolve (HojaG): instancia propia de cada uno,
+    // porque Plantas.mat lo comparten todas las hojas del nivel.
+    private List<Material> GetFadeMaterials(List<Renderer> targets, out List<float> startAlphas)
+    {
+        List<Material> materials = new();
+        startAlphas = new List<float>();
+
+        foreach(Renderer r in targets)
+        {
+            if(r == null) continue;
+
+            foreach(Material material in r.materials)
+            {
+                if(material == null || !material.HasProperty(BaseColorId)) continue;
+
+                materials.Add(material);
+                startAlphas.Add(material.GetColor(BaseColorId).a);
+            }
+        }
+
+        _dissolveMaterials.AddRange(materials);
+
+        return materials;
+    }
+
+    // Con alpha clip (Plantas.mat) bajar el alfa también hace que la hoja se vaya recortando desde los bordes.
+    private static void SetFade(List<Material> materials, List<float> startAlphas, float progress)
+    {
+        for(int i = 0; i < materials.Count; i++)
+        {
+            if(materials[i] == null) continue;
+
+            Color color = materials[i].GetColor(BaseColorId);
+            color.a = Mathf.Lerp(startAlphas[i], 0f, progress);
+            materials[i].SetColor(BaseColorId, color);
+        }
+    }
+
+    // Mallas hijas del núcleo sin _Dissolve (las HojaG): antes desaparecían de golpe al final; ahora se desvanecen
+    // junto con el disolve. Las partículas quedan afuera.
+    private List<Renderer> GetFadeTargets()
+    {
+        List<Renderer> targets = new();
+
+        foreach(Renderer r in GetComponentsInChildren<Renderer>())
+        {
+            if(r is ParticleSystemRenderer || r is LineRenderer || r is TrailRenderer) continue;
+            if(!HasDissolve(r)) targets.Add(r);
+        }
+
+        return targets;
     }
 
     // Las instancias creadas por r.materials no las libera Unity solas hasta cambiar de escena.
