@@ -10,7 +10,9 @@ using Gekko.Purification;
 //  - La secuencia muestra la aldea entera, la cámara viaja hasta la zona que toca, se purifica con la onda real
 //    (PurifyRegion), se guarda el progreso y cierra con la pantalla de victoria (EventManager "OnLevelFinished", lo
 //    mismo que dispara FinishLevelTrigger en los niveles normales).
-//  - Con las 5 zonas purificadas solo muestra la aldea sana y cierra.
+//  - Casas: además, en cada visita aparece el gekko de la casa que toca (uno por nivel completado, en el orden de
+//    la lista). Los de visitas anteriores ya están en su casa desde el primer frame.
+//  - Con todas las zonas purificadas y todas las casas habitadas solo muestra la aldea y cierra.
 // El progreso se guarda en PlayerPrefs (PlayerPrefsKeys.aldeaZonasPurificadasKey).
 public class AldeaIntroSequence : MonoBehaviour
 {
@@ -24,11 +26,26 @@ public class AldeaIntroSequence : MonoBehaviour
         public Transform plano;
     }
 
+    [Serializable]
+    public class Casa
+    {
+        public string nombre = "Casa";
+        [Tooltip("Gekko que vive en esta casa. Arranca escondido y aparece en la visita que le toca.")]
+        public AldeaHabitante gekko;
+        [Tooltip("Opcional: de dónde se ve la casa cuando aparece el gekko. Vacío = la cámara se queda donde está.")]
+        public Transform plano;
+    }
+
     [Header("Zonas (en orden: la primera se purifica en la primera visita)")]
     [SerializeField] private Zona[] _zonas = Array.Empty<Zona>();
 
+    [Header("Casas (en orden: el primer gekko aparece en la primera visita, uno por nivel completado)")]
+    [SerializeField] private Casa[] _casas = Array.Empty<Casa>();
+    [SerializeField] private float _moveToCasaDuration = 1.5f;
+    [SerializeField] private float _holdAfterGekko = 1.5f;
+
     [Header("Pruebas")]
-    [Tooltip("-1 = usar el progreso guardado. 0..5 = arrancar como si ya hubiera esas zonas purificadas (no se guarda).")]
+    [Tooltip("-1 = usar el progreso guardado. 0..N = arrancar como si ya se hubieran completado esos niveles (no se guarda).")]
     [SerializeField] private int _forzarZonasPurificadas = -1;
 
     [Header("Cámara")]
@@ -47,8 +64,11 @@ public class AldeaIntroSequence : MonoBehaviour
     [SerializeField] private float _purifyPushIn = 2.5f;
     [SerializeField] private float _holdAfterPurify = 2f;
 
+    // Visitas anteriores = niveles completados antes de esta. Zonas purificadas y casas habitadas salen de acá.
     private int _yaPurificadas;
     private bool _forzado;
+
+    private int TotalVisitas => Mathf.Max(_zonas.Length, _casas.Length);
 
     public static int ZonasPurificadasGuardadas => PlayerPrefs.GetInt(PlayerPrefsKeys.aldeaZonasPurificadasKey, 0);
 
@@ -63,10 +83,17 @@ public class AldeaIntroSequence : MonoBehaviour
     private void Awake()
     {
         _forzado = _forzarZonasPurificadas >= 0;
-        _yaPurificadas = Mathf.Clamp(_forzado ? _forzarZonasPurificadas : ZonasPurificadasGuardadas, 0, _zonas.Length);
+        _yaPurificadas = Mathf.Clamp(_forzado ? _forzarZonasPurificadas : ZonasPurificadasGuardadas, 0, TotalVisitas);
 
-        for(int i = 0; i < _yaPurificadas; i++)
+        for(int i = 0; i < Mathf.Min(_yaPurificadas, _zonas.Length); i++)
             if(_zonas[i].region != null) _zonas[i].region.SetPurifiedInstant();
+
+        for(int i = 0; i < _casas.Length; i++)
+        {
+            if(_casas[i].gekko == null) continue;
+            if(i < _yaPurificadas) _casas[i].gekko.MostrarInstantaneo();
+            else _casas[i].gekko.Esconder();
+        }
 
         ActivarCamaraIntroDeEntrada();
     }
@@ -128,13 +155,26 @@ public class AldeaIntroSequence : MonoBehaviour
                 }
             }
 
-            if(!_forzado)
-            {
-                PlayerPrefs.SetInt(PlayerPrefsKeys.aldeaZonasPurificadasKey, _yaPurificadas + 1);
-                PlayerPrefs.Save();
-            }
-
             Debug.Log($"[Aldea] Zona {_yaPurificadas + 1}/{_zonas.Length} purificada ({zona.nombre}).");
+        }
+
+        if(_yaPurificadas < _casas.Length && _casas[_yaPurificadas].gekko != null)
+        {
+            Casa casa = _casas[_yaPurificadas];
+
+            if(hayCamara && casa.plano != null)
+                yield return MoveCamera(_introCamera.transform.position, _introCamera.transform.rotation, casa.plano, _moveToCasaDuration);
+
+            yield return casa.gekko.Aparecer();
+            yield return new WaitForSeconds(_holdAfterGekko);
+
+            Debug.Log($"[Aldea] Gekko {_yaPurificadas + 1}/{_casas.Length} llegó a su casa ({casa.nombre}).");
+        }
+
+        if(!_forzado && _yaPurificadas < TotalVisitas)
+        {
+            PlayerPrefs.SetInt(PlayerPrefsKeys.aldeaZonasPurificadasKey, _yaPurificadas + 1);
+            PlayerPrefs.Save();
         }
 
         yield return new WaitForSeconds(_holdAfterPurify);
@@ -190,13 +230,13 @@ public class AldeaIntroSequence : MonoBehaviour
     private void ResetearProgresoMenu()
     {
         ResetearProgreso();
-        Debug.Log("[Aldea] Progreso reseteado: la próxima visita arranca con las 5 zonas corruptas.");
+        Debug.Log("[Aldea] Progreso reseteado: la próxima visita arranca con las zonas corruptas y las casas vacías.");
     }
 
     [ContextMenu("Sumar una zona purificada")]
     private void SumarZonaMenu()
     {
-        PlayerPrefs.SetInt(PlayerPrefsKeys.aldeaZonasPurificadasKey, Mathf.Min(_zonas.Length, ZonasPurificadasGuardadas + 1));
+        PlayerPrefs.SetInt(PlayerPrefsKeys.aldeaZonasPurificadasKey, Mathf.Min(TotalVisitas, ZonasPurificadasGuardadas + 1));
         PlayerPrefs.Save();
         Debug.Log($"[Aldea] Zonas purificadas guardadas: {ZonasPurificadasGuardadas}.");
     }

@@ -87,6 +87,9 @@ Shader "Gekko/River Stylized"
         [Header(Iluminacion)]
         _ShadowStrength("Intensidad de sombra", Range(0, 1)) = 0.35
         _EdgeFade("Suavizado del borde", Float) = 0.05
+
+        [Header(Caras)]
+        [Enum(UnityEngine.Rendering.CullMode)] _Cull("Caras visibles (Off = ambos lados)", Float) = 0
     }
 
     SubShader
@@ -106,7 +109,7 @@ Shader "Gekko/River Stylized"
 
             Blend SrcAlpha OneMinusSrcAlpha
             ZWrite Off
-            Cull Back
+            Cull [_Cull]
 
             HLSLPROGRAM
             #pragma target 3.5
@@ -354,9 +357,10 @@ Shader "Gekko/River Stylized"
             #endif
             }
 
-            half4 frag(Varyings IN) : SV_Target
+            half4 frag(Varyings IN, bool isFrontFace : SV_IsFrontFace) : SV_Target
             {
-                float3 N = normalize(IN.normalWS);
+                // Vista desde abajo (Cull Off): la normal se da vuelta para que luz y fresnel se vean bien de ese lado.
+                float3 N = normalize(IN.normalWS) * (isFrontFace ? 1.0 : -1.0);
                 float3 F = normalize(IN.flowWS - N * dot(IN.flowWS, N));
                 float3 R = cross(N, F);
                 float3 V = GetWorldSpaceNormalizeViewDir(IN.positionWS);

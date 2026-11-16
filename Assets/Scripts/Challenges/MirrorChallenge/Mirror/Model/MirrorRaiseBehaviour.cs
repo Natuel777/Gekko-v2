@@ -12,6 +12,9 @@ public class MirrorRaiseBehaviour
     // 0 = acostado, 1 = parado. _target es hacia dónde va.
     private float _progress, _target;
 
+    // Terminó de levantarse (y no va bajando). Un espejo fijo (sin pivot) está siempre parado mientras esté activo.
+    public bool IsFullyRaised => _target == 1f && _progress == 1f;
+
     public MirrorRaiseBehaviour(Transform pivot, float raisedAngle, float seconds)
     {
         _pivot = pivot;
@@ -36,7 +39,14 @@ public class MirrorRaiseBehaviour
 
     public void ArtificialUpdate()
     {
-        if(_pivot == null || _progress == _target) return;
+        if(_progress == _target) return;
+
+        // Espejo fijo: no hay nada que girar, el estado cambia en el acto.
+        if(_pivot == null)
+        {
+            _progress = _target;
+            return;
+        }
 
         _progress = Mathf.MoveTowards(_progress, _target, Time.deltaTime / _seconds);
         Apply();

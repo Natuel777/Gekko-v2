@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Rendering.Universal;
 
 // Espejo: si está activo, las balas de torreta (IReflectable) que lo tocan salen en la dirección contraria. Nada más: no
 // sabe nada de ningún desafío. Mismo esquema que ChallengeTurret: el MonoBehaviour es fino y la lógica vive en los behaviours
@@ -29,6 +30,16 @@ public class Mirror : MonoBehaviour, IActivable
     [Tooltip("Collider de la chapa que refleja (el que gira con el pivot). Vacío = se usa un Collider de este mismo GameObject.")]
     [SerializeField] private Collider _surface;
 
+    [Header("Runa")]
+    [Tooltip("Decal de la runa (el de la placa de presión) sobre la piedra principal del marco. Se enciende cuando el espejo termina de levantarse. Vacío = sin runa.")]
+    [SerializeField] private DecalProjector _rune;
+    [Tooltip("Segundos del fade de la runa al encenderse/apagarse.")]
+    [Min(0.01f)]
+    [SerializeField] private float _runeSeconds = 0.8f;
+    [Tooltip("Escala con la que arranca la runa al encenderse (crece hasta 1).")]
+    [Range(0.5f, 1f)]
+    [SerializeField] private float _runeStartScale = 0.85f;
+
     private StateMachine _stateMachine;
 
     #region States
@@ -39,6 +50,7 @@ public class Mirror : MonoBehaviour, IActivable
     #region Behaviours
     public MirrorReflectBehaviour reflect;
     public MirrorRaiseBehaviour raise;
+    public MirrorRuneBehaviour rune;
     #endregion
 
     public bool IsActive => reflect.IsActive;
@@ -50,6 +62,7 @@ public class Mirror : MonoBehaviour, IActivable
 
         reflect = new MirrorReflectBehaviour();
         raise = new MirrorRaiseBehaviour(_pivot, _raisedAngle, _raiseSeconds);
+        rune = new MirrorRuneBehaviour(_rune, _runeSeconds, _runeStartScale);
 
         activeState = new MirrorActiveState(this);
         inactiveState = new MirrorInactiveState(this);
@@ -58,6 +71,7 @@ public class Mirror : MonoBehaviour, IActivable
 
         // El espejo que nace activo ya está parado: no se levanta a la vista.
         raise.Snap(_startActive);
+        rune.Snap(_startActive);
 
         // En Awake y no en Start: un Activated() externo temprano no tiene que quedar pisado por el estado inicial.
         _stateMachine.SetState(_startActive ? activeState : inactiveState);
@@ -84,6 +98,7 @@ public class Mirror : MonoBehaviour, IActivable
     private void Update()
     {
         raise.ArtificialUpdate();
+        rune.ArtificialUpdate(raise.IsFullyRaised);
     }
 
     // Lo llaman el collider de este GameObject (si lo tiene) y el MirrorSurface de la chapa.
