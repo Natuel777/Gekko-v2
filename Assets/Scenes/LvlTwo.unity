@@ -5274,7 +5274,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &134388738
 Transform:
   m_ObjectHideFlags: 0
@@ -10309,6 +10309,7 @@ GameObject:
   - component: {fileID: 228173383}
   - component: {fileID: 228173382}
   - component: {fileID: 228173381}
+  - component: {fileID: 1489824563}
   m_Layer: 0
   m_Name: CascadeWater2 (2) (SplineRiver)
   m_TagString: Untagged
@@ -10316,6 +10317,22 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
+--- !u!114 &1489824563
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 228173379}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 260024e6129e482374fedfd8bbeeb596, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _surfaceOffset: -0.1
+  _thickness: 1
+  _sectionLength: 1.5
+  _currentForce: 150
 --- !u!4 &228173380
 Transform:
   m_ObjectHideFlags: 0
@@ -12751,6 +12768,7 @@ GameObject:
   - component: {fileID: 268603953}
   - component: {fileID: 268603952}
   - component: {fileID: 268603951}
+  - component: {fileID: 186143922}
   m_Layer: 0
   m_Name: CascadeWater2 (2) (SplineRiver)
   m_TagString: Untagged
@@ -12758,6 +12776,22 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
+--- !u!114 &186143922
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 268603949}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 260024e6129e482374fedfd8bbeeb596, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _surfaceOffset: -0.1
+  _thickness: 1
+  _sectionLength: 1.5
+  _currentForce: 150
 --- !u!4 &268603950
 Transform:
   m_ObjectHideFlags: 0
@@ -22552,6 +22586,7 @@ GameObject:
   - component: {fileID: 345325117}
   - component: {fileID: 345325116}
   - component: {fileID: 345325115}
+  - component: {fileID: 1697446906}
   m_Layer: 0
   m_Name: CascadeWater2 (1) (SplineRiver)
   m_TagString: Untagged
@@ -22559,6 +22594,22 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
+--- !u!114 &1697446906
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 345325113}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 260024e6129e482374fedfd8bbeeb596, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _surfaceOffset: -0.1
+  _thickness: 1
+  _sectionLength: 1.5
+  _currentForce: 150
 --- !u!4 &345325114
 Transform:
   m_ObjectHideFlags: 0
@@ -25701,7 +25752,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &417760601
 Transform:
   m_ObjectHideFlags: 0
@@ -31443,7 +31494,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &521143168
 Transform:
   m_ObjectHideFlags: 0
@@ -33509,7 +33560,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &557433719
 Transform:
   m_ObjectHideFlags: 0
@@ -33760,7 +33811,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &559652746
 Transform:
   m_ObjectHideFlags: 0
@@ -46143,7 +46194,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &828485828
 Transform:
   m_ObjectHideFlags: 0
@@ -64182,6 +64233,7 @@ GameObject:
   - component: {fileID: 1035769177}
   - component: {fileID: 1035769176}
   - component: {fileID: 1035769175}
+  - component: {fileID: 842632335}
   m_Layer: 0
   m_Name: CascadeWater2 (1) (SplineRiver)
   m_TagString: Untagged
@@ -64189,6 +64241,22 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
+--- !u!114 &842632335
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1035769173}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 260024e6129e482374fedfd8bbeeb596, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _surfaceOffset: -0.1
+  _thickness: 1
+  _sectionLength: 1.5
+  _currentForce: 150
 --- !u!4 &1035769174
 Transform:
   m_ObjectHideFlags: 0
@@ -72862,6 +72930,7 @@ GameObject:
   - component: {fileID: 1175282640}
   - component: {fileID: 1175282639}
   - component: {fileID: 1175282638}
+  - component: {fileID: 670978110}
   m_Layer: 0
   m_Name: CascadeWater2 (4) (SplineRiver)
   m_TagString: Untagged
@@ -72869,6 +72938,22 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
+--- !u!114 &670978110
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1175282636}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 260024e6129e482374fedfd8bbeeb596, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _surfaceOffset: -0.1
+  _thickness: 1
+  _sectionLength: 1.5
+  _currentForce: 150
 --- !u!4 &1175282637
 Transform:
   m_ObjectHideFlags: 0
@@ -98827,6 +98912,7 @@ GameObject:
   - component: {fileID: 1463448877}
   - component: {fileID: 1463448876}
   - component: {fileID: 1463448875}
+  - component: {fileID: 1200796741}
   m_Layer: 0
   m_Name: CascadeWater2 (3) (SplineRiver)
   m_TagString: Untagged
@@ -98834,6 +98920,22 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
+--- !u!114 &1200796741
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1463448873}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 260024e6129e482374fedfd8bbeeb596, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _surfaceOffset: -0.1
+  _thickness: 1
+  _sectionLength: 1.5
+  _currentForce: 150
 --- !u!4 &1463448874
 Transform:
   m_ObjectHideFlags: 0
@@ -179926,6 +180028,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 5499973273282849036, guid: 106ed7b9804b9944e9a8b2138fe30004, type: 3}
+      propertyPath: _vignetteImage
+      value: 
+      objectReference: {fileID: 1691892864}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

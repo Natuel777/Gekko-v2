@@ -5,8 +5,13 @@ using UnityEngine;
 using UnityEngine.Audio;
 using UnityEngine.UI;
 
+// El AudioSource del mismo objeto es el que hace sonar el "habla" de los diálogos (ver TypeLine): el prefab del Canvas lo trae.
+[RequireComponent(typeof(AudioSource))]
 public class UIManager : MonoBehaviour
 {
+    // Volumen del AudioSource de respaldo (ResolveTalkSource): el mismo que trae el prefab del Canvas.
+    private const float FallbackTalkVolume = 0.647f;
+
     public static UIManager Instance { get; private set; }
 
     [Header("Collectibles")]
@@ -54,8 +59,24 @@ public class UIManager : MonoBehaviour
             _dialogueGroup.interactable = false;
             _dialogueGroup.blocksRaycasts = false;
         }
-        _audioTalk = GetComponent<AudioSource>();
+        _audioTalk = ResolveTalkSource();
         #endregion
+    }
+
+    // Si el Canvas no tiene AudioSource (una escena con un Canvas viejo, o con el componente borrado en un merge) se crea uno:
+    // sin él cada letra del diálogo tiraba MissingComponentException y el habla no sonaba. Se avisa para arreglar el origen.
+    private AudioSource ResolveTalkSource()
+    {
+        AudioSource source = GetComponent<AudioSource>();
+        if(source != null) return source;
+
+        Debug.LogWarning($"[{name}] UIManager no encontró un AudioSource en el Canvas: se creó uno por código (sin grupo de mixer). Revisá que el Canvas venga del prefab Canvas.prefab, que lo trae.", this);
+
+        source = gameObject.AddComponent<AudioSource>();
+        source.playOnAwake = false;
+        source.spatialBlend = 0f;
+        source.volume = FallbackTalkVolume;
+        return source;
     }
 
     public void ActiveDesactiveCanvasGroup(CanvasGroup canvasGroup, bool active)
@@ -101,8 +122,8 @@ public class UIManager : MonoBehaviour
         _currentDialogue = dialogueable;
         _dialogueImage.sprite = dialogueable.Image;
         _audioClip = dialogueable.AudioClip;
-        _currentDialogue.OnDialogueStart();
-        OnActivatingDialogue?.Invoke();
+        RunHookSafely(_currentDialogue.OnDialogueStart);
+        InvokeSafely(OnActivatingDialogue);
 
         Dialogue dialogue = _currentDialogue.Dialogue;
         bool perLineNames = dialogue.speakerNames != null && dialogue.speakerNames.Length == dialogue.sentences.Length;
@@ -166,7 +187,8 @@ public class UIManager : MonoBehaviour
             {
                 _countLetters++;
 
-                if (_countLetters % 2 == 0)
+                // Un NPC sin clip asignado (o sin fuente) simplemente no suena, sin tirar errores en cada letra.
+                if (_countLetters % 2 == 0 && _audioTalk != null && _audioClip != null)
                 {
                     _audioTalk.pitch = Random.Range(0.9f, 1.1f);
                     _audioTalk.PlayOneShot(_audioClip);
@@ -188,9 +210,31 @@ public class UIManager : MonoBehaviour
         if(_dialogueGroup != null)
             StartCoroutine(FadeDialogue(false));
 
-        _currentDialogue.OnDialogueEnd();
-        OnDeactivatingDialogue?.Invoke();
+        // Pase lo que pase en el hook del NPC o en quien escucha el evento, el cierre se completa: si no, el diálogo quedaba
+        // abierto (HasActiveDialogue en true para siempre) o Player y la cámara nunca se enteraban de que terminó.
+        RunHookSafely(_currentDialogue.OnDialogueEnd);
+        InvokeSafely(OnDeactivatingDialogue);
         _currentDialogue = null;
+    }
+
+    // Los hooks de cada NPC (OnDialogueStart / OnDialogueEnd) y quienes escuchan los eventos de diálogo son código ajeno a
+    // UIManager: si uno tira una excepción, el resto de la secuencia tiene que correr igual. Se avisa en la consola, que es
+    // lo mismo que pasaba con una excepción suelta, pero el estado del diálogo ya no queda a medias.
+    private void RunHookSafely(System.Action hook)
+    {
+        try { hook(); }
+        catch(System.Exception e) { Debug.LogException(e, this); }
+    }
+
+    private void InvokeSafely(ActivatingDialogue evt)
+    {
+        if(evt == null) return;
+
+        foreach(ActivatingDialogue handler in evt.GetInvocationList())
+        {
+            try { handler(); }
+            catch(System.Exception e) { Debug.LogException(e, this); }
+        }
     }
 
     // Cierre por distancia: lo llama Player.Update mientras haya diálogo activo.

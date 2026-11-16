@@ -35,7 +35,13 @@ public class GameManager : MonoBehaviour , IGameManager
             EventManager.Subscribe("OnLevelFinished", ShowFinishScreen);
         }
 
-        else Destroy(gameObject);
+        else
+        {
+            // Duplicado: el GameManager de la escena anterior sigue vivo (DontDestroyOnLoad). Se destruye y no se registra; si no,
+            // el ServiceLocator avisaba "IGameManager is already registered" en cada cambio de escena.
+            Destroy(gameObject);
+            return;
+        }
 
         ServiceLocator.Instance.Register<IGameManager>(this);
     }
@@ -83,6 +89,11 @@ public class GameManager : MonoBehaviour , IGameManager
         if(RespawnController.Instance != null) RespawnController.Instance.TriggerRespawn(false);
         else checkpointManager.Respawn();
     }
+
+    // El menú de pausa está abierto de verdad. No es lo mismo que CanPause: ese queda en true también durante los fundidos de
+    // ScreenFader, el respawn y las secuencias de MomDuck, donde no se pausa nada (ver Pause). Es lo que usan los sistemas que
+    // tienen que saber si el juego está pausado sin depender de haber recibido PauseEvent / UnPauseEvent.
+    public bool IsPaused => _screenPause != null && _screenPause.isActiveAndEnabled;
 
     public void RespawnAt(int index) {checkpointManager.RespawnAt(index);}
 

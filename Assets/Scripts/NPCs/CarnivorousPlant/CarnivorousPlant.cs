@@ -280,8 +280,9 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
 
         if(_hits < hitsNeeded)
         {
-            if(data.hitHealthCost > 0f)
-                EventManager.Trigger<float>("OnPlayerDamaged", data.hitHealthCost);
+            // Golpear a una planta ya no le cuesta vida a Gekko (comentado, no borrado, por si se quiere volver a activar).
+            //if(data.hitHealthCost > 0f)
+            //    EventManager.Trigger<float>("OnPlayerDamaged", data.hitHealthCost);
 
             PlayHurt();
 
@@ -304,7 +305,9 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
 
         _purified = true;
         SetHitBoxActive(false);
-        EventManager.Trigger<float>("OnPlayerDamaged", data.purifyHealthCost);
+        // Purificar a una planta (la boss incluida) ya no le cuesta vida a Gekko (comentado, no borrado, por si se quiere volver
+        // a activar). Con esto Purify Health Cost y Hit Health Cost del DataSO quedan sin efecto.
+        //EventManager.Trigger<float>("OnPlayerDamaged", data.purifyHealthCost);
         SetState(PurifiedState);
         Purified?.Invoke();
     }

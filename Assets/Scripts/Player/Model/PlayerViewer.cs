@@ -45,12 +45,14 @@ public class PlayerViewer : MonoBehaviour
     public void StopTrail() => _trail.Stop();
     #endregion
     #region sounds
-    public bool IsWalkSoundPlaying() => _walkSound.isPlaying;
-    public bool IsWaterSoundPlaying() => _waterSound.isPlaying;
-    public void WalkSoundPlay() => _walkSound.Play();
-    public void WalkSoundStop() => _walkSound.Stop();
-    public void WaterSoundPlay() => _waterSound.Play();
-    public void WaterSoundStop() => _waterSound.Stop();
+    // Algunas escenas tienen un pj copiado suelto (no instancia de pj.prefab) al que le puede faltar alguna fuente: sin ella ese
+    // sonido no suena, pero no tira UnassignedReferenceException en cada frame.
+    public bool IsWalkSoundPlaying() => _walkSound != null && _walkSound.isPlaying;
+    public bool IsWaterSoundPlaying() => _waterSound != null && _waterSound.isPlaying;
+    public void WalkSoundPlay() { if(_walkSound != null) _walkSound.Play(); }
+    public void WalkSoundStop() { if(_walkSound != null) _walkSound.Stop(); }
+    public void WaterSoundPlay() { if(_waterSound != null) _waterSound.Play(); }
+    public void WaterSoundStop() { if(_waterSound != null) _waterSound.Stop(); }
     public void LandingSoundPlay()
     {
         if (AudioManager.instance != null) AudioManager.instance.Play(SoundNames.PlayerLanding);

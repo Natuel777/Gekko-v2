@@ -5,9 +5,11 @@ using UnityEngine;
 // alcance del raycast: hoy la usan PlayerController (fricción), GekkoDetection (no detecta ganchos en el agua) y
 // GekkoGrapple (no hay segundo salto en el agua).
 //
-// El agua del juego es de dos tipos:
-//   - Con collider sólido en la layer Water (lakeCol, pushingWater...): Gekko camina encima y el raycast de
+// El agua del juego es de tres tipos:
+//   - Con collider sólido en la layer Water puesto a mano (lakeCol, pushingWater...): Gekko camina encima y el raycast de
 //     IsOnWaterSurface lo ve.
+//   - Un SplineRiver con RiverSolidSurface (LvlTwo): arma ese mismo collider a partir del propio río, así que siempre
+//     coincide con el agua que se ve.
 //   - Visual, sin collider (los planos y las cascadas de LvlTwo, por ejemplo): se marca con un WaterZone.
 public static class GekkoWater
 {

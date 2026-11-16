@@ -125,22 +125,15 @@ public class CameraFollow : MonoBehaviour
         _invertY = PlayerPrefs.GetInt(PlayerPrefsKeys.invertYKey, 0) == 1;
         ApplyAxisGains();
 
-        if(UIManager.Instance != null)
-        {
-            UIManager.Instance.OnActivatingDialogue += DeactivateInput;
-            UIManager.Instance.OnDeactivatingDialogue += ActivateInput;
-        }
-
-        // Al pausar, PlayerInputs cambia Cursor.lockState (Locked -> Confined) para poder clickear el menú: ese
-        // cambio le manda al mouse delta un salto grande que la cámara interpretaba como un giro brusco. Se
-        // desactiva el input de la cámara acá, antes de que el lockState cambie (PauseEvent dispara primero).
-        EventManager.Subscribe("PauseEvent", DeactivateInput);
-        EventManager.Subscribe("UnPauseEvent", ActivateInput);
+        // El input de órbita ya no depende de eventos (diálogo, PauseEvent, UnPauseEvent): ver SyncOrbitInput.
     }
 
 
     void Update()
     {
+        // Primero, antes de cualquier otra cosa: si algo de abajo falla, el input igual queda en el estado correcto.
+        SyncOrbitInput();
+
         //bool playerIsMoving = _pjC.IsMoving;
         //
         //if (playerIsMoving)
@@ -280,8 +273,32 @@ public class CameraFollow : MonoBehaviour
         float rangeMin = LookUpAllowed ? _minVerticalAngle - LookUpInputMargin : _minVerticalAngle;
         _camera.VerticalAxis.Range = new Vector2(rangeMin, 80f);
     }
-    private void DeactivateInput() { _input.enabled = false; }
-    private void ActivateInput() { _input.enabled = true; }
+    // El input de órbita (CinemachineInputAxisController) se DERIVA del estado del juego en cada frame, en vez de prenderse y
+    // apagarse con eventos. Antes se apagaba con OnActivatingDialogue / PauseEvent y se prendía con OnDeactivatingDialogue /
+    // UnPauseEvent, pero esos avisos se enganchaban una sola vez, en Start, y OnDisable los soltaba: al pausar, ScreenGO apaga
+    // todos los Behaviour de la escena (CameraFollow incluido) y después de la primera pausa ya no escuchaba nada. Pausar en
+    // medio de un diálogo dejaba la órbita apagada (ScreenGO se acuerda de ese estado y lo restaura al despausar) y nunca
+    // llegaba el aviso de que el diálogo terminó: el mouse no volvía a girar la cámara hasta recargar la escena. Con el estado
+    // derivado, aunque se pierda cualquier aviso, el frame siguiente lo corrige solo.
+    //
+    // El mouse solo gira la cámara cuando no hay un diálogo en curso (la cámara del NPC encuadra la escena) ni el menú de pausa
+    // abierto (al pausar PlayerInputs cambia Cursor.lockState de Locked a Confined, y ese cambio le mete al mouse delta un
+    // salto grande que la cámara tomaba como un giro brusco).
+    private void SyncOrbitInput()
+    {
+        if(_input == null) return;
+
+        bool dialogue = UIManager.Instance != null && UIManager.Instance.HasActiveDialogue();
+        bool paused = GameManager.Instance != null && GameManager.Instance.IsPaused;
+        bool allowed = !dialogue && !paused;
+        if(_input.enabled == allowed) return;
+
+        _input.enabled = allowed;
+        // Solo se escribe al cambiar de estado (pocas veces por partida): si la órbita llega a trabarse en una build, el log
+        // del jugador dice cuándo y por qué se apagó o se volvió a prender.
+        Debug.Log($"[CameraFollow] Órbita del mouse {(allowed ? "activada" : "desactivada")} (diálogo: {dialogue}, pausa: {paused}).");
+    }
+
     public void SetPJC(PlayerController pjc)
     {
         _pjC = pjc;
@@ -289,10 +306,5 @@ public class CameraFollow : MonoBehaviour
     private void OnDisable()
     {
         EventManager.Unsubscribe<float>("OnCameraShake", ShakeCamera);
-        EventManager.Unsubscribe("PauseEvent", DeactivateInput);
-        EventManager.Unsubscribe("UnPauseEvent", ActivateInput);
-        if (UIManager.Instance == null) return;
-        UIManager.Instance.OnActivatingDialogue -= DeactivateInput;
-        UIManager.Instance.OnDeactivatingDialogue -= ActivateInput;
     }
 }
