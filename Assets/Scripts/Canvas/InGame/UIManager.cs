@@ -122,8 +122,8 @@ public class UIManager : MonoBehaviour
         _currentDialogue = dialogueable;
         _dialogueImage.sprite = dialogueable.Image;
         _audioClip = dialogueable.AudioClip;
-        _currentDialogue.OnDialogueStart();
-        OnActivatingDialogue?.Invoke();
+        RunHookSafely(_currentDialogue.OnDialogueStart);
+        InvokeSafely(OnActivatingDialogue);
 
         Dialogue dialogue = _currentDialogue.Dialogue;
         bool perLineNames = dialogue.speakerNames != null && dialogue.speakerNames.Length == dialogue.sentences.Length;
@@ -210,9 +210,31 @@ public class UIManager : MonoBehaviour
         if(_dialogueGroup != null)
             StartCoroutine(FadeDialogue(false));
 
-        _currentDialogue.OnDialogueEnd();
-        OnDeactivatingDialogue?.Invoke();
+        // Pase lo que pase en el hook del NPC o en quien escucha el evento, el cierre se completa: si no, el diálogo quedaba
+        // abierto (HasActiveDialogue en true para siempre) o Player y la cámara nunca se enteraban de que terminó.
+        RunHookSafely(_currentDialogue.OnDialogueEnd);
+        InvokeSafely(OnDeactivatingDialogue);
         _currentDialogue = null;
+    }
+
+    // Los hooks de cada NPC (OnDialogueStart / OnDialogueEnd) y quienes escuchan los eventos de diálogo son código ajeno a
+    // UIManager: si uno tira una excepción, el resto de la secuencia tiene que correr igual. Se avisa en la consola, que es
+    // lo mismo que pasaba con una excepción suelta, pero el estado del diálogo ya no queda a medias.
+    private void RunHookSafely(System.Action hook)
+    {
+        try { hook(); }
+        catch(System.Exception e) { Debug.LogException(e, this); }
+    }
+
+    private void InvokeSafely(ActivatingDialogue evt)
+    {
+        if(evt == null) return;
+
+        foreach(ActivatingDialogue handler in evt.GetInvocationList())
+        {
+            try { handler(); }
+            catch(System.Exception e) { Debug.LogException(e, this); }
+        }
     }
 
     // Cierre por distancia: lo llama Player.Update mientras haya diálogo activo.

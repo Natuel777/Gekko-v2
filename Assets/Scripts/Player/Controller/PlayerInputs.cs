@@ -174,7 +174,10 @@ public class PlayerInputs
             if(ScreenManager.Instance.CanPause)
             {
                 GameManager.Instance.Pause();
-                Cursor.lockState = CursorLockMode.Confined;
+                // El cursor se libera solo si el menú de pausa quedó abierto. Pause() no hace nada cuando CanPause ya está en
+                // true sin que haya pausa (fundidos de ScreenFader, respawn, secuencias de MomDuck): liberarlo igual dejaba el
+                // cursor suelto, visible y confinado a la ventana, con el juego corriendo, hasta la próxima pausa.
+                if(GameManager.Instance.IsPaused) Cursor.lockState = CursorLockMode.Confined;
             }
     }
 

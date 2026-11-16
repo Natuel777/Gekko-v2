@@ -90,6 +90,11 @@ public class GameManager : MonoBehaviour , IGameManager
         else checkpointManager.Respawn();
     }
 
+    // El menú de pausa está abierto de verdad. No es lo mismo que CanPause: ese queda en true también durante los fundidos de
+    // ScreenFader, el respawn y las secuencias de MomDuck, donde no se pausa nada (ver Pause). Es lo que usan los sistemas que
+    // tienen que saber si el juego está pausado sin depender de haber recibido PauseEvent / UnPauseEvent.
+    public bool IsPaused => _screenPause != null && _screenPause.isActiveAndEnabled;
+
     public void RespawnAt(int index) {checkpointManager.RespawnAt(index);}
 
     public void LoadDebugLevel(int index)
