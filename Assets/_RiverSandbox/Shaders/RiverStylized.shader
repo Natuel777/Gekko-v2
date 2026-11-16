@@ -69,7 +69,7 @@ Shader "Gekko/River Stylized"
         _WaterfallEdgeFoam("Espuma en los bordes", Range(0, 0.5)) = 0.16
         _WaterfallLipFoam("Espuma arriba y al pie", Range(0, 1)) = 1
 
-        [Header(Modo estanque (mallas comunes, sin SplineRiver))]
+        [Header(Modo estanque. Mallas comunes sin SplineRiver)]
         [Toggle(_POOL_MODE)] _PoolMode("Modo estanque", Float) = 0
         _PoolDepth("Profundidad simulada (m)", Float) = 1.2
         _PoolFlow("Corriente del estanque (X, Z en m/s)", Vector) = (0.05, 0.2, 0, 0)

@@ -35,7 +35,13 @@ public class GameManager : MonoBehaviour , IGameManager
             EventManager.Subscribe("OnLevelFinished", ShowFinishScreen);
         }
 
-        else Destroy(gameObject);
+        else
+        {
+            // Duplicado: el GameManager de la escena anterior sigue vivo (DontDestroyOnLoad). Se destruye y no se registra; si no,
+            // el ServiceLocator avisaba "IGameManager is already registered" en cada cambio de escena.
+            Destroy(gameObject);
+            return;
+        }
 
         ServiceLocator.Instance.Register<IGameManager>(this);
     }
