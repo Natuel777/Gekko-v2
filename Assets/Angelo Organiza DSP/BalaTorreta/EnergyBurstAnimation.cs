@@ -4,20 +4,24 @@ public class EnergyBurstAnimation : MonoBehaviour
 {
     [SerializeField] private BasicAnimation basicAnimation;
 
-    [SerializeField] private float duration = 1.2f;
+    [Header("Charge Phase")]
+    [SerializeField] private float chargeDuration = 0.8f;
     [SerializeField] private float rotationMultiplier = 4f;
-
     [SerializeField] private float positionShake = 0.08f;
     [SerializeField] private float rotationShake = 8f;
+    [SerializeField]
+    private AnimationCurve chargeCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
 
-    [SerializeField] private float liftHeight = 0.5f;
+    [Header("Release Phase")]
+    [SerializeField] private float releaseDuration = 0.6f;
+    [SerializeField] private float liftHeight = 0.8f;
 
     private float timer;
     private bool isPlaying;
 
     private Vector3 originalRotationSpeed;
     private bool originalRotating;
-
+    private BurstPhase currentPhase;
 
     void Update()
     {
@@ -26,21 +30,52 @@ public class EnergyBurstAnimation : MonoBehaviour
 
         timer += Time.deltaTime;
 
-        float progress = Mathf.Clamp01(timer / duration);
+        if (currentPhase == BurstPhase.Charge)
+        {
+            Charge();
+        }
+        else if (currentPhase == BurstPhase.Release)
+        {
+            Release();
+        }
+    }
 
-        float intensity = Mathf.Sin(progress * Mathf.PI);
+    private void Charge()
+    {
+        float progress = Mathf.Clamp01(timer / chargeDuration);
+
+        float intensity = chargeCurve.Evaluate(progress);
+
+        basicAnimation.RotationSpeed = originalRotationSpeed * Mathf.Lerp(1f, rotationMultiplier, intensity);
 
         Vector3 shake = Random.insideUnitSphere * positionShake * intensity;
 
-        Vector3 lift = Vector3.up * liftHeight * intensity;
-
-        basicAnimation.AddPositionOffset(shake + lift);
-
         Vector3 rotationShakeOffset = Random.insideUnitSphere * rotationShake * intensity;
 
+        basicAnimation.AddPositionOffset(shake);
         basicAnimation.AddRotationOffset(rotationShakeOffset);
 
-        if (timer >= duration)
+        if (timer >= chargeDuration)
+        {
+            currentPhase = BurstPhase.Release;
+            timer = 0f;
+
+            basicAnimation.RotationSpeed = originalRotationSpeed;
+            basicAnimation.IsRotating = originalRotating;
+        }
+    }
+
+    private void Release()
+    {
+        float progress = Mathf.Clamp01(timer / releaseDuration);
+
+        float liftProgress = Mathf.Sin(progress * Mathf.PI);
+
+        float lift = liftHeight * liftProgress;
+
+        basicAnimation.AddPositionOffset(Vector3.up * lift);
+
+        if (timer >= releaseDuration)
         {
             FinishBurst();
         }
@@ -51,18 +86,19 @@ public class EnergyBurstAnimation : MonoBehaviour
         if (basicAnimation == null)
             return;
 
+        if (isPlaying)
+            return;
 
-        if (!isPlaying)
-        {
-            originalRotationSpeed = basicAnimation.RotationSpeed;
-            originalRotating = basicAnimation.IsRotating;
-        }
-
-        timer = 0f;
-        isPlaying = true;
+        originalRotationSpeed = basicAnimation.RotationSpeed;
+        originalRotating = basicAnimation.IsRotating;
 
         basicAnimation.IsRotating = true;
-        basicAnimation.RotationSpeed = originalRotationSpeed * rotationMultiplier;
+        basicAnimation.RotationSpeed =
+            originalRotationSpeed * rotationMultiplier;
+
+        timer = 0f;
+        currentPhase = BurstPhase.Charge;
+        isPlaying = true;
     }
 
     private void FinishBurst()
@@ -71,5 +107,11 @@ public class EnergyBurstAnimation : MonoBehaviour
         basicAnimation.IsRotating = originalRotating;
 
         isPlaying = false;
+    }
+
+    private enum BurstPhase
+    {
+        Charge,
+        Release
     }
 }
