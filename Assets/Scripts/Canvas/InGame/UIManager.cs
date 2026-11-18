@@ -40,6 +40,8 @@ public class UIManager : MonoBehaviour
     public event ActivatingDialogue OnActivatingDialogue;
     public delegate void DeactivatingDialogue();
     public event ActivatingDialogue OnDeactivatingDialogue;
+    // Se dispara al mostrar cada línea de diálogo, con el nombre de quien la dice.
+    public event System.Action<string> OnDialogueLine;
 
     private void Awake()
     {
@@ -168,8 +170,12 @@ public class UIManager : MonoBehaviour
 
         _currentSentence = _sentences.Dequeue();
 
-        if(_dialogueName != null && _speakerNames.Count > 0)
-            _dialogueName.text = _speakerNames.Dequeue();
+        string speaker = _speakerNames.Count > 0 ? _speakerNames.Dequeue() : string.Empty;
+        if(_dialogueName != null) _dialogueName.text = speaker;
+
+        // Aviso de "empieza una línea nueva y la dice X" (ej. FriendGekkoDialogue cambia de plano según quién habla).
+        try { OnDialogueLine?.Invoke(speaker); }
+        catch(System.Exception e) { Debug.LogException(e); }
 
         if(_typing != null) StopCoroutine(_typing);
         _typing = StartCoroutine(TypeLine(_currentSentence));

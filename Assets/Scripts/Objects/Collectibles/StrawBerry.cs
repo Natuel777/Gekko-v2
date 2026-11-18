@@ -8,6 +8,19 @@ public class StrawBerry : Collectible
     [SerializeField] private GameObject starParticles;
     private bool grabbed = false;
 
+    [Header("Feedback al agarrarla")]
+    [SerializeField] private SoundNames _pickupSound = SoundNames.RuneActivation;
+    [Tooltip("Micro pausa (segundos reales) al agarrarla. 0 = sin pausa.")]
+    [SerializeField] private float _hitstopDuration = 0.08f;
+    [Tooltip("Fuerza de la sacudida de cámara (las de las barricadas usan 1.5).")]
+    [SerializeField] private float _shakeForce = 0.6f;
+    [Tooltip("Estallido de curación que sale del centro de Gekko (en el mundo, no hereda la escala chica de Gekko).")]
+    [SerializeField] private GameObject _healFlash;
+    [Tooltip("Escala del estallido y de la estrella grande sobre Gekko.")]
+    [SerializeField] private float _healFlashScale = 1f;
+    [Tooltip("Destello en los bordes de la pantalla al curarse (misma viñeta que el daño). Alpha 0 = sin destello.")]
+    [SerializeField] private Color _healVignetteColor = new Color(1f, 0.82f, 0.3f, 0.75f);
+
     private void Start()
     {
         if (SaveManager.Instance)
@@ -38,7 +51,48 @@ public class StrawBerry : Collectible
         pj.BlueberryTracker.ActivateBoost(_notificationData.SpeedBoostMultiplier, _notificationData.SpeedBoostTimer);
         if (SaveManager.Instance)
             SaveManager.Instance.Set(_id.ToString());
+        PlayPickupFeedback(pj);
         _sv.Collect();
+    }
+
+    private void PlayPickupFeedback(Player pj)
+    {
+        if (AudioManager.instance && _pickupSound != SoundNames.None) AudioManager.instance.Play(_pickupSound);
+
+        if (_shakeForce > 0f) EventManager.Trigger<float>("OnCameraShake", _shakeForce);
+
+        if (pj)
+        {
+            // Centro real de Gekko (su raíz está en los pies y está escalado a 0.17): se usa el collider si hay.
+            var col = pj.GetComponentInChildren<Collider>();
+            Vector3 center = col ? col.bounds.center : pj.transform.position + Vector3.up * 0.3f;
+
+            // Sin padre: si cuelga de Gekko hereda su escala y queda diminuto.
+            if (_healFlash) SpawnFx(_healFlash, center);
+            if (mainStar) SpawnFx(mainStar, center); // estrella amarilla grande, la misma de la frutilla
+        }
+
+        if (_healVignetteColor.a > 0f && DamageFeedback.Instance) DamageFeedback.Instance.FlashVignette(_healVignetteColor);
+
+        if (_hitstopDuration > 0f) StartCoroutine(Hitstop());
+    }
+
+    private void SpawnFx(GameObject prefab, Vector3 position)
+    {
+        var fx = Instantiate(prefab, position, Quaternion.identity);
+        fx.transform.localScale = prefab.transform.localScale * _healFlashScale;
+        Destroy(fx, 2f);
+    }
+
+    // Igual que el hitstop de DamageFeedback: tiempo real y sin pisar el timeScale si el jugador pausó en el medio.
+    private System.Collections.IEnumerator Hitstop()
+    {
+        if (Time.timeScale <= 0f) yield break; // ya hay otra pausa/hitstop en curso
+        float previous = Time.timeScale;
+        Time.timeScale = 0f;
+        yield return new WaitForSecondsRealtime(_hitstopDuration);
+        bool paused = GameManager.Instance != null && GameManager.Instance.CanPause;
+        if (!paused) Time.timeScale = previous;
     }
     public void Particles()
     {

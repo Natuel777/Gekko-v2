@@ -42,14 +42,21 @@ public class HealthBar
 
         var heartsContainer = _healthBar.transform.parent != null ? _healthBar.transform.parent.Find("Hearts") : null;
         _hearts = heartsContainer != null ? heartsContainer.GetComponentsInChildren<HeartIcon>(true) : null;
-        SetLitHearts(_hearts != null ? _hearts.Length : 0);
+        SetLitHearts(_hearts != null ? _hearts.Length : 0, false);
     }
 
-    private void SetLitHearts(int litHearts)
+    // animate: false al inicializar (sin efectos); true en juego (explota al perderse, pop al llenarse).
+    private void SetLitHearts(int litHearts, bool animate = true)
     {
         if (_hearts == null || litHearts == _litHearts) return;
+        bool firstTime = _litHearts < 0;
         _litHearts = litHearts;
-        for (int i = 0; i < _hearts.Length; i++) _hearts[i].SetFull(i < litHearts);
+        for (int i = 0; i < _hearts.Length; i++)
+        {
+            _hearts[i].SetFull(i < litHearts, animate && !firstTime);
+            // Con 1 de vida el último corazón late (estilo Hollow Knight).
+            _hearts[i].SetHeartbeat(litHearts == 1 && i == 0);
+        }
     }
 
     public void UpdateHealthBar(float currentHealth, float maxHealth)
@@ -58,7 +65,12 @@ public class HealthBar
 
         float newTargetValue = currentHealth / maxHealth;
 
-        if(newTargetValue < _targetValue) TriggerDamageColorFlash();
+        if(newTargetValue < _targetValue)
+        {
+            TriggerDamageColorFlash();
+            // Toda la fila de corazones tiembla con el golpe.
+            if (_hearts != null) foreach (var heart in _hearts) heart.Shake();
+        }
 
         _targetValue = newTargetValue;
     }

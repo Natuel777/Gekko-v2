@@ -16,19 +16,18 @@ public class ScreenFinishLevel : Screens
     private new void Awake()
     {
         base.Awake();
+        // Todo sale de LevelStats: es lo de ESTE nivel, no el acumulado de la partida.
         var stats = LevelStats.Instance;
-        int bbGot = CollectiblesRegister.GetCollectibleCount(_blueberryKey);
-        int swGot = CollectiblesRegister.GetCollectibleCount(_strawberryKey);
-        int bugsEaten = CollectiblesRegister.GetCollectibleCount("Bug");
+        if(stats) stats.StopTimer();
 
-        if(_blueberryText) _blueberryText.text = $"x {bbGot} / {(stats ? stats.GetTotal(_blueberryKey) : 0)}";
-        
-        if(_strawberryText) _strawberryText.text = $"x {swGot} / {(stats ? stats.GetTotal(_strawberryKey) : 0)}";
-        
+        if(_blueberryText) _blueberryText.text = Count(stats, _blueberryKey);
+        if(_strawberryText) _strawberryText.text = Count(stats, _strawberryKey);
         if(_timeText) _timeText.text = stats ? stats.FormattedTime : "00:00";
-        
-        if(_bugText) _bugText.text = $"x {bugsEaten} / {(stats ? stats.GetTotal("Bug") : 0)}";
+        if(_bugText) _bugText.text = Count(stats, "Bug");
     }
+
+    private static string Count(LevelStats stats, string key) =>
+        stats ? $"{stats.GetCollected(key)}/{stats.GetTotal(key)}" : "0/0";
 
     public void BTN_Restart()
     {

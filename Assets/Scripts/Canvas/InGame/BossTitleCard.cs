@@ -19,6 +19,15 @@ public class BossTitleCard : MonoBehaviour
     [Header("Texto (claves de Localizer)")]
     [SerializeField] private string _nameKey = "boss1_name";
     [SerializeField] private string _subtitleKey = "boss1_subtitle";
+    [Tooltip("Mostrar el apodo debajo del nombre (ej. 'Guardiana del claro').")]
+    [SerializeField] private bool _showSubtitle = false;
+
+    [Header("HUD durante la cinemática")]
+    [Tooltip("Oculta el HUD de juego (corazones, contadores, diálogo, etc.) mientras corre el timeline. " +
+             "El aviso de 'Mantené E para saltear' queda visible.")]
+    [SerializeField] private bool _hideHudDuringCinematic = true;
+    [Min(0.01f)]
+    [SerializeField] private float _hudFade = 0.3f;
     [SerializeField] private TMP_FontAsset _font;
     [SerializeField] private Color _nameColor = new Color(1f, 0.38f, 0.62f);
     [SerializeField] private Color _subtitleColor = new Color(1f, 0.95f, 0.88f);
@@ -43,6 +52,7 @@ public class BossTitleCard : MonoBehaviour
     private CanvasGroup _subtitleGroup;
     private TextMeshProUGUI _name;
     private TextMeshProUGUI _subtitle;
+    private CanvasGroup _hudGroup; // CanvasGroup en el Canvas del HUD (lo agrega este script si no hay)
     private float _visible;   // 0..1, avance de la entrada/salida
     private float _shownFor;  // segundos desde que empezó a mostrarse (para escalonar nombre/línea/apodo)
 
@@ -60,6 +70,30 @@ public class BossTitleCard : MonoBehaviour
     private void OnDisable()
     {
         Localizer.OnLanguageChanged -= RefreshTexts;
+        if(_hudGroup != null) _hudGroup.alpha = 1f; // que el HUD nunca quede oculto si este objeto se apaga
+    }
+
+    // HUD de juego: se desvanece mientras corre el timeline y vuelve al terminar/saltear. Se hace con un CanvasGroup en
+    // el Canvas del HUD (multiplica a todos los hijos sin pisar sus propios CanvasGroup ni prender/apagar objetos que
+    // manejan otros scripts). El aviso de saltear ignora ese grupo para seguir viéndose.
+    private void UpdateHud(bool cinematicPlaying, float dt)
+    {
+        if(!_hideHudDuringCinematic) return;
+
+        if(_hudGroup == null)
+        {
+            if(!cinematicPlaying || UIManager.Instance == null) return;
+            var hud = UIManager.Instance.gameObject;
+            _hudGroup = hud.GetComponent<CanvasGroup>();
+            if(_hudGroup == null) _hudGroup = hud.AddComponent<CanvasGroup>();
+            foreach(var prompt in hud.GetComponentsInChildren<SkipCinematicPrompt>(true))
+            {
+                var cg = prompt.GetComponent<CanvasGroup>();
+                if(cg != null) cg.ignoreParentGroups = true;
+            }
+        }
+
+        _hudGroup.alpha = Mathf.MoveTowards(_hudGroup.alpha, cinematicPlaying ? 0f : 1f, dt / _hudFade);
     }
 
     private void Update()
@@ -70,6 +104,8 @@ public class BossTitleCard : MonoBehaviour
 
         // unscaledDeltaTime: el hitstop o una pausa no deben congelar el cartel a medio aparecer.
         float dt = Time.unscaledDeltaTime;
+
+        UpdateHud(playing, dt);
 
         if(show)
         {
@@ -111,7 +147,7 @@ public class BossTitleCard : MonoBehaviour
 
         _nameRect.anchoredPosition = new Vector2(Mathf.Lerp(-60f, 0f, nameT), 0f);
         _line.localScale = new Vector3(lineT, 1f, 1f);
-        _subtitleGroup.alpha = subT;
+        _subtitleGroup.alpha = _showSubtitle ? subT : 0f;
     }
 
     private static float Smooth(float x)

@@ -102,6 +102,30 @@ public class AudioManager : MonoBehaviour, ISaveLoad
         list.Add(source);
     }
 
+    // Igual que Play pero con un pitch exacto (multiplica el pitch configurado del sonido).
+    // Ej: el pickup del arándano sube de tono con cada arándano del combo.
+    public void PlayPitched(SoundNames name, float pitchMultiplier)
+    {
+        Sounds sound = FindSound(name);
+
+        if (sound == null)
+        {
+            Debug.Log("no se encontro el sonido");
+            return;
+        }
+        Set(sound, out AudioSource source, false);
+        source.pitch = sound.pitch * pitchMultiplier;
+        source.loop = false;
+        source.Play();
+
+        if (!_activeSourcesByName.TryGetValue(name, out var list))
+        {
+            list = new List<AudioSource>();
+            _activeSourcesByName[name] = list;
+        }
+        list.Add(source);
+    }
+
     public void Pause(SoundNames name)
     {
         if (!_activeSourcesByName.TryGetValue(name, out var list)) return;

@@ -19,6 +19,9 @@ public class ScreenPause : Screens
     public void BTN_Options()
     {
         AudioManager.instance.Play(SoundNames.UiButton);
+        // La pausa se va mientras entra Opciones (sin ocultarse: sigue en la pila). Vuelve a entrar en Activate.
+        var intro = GetComponent<OptionsIntroAnimation>();
+        if (intro) intro.PlayOut(null);
         ScreenManager.Instance.Push("Canvas_Options");
     }
 
@@ -37,12 +40,24 @@ public class ScreenPause : Screens
 
     public override void Activate()
     {
-        gameObject.SetActive(true);
+        bool wasActive = gameObject.activeSelf;
+        gameObject.SetActive(true); // si estaba oculta, OnEnable de la animación ya hace la entrada
         base.Activate();
+
+        // Ya estaba visible pero afuera de pantalla (volviendo de Opciones, o pausando de nuevo mientras salía): entrar.
+        var intro = GetComponent<OptionsIntroAnimation>();
+        if (wasActive && intro && intro.IsOut) intro.PlayIn();
     }
 
     public override void Free()
     {
-        gameObject.SetActive(false);
+        // Continuar/Esc: animación de salida y recién después se oculta (la pantalla se reutiliza, no se destruye).
+        var intro = GetComponent<OptionsIntroAnimation>();
+        if (intro && gameObject.activeInHierarchy)
+        {
+            Deactivate(); // botones no interactuables mientras se va
+            intro.PlayOut(() => gameObject.SetActive(false));
+        }
+        else gameObject.SetActive(false);
     }
 }
