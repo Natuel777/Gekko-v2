@@ -68,6 +68,33 @@ public class GameManager : MonoBehaviour , IGameManager
 
         CanPause = false;
         Time.timeScale = 1f;
+
+        // Foto del progreso al empezar cada escena de juego: al reiniciar el nivel se vuelve a esto.
+        bool isGameplay = scene.name != ScenesDictionary.SceneName[ScenesNames.Menu]
+                       && scene.name != ScenesDictionary.SceneName[ScenesNames.LoadScene];
+        if (isGameplay)
+        {
+            _levelStartCounts = CollectiblesRegister.Snapshot();
+            _levelStartFlags = SaveManager.Instance != null ? SaveManager.Instance.GetFlags() : null;
+            _hasLevelSnapshot = true;
+        }
+    }
+
+    private Dictionary<string, int> _levelStartCounts;
+    private List<string> _levelStartFlags;
+    private bool _hasLevelSnapshot;
+
+    // Deja todo como al empezar la escena: contadores de arándanos/frutillas, frutillas y eventos marcados como hechos,
+    // checkpoint del intento y lo contado por LevelStats. Lo de niveles anteriores se conserva.
+    private void ResetLevelProgress()
+    {
+        if (_hasLevelSnapshot)
+        {
+            CollectiblesRegister.Restore(_levelStartCounts);
+            if (SaveManager.Instance != null && _levelStartFlags != null) SaveManager.Instance.SetFlags(_levelStartFlags);
+        }
+        checkpointManager?.ClearCheckpoint();
+        if (LevelStats.Instance != null) LevelStats.Instance.RestoreSceneStart();
     }
 
     private void Start()
@@ -111,7 +138,7 @@ public class GameManager : MonoBehaviour , IGameManager
     public void RestartLvl()
     {
         if (AudioManager.instance) AudioManager.instance.ResetAudio();
-        //CollectiblesRegister.Clear();
+        ResetLevelProgress();
 
         if(AsyncLoader.sceneToLoad == ScenesNames.LoadScene) SceneManager.LoadScene(SceneManager.GetActiveScene().name);
         else SceneManager.LoadScene(ScenesDictionary.SceneName[ScenesNames.LoadScene]);

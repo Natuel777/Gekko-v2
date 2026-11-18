@@ -21,6 +21,20 @@ public class ScreenOptions : Screens
     [Tooltip("Se ocultan si Opciones se abre desde el menú principal (ej. Reiniciar nivel: ahí no hay nivel que reiniciar).")]
     [SerializeField] private GameObject[] _levelOnly;
 
+    [Header("Solo en menú principal")]
+    [Tooltip("Se muestran solo si Opciones se abre desde el menú principal (ej. Borrar datos del jugador).")]
+    [SerializeField] private GameObject[] _menuOnly;
+
+    [Header("Navegación de la pestaña Idioma")]
+    [Tooltip("Fila de idioma: hacia abajo va a Reiniciar nivel (en un nivel) o a Borrar datos (en el menú).")]
+    [SerializeField] private UnityEngine.UI.Selectable _languageSelector;
+    [SerializeField] private UnityEngine.UI.Selectable _restartButton;
+    [SerializeField] private UnityEngine.UI.Selectable _deleteDataButton;
+    [SerializeField] private TMPro.TMP_Text _deleteDataLabel;
+
+    private void OnEnable() => SaveManager.OnProgressDeleted += OnProgressDeleted;
+    private void OnDisable() => SaveManager.OnProgressDeleted -= OnProgressDeleted;
+
     public override void Activate()
     {
         base.Activate();
@@ -29,6 +43,23 @@ public class ScreenOptions : Screens
         bool inMainMenu = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name == ScenesDictionary.SceneName[ScenesNames.Menu];
         if (_levelOnly != null)
             foreach (var go in _levelOnly) if (go) go.SetActive(!inMainMenu);
+        if (_menuOnly != null)
+            foreach (var go in _menuOnly) if (go) go.SetActive(inMainMenu);
+
+        // La navegación explícita no salta objetos ocultos: apuntar al botón que esté visible.
+        if (_languageSelector)
+        {
+            var nav = _languageSelector.navigation;
+            nav.selectOnDown = inMainMenu ? _deleteDataButton : _restartButton;
+            _languageSelector.navigation = nav;
+        }
+        if (_deleteDataButton)
+        {
+            var nav = _deleteDataButton.navigation;
+            nav.mode = UnityEngine.UI.Navigation.Mode.Explicit;
+            nav.selectOnUp = _languageSelector;
+            _deleteDataButton.navigation = nav;
+        }
 
         AudioManager.instance.LoadGame();
         AudioManager.instance.SetMasterVolume(AudioManager.instance.masterValue);
@@ -73,6 +104,9 @@ public class ScreenOptions : Screens
     {
         AudioManager.instance.SaveGame();
 
+        // Teclas cambiadas sin apretar Aplicar: se descartan al salir.
+        InputRebindStore.DiscardPending();
+
         // Back: animación de salida (la entrada al revés) y recién después se destruye el canvas.
         var intro = GetComponent<OptionsIntroAnimation>();
         if (intro)
@@ -96,6 +130,20 @@ public class ScreenOptions : Screens
         IScreen screen = ScreenManager.Instance.PushAndGet("Canvas_Reafirm");
         if (screen is ScreenReafirm reafirm)
             reafirm.SetValues(ReafirmCanvas.RestartLevel);
+    }
+
+    // Borrar datos del jugador (solo progreso): pide confirmación con el cartel.
+    public void BTN_DeleteData()
+    {
+        if (AudioManager.instance) AudioManager.instance.Play(SoundNames.UiButton);
+        IScreen screen = ScreenManager.Instance.PushAndGet("Canvas_Reafirm");
+        if (screen is ScreenReafirm reafirm)
+            reafirm.SetValues(ReafirmCanvas.DeleteData);
+    }
+
+    private void OnProgressDeleted()
+    {
+        if (_deleteDataLabel) _deleteDataLabel.text = Localizer.Get("data_deleted");
     }
 
     private void ShowGame() => Select(_gamePanel, _gameTab);

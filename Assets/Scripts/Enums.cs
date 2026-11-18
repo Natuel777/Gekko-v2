@@ -14,7 +14,8 @@ public enum ReafirmCanvas
     None = -1,
     ExitGame,
     RestartLevel,
-    GoToMenu
+    GoToMenu,
+    DeleteData
 }
 
 public enum SoundNames

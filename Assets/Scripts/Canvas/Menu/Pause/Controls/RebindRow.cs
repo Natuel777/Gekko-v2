@@ -87,7 +87,7 @@ public class RebindRow : MonoBehaviour
     {
         CancelOperation();
         _waiting = false;
-        if (changed) InputRebindStore.Save();
+        if (changed) InputRebindStore.MarkPending(); // se guarda recién con el botón Aplicar
         Refresh();
         StartCoroutine(RestoreNavigation());
     }

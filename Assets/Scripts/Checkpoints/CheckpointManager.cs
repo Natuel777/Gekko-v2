@@ -14,6 +14,15 @@ public class CheckpointManager
 
     public bool HasCheckpoint => _hasCheckpoint;
 
+    // Reiniciar nivel: olvidar el checkpoint del intento (si no, al morir o con R se volvía a ese punto viejo).
+    public void ClearCheckpoint()
+    {
+        _hasCheckpoint = false;
+        _respawnPos = Vector3.zero;
+        _respawnRot = Quaternion.identity;
+        _savedHealth = 0f;
+    }
+
     public void SaveCheckpoint(Vector3 pos, Quaternion rot, float health, int debugIndex = -1)
     {
         _respawnPos = pos;

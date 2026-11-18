@@ -4816,13 +4816,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3347694517299411927}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalRotation: {x: -0, y: -0.03146763, z: -0, w: 0.99950475}
+  m_LocalPosition: {x: -0.46000138, y: 0, z: -0.050000723}
+  m_LocalScale: {x: 1.5018, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 861877326445452880}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: -3.607, z: 0}
 --- !u!198 &818653146521160652
 ParticleSystem:
   m_ObjectHideFlags: 0
@@ -4831,7 +4831,7 @@ ParticleSystem:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3347694517299411927}
   serializedVersion: 8
-  lengthInSec: 1
+  lengthInSec: 0.5
   simulationSpeed: 0.16
   stopAction: 0
   cullingMode: 0
@@ -4906,7 +4906,7 @@ ParticleSystem:
     startLifetime:
       serializedVersion: 2
       minMaxState: 0
-      scalar: 1
+      scalar: 0.5
       minScalar: 0.4
       maxCurve:
         serializedVersion: 2
@@ -5016,8 +5016,8 @@ ParticleSystem:
       maxColor: {r: 1, g: 1, b: 1, a: 0.9490196}
       maxGradient:
         serializedVersion: 2
-        key0: {r: 1, g: 1, b: 1, a: 0.46666667}
-        key1: {r: 0.40899786, g: 0.5806223, b: 0.8584906, a: 0.29411766}
+        key0: {r: 1, g: 1, b: 1, a: 0.91764706}
+        key1: {r: 0.40899786, g: 0.5806223, b: 0.8584906, a: 0.9137255}
         key2: {r: 0, g: 0, b: 0, a: 0}
         key3: {r: 0, g: 0, b: 0, a: 0}
         key4: {r: 0, g: 0, b: 0, a: 0}
@@ -5541,7 +5541,7 @@ ParticleSystem:
     sphericalDirectionAmount: 0
     randomPositionAmount: 0
     radius:
-      value: 4.05
+      value: 2.32
       mode: 0
       spread: 0
       speed:
@@ -9661,7 +9661,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 5, y: 5, z: 5}
+  m_LocalScale: {x: 2.2157502, y: 2.21575, z: 2.2157502}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 3340204763644901651}

@@ -21,4 +21,14 @@ public static class CollectiblesRegister
         _counts.TryGetValue(collectibleName, out int c) ? c : 0;
     public static void SetCollectibleCount(string collectibleName, int quant) => _counts[collectibleName] = quant;
     public static void Clear() => _counts.Clear();
+
+    // Foto de los contadores (GameManager la toma al cargar cada escena de juego y la restaura al reiniciar el nivel,
+    // para descartar lo juntado en el intento sin perder lo de niveles anteriores).
+    public static Dictionary<string, int> Snapshot() => new Dictionary<string, int>(_counts);
+    public static void Restore(Dictionary<string, int> snapshot)
+    {
+        _counts.Clear();
+        if (snapshot == null) return;
+        foreach (var kv in snapshot) _counts[kv.Key] = kv.Value;
+    }
 }

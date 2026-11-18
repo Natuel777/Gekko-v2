@@ -59,6 +59,18 @@ public class ScreenReafirm : Screens
             action.AddListener(BTN_ExitGame);
             SetTexts("reafirm_exit_title", "reafirm_exit_msg");
         }
+        else if (change == ReafirmCanvas.DeleteData)
+        {
+            action.AddListener(BTN_DeleteData);
+            SetTexts("reafirm_delete_title", "reafirm_delete_msg");
+        }
+    }
+
+    private void BTN_DeleteData()
+    {
+        SaveManager.DeleteProgress();
+        // Vuelve a Opciones (el cartel se cierra con su animación).
+        if (ScreenManager.Instance) ScreenManager.Instance.Pop();
     }
 
     private void SetTexts(string titleKey, string messageKey)

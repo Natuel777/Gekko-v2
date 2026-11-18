@@ -95,6 +95,14 @@ public static class Localizer
         { "reafirm_menu_msg", ("Vas a perder el progreso del nivel.", "You will lose your progress in this level.") },
         { "reafirm_restart_title", ("¿Reiniciar nivel?", "Restart the level?") },
         { "reafirm_restart_msg", ("El nivel vuelve a empezar y se pierde el progreso.", "The level starts over and your progress is lost.") },
+        { "reafirm_delete_title", ("¿Borrar datos?", "Delete data?") },
+        { "reafirm_delete_msg", ("Se borra tu progreso: arándanos, frutillas y lo que ya viste. La configuración se mantiene.", "Your progress will be deleted: blueberries, strawberries and what you've seen. Settings are kept.") },
+        { "delete_data", ("Borrar datos del jugador", "Delete player data") },
+        { "data_deleted", ("¡Datos borrados!", "Data deleted!") },
+        { "desc_delete_data", ("Borra tu progreso (arándanos, frutillas y eventos vistos). La configuración se mantiene.", "Deletes your progress (blueberries, strawberries and seen events). Settings are kept.") },
+        { "apply", ("Aplicar", "Apply") },
+        { "applied", ("Aplicado", "Applied") },
+        { "desc_apply", ("Guarda las teclas nuevas y las aplica al juego. Si salís sin aplicar, se descartan.", "Saves the new keys and applies them to the game. If you leave without applying, they are discarded.") },
         { "reafirm_exit_title", ("¿Salir del juego?", "Quit the game?") },
         { "reafirm_exit_msg", ("Tu partida queda guardada.", "Your game will be saved.") },
 
@@ -118,7 +126,7 @@ public static class Localizer
         { "mouse_sensitivity", ("Sensibilidad del mouse", "Mouse Sensitivity") },
         { "desc_mouse_sensitivity", ("Qué tan rápido gira la cámara con el mouse.", "How fast the camera turns with the mouse.") },
         { "desc_rebind", ("Seleccioná la acción y presioná la tecla nueva.", "Select the action and press the new key.") },
-        { "desc_ctrl_reset", ("Vuelve todas las teclas a su configuración original.", "Restore all key bindings to their defaults.") },
+        { "desc_ctrl_reset", ("Vuelve todas las teclas a su configuración original (después apretá Aplicar).", "Restore all key bindings to their defaults (then press Apply).") },
 
         // Cartel de presentación del boss (BossTitleCard)
         { "boss1_name", ("Planta Corrupta", "Corrupted Plant") },

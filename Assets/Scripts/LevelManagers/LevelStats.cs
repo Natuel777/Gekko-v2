@@ -67,7 +67,19 @@ public class LevelStats : MonoBehaviour
         }
 
         _timing = scene.name == _homeScene || System.Array.IndexOf(_continuationScenes, scene.name) >= 0;
-        if(_timing) CountTotals(scene);
+        if(_timing)
+        {
+            CountTotals(scene);
+            _collectedAtSceneStart = new Dictionary<string, int>(_collected);
+        }
+    }
+
+    // Reiniciar nivel (ver GameManager.RestartLvl): descarta lo recogido en el intento de la escena actual.
+    private Dictionary<string, int> _collectedAtSceneStart = new();
+    public void RestoreSceneStart()
+    {
+        _collected.Clear();
+        foreach(var kv in _collectedAtSceneStart) _collected[kv.Key] = kv.Value;
     }
 
     private void CountTotals(Scene scene)

@@ -233,6 +233,9 @@ public class Player : MonoBehaviour
         //_pjInputs.PauseInputSet(false);
     }
 
+    // Opciones > Controles > Aplicar: recarga las teclas guardadas en el input del jugador al instante (también en Play).
+    public void ReloadInputBindings() => _pjInputs?.ReloadBindings();
+
     public void ActivateInputs()
     {
         _pjInputs.ArtificialEnable();

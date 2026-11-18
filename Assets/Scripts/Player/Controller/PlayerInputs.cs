@@ -26,7 +26,7 @@ public class PlayerInputs
         //PauseInputSet(true);
     }
 
-    private void ReloadBindings()
+    public void ReloadBindings()
     {
         InputRebindStore.ApplySaved(_input.asset);
         // Queda en el Player.log del build: sirve para confirmar que el cambio de teclas del menú le llegó al jugador.

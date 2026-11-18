@@ -26,6 +26,14 @@ public class OptionsTab : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
     private bool _hovered;
     private bool _focused;
 
+    // Cambia los sprites normal/resaltado (ej. el botón Aplicar: rojo con cambios pendientes, naranja sin cambios).
+    public void SetSprites(Sprite normal, Sprite highlight)
+    {
+        _normalSprite = normal;
+        _highlightSprite = highlight;
+        RefreshLabel();
+    }
+
     public void SetSelected(bool selected)
     {
         _selected = selected;
