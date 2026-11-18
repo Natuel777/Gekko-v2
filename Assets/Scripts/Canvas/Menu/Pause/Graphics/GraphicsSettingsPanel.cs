@@ -7,7 +7,10 @@ using UnityEngine.UI;
 public class GraphicsSettingsPanel : MonoBehaviour
 {
     [SerializeField] private ArrowValueSelector _resolutionSelector;
+    [SerializeField] private ArrowValueSelector _qualitySelector;
     [SerializeField] private Toggle _fullscreenToggle;
+    // Alternativa al toggle: selector de flechas "Sí / No" (mismo estilo que el resto de las filas).
+    [SerializeField] private ArrowValueSelector _fullscreenSelector;
     [SerializeField] private Toggle _shakeToggle;
 
     // Slider pensado en rango 0-100 (como el resto de la UI de Opciones); 50 = exposición neutra.
@@ -31,6 +34,15 @@ public class GraphicsSettingsPanel : MonoBehaviour
         Screen.SetResolution(w, h, fullscreen);
     }
 
+    // La calidad gráfica sí aplica también en el editor (no depende del monitor como la resolución).
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+    private static void ApplySavedQualityOnStart()
+    {
+        if (!PlayerPrefs.HasKey(PlayerPrefsKeys.qualityLevelKey)) return;
+        int level = Mathf.Clamp(PlayerPrefs.GetInt(PlayerPrefsKeys.qualityLevelKey), 0, QualitySettings.names.Length - 1);
+        if (QualitySettings.GetQualityLevel() != level) QualitySettings.SetQualityLevel(level, true);
+    }
+
     private void OnEnable()
     {
         InitialiceValues();
@@ -49,6 +61,14 @@ public class GraphicsSettingsPanel : MonoBehaviour
             _resolutionSelector.OnIndexChanged.AddListener(SetResolution);
         }
 
+        if (_qualitySelector)
+        {
+            // Los niveles salen de Project Settings > Quality, así que agregar/quitar niveles ahí no requiere tocar código.
+            _qualitySelector.SetOptions(QualitySettings.names, QualitySettings.GetQualityLevel());
+            _qualitySelector.OnIndexChanged.RemoveListener(SetQuality);
+            _qualitySelector.OnIndexChanged.AddListener(SetQuality);
+        }
+
         if (_fullscreenToggle)
         {
             bool savedFullscreen = PlayerPrefs.GetInt(PlayerPrefsKeys.fullscreenKey, Screen.fullScreen ? 1 : 0) == 1;
@@ -57,6 +77,17 @@ public class GraphicsSettingsPanel : MonoBehaviour
 
             _fullscreenToggle.onValueChanged.RemoveListener(SetFullscreen);
             _fullscreenToggle.onValueChanged.AddListener(SetFullscreen);
+        }
+
+        if (_fullscreenSelector)
+        {
+            // Índice 0 = Sí, 1 = No. Se rearma en cada OnEnable, así que toma el idioma actual al abrir la pestaña.
+            bool savedFullscreen = PlayerPrefs.GetInt(PlayerPrefsKeys.fullscreenKey, Screen.fullScreen ? 1 : 0) == 1;
+            _fullscreenSelector.SetOptions(new[] { Localizer.Get("yes"), Localizer.Get("no") }, savedFullscreen ? 0 : 1);
+            Screen.fullScreen = savedFullscreen;
+
+            _fullscreenSelector.OnIndexChanged.RemoveListener(SetFullscreenFromSelector);
+            _fullscreenSelector.OnIndexChanged.AddListener(SetFullscreenFromSelector);
         }
 
         if (_shakeToggle)
@@ -151,6 +182,16 @@ public class GraphicsSettingsPanel : MonoBehaviour
         PlayerPrefs.SetInt(PlayerPrefsKeys.resolutionHeightKey, v.y);
         PlayerPrefs.Save();
     }
+
+    private void SetQuality(int index)
+    {
+        if (index < 0 || index >= QualitySettings.names.Length) return;
+        QualitySettings.SetQualityLevel(index, true);
+        PlayerPrefs.SetInt(PlayerPrefsKeys.qualityLevelKey, index);
+        PlayerPrefs.Save();
+    }
+
+    private void SetFullscreenFromSelector(int index) => SetFullscreen(index == 0);
 
     private void SetFullscreen(bool value)
     {

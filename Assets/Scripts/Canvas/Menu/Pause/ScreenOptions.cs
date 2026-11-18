@@ -17,9 +17,18 @@ public class ScreenOptions : Screens
     [SerializeField] private OptionsTab _soundTab;
     [SerializeField] private OptionsTab _controlsTab;
 
+    [Header("Solo en nivel")]
+    [Tooltip("Se ocultan si Opciones se abre desde el menú principal (ej. Reiniciar nivel: ahí no hay nivel que reiniciar).")]
+    [SerializeField] private GameObject[] _levelOnly;
+
     public override void Activate()
     {
         base.Activate();
+
+        // GameManager sobrevive entre escenas (DontDestroyOnLoad): desde el menú, RestartLvl cargaría el último nivel.
+        bool inMainMenu = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name == ScenesDictionary.SceneName[ScenesNames.Menu];
+        if (_levelOnly != null)
+            foreach (var go in _levelOnly) if (go) go.SetActive(!inMainMenu);
 
         AudioManager.instance.LoadGame();
         AudioManager.instance.SetMasterVolume(AudioManager.instance.masterValue);
@@ -63,7 +72,15 @@ public class ScreenOptions : Screens
     public override void Free()
     {
         AudioManager.instance.SaveGame();
-        base.Free();
+
+        // Back: animación de salida (la entrada al revés) y recién después se destruye el canvas.
+        var intro = GetComponent<OptionsIntroAnimation>();
+        if (intro)
+        {
+            Deactivate(); // botones no interactuables mientras se va
+            intro.PlayOut(() => base.Free());
+        }
+        else base.Free();
     }
 
     public void BTN_Game() => ShowGame();
@@ -73,6 +90,8 @@ public class ScreenOptions : Screens
 
     public void BTN_Restart()
     {
+        // Por si se llega igual (ej. un atajo): desde el menú principal no hay nivel que reiniciar.
+        if (UnityEngine.SceneManagement.SceneManager.GetActiveScene().name == ScenesDictionary.SceneName[ScenesNames.Menu]) return;
         AudioManager.instance.Play(SoundNames.UiButton);
         IScreen screen = ScreenManager.Instance.PushAndGet("Canvas_Reafirm");
         if (screen is ScreenReafirm reafirm)

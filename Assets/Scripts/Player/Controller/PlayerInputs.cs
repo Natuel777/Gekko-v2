@@ -26,7 +26,15 @@ public class PlayerInputs
         //PauseInputSet(true);
     }
 
-    private void ReloadBindings() => InputRebindStore.ApplySaved(_input.asset);
+    private void ReloadBindings()
+    {
+        InputRebindStore.ApplySaved(_input.asset);
+        // Queda en el Player.log del build: sirve para confirmar que el cambio de teclas del menú le llegó al jugador.
+        var move = _input.Character.Movement.bindings;
+        string moveKeys = "";
+        foreach (var b in move) if (b.isPartOfComposite) moveKeys += b.name + "=" + b.effectivePath + " ";
+        Debug.Log($"[PlayerInputs] Teclas aplicadas al jugador. Movimiento: {moveKeys}| Salto: {_input.Character.Jump.bindings[0].effectivePath}");
+    }
 
     public void ArtificialEnable()
     {

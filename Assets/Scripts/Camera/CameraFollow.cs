@@ -52,6 +52,10 @@ public class CameraFollow : MonoBehaviour
     [SerializeField] private string _verticalAxisName = "Vertical Axis";
     private float _baseHorizontalGain = 1f;
     private float _baseVerticalGain = 1f;
+    // La cámara lee el mouse por el Input clásico ("Mouse X"/"Mouse Y"), que usa LegacyGain (no Gain): se escalan los dos.
+    private float _baseHorizontalLegacyGain = 1f;
+    private float _baseVerticalLegacyGain = 1f;
+    private bool _baseGainsCaptured;
     private float _sensitivity = 1f;
     private bool _invertY;
 
@@ -95,13 +99,31 @@ public class CameraFollow : MonoBehaviour
     // invierte el signo del eje vertical si corresponde (Gain negativo = input invertido, ver CinemachineInputAxisController.Reader).
     private void ApplyAxisGains()
     {
-        if (!_input) return;
+        if (!_input || !_baseGainsCaptured) return;
+        float invert = _invertY ? -1f : 1f;
 
-        var horizontal = _input.GetController(_horizontalAxisName);
-        if (horizontal != null) horizontal.Input.Gain = _baseHorizontalGain * _sensitivity;
+        var horizontal = FindAxis(_horizontalAxisName, "Look Orbit X");
+        if (horizontal != null)
+        {
+            horizontal.Input.Gain = _baseHorizontalGain * _sensitivity;
+            horizontal.Input.LegacyGain = _baseHorizontalLegacyGain * _sensitivity;
+        }
 
-        var vertical = _input.GetController(_verticalAxisName);
-        if (vertical != null) vertical.Input.Gain = _baseVerticalGain * _sensitivity * (_invertY ? -1f : 1f);
+        var vertical = FindAxis(_verticalAxisName, "Look Orbit Y");
+        if (vertical != null)
+        {
+            vertical.Input.Gain = _baseVerticalGain * _sensitivity * invert;
+            // El LegacyGain vertical ya viene con su signo del inspector (ej. -400): se respeta y solo se invierte si se pide.
+            vertical.Input.LegacyGain = _baseVerticalLegacyGain * _sensitivity * invert;
+        }
+    }
+
+    // Los ejes de la OrbitalFollow se llaman "Look Orbit X/Y" en el CinemachineInputAxisController; el nombre del
+    // inspector queda como primera opción por si alguna cámara los tiene renombrados.
+    private InputAxisControllerBase<CinemachineInputAxisController.Reader>.Controller FindAxis(string name, string fallback)
+    {
+        if (!_input) return null;
+        return _input.GetController(name) ?? _input.GetController(fallback);
     }
 
     private void Start()
@@ -116,10 +138,21 @@ public class CameraFollow : MonoBehaviour
         _rotation = GetComponent<CameraRotation>();
 
         // Gain base de cada eje tal como quedó configurado en el inspector, antes de aplicarle la sensibilidad guardada.
-        var horizontal = _input ? _input.GetController(_horizontalAxisName) : null;
-        var vertical = _input ? _input.GetController(_verticalAxisName) : null;
-        if (horizontal != null) _baseHorizontalGain = horizontal.Input.Gain;
-        if (vertical != null) _baseVerticalGain = Mathf.Abs(vertical.Input.Gain);
+        var horizontal = FindAxis(_horizontalAxisName, "Look Orbit X");
+        var vertical = FindAxis(_verticalAxisName, "Look Orbit Y");
+        if (horizontal != null)
+        {
+            _baseHorizontalGain = horizontal.Input.Gain;
+            _baseHorizontalLegacyGain = horizontal.Input.LegacyGain;
+        }
+        if (vertical != null)
+        {
+            _baseVerticalGain = Mathf.Abs(vertical.Input.Gain);
+            _baseVerticalLegacyGain = vertical.Input.LegacyGain;
+        }
+        _baseGainsCaptured = true;
+        if (horizontal == null || vertical == null)
+            Debug.LogWarning($"[CameraFollow] No se encontraron los ejes de cámara para aplicar la sensibilidad (H: {horizontal != null}, V: {vertical != null}).");
 
         _sensitivity = PlayerPrefs.GetFloat(PlayerPrefsKeys.cameraSensitivityKey, 1f);
         _invertY = PlayerPrefs.GetInt(PlayerPrefsKeys.invertYKey, 0) == 1;

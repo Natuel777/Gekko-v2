@@ -164,6 +164,16 @@ public class DamageFeedback : MonoBehaviour
         _flashTimer = 0f;
     }
 
+    // Mismo destello de viñeta que el daño pero con otro color (ej. dorado al curarse con una frutilla).
+    public void FlashVignette(Color color)
+    {
+        if(_vignetteMaterial == null) return;
+
+        _vignetteMaterial.SetColor(ColorId, color);
+        _vignetteState = VignetteState.Flash;
+        _flashTimer = 0f;
+    }
+
     private void UpdateVignette()
     {
         if(_vignetteMaterial == null) return;
@@ -206,8 +216,10 @@ public class DamageFeedback : MonoBehaviour
     #endregion
 
     #region Empujón
-    // Bloquea el input mientras dura el empujón: si no, Move() (PlayerController) pisa la velocidad con la
-    // del movimiento que el jugador siga manteniendo apretado, y el empujón nunca se siente.
+    // El golpe NO bloquea el input: antes se desactivaban los controles durante el empujón y, al reactivarlos, una
+    // tecla de movimiento que se seguía manteniendo no volvía a leerse (el Input System solo avisa cuando cambia), así
+    // que Gekko quedaba quieto hasta soltar y volver a apretar. Ahora el empujón solo se aplica en los frames en que el
+    // jugador no se está moviendo; si mantiene una dirección, conserva el control total.
     private IEnumerator KnockbackRoutine(Vector3 fromDirection, float knockbackDistance)
     {
         if(_player == null || _player.PjController == null) yield break;
@@ -216,21 +228,21 @@ public class DamageFeedback : MonoBehaviour
         if(dir.sqrMagnitude < 0.0001f) dir = -transform.forward;
         dir.Normalize();
 
-        _player.Inputs(false);
-
         float elapsed = 0f;
 
         while(elapsed < _knockbackDuration)
         {
             elapsed += Time.unscaledDeltaTime;
             float u = Mathf.Clamp01(elapsed / _knockbackDuration);
-            // Derivada de una posición ease-out cúbica: arranca rápido, frena hasta 0.
-            float speed = (3f * knockbackDistance / _knockbackDuration) * (1f - u) * (1f - u);
-            _player.PjController.ApplyKnockbackVelocity(dir * speed);
+            bool playerMoving = _player.PjController.RawInput.sqrMagnitude > 0.01f;
+            if(!playerMoving)
+            {
+                // Derivada de una posición ease-out cúbica: arranca rápido, frena hasta 0.
+                float speed = (3f * knockbackDistance / _knockbackDuration) * (1f - u) * (1f - u);
+                _player.PjController.ApplyKnockbackVelocity(dir * speed);
+            }
             yield return null;
         }
-
-        _player.Inputs(true);
     }
     #endregion
 
