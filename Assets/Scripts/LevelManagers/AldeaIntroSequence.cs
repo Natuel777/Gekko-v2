@@ -4,16 +4,16 @@ using UnityEngine;
 using Unity.Cinemachine;
 using Gekko.Purification;
 
-// Intro de la escena Aldea. La aldea no es jugable: es una vitrina que se va purificando de a poco, una zona cada
-// vez que el jugador supera un nivel y vuelve acá.
-//  - Las zonas ya purificadas en visitas anteriores quedan sanas desde el primer frame (sin animación).
-//  - La secuencia muestra la aldea entera, la cámara viaja hasta la zona que toca, se purifica con la onda real
-//    (PurifyRegion), se guarda el progreso y cierra con la pantalla de victoria (EventManager "OnLevelFinished", lo
-//    mismo que dispara FinishLevelTrigger en los niveles normales).
-//  - Casas: además, en cada visita aparece el gekko de la casa que toca (uno por nivel completado, en el orden de
-//    la lista). Los de visitas anteriores ya están en su casa desde el primer frame.
-//  - Con todas las zonas purificadas y todas las casas habitadas solo muestra la aldea y cierra.
-// El progreso se guarda en PlayerPrefs (PlayerPrefsKeys.aldeaZonasPurificadasKey).
+// Intro de la escena Aldea. La aldea no es jugable: es una vitrina que se va purificando de a poco. Cada nivel
+// tiene su zona fija: al ganar el nivel 1 se purifica la zona 1, al ganar el nivel 2 la zona 2 (y así).
+//  - El nivel ganado sale de LevelStats.Instance.LevelNumber (el LevelStats del nivel sigue vivo al llegar acá).
+//  - La primera vez que se gana un nivel, su zona arranca corrupta y se purifica con la onda real (PurifyRegion).
+//    Si ese nivel ya se había ganado, la zona ya está sana y la cámara solo muestra la casa de su gekko rescatado.
+//  - Las zonas de OTROS niveles ya ganados quedan sanas desde el primer frame (sin animación).
+//  - La secuencia muestra la aldea entera, la cámara viaja hasta la zona, se purifica, se guarda el progreso y cierra
+//    con la pantalla de victoria (EventManager "OnLevelFinished", lo mismo que dispara FinishLevelTrigger).
+//  - Casas: mismo criterio, el gekko de la casa del nivel ganado aparece; los de otros niveles ya ganados están ahí.
+// El progreso (hasta qué nivel se ganó) se guarda en PlayerPrefs (PlayerPrefsKeys.aldeaZonasPurificadasKey).
 public class AldeaIntroSequence : MonoBehaviour
 {
     [Serializable]
@@ -47,6 +47,9 @@ public class AldeaIntroSequence : MonoBehaviour
     [Header("Pruebas")]
     [Tooltip("-1 = usar el progreso guardado. 0..N = arrancar como si ya se hubieran completado esos niveles (no se guarda).")]
     [SerializeField] private int _forzarZonasPurificadas = -1;
+    [Tooltip("Nivel que se toma como ganado si se abre la Aldea directo (sin venir de un nivel). 0 = no purifica nada.")]
+    [Min(0)]
+    [SerializeField] private int _nivelSiSeAbreDirecto = 1;
 
     [Header("Cámara")]
     [Tooltip("Cámara propia de esta cinemática, registrada en CameraStateManager.")]
@@ -64,9 +67,26 @@ public class AldeaIntroSequence : MonoBehaviour
     [SerializeField] private float _purifyPushIn = 2.5f;
     [SerializeField] private float _holdAfterPurify = 2f;
 
-    // Visitas anteriores = niveles completados antes de esta. Zonas purificadas y casas habitadas salen de acá.
+    // Niveles ganados antes de esta visita (zonas/casas 0.._yaPurificadas-1 ya sanas) y el índice de la zona/casa del
+    // nivel que se acaba de ganar (-1 = ninguno).
     private int _yaPurificadas;
+    private int _actual = -1;
     private bool _forzado;
+    // El nivel ganado ya se había ganado antes: sin purificación, la cámara va directo a la casa de su gekko.
+    private bool _repeticion;
+
+    private Transform PlanoInicial
+    {
+        get
+        {
+            if(_repeticion)
+            {
+                if(_actual < _casas.Length && _casas[_actual].plano != null) return _casas[_actual].plano;
+                if(_actual < _zonas.Length && _zonas[_actual].plano != null) return _zonas[_actual].plano;
+            }
+            return _wideShotPoint;
+        }
+    }
 
     private int TotalVisitas => Mathf.Max(_zonas.Length, _casas.Length);
 
@@ -85,13 +105,20 @@ public class AldeaIntroSequence : MonoBehaviour
         _forzado = _forzarZonasPurificadas >= 0;
         _yaPurificadas = Mathf.Clamp(_forzado ? _forzarZonasPurificadas : ZonasPurificadasGuardadas, 0, TotalVisitas);
 
+        int nivel = LevelStats.Instance != null ? LevelStats.Instance.LevelNumber : 0;
+        if(nivel <= 0) nivel = _nivelSiSeAbreDirecto;
+        _actual = nivel >= 1 && nivel <= TotalVisitas ? nivel - 1 : -1;
+        _repeticion = _actual >= 0 && _actual < _yaPurificadas;
+
+        // Primera vez que se gana el nivel: su zona queda corrupta para purificarla en la secuencia. Si es una
+        // repetición, ya está sana desde el primer frame (no se repite la purificación). Las de otros niveles ganados, sanas.
         for(int i = 0; i < Mathf.Min(_yaPurificadas, _zonas.Length); i++)
-            if(_zonas[i].region != null) _zonas[i].region.SetPurifiedInstant();
+            if((i != _actual || _repeticion) && _zonas[i].region != null) _zonas[i].region.SetPurifiedInstant();
 
         for(int i = 0; i < _casas.Length; i++)
         {
             if(_casas[i].gekko == null) continue;
-            if(i < _yaPurificadas) _casas[i].gekko.MostrarInstantaneo();
+            if(i < _yaPurificadas && (i != _actual || _repeticion)) _casas[i].gekko.MostrarInstantaneo();
             else _casas[i].gekko.Esconder();
         }
 
@@ -102,9 +129,10 @@ public class AldeaIntroSequence : MonoBehaviour
     // aunque sea un frame, el CinemachineBrain hace un blend de una a la otra al cambiar.
     private void ActivarCamaraIntroDeEntrada()
     {
-        if(_introCamera == null || _wideShotPoint == null) return;
+        Transform plano = PlanoInicial;
+        if(_introCamera == null || plano == null) return;
 
-        _introCamera.transform.SetPositionAndRotation(_wideShotPoint.position, _wideShotPoint.rotation);
+        _introCamera.transform.SetPositionAndRotation(plano.position, plano.rotation);
         foreach(CinemachineCamera cam in FindObjectsByType<CinemachineCamera>(FindObjectsSortMode.None))
             cam.enabled = cam == _introCamera;
     }
@@ -119,20 +147,32 @@ public class AldeaIntroSequence : MonoBehaviour
         if(GameManager.Instance != null && GameManager.Instance.Pj != null)
             GameManager.Instance.Pj.Inputs(false);
 
-        bool hayCamara = _introCamera != null && _wideShotPoint != null;
+        Transform planoInicial = PlanoInicial;
+        bool hayCamara = _introCamera != null && planoInicial != null;
         if(hayCamara)
         {
-            _introCamera.transform.SetPositionAndRotation(_wideShotPoint.position, _wideShotPoint.rotation);
+            _introCamera.transform.SetPositionAndRotation(planoInicial.position, planoInicial.rotation);
             EventManager.Trigger(_introCameraTag);
+        }
+
+        // Repetición de un nivel ya ganado: solo la casa del gekko rescatado (ya está ahí), con un acercamiento lento.
+        if(_repeticion)
+        {
+            if(hayCamara) yield return Acercar(planoInicial.position, planoInicial.rotation, _wideShotDrift, _wideShotDuration);
+            else yield return new WaitForSeconds(_wideShotDuration);
+
+            yield return new WaitForSeconds(_holdAfterPurify);
+            FinishSequence();
+            yield break;
         }
 
         // Plano general con un acercamiento lento (sin quedar quieta).
         if(hayCamara) yield return Acercar(_wideShotPoint.position, _wideShotPoint.rotation, _wideShotDrift, _wideShotDuration);
         else yield return new WaitForSeconds(_wideShotDuration);
 
-        if(_yaPurificadas < _zonas.Length)
+        if(_actual >= 0 && _actual < _zonas.Length)
         {
-            Zona zona = _zonas[_yaPurificadas];
+            Zona zona = _zonas[_actual];
 
             if(hayCamara && zona.plano != null)
                 yield return MoveCamera(_introCamera.transform.position, _introCamera.transform.rotation, zona.plano, _moveToZoneDuration);
@@ -155,12 +195,12 @@ public class AldeaIntroSequence : MonoBehaviour
                 }
             }
 
-            Debug.Log($"[Aldea] Zona {_yaPurificadas + 1}/{_zonas.Length} purificada ({zona.nombre}).");
+            Debug.Log($"[Aldea] Zona {_actual + 1}/{_zonas.Length} purificada ({zona.nombre}).");
         }
 
-        if(_yaPurificadas < _casas.Length && _casas[_yaPurificadas].gekko != null)
+        if(_actual >= 0 && _actual < _casas.Length && _casas[_actual].gekko != null)
         {
-            Casa casa = _casas[_yaPurificadas];
+            Casa casa = _casas[_actual];
 
             if(hayCamara && casa.plano != null)
                 yield return MoveCamera(_introCamera.transform.position, _introCamera.transform.rotation, casa.plano, _moveToCasaDuration);
@@ -168,12 +208,13 @@ public class AldeaIntroSequence : MonoBehaviour
             yield return casa.gekko.Aparecer();
             yield return new WaitForSeconds(_holdAfterGekko);
 
-            Debug.Log($"[Aldea] Gekko {_yaPurificadas + 1}/{_casas.Length} llegó a su casa ({casa.nombre}).");
+            Debug.Log($"[Aldea] Gekko {_actual + 1}/{_casas.Length} llegó a su casa ({casa.nombre}).");
         }
 
-        if(!_forzado && _yaPurificadas < TotalVisitas)
+        // Guarda hasta qué nivel se ganó (nunca baja: rejugar el nivel 1 no "despurifica" la zona del 2).
+        if(!_forzado && _actual >= 0 && _actual + 1 > _yaPurificadas)
         {
-            PlayerPrefs.SetInt(PlayerPrefsKeys.aldeaZonasPurificadasKey, _yaPurificadas + 1);
+            PlayerPrefs.SetInt(PlayerPrefsKeys.aldeaZonasPurificadasKey, _actual + 1);
             PlayerPrefs.Save();
         }
 

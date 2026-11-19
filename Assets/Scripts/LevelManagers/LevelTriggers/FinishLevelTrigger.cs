@@ -11,6 +11,10 @@ public class FinishLevelTrigger : MonoBehaviour
     [Tooltip("Objetos (ej. la cámara de la cinemática) que solo se prenden al llegar al final. Quedan prendidos detrás de Canvas_Finish para que el último plano siga en pantalla.")]
     [SerializeField] private GameObject[] _cinematicOnlyObjects;
 
+    [Header("Después del final (opcional)")]
+    [Tooltip("None = abre Canvas_Finish acá. Con una escena (ej. Aldea) hace fundido y la carga; la pantalla final se muestra allá con las stats de este nivel.")]
+    [SerializeField] private ScenesNames _sceneAfterFinish = ScenesNames.None;
+
     [Header("Skip")]
     [SerializeField] private Key _skipKey = Key.Space;
     [Tooltip("Segundos de cinemática antes de poder saltearla, para que un salto justo al entrar no la corte.")]
@@ -32,7 +36,9 @@ public class FinishLevelTrigger : MonoBehaviour
         if(!other.TryGetComponent(out Player player)) return;
 
         _finished = true;
-        LevelStats.Instance?.StopTimer();
+        // Si sigue en otra escena (Aldea) el timer no se frena acá: LevelStats tiene que seguir "abierto" para que la
+        // Aldea no lo reemplace por el suyo. Allá no corre (no es escena del nivel) y Canvas_Finish lo frena.
+        if(_sceneAfterFinish == ScenesNames.None) LevelStats.Instance?.StopTimer();
         player.Inputs(false);
 
         if(_director == null || _director.playableAsset == null)
@@ -72,8 +78,37 @@ public class FinishLevelTrigger : MonoBehaviour
         FinishLevel();
     }
 
-    // GameManager escucha este evento y abre Canvas_Finish.
-    private void FinishLevel() => EventManager.Trigger("OnLevelFinished");
+    // GameManager escucha "OnLevelFinished" y abre Canvas_Finish. Con _sceneAfterFinish va a esa escena (fundido a negro
+    // y pantalla de carga, igual que FriendGekkoDialogue al ir a la Aldea en el nivel 1).
+    private void FinishLevel()
+    {
+        if(_sceneAfterFinish == ScenesNames.None)
+        {
+            EventManager.Trigger("OnLevelFinished");
+            return;
+        }
+
+        if(ScreenFader.Instance == null)
+        {
+            LoadSceneAfterFinish();
+            return;
+        }
+
+        ScreenFader.Instance.OnFadeMiddle += OnScreenBlack;
+        ScreenFader.Instance.StartFade();
+    }
+
+    private void OnScreenBlack()
+    {
+        if(ScreenFader.Instance != null) ScreenFader.Instance.OnFadeMiddle -= OnScreenBlack;
+        LoadSceneAfterFinish();
+    }
+
+    private void LoadSceneAfterFinish()
+    {
+        AsyncLoader.SetSceneToLoad(_sceneAfterFinish);
+        UnityEngine.SceneManagement.SceneManager.LoadScene(ScenesDictionary.SceneName[ScenesNames.LoadScene]);
+    }
 
     private void SetCinematicObjectsActive(bool active)
     {

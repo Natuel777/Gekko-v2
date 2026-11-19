@@ -27,6 +27,20 @@ public class LevelStats : MonoBehaviour
 
     public float ElapsedTime => _elapsed;
 
+    // Escena donde arrancó este nivel (ej. "LvlOne"): la Aldea la usa para saber qué nivel se acaba de ganar.
+    public string HomeScene => _homeScene;
+
+    // Número del nivel (1, 2...) según ScenesDictionary.LevelIndex. 0 = no es un nivel (ej. se abrió la Aldea directo).
+    public int LevelNumber
+    {
+        get
+        {
+            foreach(var kvp in ScenesDictionary.LevelIndex)
+                if(ScenesDictionary.SceneName[kvp.Value] == _homeScene) return kvp.Key;
+            return 0;
+        }
+    }
+
     public string FormattedTime
     {
         get { int t = Mathf.FloorToInt(_elapsed); return $"{t / 60:00}:{t % 60:00}"; }

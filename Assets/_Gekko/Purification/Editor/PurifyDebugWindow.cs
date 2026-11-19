@@ -163,17 +163,19 @@ namespace Gekko.Purification.EditorTools
             // Mismos parámetros de borde que el manager de la escena, si hay uno.
             PurifyManager manager = Object.FindFirstObjectByType<PurifyManager>(FindObjectsInactive.Include);
             float ancho = 1.5f, fundido = 3f;
+            bool corruptoAfuera = false;
             if(manager != null)
             {
                 var so = new SerializedObject(manager);
                 ancho = so.FindProperty("_anchoBorde").floatValue;
                 fundido = so.FindProperty("_fundidoArea").floatValue;
+                corruptoAfuera = so.FindProperty("_corruptoAfueraDeRegiones").boolValue;
             }
 
             foreach(PurifyRegion r in regiones)
                 r.PrevisualizarProgreso(_preview.TryGetValue(r, out float v) ? v : 0f);
 
-            _globales.SubirParametros(ancho, fundido);
+            _globales.SubirParametros(ancho, fundido, corruptoAfuera);
             _globales.Subir(regiones);
             SceneView.RepaintAll();
         }

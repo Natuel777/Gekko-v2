@@ -33,6 +33,10 @@ namespace Gekko.Purification
         [Min(0f)]
         [SerializeField] private float _margenOnda = MargenPorDefecto;
 
+        [Header("Escena")]
+        [Tooltip("Activado: TODO lo que no purificó ninguna onda se ve corrupto, también afuera de las regiones (la Aldea). Desactivado: afuera de las regiones se ve sano (los niveles).")]
+        [SerializeField] private bool _corruptoAfueraDeRegiones;
+
         private PurifyShaderGlobals _globales;
 
         /// <summary>Regiones purificadas / regiones totales (1 si no hay regiones). Lo usa la atmósfera.
@@ -70,7 +74,7 @@ namespace Gekko.Purification
         {
             if(_globales == null) return;
 
-            _globales.SubirParametros(_anchoBorde, _fundidoArea);
+            _globales.SubirParametros(_anchoBorde, _fundidoArea, _corruptoAfueraDeRegiones);
             _globales.Subir(PurifyRegion.Activas);
         }
 
@@ -93,7 +97,7 @@ namespace Gekko.Purification
         private void OnValidate()
         {
             if(Application.isPlaying && isActiveAndEnabled && _globales != null)
-                _globales.SubirParametros(_anchoBorde, _fundidoArea);
+                _globales.SubirParametros(_anchoBorde, _fundidoArea, _corruptoAfueraDeRegiones);
         }
     }
 }

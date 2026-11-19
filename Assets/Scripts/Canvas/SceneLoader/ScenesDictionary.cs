@@ -30,6 +30,11 @@ public static class ScenesDictionary
     {
         next = default;
 
+        // La Aldea cierra el nivel que se acaba de ganar (nivel 1 -> LvlTwo, nivel 2 -> no hay siguiente = Menú).
+        // Si no se sabe qué nivel fue (Aldea abierta directo), usa NextSceneOverride como antes.
+        if (currentSceneName == SceneName[ScenesNames.Aldea] && LevelStats.Instance != null && LevelStats.Instance.LevelNumber > 0)
+            return LevelIndex.TryGetValue(LevelStats.Instance.LevelNumber + 1, out next);
+
         foreach (var kvp in NextSceneOverride)
         {
             if (SceneName[kvp.Key] == currentSceneName)

@@ -25,6 +25,7 @@ float4 _PurifySphereParams[PURIFY_MAX_SPHERES]; // x radio máximo (área corrup
 float  _PurifySphereCount;
 float  _PurifyEdgeWidth;                        // ancho del frente de la onda, en metros
 float  _PurifyAreaFade;                         // ancho del fundido en el borde del área corrupta, en metros
+float  _PurifyOutsideCorrupt;                   // 1 = lo que está afuera de toda región también se ve corrupto
 
 // ---------- Ruido (en mundo, igual para todos los materiales) ----------
 
@@ -98,6 +99,10 @@ void PurifyMaskFull_float(float3 WorldPos, float NoiseValue, float NoiseAmount, 
         Edge = max(Edge, area * reached * (1.0 - reached) * 4.0);
         Purified = max(Purified, area * reached);
     }
+
+    // Escenas que arrancan TODAS corruptas (la Aldea): lo que no limpió ninguna onda queda corrupto, también afuera
+    // de las regiones.
+    corruption = lerp(corruption, 1.0 - Purified, saturate(_PurifyOutsideCorrupt));
 
     Mask = 1.0 - corruption;
 }

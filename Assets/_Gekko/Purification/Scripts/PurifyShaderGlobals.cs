@@ -17,6 +17,7 @@ namespace Gekko.Purification
         private static readonly int SphereCountId = Shader.PropertyToID("_PurifySphereCount");
         private static readonly int EdgeWidthId = Shader.PropertyToID("_PurifyEdgeWidth");
         private static readonly int AreaFadeId = Shader.PropertyToID("_PurifyAreaFade");
+        private static readonly int OutsideCorruptId = Shader.PropertyToID("_PurifyOutsideCorrupt");
 
         private readonly Vector4[] _esferas = new Vector4[PurifyManager.MaxEsferas];
         private readonly Vector4[] _parametros = new Vector4[PurifyManager.MaxEsferas];
@@ -29,10 +30,11 @@ namespace Gekko.Purification
             _contexto = contexto;
         }
 
-        public void SubirParametros(float anchoBorde, float fundidoArea)
+        public void SubirParametros(float anchoBorde, float fundidoArea, bool corruptoAfuera = false)
         {
             Shader.SetGlobalFloat(EdgeWidthId, anchoBorde);
             Shader.SetGlobalFloat(AreaFadeId, fundidoArea);
+            Shader.SetGlobalFloat(OutsideCorruptId, corruptoAfuera ? 1f : 0f);
         }
 
         /// <summary>Sube los nodos si alguna región cambió, o si se agregó/sacó una región.</summary>
@@ -100,6 +102,7 @@ namespace Gekko.Purification
             Shader.SetGlobalVectorArray(SpheresId, _esferas);
             Shader.SetGlobalVectorArray(SphereParamsId, _parametros);
             Shader.SetGlobalFloat(SphereCountId, 0f);
+            Shader.SetGlobalFloat(OutsideCorruptId, 0f);
             _cantidadRegiones = -1;
         }
     }
