@@ -194,6 +194,7 @@ public class LittleBarricade : MonoBehaviour, IDamageable, IParticleSystemTarget
         EventManager.Trigger<float>("OnCameraShake", _revealShakeForce);
 
         StartCoroutine(DissolveRoutine(new[] { _head.material }));
+        StartCoroutine(FadeCoreLeaves());
         BeginCoreCam();
         yield return new WaitForSeconds(_coreCamSeconds);
 
@@ -270,9 +271,67 @@ public class LittleBarricade : MonoBehaviour, IDamageable, IParticleSystemTarget
     private IEnumerator Disapear()
     {
         if (AudioManager.instance) AudioManager.instance.Play(SoundNames.Purify);
-       
-        
+
+        StartCoroutine(FadeCoreLeaves());
         yield return DissolveRoutine(GetMaterials(), () => _barricade.SetActive(false));
+    }
+
+    // Hojas del núcleo (HojaG, hijas de _head): usan Plantas.mat, que no tiene _Dissolve, así que antes quedaban sueltas
+    // flotando cuando el núcleo se disolvía. Se desvanecen al mismo ritmo que el disolve (bajando el alfa de _BaseColor,
+    // igual que en PurificationCore) y al final se apagan. Instancia propia por hoja: Plantas.mat lo comparte todo el nivel.
+    private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
+    private readonly System.Collections.Generic.List<Material> _leafMaterialInstances = new System.Collections.Generic.List<Material>();
+
+    private IEnumerator FadeCoreLeaves()
+    {
+        if (_head == null) yield break;
+
+        var leaves = new System.Collections.Generic.List<Renderer>();
+        foreach (Renderer r in _head.GetComponentsInChildren<Renderer>())
+        {
+            if (r == _head || r is ParticleSystemRenderer || r is LineRenderer || r is TrailRenderer) continue;
+            if (HasDissolve(r)) continue;
+            leaves.Add(r);
+        }
+        if (leaves.Count == 0) yield break;
+
+        var materials = new System.Collections.Generic.List<Material>();
+        var startAlphas = new System.Collections.Generic.List<float>();
+        foreach (Renderer r in leaves)
+            foreach (Material m in r.materials)
+            {
+                if (m == null || !m.HasProperty(BaseColorId)) continue;
+                materials.Add(m);
+                startAlphas.Add(m.GetColor(BaseColorId).a);
+            }
+        _leafMaterialInstances.AddRange(materials);
+
+        float progress = 0f;
+        while (progress < 1f)
+        {
+            progress = Mathf.MoveTowards(progress, 1f, _fadeDuration * Time.deltaTime);
+            for (int i = 0; i < materials.Count; i++)
+            {
+                Color c = materials[i].GetColor(BaseColorId);
+                c.a = Mathf.Lerp(startAlphas[i], 0f, progress);
+                materials[i].SetColor(BaseColorId, c);
+            }
+            yield return null;
+        }
+
+        foreach (Renderer r in leaves) if (r != null) r.enabled = false;
+    }
+
+    private static bool HasDissolve(Renderer r)
+    {
+        foreach (Material m in r.sharedMaterials)
+            if (m != null && m.HasProperty("_Dissolve")) return true;
+        return false;
+    }
+
+    private void OnDestroy()
+    {
+        foreach (Material m in _leafMaterialInstances) if (m != null) Destroy(m);
     }
     private Material[] GetMaterials()
     {

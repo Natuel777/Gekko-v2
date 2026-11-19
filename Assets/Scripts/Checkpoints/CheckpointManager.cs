@@ -14,6 +14,31 @@ public class CheckpointManager
 
     public bool HasCheckpoint => _hasCheckpoint;
 
+    // Inicio del nivel: lo registra Player al aparecer. Se usa como checkpoint cuando todavía no se pisó ninguno, así
+    // la R (o una caída) vuelve al principio con el iris en vez de recargar la escena por la pantalla de carga.
+    private Vector3 _startPos;
+    private Quaternion _startRot = Quaternion.identity;
+    private float _startHealth;
+    private bool _hasLevelStart;
+
+    public void SetLevelStart(Vector3 pos, Quaternion rot, float health)
+    {
+        _startPos = pos;
+        _startRot = rot;
+        _startHealth = health;
+        _hasLevelStart = true;
+    }
+
+    // Checkpoint pisado o, si no hay, el inicio del nivel.
+    public bool TryGetRespawnOrStartPose(out Vector3 pos, out Quaternion rot, out float health)
+    {
+        if (TryGetRespawnPose(out pos, out rot, out health)) return true;
+        pos = _startPos;
+        rot = _startRot;
+        health = _startHealth;
+        return _hasLevelStart;
+    }
+
     // Reiniciar nivel: olvidar el checkpoint del intento (si no, al morir o con R se volvía a ese punto viejo).
     public void ClearCheckpoint()
     {
@@ -59,15 +84,17 @@ public class CheckpointManager
     {
         // Sin checkpoint pisado: reiniciar la escena (resetea coleccionables) en vez de
         // teleportar a un punto que nunca se guardó.
-        if(!_hasCheckpoint)
+        // Ahora, si no hay checkpoint, se vuelve al inicio del nivel (sin recargar). Solo si ni eso hay, reinicia.
+        if(!TryGetRespawnOrStartPose(out Vector3 pos, out Quaternion rot, out float health))
         {
             GameManager.Instance.RestartLvl();
             return;
         }
 
         Player pj = GameManager.Instance.Pj;
-        pj.PjController.Teleport(_respawnPos);
-        pj.health.SetHealth(_savedHealth);
+        pj.PjController.Teleport(pos);
+        pj.transform.rotation = rot;
+        pj.health.SetHealth(health);
         pj.PjTongue.ResetTongue();
     }
 

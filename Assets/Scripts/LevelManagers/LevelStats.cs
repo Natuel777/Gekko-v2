@@ -34,7 +34,20 @@ public class LevelStats : MonoBehaviour
 
     private void Awake()
     {
-        if(Instance != null && Instance != this) Destroy(Instance.gameObject);
+        if(Instance != null && Instance != this)
+        {
+            // Un nivel anterior todavía no mostró su pantalla final (ej. LvlOne -> Aldea: la Aldea tiene su propio
+            // LevelStats, pero el Canvas_Finish que abre tiene que mostrar lo de LvlOne). Este se retira y sigue el viejo.
+            // Si es el mismo nivel (reiniciar) o el anterior ya terminó, el nuevo lo reemplaza como siempre.
+            bool sameLevel = Instance._homeScene == gameObject.scene.name;
+            if(!sameLevel && !Instance._stopped)
+            {
+                enabled = false; // que no llegue a correr Start/Update antes de destruirse
+                Destroy(gameObject);
+                return;
+            }
+            Destroy(Instance.gameObject);
+        }
         Instance = this;
 
         _homeScene = gameObject.scene.name;

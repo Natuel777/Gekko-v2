@@ -120,6 +120,8 @@ public class Player : MonoBehaviour
     {
         GameManager.Instance.Pj = this;
         health = new GekkoHealth(_healthBar);
+        // Inicio del nivel = checkpoint por defecto (R o caída sin checkpoint pisado vuelven acá, sin recargar la escena).
+        GameManager.Instance.checkpointManager?.SetLevelStart(transform.position, transform.rotation, health.MaxHealth);
         _collision = new GekkoCollision(this);
         _debugController = new DebugController();
     }

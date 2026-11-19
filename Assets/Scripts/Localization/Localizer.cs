@@ -90,6 +90,13 @@ public static class Localizer
         { "continue", ("Continuar", "Continue") },
         { "exit", ("Salir", "Exit") },
 
+        // Pantalla de fin de nivel (ScreenFinishLevel)
+        { "zone_purified", ("Zona purificada", "Zone purified") },
+        { "zone_purification", ("Purificación de la zona", "Zone purification") },
+        { "retry", ("Reintentar", "Retry") },
+        { "next_zone", ("Siguiente zona", "Next zone") },
+        { "menu", ("Menú", "Menu") },
+
         // Cartel de confirmación (ScreenReafirm)
         { "reafirm_menu_title", ("¿Volver al menú?", "Back to the menu?") },
         { "reafirm_menu_msg", ("Vas a perder el progreso del nivel.", "You will lose your progress in this level.") },

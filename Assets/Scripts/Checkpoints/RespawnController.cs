@@ -123,11 +123,12 @@ public class RespawnController : MonoBehaviour
         RestoreCameraY();
 
         // --- Fase 3: pantalla negra (radio 0 = todo tapado): teletransporte + runa ---
-        bool hasCheckpoint = GameManager.Instance.checkpointManager.TryGetRespawnPose(out Vector3 pos, out Quaternion rot, out float health);
+        // Checkpoint pisado o, si todavía no hay, el inicio del nivel (sin pasar por la pantalla de carga).
+        bool hasCheckpoint = GameManager.Instance.checkpointManager.TryGetRespawnOrStartPose(out Vector3 pos, out Quaternion rot, out float health);
 
         if(!hasCheckpoint)
         {
-            // Sin checkpoint pisado todavía: mismo fallback de siempre (reinicia el nivel).
+            // Ni checkpoint ni inicio registrado (no debería pasar): reinicia el nivel como antes.
             GameManager.Instance.RestartLvl();
             _isRunning = false;
             yield break;
