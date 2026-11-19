@@ -14,7 +14,8 @@ using UnityEngine;
 //
 // Las rotaciones son LOCALES, las mismas que muestra el Inspector en el Transform de cada hueso. En joint7_R el eje Z no sigue
 // el camino arranque -> objetivo: durante el Windup barre de Z From a Z To (ver JointPose.sweepZ), y la mezcla del arranque
-// (Blend In Time) es la que lo lleva de la pose con la que venía a ese Z From.
+// (Blend In Time) es la que lo lleva de la pose con la que venía a ese Z From. Además de la cabeza (joint6_R y joint7_R) anima las
+// hojas (joint1*, joint4*, joint6Part*, joint19*, joint21*): cada una va, eje por eje, de la pose con la que arranca a su objetivo.
 //
 // Además, durante el Windup gira la planta entera (el transform raíz) hacia el player, sobre su eje vertical y a velocidad
 // limitada (Root Turn Speed). Es lo que apunta el HitBox del mordisco: como los huesos vuelven a su pose base en el Return, la
@@ -66,15 +67,25 @@ public class PlantBiteWindup : MonoBehaviour
     }
 
     [Header("Joints")]
-    [Tooltip("Huesos que anima la preparación, con su rotación base (la de fábrica) y la objetivo. Un hueso que no se encuentra por nombre se ignora con un warning.")]
+    [Tooltip("Huesos que anima la preparación (la cabeza y las hojas), con su rotación base (la de fábrica) y la objetivo. Un hueso que no se encuentra por nombre se ignora con un warning.")]
     [SerializeField] private JointPose[] _joints =
     {
         new JointPose("joint6_R",      new Vector3(0f, 180f, 312.531738f),                new Vector3(28.5997677f, 210.009979f, 320.348785f)),
-        new JointPose("joint4_R",      new Vector3(313.025055f, 90f, 336.135864f),        new Vector3(313.025055f, 90.0000305f, 304.036926f)),
-        new JointPose("joint6Part1_R", new Vector3(0f, 0f, 359.506653f),                  new Vector3(313.521484f, 330.644043f, 21.8529816f)),
+        new JointPose("joint4_R",      new Vector3(313.025055f, 90f, 336.135864f),        new Vector3(313.025055f, 90.0000076f, 314.567627f)),
+        new JointPose("joint6Part1_R", new Vector3(0f, 0f, 359.506653f),                  new Vector3(0f, 0f, 359.506653f)),
         new JointPose("joint7_R",      new Vector3(356.112091f, 184.17572f, 312.88327f),  new Vector3(10.3371201f, 168.730225f, 312.00238f), -3.811f, -84.533f),
-        new JointPose("joint19_R",     new Vector3(313.025055f, 90f, 206.72084f),         new Vector3(313.025085f, 90f, 146.8815f)),
-        new JointPose("joint21_R",     new Vector3(0f, 180f, 313.276215f),                new Vector3(2.2570734f, 138.473328f, 329.567627f)),
+        new JointPose("joint19_R",     new Vector3(313.025055f, 90f, 206.72084f),         new Vector3(313.025055f, 90f, 228.794861f)),
+        new JointPose("joint21_R",     new Vector3(0f, 180f, 313.276215f),                new Vector3(0f, 180f, 309.197266f)),
+        // Las hojas que se sumaron después. La base es la rotación que tiene cada hueso en el prefab.
+        new JointPose("joint6Part2_R",  new Vector3(0f, 0f, 359.506653f),  new Vector3(0f, 0f, 344.839569f)),
+        new JointPose("joint1_R",       new Vector3(0f, 0f, 44.545004f),   new Vector3(0f, 0f, 25.7183571f)),
+        new JointPose("joint1Part1_R",  new Vector3(0f, 0f, 356.76f),      new Vector3(0f, 0f, 331.908081f)),
+        new JointPose("joint19Part1_R", new Vector3(0f, 0f, 359.95333f),   new Vector3(0f, 0f, 24.4871197f)),
+        new JointPose("joint21Part1_R", new Vector3(0f, 0f, 0.023333331f), new Vector3(0f, 0f, 332.629303f)),
+        new JointPose("joint21Part2_R", new Vector3(0f, 0f, 0.023333331f), new Vector3(0f, 0f, 338.607269f)),
+        new JointPose("joint21Part3_R", new Vector3(0f, 0f, 0.023333331f), new Vector3(0f, 0f, 338.475098f)),
+        new JointPose("joint21Part4_R", new Vector3(0f, 0f, 0.023333331f), new Vector3(0f, 0f, 340.939728f)),
+        new JointPose("joint4Part1_R",  new Vector3(0f, 0f, 1.62f),        new Vector3(0f, 0f, 337.221741f)),
     };
 
     [Header("Timing")]
