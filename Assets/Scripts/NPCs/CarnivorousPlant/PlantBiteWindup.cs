@@ -5,13 +5,16 @@ using UnityEngine;
 // Animación por código de la "preparación" del ataque cuerpo a cuerpo de la planta (el mordisco).
 //
 // Tiene dos fases, y la duración de cada una se configura en el Inspector:
-//  1. Windup: los huesos pasan de su rotación base (la de fábrica) a la rotación objetivo, de forma progresiva.
-//  2. Return: vuelven rápido a la rotación base.
+//  1. Windup: los huesos pasan de la pose con la que arrancan a la rotación objetivo, de forma progresiva. Arrancan desde la pose
+//     que tenga la planta en ese momento: si viene del intervalo entre mordiscos, la de cansada (PlantTiredAnimation), así la
+//     transición es directa y sin saltos; si no, la que tenga el Animator.
+//  2. Return: vuelven rápido a la rotación base (la de fábrica), que es donde termina la preparación.
 // Cuando termina el Return la preparación está completa (Completed) y recién ahí PlantBiteState dispara el mordisco de
 // siempre (CarnivorousPlant.Bite, con su animación 'nibble'). No reemplaza a esa animación: es el paso previo.
 //
 // Las rotaciones son LOCALES, las mismas que muestra el Inspector en el Transform de cada hueso. En joint7_R el eje Z no sigue
-// el camino base -> objetivo: durante el Windup barre de Z From a Z To (ver JointPose.sweepZ).
+// el camino arranque -> objetivo: durante el Windup barre de Z From a Z To (ver JointPose.sweepZ), y la mezcla del arranque
+// (Blend In Time) es la que lo lleva de la pose con la que venía a ese Z From.
 //
 // Además, durante el Windup gira la planta entera (el transform raíz) hacia el player, sobre su eje vertical y a velocidad
 // limitada (Root Turn Speed). Es lo que apunta el HitBox del mordisco: como los huesos vuelven a su pose base en el Return, la
@@ -34,7 +37,7 @@ public class PlantBiteWindup : MonoBehaviour
     {
         [Tooltip("Nombre del hueso. Se busca entre los hijos de la planta al arrancar.")]
         public string jointName;
-        [Tooltip("Rotación local (Euler) de fábrica: de acá arranca el Windup y a esta vuelve el Return.")]
+        [Tooltip("Rotación local (Euler) de fábrica: a esta vuelve el Return y en ella termina la preparación. El Windup ya no arranca de acá sino de la pose que tengan los huesos en ese momento (la de cansada, si viene del intervalo entre mordiscos).")]
         public Vector3 baseEuler;
         [Tooltip("Rotación local (Euler) a la que llega el Windup.")]
         public Vector3 targetEuler;
@@ -75,13 +78,13 @@ public class PlantBiteWindup : MonoBehaviour
     };
 
     [Header("Timing")]
-    [Tooltip("Segundos que tardan los huesos en ir de la rotación base a la objetivo.")]
+    [Tooltip("Segundos que tardan los huesos en ir de la pose con la que arrancan a la rotación objetivo.")]
     [Min(0f)]
     [SerializeField] private float _windupDuration = 3f;
     [Tooltip("Segundos que tardan en volver de la objetivo a la base. Cuando termina, sale el mordisco.")]
     [Min(0f)]
     [SerializeField] private float _returnDuration = 0.5f;
-    [Tooltip("Segundos de mezcla con la pose del Animator al arrancar, para que no haya un salto (sobre todo en el Z de joint7_R). 0 = sin mezcla.")]
+    [Tooltip("Segundos de mezcla con la pose con la que arrancan los huesos, para que no haya un salto (sobre todo en el Z de joint7_R, que barre de Z From a Z To sin partir de donde estaba). 0 = sin mezcla.")]
     [Min(0f)]
     [SerializeField] private float _blendInTime = 0.15f;
     [Tooltip("Velocidad de la preparación cuando es para escupir (PlantSpitBehaviour) y no para el mordisco. 2 = el doble de rápido: Windup, Return y mezcla duran la mitad. 1 = igual que el mordisco.")]
@@ -111,6 +114,8 @@ public class PlantBiteWindup : MonoBehaviour
         public Transform transform;
         public JointPose pose;
         public Quaternion baseRot;
+        public Quaternion startRot;   // la pose que tenía el hueso cuando arrancó el Windup (ver Play)
+        public Vector3 startEuler;    // lo mismo, en Euler: el Windup interpola por eje, desde acá
         public Quaternion applied;    // lo último que se escribió en el hueso
         public Quaternion returnFrom; // dónde estaba el hueso cuando arrancó el Return
     }
@@ -167,6 +172,16 @@ public class PlantBiteWindup : MonoBehaviour
     public bool Play(Transform lookTarget = null, bool forSpit = false)
     {
         if(!IsAvailable || _phase != Phase.Idle) return false;
+
+        // El Windup arranca desde la pose que tienen los huesos ahora: la de cansada si la planta viene del intervalo entre mordiscos
+        // (PlantTiredAnimation), o la del Animator. Es lo que se ve en pantalla: Play se llama desde Update, antes de que el Animator
+        // reescriba los huesos de este frame, así que todavía tienen lo que se dibujó en el anterior (la pose de cansada incluida,
+        // que se aplica en LateUpdate).
+        foreach(Bone bone in _bones)
+        {
+            bone.startRot = bone.transform.localRotation;
+            bone.startEuler = bone.startRot.eulerAngles;
+        }
 
         // Implementaciòn actual, luego reemplazar por GenericPS.Play()
         if(_preparingAttackPS != null && !forSpit) _preparingAttackPS.Play();
@@ -225,13 +240,14 @@ public class PlantBiteWindup : MonoBehaviour
         float progress = Progress(_windupDuration);
         float k = _windupCurve.Evaluate(progress);
 
-        // Al arrancar se mezcla con la pose que acaba de dejar el Animator, para que el primer frame no pegue un salto.
+        // Al arrancar se mezcla con la pose con la que venían los huesos, para que el primer frame no pegue un salto (sobre todo en
+        // el Z de joint7_R, que no parte de donde estaba sino de Z From).
         float blend = _blendInTime > 0f ? Mathf.SmoothStep(0f, 1f, _elapsed / _blendInTime) : 1f;
 
         foreach(Bone bone in _bones)
         {
-            Quaternion pose = WindupPose(bone.pose, k);
-            if(blend < 1f) pose = Quaternion.Slerp(bone.transform.localRotation, pose, blend);
+            Quaternion pose = WindupPose(bone, k);
+            if(blend < 1f) pose = Quaternion.Slerp(bone.startRot, pose, blend);
 
             Apply(bone, pose);
         }
@@ -278,11 +294,15 @@ public class PlantBiteWindup : MonoBehaviour
         bone.applied = rotation;
     }
 
-    private static Quaternion WindupPose(JointPose pose, float k)
+    // Pose del Windup con avance k: de la pose con la que arrancó el hueso (startEuler) a la objetivo, eje por eje.
+    private static Quaternion WindupPose(Bone bone, float k)
     {
-        float x = LerpAngle(pose.baseEuler.x, pose.targetEuler.x, k);
-        float y = LerpAngle(pose.baseEuler.y, pose.targetEuler.y, k);
-        float z = pose.sweepZ ? Mathf.LerpUnclamped(pose.zFrom, pose.zTo, k) : LerpAngle(pose.baseEuler.z, pose.targetEuler.z, k);
+        JointPose pose = bone.pose;
+        Vector3 from = bone.startEuler;
+
+        float x = LerpAngle(from.x, pose.targetEuler.x, k);
+        float y = LerpAngle(from.y, pose.targetEuler.y, k);
+        float z = pose.sweepZ ? Mathf.LerpUnclamped(pose.zFrom, pose.zTo, k) : LerpAngle(from.z, pose.targetEuler.z, k);
 
         return Quaternion.Euler(x, y, z);
     }

@@ -3297,6 +3297,7 @@ GameObject:
   - component: {fileID: 26294470}
   - component: {fileID: 1786338072}
   - component: {fileID: 1786338073}
+  - component: {fileID: 1786338074}
   m_Layer: 9
   m_Name: CarniborousPlantBOSS
   m_TagString: Untagged
@@ -226023,6 +226024,7 @@ MonoBehaviour:
   _anchoBorde: 1.5
   _fundidoArea: 3
   _margenOnda: 4
+  _corruptoAfueraDeRegiones: 0
 --- !u!4 &1553027814
 Transform:
   m_ObjectHideFlags: 0
@@ -264133,6 +264135,119 @@ MonoBehaviour:
     m_PostInfinity: 2
     m_RotationOrder: 4
   _recoverCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+--- !u!114 &1786338074
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 26294466}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e83af663fbca2d2bf77bcd79ddea99f2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _joints:
+  - jointName: joint6Part1_R
+    targetEuler: {x: 0, y: 0, z: 30.966562}
+    shake: 0
+    shakeEuler: {x: 0, y: 0, z: 0}
+  - jointName: joint1Part1_R
+    targetEuler: {x: 0, y: 0, z: 311.07727}
+    shake: 0
+    shakeEuler: {x: 0, y: 0, z: 0}
+  - jointName: joint1Part2_R
+    targetEuler: {x: 0, y: 0, z: 347.53406}
+    shake: 0
+    shakeEuler: {x: 0, y: 0, z: 0}
+  - jointName: joint4_R
+    targetEuler: {x: 313.02505, y: 89.99998, z: 12.748611}
+    shake: 0
+    shakeEuler: {x: 0, y: 0, z: 0}
+  - jointName: joint4Part1_R
+    targetEuler: {x: 0, y: 0, z: 343.44275}
+    shake: 0
+    shakeEuler: {x: 0, y: 0, z: 0}
+  - jointName: joint19_R
+    targetEuler: {x: 313.02505, y: 90, z: 165.07672}
+    shake: 0
+    shakeEuler: {x: 0, y: 0, z: 0}
+  - jointName: joint19Part1_R
+    targetEuler: {x: 0, y: 0, z: 36.435387}
+    shake: 0
+    shakeEuler: {x: 0, y: 0, z: 0}
+  - jointName: joint19Part2_R
+    targetEuler: {x: 0, y: 0, z: 341.65604}
+    shake: 0
+    shakeEuler: {x: 0, y: 0, z: 0}
+  - jointName: joint21_R
+    targetEuler: {x: 0, y: 180, z: 354.3404}
+    shake: 0
+    shakeEuler: {x: 0, y: 0, z: 0}
+  - jointName: joint21Part1_R
+    targetEuler: {x: 0, y: 0, z: 329.632}
+    shake: 0
+    shakeEuler: {x: 0, y: 0, z: 0}
+  - jointName: joint21Part3_R
+    targetEuler: {x: 0, y: 0, z: 339.97894}
+    shake: 0
+    shakeEuler: {x: 0, y: 0, z: 0}
+  - jointName: joint21Part4_R
+    targetEuler: {x: 0, y: 0, z: 343.80054}
+    shake: 0
+    shakeEuler: {x: 0, y: 0, z: 0}
+  - jointName: joint7_R
+    targetEuler: {x: 18.45717, y: 159.04684, z: 309.58325}
+    shake: 1
+    shakeEuler: {x: 36.804817, y: 153.66603, z: 308.57635}
+  - jointName: joint8_R
+    targetEuler: {x: 357.33203, y: 179.88391, z: 276.38034}
+    shake: 0
+    shakeEuler: {x: 0, y: 0, z: 0}
+  - jointName: joint10Part1_R
+    targetEuler: {x: 0, y: 0, z: 343.0939}
+    shake: 0
+    shakeEuler: {x: 0, y: 0, z: 0}
+  - jointName: joint13_R
+    targetEuler: {x: 0, y: 0, z: 261.3064}
+    shake: 0
+    shakeEuler: {x: 0, y: 0, z: 0}
+  - jointName: joint15_R
+    targetEuler: {x: 358.0073, y: 179.91331, z: 276.9829}
+    shake: 0
+    shakeEuler: {x: 0, y: 0, z: 0}
+  _restJoints:
+  - jointName: joint10Part1_R
+    restEuler: {x: 0, y: 0, z: 0}
+  _startDelay: 0.55
+  _settleTime: 0.8
+  _blendInTime: 0.15
+  _shakeCycleTime: 1.4
+  _releaseTime: 0.3
+  _settleCurve:
     serializedVersion: 2
     m_Curve:
     - serializedVersion: 3

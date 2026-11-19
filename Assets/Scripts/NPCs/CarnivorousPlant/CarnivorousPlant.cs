@@ -61,6 +61,7 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
     private PlantAimBehaviour _aimBehaviour;
     private PlantBiteWindup _biteWindup;
     private PlantHurtReaction _hurtReaction;
+    private PlantTiredAnimation _tired;
     public BugDetection detection;
     public BugDetection biteDetection;
     private StateMachine _eventFSM;
@@ -99,6 +100,9 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
 
         // La reacción a los golpes que no purifican también es opcional (hoy, solo el boss).
         _hurtReaction = GetComponent<PlantHurtReaction>();
+
+        // Y la pose de planta cansada del intervalo entre mordiscos (hoy, solo el boss): ver SetInBiteInterval.
+        _tired = GetComponent<PlantTiredAnimation>();
 
         spitBehaviour = new PlantSpitBehaviour(_head, _firePoint, _venomPrefab, data.shootInterval, data.rotateToPlayer, data.rotationSpeed, _muzzlePS, PlaySpit, _biteWindup);
 
@@ -157,6 +161,7 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
         // "embistiendo" para siempre.
         _isLunging = false;
         InBiteInterval = false;
+        if(_tired != null) _tired.Stop();
         SetHitBoxActive(false);
     }
 
@@ -218,7 +223,22 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
     // Intervalo entre mordiscos (lo marca PlantBiteState): la única ventana en la que se puede dañar a una planta cuya data pide
     // vulnerableOnlyInBiteInterval (hoy, el boss). La embestida nunca cuenta, aunque corra dentro del intervalo.
     public bool InBiteInterval { get; private set; }
-    public void SetInBiteInterval(bool value) => InBiteInterval = value;
+
+    // Entrar al intervalo dispara la animación de "planta cansada" (PlantTiredAnimation, opcional: hoy, solo el boss): es la señal
+    // de que ahora se la puede golpear. Dura lo que dure el intervalo (Bite Interval del DataSO) y se corta al salir de él. Por
+    // acá pasan todos los caminos: se acaba el tiempo y arranca la preparación del próximo mordisco, el player se va del rango, la
+    // planta se purifica. Avisa solo cuando el valor cambia.
+    public void SetInBiteInterval(bool value)
+    {
+        if(InBiteInterval == value) return;
+
+        InBiteInterval = value;
+
+        if(_tired == null) return;
+
+        if(value) _tired.Play(data.biteInterval);
+        else _tired.Stop();
+    }
 
     // Mientras corre la reacción a un golpe (PlantHurtReaction) la planta no se puede dañar, igual que durante la preparación del
     // mordisco. Cuenta también para la marca de golpe bloqueado de OnTongueContact.

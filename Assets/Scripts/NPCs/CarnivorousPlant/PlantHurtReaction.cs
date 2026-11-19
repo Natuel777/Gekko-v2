@@ -7,19 +7,23 @@ using UnityEngine;
 //
 // Dura Duration segundos en total y tiene tres fases. Recoil Portion y Recover Portion fijan qué parte de la duración se lleva
 // cada una; el Hold es lo que sobra:
-//  1. Recoil: los huesos pasan rápido de la pose que traen del Animator a su Target Euler (el respingo).
+//  1. Recoil: los huesos pasan rápido de la rotación que tenían en el momento del golpe a su Target Euler (el respingo).
 //  2. Hold: la planta se queda en esa pose. Los huesos que tengan Bob Eulers (hoy joint7_R, la cabeza) hacen un cabeceo: arrancan
 //     desde su Target Euler y pasan por esos puntos, en orden, con una curva suave que los atraviesa a todos.
-//  3. Recover: vuelven a la pose que tenga el Animator en ese momento.
-// El punto de partida del Recoil y el de llegada del Recover son siempre los del Animator, así que no hay saltos ni al arrancar
-// ni al terminar, sin importar qué esté haciendo la planta (reposo, escupiendo...). Target Euler y Bob Eulers son rotaciones
-// LOCALES absolutas, las mismas que muestra el Inspector en el Transform de cada hueso.
+//  3. Recover: vuelven a la pose que tengan en ese momento por debajo de esta animación.
+// El punto de partida del Recoil es la rotación actual de cada hueso cuando llega el golpe (se lee en Play): la de cansada
+// (PlantTiredAnimation) si la planta está en el intervalo entre mordiscos, que es cuando se la puede golpear, o la del Animator.
+// El de llegada del Recover es la pose de abajo en cada frame: la de cansada si esa animación sigue corriendo (corre por debajo
+// mientras dura esta), y si no la del Animator. Así no hay saltos ni al arrancar ni al terminar, sin importar qué esté haciendo la
+// planta (cansada, reposo, escupiendo...). Target Euler y Bob Eulers son rotaciones LOCALES absolutas, las mismas que muestra el
+// Inspector en el Transform de cada hueso.
 //
 // Mientras corre (IsPlaying) la planta es invulnerable, igual que durante la preparación del mordisco: lo aplica
 // CarnivorousPlant (CanBeHit), que además pausa su ataque ese tiempo para que no pelee con esta animación por los huesos.
 // CarnivorousPlant la dispara en Damage cuando el golpe no purifica; sin este componente la planta reacciona como siempre.
 //
-// El Execution Order la deja después de PlantBiteWindup (100): si las dos tocaran el mismo hueso en un frame, gana esta.
+// El Execution Order la deja después de PlantTiredAnimation (90) y de PlantBiteWindup (100): si tocaran el mismo hueso en un frame,
+// gana esta, y lo que esas dejaron escrito en los huesos es la pose base hacia la que vuelve el Recover.
 [DisallowMultipleComponent]
 [DefaultExecutionOrder(110)]
 public class PlantHurtReaction : MonoBehaviour
@@ -70,9 +74,9 @@ public class PlantHurtReaction : MonoBehaviour
     [SerializeField] private float _recoverPortion = 0.25f;
 
     [Header("Curves")]
-    [Tooltip("Avance del Recoil (0 = pose del Animator, 1 = Target Euler) a lo largo del tiempo normalizado de la fase. Por defecto arranca rápido y frena al llegar.")]
+    [Tooltip("Avance del Recoil (0 = rotación que tenía el hueso al llegar el golpe, 1 = Target Euler) a lo largo del tiempo normalizado de la fase. Por defecto arranca rápido y frena al llegar.")]
     [SerializeField] private AnimationCurve _recoilCurve = new AnimationCurve(new Keyframe(0f, 0f, 0f, 2f), new Keyframe(1f, 1f, 0f, 0f));
-    [Tooltip("Avance del Recover (0 = donde estaba, 1 = pose del Animator) a lo largo del tiempo normalizado de la fase.")]
+    [Tooltip("Avance del Recover (0 = donde estaba, 1 = la pose de abajo: la de cansada o la del Animator) a lo largo del tiempo normalizado de la fase.")]
     [SerializeField] private AnimationCurve _recoverCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
 
     private enum Phase { Idle, Recoil, Hold, Recover }
@@ -81,6 +85,7 @@ public class PlantHurtReaction : MonoBehaviour
     {
         public Transform transform;
         public Quaternion target;      // pose de respingo
+        public Quaternion startRot;    // la rotación que tenía el hueso cuando llegó el golpe (ver Play)
         public Vector3[] path;         // Target Euler + cabeceo, con los ángulos "desenrollados" (ver BuildPath)
         public Quaternion applied;     // lo último que se escribió en el hueso
         public Quaternion recoverFrom; // dónde estaba el hueso cuando arrancó el Recover
@@ -140,10 +145,16 @@ public class PlantHurtReaction : MonoBehaviour
         _phase = Phase.Idle;
     }
 
-    // Arranca la reacción desde la pose que tengan los huesos. false si no se puede: apagado, sin huesos, o ya está en curso.
+    // Arranca la reacción desde la rotación actual de cada hueso. false si no se puede: apagado, sin huesos, o ya está en curso.
     public bool Play()
     {
         if(!IsAvailable || _phase != Phase.Idle) return false;
+
+        // Lo que tienen los huesos ahora es lo que se ve en pantalla: la pose de cansada si el golpe llegó en el intervalo entre
+        // mordiscos (PlantTiredAnimation). Play se llama desde el daño de la lengua, que corre antes de que el Animator reescriba
+        // los huesos de este frame, así que todavía tienen lo que se dibujó en el anterior.
+        foreach(Bone bone in _bones)
+            bone.startRot = bone.transform.localRotation;
 
         _phase = Phase.Recoil;
         _elapsed = 0f;
@@ -174,9 +185,9 @@ public class PlantHurtReaction : MonoBehaviour
     {
         float k = _recoilCurve.Evaluate(Progress(RecoilTime));
 
-        // Desde la pose que dejó el Animator en este frame: sin salto al arrancar.
+        // Desde la rotación que tenía cada hueso cuando llegó el golpe: sin salto al arrancar.
         foreach(Bone bone in _bones)
-            Apply(bone, Quaternion.SlerpUnclamped(bone.transform.localRotation, bone.target, k));
+            Apply(bone, Quaternion.SlerpUnclamped(bone.startRot, bone.target, k));
 
         if(_elapsed >= RecoilTime) NextPhase(Phase.Hold, RecoilTime);
     }
@@ -202,7 +213,8 @@ public class PlantHurtReaction : MonoBehaviour
     {
         float k = _recoverCurve.Evaluate(Progress(RecoverTime));
 
-        // Hacia la pose que tenga el Animator en este frame: al llegar no hay salto.
+        // Hacia la pose que tengan los huesos por debajo de esta animación en este frame (la de cansada, que sigue corriendo, o la
+        // del Animator): al llegar no hay salto.
         foreach(Bone bone in _bones)
             Apply(bone, Quaternion.SlerpUnclamped(bone.recoverFrom, bone.transform.localRotation, k));
 
