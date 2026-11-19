@@ -37,4 +37,11 @@ public class CarnivorousPlantDataSO : ScriptableObject
 
     [Header("Purified")]
     public Material purifiedMaterial;
+
+    [Header("Damaged")]
+    [Tooltip("Material que se le pone a la planta cuando Gekko la daña sin purificarla (golpe que cuenta, no el bloqueado), durante Damaged Material Seconds. Después vuelve al material que tenía. Vacío = la planta no cambia de material (hoy, solo lo usa el boss).")]
+    public Material damagedMaterial;
+    [Tooltip("Segundos que dura el material de daño. 0 = no se aplica.")]
+    [Min(0f)]
+    public float damagedMaterialSeconds = 0.5f;
 }

@@ -3,7 +3,8 @@ using System.Collections.Generic;
 
 public enum PSType
 {
-    VenomHit
+    VenomHit,
+    VenomHitSmall
 }
 
 public class GenericPS : MonoBehaviour

@@ -48,6 +48,8 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
     private bool _hasHurtTrigger;
     private SkinnedMeshRenderer[] _skinnedMeshRenderers;
     private SpriteRendererFactory _spriteRendererFactory;
+    private ParticleSystemFactory _psFactory;
+    private PlantDamageFlash _damageFlash;
 
     public bool IsPurified => _purified;
     public bool IsShielded { get; private set; }
@@ -88,6 +90,10 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
         _eventFSM = new StateMachine();
         CacheHurtTrigger();
         _skinnedMeshRenderers = GetComponentsInChildren<SkinnedMeshRenderer>();
+
+        // El parpadeo de daño es opcional: solo existe si el DataSO trae un Damaged Material (hoy, el del boss).
+        if(data.damagedMaterial != null)
+            _damageFlash = new PlantDamageFlash(_skinnedMeshRenderers, data.damagedMaterial, data.damagedMaterialSeconds);
 
         IdleState = new PlantIdleState(this);
         AlertState = new PlantAlertState(this);
@@ -188,6 +194,10 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
     // que ir después para que no se lo pise (ver PlantAimBehaviour).
     private void LateUpdate()
     {
+        // Antes del return de abajo: el parpadeo de daño corre también en las plantas sin aim, y durante el aturdimiento (Update
+        // está frenado).
+        if(_damageFlash != null) _damageFlash.ArtificialLateUpdate();
+
         if(_aimBehaviour == null) return;
 
         // Apunta mientras escupe. Aturdida por un golpe de lengua o purificada no: ahí el hueso vuelve a la animación.
@@ -253,9 +263,22 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
         return ServiceLocator.Instance.TryGet(out _spriteRendererFactory);
     }
 
+    private bool TryResolvePSFactory()
+    {
+        if(_psFactory != null) return true;
+
+        return ServiceLocator.Instance.TryGet(out _psFactory);
+    }
+
     public void OnTongueContact(Vector3 tongueStart, Vector3 tongueTip)
     {
-        if(_purified || IsShielded || CanBeHit) return;
+        if(_purified || IsShielded) return;
+
+        if(CanBeHit)
+        {
+            ShowHittedPS(TongueEntryPoint(tongueStart, tongueTip));
+            return;
+        }
 
         ShowBlockedHit(TongueEntryPoint(tongueStart, tongueTip));
     }
@@ -276,7 +299,6 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
     {
         if(!TryResolveService()) return;
 
-        // De frente a la cámara, y un poco adelantado de la superficie para que la malla no lo tape.
         Camera cam = Camera.main;
         Quaternion rotation = Quaternion.identity;
 
@@ -286,8 +308,24 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
             point += (cam.transform.position - point).normalized * _blockedHitMarkerOffset;
         }
 
-        // El sprite vuelve solo al pool pasado su Return Time (GenericSR).
         _spriteRendererFactory.Create(_blockedHitMarker, point, rotation);
+    }
+
+    private void ShowHittedPS(Vector3 point)
+    {
+        if(!TryResolvePSFactory()) return;
+
+        Camera cam = Camera.main;
+        Quaternion rotation = Quaternion.identity;
+
+        if(cam != null)
+        {
+            rotation = cam.transform.rotation;
+            point += (cam.transform.position - point).normalized;
+        }
+
+        GenericPS ps = _psFactory.Create(PSType.VenomHitSmall, point, rotation);
+        if(ps != null) ps.Initialize();
     }
 
     public void Damage(float dmg)
@@ -305,6 +343,10 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
             //    EventManager.Trigger<float>("OnPlayerDamaged", data.hitHealthCost);
 
             PlayHurt();
+
+            // Material de daño por Damaged Material Seconds del DataSO. Solo en los golpes que cuentan y no purifican: el golpe
+            // final lo corta PlayPurifiedFeedback, y los bloqueados (planta invulnerable) ni llegan acá.
+            if(_damageFlash != null) _damageFlash.Play();
 
             // Con PlantHurtReaction el golpe dispara su animación, y el ataque se pausa lo que ella dure para que no peleen por los
             // huesos (se toma el mayor entre eso y el aturdimiento del DataSO). Mientras corre la planta es invulnerable: CanBeHit.
@@ -410,8 +452,6 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
         _isLunging = false;
     }
 
-    // Lo llama PlantBiteHitBox cuando el Gekko está dentro del hitbox prendido (o la embestida, en plantas sin HitBox).
-    // Daño + knockback una sola vez por mordisco.
     public void OnBiteHitBoxContact(Player player)
     {
         if(_purified || _biteHitApplied || player == null) return;
@@ -462,6 +502,8 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
 
     public void PlayPurifiedFeedback()
     {
+        if(_damageFlash != null) _damageFlash.Cancel();
+
         if(_purifiedParticle != null) _purifiedParticle.Play();
         if(_purifiedSound != null) _purifiedSound.Play();
         ApplyPurifiedMaterial();
