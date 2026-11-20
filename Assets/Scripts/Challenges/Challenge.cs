@@ -91,6 +91,10 @@ public abstract class Challenge : MonoBehaviour
     // Duración de la cinemática de cierre cuando no hay timeline.
     private float CompletionBeatSeconds => _data != null ? _data.completionBeatSeconds : 3f;
 
+    //FIX TEMPORAL DE ANGELO. BORRAR DSP
+    [Header("Completion")]
+    [SerializeField] private GameObject _objectToDisableOnCompletion;
+
     #region Unity messages
     protected virtual void Awake()
     {
@@ -246,6 +250,8 @@ public abstract class Challenge : MonoBehaviour
 
         // Primero el estado, así cualquier re-corrupción pendiente se descarta.
         State = ChallengeState.Completed;
+        if (_objectToDisableOnCompletion != null)
+            _objectToDisableOnCompletion.SetActive(false);
         OnCompleted();
         if(_shieldDownDirector != null) _shieldDownDirector.Stop();
 

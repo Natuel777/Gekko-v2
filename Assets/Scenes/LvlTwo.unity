@@ -236,6 +236,7 @@ MonoBehaviour:
   _plantPurifiedDirector: {fileID: 1048561191}
   _skipHoldSeconds: 3
   _skipPrompt: {fileID: 0}
+  _objectToDisableOnCompletion: {fileID: 414073575}
   _shieldBreakers:
   - {fileID: 642609989}
   - {fileID: 1784985214}
@@ -26029,6 +26030,16 @@ MonoBehaviour:
       m_Data: []
   m_Knots:
     m_KnotsLink: []
+--- !u!1 &414073575 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 3842104698645111413, guid: dc6133d6f2afdec478ceecbcb0f4e5d9, type: 3}
+  m_PrefabInstance: {fileID: 1341038619}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &414073578 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 6320168192803641343, guid: dc6133d6f2afdec478ceecbcb0f4e5d9, type: 3}
+  m_PrefabInstance: {fileID: 1341038619}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &417760600
 GameObject:
   m_ObjectHideFlags: 0
@@ -73693,7 +73704,7 @@ Transform:
   m_GameObject: {fileID: 1768642439}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -16.33, y: 0, z: -8.09}
+  m_LocalPosition: {x: -16.33, y: 0.29, z: -8.09}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -90191,8 +90202,20 @@ PrefabInstance:
   serializedVersion: 2
   m_Modification:
     serializedVersion: 3
-    m_TransformParent: {fileID: 0}
+    m_TransformParent: {fileID: 1828505004}
     m_Modifications:
+    - target: {fileID: 2523203664179569837, guid: dc6133d6f2afdec478ceecbcb0f4e5d9, type: 3}
+      propertyPath: _head
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 2523203664179569837, guid: dc6133d6f2afdec478ceecbcb0f4e5d9, type: 3}
+      propertyPath: _indicator
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 2523203664179569837, guid: dc6133d6f2afdec478ceecbcb0f4e5d9, type: 3}
+      propertyPath: _particlePurification
+      value: 
+      objectReference: {fileID: 0}
     - target: {fileID: 3842104698645111413, guid: dc6133d6f2afdec478ceecbcb0f4e5d9, type: 3}
       propertyPath: m_Name
       value: Barricade lvl2 Atajo
@@ -90207,19 +90230,19 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6320168192803641343, guid: dc6133d6f2afdec478ceecbcb0f4e5d9, type: 3}
       propertyPath: m_LocalScale.z
-      value: 0.57373714
+      value: 0.5737371
       objectReference: {fileID: 0}
     - target: {fileID: 6320168192803641343, guid: dc6133d6f2afdec478ceecbcb0f4e5d9, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 132.32
+      value: -15.829987
       objectReference: {fileID: 0}
     - target: {fileID: 6320168192803641343, guid: dc6133d6f2afdec478ceecbcb0f4e5d9, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 9.17
+      value: 1.5
       objectReference: {fileID: 0}
     - target: {fileID: 6320168192803641343, guid: dc6133d6f2afdec478ceecbcb0f4e5d9, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -163.13
+      value: -28.86
       objectReference: {fileID: 0}
     - target: {fileID: 6320168192803641343, guid: dc6133d6f2afdec478ceecbcb0f4e5d9, type: 3}
       propertyPath: m_LocalRotation.w
@@ -104988,7 +105011,7 @@ Transform:
   m_GameObject: {fileID: 1935013834}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: 0.083, z: 0}
   m_LocalScale: {x: 0.29312775, y: 0.29312775, z: 0.29312775}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -118076,6 +118099,7 @@ Transform:
   - {fileID: 298953724}
   - {fileID: 858121926}
   - {fileID: 1160895951}
+  - {fileID: 414073578}
   - {fileID: 661775}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -191334,4 +191358,3 @@ SceneRoots:
   - {fileID: 330024908}
   - {fileID: 1725748992}
   - {fileID: 1067920003}
-  - {fileID: 1341038619}
