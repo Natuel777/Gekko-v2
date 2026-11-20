@@ -3,6 +3,7 @@ using UnityEngine;
 public class TurretShootBehaviour : IShooteable, IActivable, IServiceConsumer
 {
     private readonly float _xRotation, _fireRate, _detectionRange;
+    private ushort _burstIndex = 0;
     private BugDetection _detection;
     private GameManager _gm;
     private bool _initialized = false;
@@ -12,6 +13,7 @@ public class TurretShootBehaviour : IShooteable, IActivable, IServiceConsumer
     private TurretBullet _bulletPrefab;
 
     public bool Initialized => _initialized;
+    public int BurstIndex => _burstIndex;
 
 
     public TurretShootBehaviour(float xRot, Transform t, float detectionRange, Transform muzzle, float fireRate,
@@ -40,16 +42,17 @@ public class TurretShootBehaviour : IShooteable, IActivable, IServiceConsumer
     {
         if(!_initialized || !TryResolveTarget()) return;
 
+        if(_burstIndex > 5) return;
+        
         if(_detection.IsTargetInRange())
         {
-            //LookAtTarget();
-
             if(_timer >= _fireRate)
             {
                 //Play PS
                 Vector3 dir = CalculateDirection(_transform.position, _target.position);
                 Shoot(dir.normalized);
                 _timer = 0f;
+                _burstIndex++;
                 return;
             }
 
@@ -65,7 +68,6 @@ public class TurretShootBehaviour : IShooteable, IActivable, IServiceConsumer
         if(toTarget.sqrMagnitude > 0.01f)
         {
             Quaternion targetRotation = Quaternion.LookRotation(toTarget.normalized);
-
             _transform.rotation = Quaternion.RotateTowards(
                 _transform.rotation,
                 targetRotation,
@@ -82,7 +84,11 @@ public class TurretShootBehaviour : IShooteable, IActivable, IServiceConsumer
         bullet.Shoot(direction);
     }
  
-    public void Activated(bool active = true) => _initialized = active;
+    public void Activated(bool active = true)
+    {
+        _burstIndex = 0;
+        _initialized = active;
+    } 
 
     public bool TryResolveGameManager()
     {

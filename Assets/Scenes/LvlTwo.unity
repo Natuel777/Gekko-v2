@@ -5390,7 +5390,7 @@ GameObject:
   - component: {fileID: 134630238}
   - component: {fileID: 134630237}
   - component: {fileID: 134630236}
-  m_Layer: 5
+  m_Layer: 11
   m_Name: head canvas
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -21751,6 +21751,17 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 324850737}
   m_CullTransparentMesh: 1
+--- !u!114 &326967731 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 6496286130864157004, guid: 012e764c3b11e584ca2bd7a30ab01bbb, type: 3}
+  m_PrefabInstance: {fileID: 642609988}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 83d3cacbceb873847a856c7cb66b3829, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1001 &328398197
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -21947,11 +21958,26 @@ PrefabInstance:
       propertyPath: m_Name
       value: ChallengeStoneTurret
       objectReference: {fileID: 0}
+    - target: {fileID: 8212754436669983962, guid: 012e764c3b11e584ca2bd7a30ab01bbb, type: 3}
+      propertyPath: _chargeAnimation
+      value: 
+      objectReference: {fileID: 1308576381}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 012e764c3b11e584ca2bd7a30ab01bbb, type: 3}
+--- !u!114 &334229723 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 6496286130864157004, guid: 012e764c3b11e584ca2bd7a30ab01bbb, type: 3}
+  m_PrefabInstance: {fileID: 1248000710}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 83d3cacbceb873847a856c7cb66b3829, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1001 &334465765
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -31750,6 +31776,17 @@ Transform:
   m_Children: []
   m_Father: {fileID: 851536671}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &520448141 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 6496286130864157004, guid: 012e764c3b11e584ca2bd7a30ab01bbb, type: 3}
+  m_PrefabInstance: {fileID: 1668822487}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 83d3cacbceb873847a856c7cb66b3829, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &521143167
 GameObject:
   m_ObjectHideFlags: 0
@@ -39023,6 +39060,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: ChallengeStoneTurret
       objectReference: {fileID: 0}
+    - target: {fileID: 8212754436669983962, guid: 012e764c3b11e584ca2bd7a30ab01bbb, type: 3}
+      propertyPath: _chargeAnimation
+      value: 
+      objectReference: {fileID: 326967731}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -41953,6 +41994,17 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 7379846452787179214, guid: bba5fd0165387f548ac2e272e070e28d, type: 3}
   m_PrefabInstance: {fileID: 1907126661}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &708626714 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 6496286130864157004, guid: 012e764c3b11e584ca2bd7a30ab01bbb, type: 3}
+  m_PrefabInstance: {fileID: 1784985212}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 83d3cacbceb873847a856c7cb66b3829, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1001 &708824925
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -65713,7 +65765,7 @@ GameObject:
   - component: {fileID: 1044583692}
   - component: {fileID: 1044583691}
   - component: {fileID: 1044583695}
-  m_Layer: 0
+  m_Layer: 11
   m_Name: LibroPlaceHolder
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -67283,6 +67335,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: ChallengeStoneTurret (2)
       objectReference: {fileID: 0}
+    - target: {fileID: 8212754436669983962, guid: 012e764c3b11e584ca2bd7a30ab01bbb, type: 3}
+      propertyPath: _chargeAnimation
+      value: 
+      objectReference: {fileID: 1833286277}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -75387,6 +75443,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: ChallengeStoneTurret (3)
       objectReference: {fileID: 0}
+    - target: {fileID: 8212754436669983962, guid: 012e764c3b11e584ca2bd7a30ab01bbb, type: 3}
+      propertyPath: _chargeAnimation
+      value: 
+      objectReference: {fileID: 1249058745}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -79399,6 +79459,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: ChallengeStoneTurret (1)
       objectReference: {fileID: 0}
+    - target: {fileID: 8212754436669983962, guid: 012e764c3b11e584ca2bd7a30ab01bbb, type: 3}
+      propertyPath: _chargeAnimation
+      value: 
+      objectReference: {fileID: 334229723}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -79409,6 +79473,17 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 4542984351468394316, guid: 109e10af07180ca4fa9a0b7099efb5b9, type: 3}
   m_PrefabInstance: {fileID: 383571419}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &1249058745 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 6496286130864157004, guid: 012e764c3b11e584ca2bd7a30ab01bbb, type: 3}
+  m_PrefabInstance: {fileID: 1199581058}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 83d3cacbceb873847a856c7cb66b3829, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1001 &1250933268
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -89072,6 +89147,17 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: bba5fd0165387f548ac2e272e070e28d, type: 3}
+--- !u!114 &1308576381 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 6496286130864157004, guid: 012e764c3b11e584ca2bd7a30ab01bbb, type: 3}
+  m_PrefabInstance: {fileID: 334014925}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 83d3cacbceb873847a856c7cb66b3829, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1001 &1308591194
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -99031,7 +99117,7 @@ GameObject:
   - component: {fileID: 1454147450}
   - component: {fileID: 1454147452}
   - component: {fileID: 1454147451}
-  m_Layer: 5
+  m_Layer: 11
   m_Name: Exclamation
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -110918,6 +111004,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: ChallengeStoneTurret (1)
       objectReference: {fileID: 0}
+    - target: {fileID: 8212754436669983962, guid: 012e764c3b11e584ca2bd7a30ab01bbb, type: 3}
+      propertyPath: _chargeAnimation
+      value: 
+      objectReference: {fileID: 520448141}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -114893,6 +114983,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: ChallengeStoneTurret
       objectReference: {fileID: 0}
+    - target: {fileID: 8212754436669983962, guid: 012e764c3b11e584ca2bd7a30ab01bbb, type: 3}
+      propertyPath: _chargeAnimation
+      value: 
+      objectReference: {fileID: 708626714}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -118280,6 +118374,17 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 8363155014427990870, guid: 2b759a6dce0c26d44a77f55530db7639, type: 3}
   m_PrefabInstance: {fileID: 1832655672}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &1833286277 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 6496286130864157004, guid: 012e764c3b11e584ca2bd7a30ab01bbb, type: 3}
+  m_PrefabInstance: {fileID: 1072715587}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 83d3cacbceb873847a856c7cb66b3829, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1001 &1836707960
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -125626,7 +125731,7 @@ GameObject:
   - component: {fileID: 1937325671}
   - component: {fileID: 1937325673}
   - component: {fileID: 1937325672}
-  m_Layer: 5
+  m_Layer: 11
   m_Name: InteractionButton
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -129079,7 +129184,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1992652535}
   - component: {fileID: 1992652536}
-  m_Layer: 0
+  m_Layer: 11
   m_Name: cam
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -133212,6 +133317,17 @@ Transform:
   - {fileID: 896112063}
   m_Father: {fileID: 1602743089}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2021282141 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 6496286130864157004, guid: 012e764c3b11e584ca2bd7a30ab01bbb, type: 3}
+  m_PrefabInstance: {fileID: 2041901937}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 83d3cacbceb873847a856c7cb66b3829, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1001 &2022200765
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -134273,6 +134389,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: ChallengeStoneTurret (1)
       objectReference: {fileID: 0}
+    - target: {fileID: 8212754436669983962, guid: 012e764c3b11e584ca2bd7a30ab01bbb, type: 3}
+      propertyPath: _chargeAnimation
+      value: 
+      objectReference: {fileID: 2021282141}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

@@ -101,6 +101,19 @@ public class EnergyBurstAnimation : MonoBehaviour
         isPlaying = true;
     }
 
+    // Para que quien la dispare sepa cuándo terminó (la torreta espera a que acabe la carga para volver a disparar).
+    public bool IsPlaying => isPlaying;
+
+    // Corta la animación donde esté y deja la rotación del cristal como estaba antes de Play. La torreta la usa si sale del
+    // estado de carga antes de tiempo (por ejemplo, al purificarla). Sin efecto si no está corriendo.
+    public void Stop()
+    {
+        if (!isPlaying)
+            return;
+
+        FinishBurst();
+    }
+
     private void FinishBurst()
     {
         basicAnimation.RotationSpeed = originalRotationSpeed;

@@ -22,11 +22,16 @@ public class TurretActiveState : IState
     public void Update()
     {
         _parent.shoot.ArtificialUpdate();
+
+        if(_parent.shoot.BurstIndex >= 5) _parent.SendEvent(CreatureEvent.ChallengeTurretDischarged);
     }
 
     public void HandleEvent(CreatureEvent evt, object data = null)
     {
         if(evt == CreatureEvent.ChallengeTurretPurified)
             _parent.SetState(_parent.purifiedState);
+
+        if(evt == CreatureEvent.ChallengeTurretDischarged)
+            _parent.SetState(_parent.charginState);
     }
 }

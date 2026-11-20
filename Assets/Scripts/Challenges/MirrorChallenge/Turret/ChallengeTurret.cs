@@ -6,12 +6,19 @@ public class ChallengeTurret : MonoBehaviour, IShieldBreaker
     [SerializeField] private Transform _muzzle;
     [SerializeField] private TurretBullet _bulletPrefab;
 
+    [Header("View")]
+    [Tooltip("Animación de carga del cristal (EnergyBurstAnimation, en Crystal_lp): corre mientras la torreta está en TurretCharginState. Vacío = se busca en los hijos de la torreta.")]
+    [SerializeField] private EnergyBurstAnimation _chargeAnimation;
+
     private StateMachine _stateMachine;
 
     #region States
     public TurretActiveState activeState;
     public TurretPurifiedState purifiedState;
+    public TurretCharginState charginState;
     #endregion
+
+    public ChallengeTurretView view;
 
     #region Behabiours
     public TurretShootBehaviour shoot;
@@ -61,14 +68,16 @@ public class ChallengeTurret : MonoBehaviour, IShieldBreaker
         // Dsp agregar yRotation de ser necesario
         shoot = new TurretShootBehaviour(_data.yRotationSpeed, transform, _data.detectionRange, _muzzle, _data.fireRate,
                                         _bulletPrefab);
+        if(_chargeAnimation == null) _chargeAnimation = GetComponentInChildren<EnergyBurstAnimation>(true);
+        view = new ChallengeTurretView(_chargeAnimation);
 
         activeState = new TurretActiveState(this);
         purifiedState = new TurretPurifiedState();
+        charginState = new TurretCharginState(this);
     }
 
     private void Start() 
     {
-        // Si la purificaron antes de arrancar, nace ya purificada y no dispara.
         _stateMachine.SetState(IsPurified ? purifiedState : activeState);
     }
     #endregion
@@ -83,8 +92,6 @@ public class ChallengeTurret : MonoBehaviour, IShieldBreaker
     public void SetState(IState state) => _stateMachine.SetState(state);
     public void SendEvent(CreatureEvent e) => _stateMachine.SendEvent(e);
 
-    // La purifica quien la alcance (más adelante, la bala que le devuelve el espejo). Pasa a TurretPurifiedState: al salir de
-    // TurretActiveState deja de disparar. Una sola vez.
     public void Purify()
     {
         if(IsPurified) return;
@@ -95,7 +102,6 @@ public class ChallengeTurret : MonoBehaviour, IShieldBreaker
         _shieldBreakerBroken?.Invoke(this);
     }
 
-    // Para probarlo desde el Inspector (menú de tres puntos del componente) sin la bala devuelta.
     [ContextMenu("Purificar (Play Mode)")]
     private void TestPurify()
     {

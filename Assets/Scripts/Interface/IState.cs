@@ -14,5 +14,10 @@ public enum CreatureEvent
     ChargeHitWall,
     ChargeMissed,
     DazeExpired,
-    ChallengeTurretPurified
+
+    #region Mirror Challenge Turret
+    ChallengeTurretPurified,
+    ChallengeTurretCharged,
+    ChallengeTurretDischarged
+    #endregion
 }
