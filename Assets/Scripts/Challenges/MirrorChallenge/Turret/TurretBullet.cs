@@ -31,6 +31,7 @@ public class TurretBullet : ShooteableObject, IReflectable
     public void Shoot(Vector3 direction)
     {
         _direction = direction;
+        FaceDirection();
     }
 
     // Invierte la dirección por completo (no es un rebote contra la normal). Si dos colliders del mismo espejo avisan en el
@@ -42,6 +43,19 @@ public class TurretBullet : ShooteableObject, IReflectable
         _lastReflectFrame = Time.frameCount;
         _direction = -_direction;
         _reflected = true;
+
+        // Ahora vuela para el otro lado: el humo tiene que quedar atrás y la flecha de punta hacia donde va.
+        FaceDirection();
+    }
+
+    // La bala mira hacia donde vuela. El VFX se orienta con el transform (la flecha va a lo largo de su eje Z y el humo sale por -Z),
+    // así que sin esto la bala nace con la rotación de la torreta, que no gira hacia Gekko, y no apunta hacia donde va. Con una
+    // dirección nula no se toca la rotación (LookRotation avisa con un warning).
+    private void FaceDirection()
+    {
+        if(_direction.sqrMagnitude < 0.0001f) return;
+
+        transform.rotation = Quaternion.LookRotation(_direction);
     }
 
     private void Update()

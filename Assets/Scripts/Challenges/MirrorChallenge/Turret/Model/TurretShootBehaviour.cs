@@ -49,7 +49,10 @@ public class TurretShootBehaviour : IShooteable, IActivable, IServiceConsumer
             if(_timer >= _fireRate)
             {
                 //Play PS
-                Vector3 dir = CalculateDirection(_transform.position, _target.position);
+                // Desde el Muzzle y no desde la raíz de la torreta: la bala nace en el Muzzle (unos 40 cm más adelante y más arriba que
+                // la raíz), y con la dirección calculada desde la raíz iría en paralelo a la línea hacia Gekko, pasando de largo por esa
+                // diferencia en vez de apuntarle.
+                Vector3 dir = CalculateDirection(_muzzle.position, _target.position);
                 Shoot(dir.normalized);
                 _timer = 0f;
                 _burstIndex++;
