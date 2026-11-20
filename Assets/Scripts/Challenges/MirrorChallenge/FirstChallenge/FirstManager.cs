@@ -9,6 +9,16 @@ public class FirstManager : MonoBehaviour
 
     private bool _challengeCompleted;
 
+
+
+    [Header("Challenge Completion")]
+    [SerializeField] private List<GameObject> _vinesToDisable = new List<GameObject>();
+
+    [Header("Climb Unlock")]
+    [SerializeField] private List<GameObject> _climbSurfaces = new List<GameObject>();
+
+    [SerializeField] private int _unlockedLayer;
+
     private void Start()
     {
         foreach (ChallengeTurret turret in _turretsToTrack)
@@ -26,6 +36,8 @@ public class FirstManager : MonoBehaviour
             turret.Purified -= OnTurretPurified;
         }
     }
+
+
 
     private void OnTurretPurified(ChallengeTurret turret)
     {
@@ -50,6 +62,25 @@ public class FirstManager : MonoBehaviour
         }
 
         _challengeCompleted = true;
-        Debug.Log("¡CHALLENGE COMPLETADO! Todas las torretas fueron purificadas.");
+        FinishChallenge();
+    }
+
+    private void FinishChallenge()
+    {
+
+        // Desactivar las enredaderas.
+        foreach (GameObject vine in _vinesToDisable)
+        {
+            if (vine != null)
+                vine.SetActive(false);
+        }
+
+        foreach (GameObject surface in _climbSurfaces)
+        {
+            if (surface != null)
+                surface.layer = _unlockedLayer;
+        }
+
+        Debug.Log("¡CHALLENGE COMPLETADO! Las enredaderas desaparecieron y la escalada está desbloqueada.");
     }
 }
