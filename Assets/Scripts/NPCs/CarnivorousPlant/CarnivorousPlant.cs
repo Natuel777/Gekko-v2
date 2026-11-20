@@ -401,9 +401,6 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
     private IEnumerator BiteLungeRoutine()
     {
         _isLunging = true;
-
-        // Acá sale el mordisco de verdad (la preparación ya terminó): se prende el HitBox y el daño lo aplica
-        // OnBiteHitBoxContact si el Gekko está adentro. Se apaga al terminar la embestida. Sin HitBox, el daño sale en el pico.
         _biteHitApplied = false;
         SetHitBoxActive(true);
 
