@@ -212,6 +212,13 @@ public class SplineRiver : MonoBehaviour
     [SerializeField, Tooltip("Agregar MeshCollider al cauce.")]
     bool _bedCollider = true;
 
+    [Header("Volumen (extrude hacia abajo)")]
+    [SerializeField, Min(0f), Tooltip("Profundidad del volumen de agua debajo de la superficie, en metros. Cierra el agua con paredes a los costados, un fondo y tapas en las puntas, para que desde el costado o desde abajo no se vea a traves de la lamina (sin terreno debajo, o con la camara bajo el agua). 0 = sin volumen.")]
+    float _volumeDepth = 0f;
+
+    [SerializeField, Tooltip("Material del volumen (ej. M_RiverVolume). Conviene opaco, sin iluminacion, con Cull Back y del color del agua profunda: las dos caras ya las arma la malla.")]
+    Material _volumeMaterial;
+
     [Header("Interaccion (Play)")]
     [SerializeField] bool _generateTriggers = true;
 
@@ -891,6 +898,11 @@ public class SplineRiver : MonoBehaviour
             }
         }
 
+        // --- volumen: paredes, fondo y tapas debajo de la superficie (ver _volumeDepth)
+        var volumeTriangles = new List<int>();
+        if(HasVolume)
+            BuildVolume(vertices, normals, tangents, uv0, uv1, uv2, volumeTriangles);
+
         _mesh.indexFormat = vertices.Count > 65000
             ? UnityEngine.Rendering.IndexFormat.UInt32
             : UnityEngine.Rendering.IndexFormat.UInt16;
@@ -900,7 +912,7 @@ public class SplineRiver : MonoBehaviour
         _mesh.SetUVs(0, uv0);
         _mesh.SetUVs(1, uv1);
         _mesh.SetUVs(2, uv2);
-        _mesh.subMeshCount = _generateBed ? 2 : 1;
+        _mesh.subMeshCount = (_generateBed ? 2 : 1) + (HasVolume ? 1 : 0);
         _mesh.SetTriangles(waterTriangles, 0);
         if(_generateBed)
         {
@@ -908,6 +920,8 @@ public class SplineRiver : MonoBehaviour
             RecalculateBedNormals(vertices, normals, bedStart, bedTriangles);
             _mesh.SetNormals(normals);
         }
+        if(HasVolume)
+            _mesh.SetTriangles(volumeTriangles, _mesh.subMeshCount - 1);
         _mesh.RecalculateBounds();
 
         // --- collider del cauce
@@ -927,6 +941,116 @@ public class SplineRiver : MonoBehaviour
         else if(meshCollider != null)
         {
             meshCollider.sharedMesh = null;
+        }
+    }
+
+    bool HasVolume => _volumeDepth > 0f && _volumeMaterial != null;
+
+    // El volumen se DIBUJA solo con la camara bajo el agua (lo prende y apaga UnderwaterCameraEffect). Con la camara arriba,
+    // a traves de la superficie transparente se veria el volumen opaco y el rio entero quedaria oscuro; asi se ve el cauce,
+    // como siempre. La geometria esta siempre en la malla: lo que cambia es si su submalla tiene material.
+    static bool s_ShowVolume;
+
+    public static void SetVolumeVisible(bool visible)
+    {
+        if(s_ShowVolume == visible)
+            return;
+
+        s_ShowVolume = visible;
+        foreach(SplineRiver river in s_All)
+        {
+            if(river != null && river.HasVolume)
+                river.ApplyMaterials();
+        }
+    }
+
+    // Hasta dónde llega el agua por debajo de la superficie, en metros: el volumen si lo hay, si no la profundidad del cauce.
+    public float WaterDepth => HasVolume ? _volumeDepth : _depth;
+
+    // Volumen del agua: por cada seccion, los dos bordes de la superficie y esos mismos bordes corridos _volumeDepth hacia
+    // abajo segun la normal del agua (en lo plano es derecho hacia abajo; en una cascada, perpendicular a la lamina, asi el
+    // volumen acompana la caida). Con eso se arman:
+    //  - las paredes izquierda y derecha, el fondo y las tapas de las puntas (rio abierto), con las DOS caras: se ven desde
+    //    afuera (de costado o desde abajo ya no se ve a traves del agua) y desde adentro (camara bajo el agua);
+    //  - un techo apenas debajo de la superficie que mira SOLO hacia abajo: con la camara bajo el agua tapa el cielo que se
+    //    veria a traves de la lamina transparente; desde arriba no se ve, asi que el agua se ve igual que siempre.
+    // El material va con Cull Back (una cara): las dos caras las ponen los triangulos.
+    void BuildVolume(List<Vector3> vertices, List<Vector3> normals, List<Vector4> tangents,
+                     List<Vector2> uv0, List<Vector2> uv1, List<Vector2> uv2, List<int> triangles)
+    {
+        const int PerSection = 6;
+        float ceilingOffset = Mathf.Min(0.03f, _volumeDepth * 0.5f);
+        int start = vertices.Count;
+
+        for(int i = 0; i < _sections.Count; i++)
+        {
+            Section s = _sections[i];
+            Vector3 left = s.Position + s.Right * s.CompressOffset(-s.HalfWidth);
+            Vector3 right = s.Position + s.Right * s.CompressOffset(s.HalfWidth);
+            Vector3 down = -s.Up * _volumeDepth;
+            Vector3 ceiling = -s.Up * ceilingOffset;
+
+            // 0/1 = borde izq/der en la superficie, 2/3 = abajo, 4/5 = techo (apenas debajo de la superficie)
+            vertices.Add(left);
+            vertices.Add(right);
+            vertices.Add(left + down);
+            vertices.Add(right + down);
+            vertices.Add(left + ceiling);
+            vertices.Add(right + ceiling);
+
+            for(int k = 0; k < PerSection; k++)
+            {
+                normals.Add(k < 2 ? s.Up : -s.Up);
+                tangents.Add(new Vector4(s.Forward.x, s.Forward.y, s.Forward.z, 1f));
+                uv0.Add(new Vector2(k % 2 == 0 ? -s.HalfWidth : s.HalfWidth, s.Distance));
+                uv1.Add(new Vector2(k % 2, s.SpeedMultiplier));
+                uv2.Add(Vector2.zero);
+            }
+        }
+
+        for(int i = 0; i < _sections.Count - 1; i++)
+        {
+            int a = start + i * PerSection;
+            int b = a + PerSection;
+            Vector3 up = _sections[i].Up;
+
+            AddQuadBothSides(triangles, a + 0, b + 0, a + 2, b + 2); // pared izquierda
+            AddQuadBothSides(triangles, a + 1, b + 1, a + 3, b + 3); // pared derecha
+            AddQuadBothSides(triangles, a + 2, b + 2, a + 3, b + 3); // fondo
+            AddQuadFacing(triangles, vertices, a + 4, b + 4, a + 5, b + 5, -up); // techo, solo hacia abajo
+        }
+
+        if(MainSpline != null && !MainSpline.Closed)
+        {
+            int first = start;
+            int last = start + (_sections.Count - 1) * PerSection;
+            AddQuadBothSides(triangles, first + 0, first + 1, first + 2, first + 3);
+            AddQuadBothSides(triangles, last + 0, last + 1, last + 2, last + 3);
+        }
+    }
+
+    // Quad p0-p1 arriba, p2-p3 abajo (p0 sobre p2, p1 sobre p3), con las dos caras.
+    static void AddQuadBothSides(List<int> t, int p0, int p1, int p2, int p3)
+    {
+        t.Add(p0); t.Add(p1); t.Add(p2);
+        t.Add(p1); t.Add(p3); t.Add(p2);
+        t.Add(p0); t.Add(p2); t.Add(p1);
+        t.Add(p1); t.Add(p2); t.Add(p3);
+    }
+
+    // Quad con una sola cara, la que mira hacia 'facing'.
+    static void AddQuadFacing(List<int> t, List<Vector3> v, int p0, int p1, int p2, int p3, Vector3 facing)
+    {
+        Vector3 n = Vector3.Cross(v[p1] - v[p0], v[p2] - v[p0]);
+        if(Vector3.Dot(n, facing) >= 0f)
+        {
+            t.Add(p0); t.Add(p1); t.Add(p2);
+            t.Add(p1); t.Add(p3); t.Add(p2);
+        }
+        else
+        {
+            t.Add(p0); t.Add(p2); t.Add(p1);
+            t.Add(p1); t.Add(p2); t.Add(p3);
         }
     }
 
@@ -1046,9 +1170,10 @@ public class SplineRiver : MonoBehaviour
         if(_renderer == null)
             _renderer = GetComponent<MeshRenderer>();
 
-        Material[] materials = _generateBed
-            ? new[] { _waterMaterial, _bedMaterial }
-            : new[] { _waterMaterial };
+        var list = new List<Material> { _waterMaterial };
+        if(_generateBed) list.Add(_bedMaterial);
+        if(HasVolume && s_ShowVolume) list.Add(_volumeMaterial);
+        Material[] materials = list.ToArray();
 
         Material[] current = _renderer.sharedMaterials;
         bool same = current.Length == materials.Length;

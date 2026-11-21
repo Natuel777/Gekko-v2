@@ -13,6 +13,33 @@ public class PlayerViewer : MonoBehaviour
     private void Awake()
     {
         _anim = GetComponent<Animator>();
+
+        // Los parámetros del nado se setean solo si el Animator los tiene: así no hay warnings mientras no exista la
+        // animación de nado, y apenas arte agregue los estados (con IsSwimming / IsDiving) empiezan a usarse.
+        if(_anim != null && _anim.runtimeAnimatorController != null)
+        {
+            foreach(AnimatorControllerParameter p in _anim.parameters)
+            {
+                if(p.name == SwimParam) _hasSwimParam = true;
+                if(p.name == DiveParam) _hasDiveParam = true;
+            }
+        }
+    }
+
+    private const string SwimParam = "IsSwimming";
+    private const string DiveParam = "IsDiving";
+    private bool _hasSwimParam, _hasDiveParam;
+
+    // Nadando (en la superficie o bajo el agua). Mientras no haya animación de nado se ve la de caminar.
+    public void Swim(bool swimming)
+    {
+        if(_hasSwimParam) _anim.SetBool(SwimParam, swimming);
+    }
+
+    // Todo el cuerpo bajo el agua (buceando).
+    public void Dive(bool diving)
+    {
+        if(_hasDiveParam) _anim.SetBool(DiveParam, diving);
     }
     #region Animations
     public void Move(bool can)

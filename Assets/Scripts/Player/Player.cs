@@ -104,6 +104,10 @@ public class Player : MonoBehaviour
     [Tooltip("Qué tan lejos llega el segundo salto (el de Space dentro del trigger del GrapplePoint, hacia donde mira la cámara), como múltiplo de lo que midió el grapple. 1 = salta tan lejos como el grapple; 2 = el doble; 0 = derecho hacia arriba.")]
     [Min(0f)]
     [SerializeField] private float _secondJumpMultiplier = 1f;
+
+    [Header("Nado")]
+    [Tooltip("Nado en la superficie de cualquier agua profunda y buceo dentro de los DeepWaterZone (ver GekkoSwimming).")]
+    [SerializeField] private SwimSettings _swimSettings = new SwimSettings();
     #endregion
 
     #region Properties
@@ -161,6 +165,13 @@ public class Player : MonoBehaviour
         _pjTongue.SetAimManager(_aimM);
 
         _pjController.GetTongueManager(_pjTongue);
+
+        // Nado: la física la maneja GekkoSwimming desde el controller. El efecto bajo el agua va en la cámara que renderiza y la
+        // barra de aire es un HUD propio: se crean solos si la escena no los tiene.
+        _pjController.SetSwimming(new GekkoSwimming(GetComponent<Rigidbody>(), transform, GetComponent<CapsuleCollider>(),
+                        GameManager.Instance.GroundLayer, GameManager.Instance.ClimbLayer, _swimSettings));
+        UnderwaterCameraEffect.EnsureOn(Camera.main);
+        AirBarUI.EnsureExists();
 
         CameraFollow cam = camTransform.GetComponent<CameraFollow>();
 
@@ -231,6 +242,8 @@ public class Player : MonoBehaviour
 
     private void OnDestroy()
     {
+        // Es estático: que no quede prendido para la escena siguiente si Gekko se destruye nadando.
+        GekkoWater.PlayerSwimming = false;
         _blueberryCombo?.ArtificialOnDisable();
         //_pjInputs.PauseInputSet(false);
     }

@@ -18,7 +18,8 @@ namespace Gekko.PaintTools
     /// vista de escena y la del juego descarten cada una lo suyo.
     /// </summary>
     [ExecuteAlways]
-    public class ScatterField : MonoBehaviour
+    // IPauseExempt: la pausa (ScreenGO) no lo apaga. Si lo apagara, OnDisable suelta los chunks y los props desaparecen.
+    public class ScatterField : MonoBehaviour, IPauseExempt
     {
         /// <summary>Tope de Graphics.DrawMeshInstanced.</summary>
         private const int MaxInstancesPerBatch = 1023;

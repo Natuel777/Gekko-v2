@@ -51,7 +51,12 @@ public class PlayerController
     private bool _isSlipperySurface = false;
     private float _slipperyForce = 0.25f;
     private bool _frozenForCinematic;
-    
+
+    // Nado (ver GekkoSwimming y TrySwim).
+    private GekkoSwimming _swim;
+    private bool _divePressed;
+    private bool _swimJumpLatch;
+
     private Vector3 _currentUp;
     private Vector2 _rawInput = new(), _smoothedInput = new(), _smoothedVelocity = new();
     private Vector3 _refRight, _refForward, _lastUp;
@@ -64,6 +69,11 @@ public class PlayerController
     private bool _hasRef;
 
     public bool JumpPressed { set { _jumpPressed = value; } }
+    public bool DivePressed { set { _divePressed = value; } }
+    public bool Swimming => _swim != null && _swim.IsSwimming;
+    // Nadando con todo el cuerpo bajo el agua.
+    public bool Diving => Swimming && _swim.IsUnderwater;
+    public GekkoSwimming Swim => _swim;
     public bool IsMoving { get { return _isMoving; } }
     public bool TongueOut { get { return _tongueOut; } set { _tongueOut = value; } }
     public bool CanRotate { set { _canRotate = value; } }
@@ -113,6 +123,9 @@ public class PlayerController
     public void SetFrozenForCinematic(bool frozen)
     {
         _frozenForCinematic = frozen;
+        // Nadando, la cinemática lo saca del agua (si no, quedaría sin gravedad ni choque con el agua). Al terminar, si sigue
+        // en el agua, vuelve a nadar solo.
+        if(frozen && Swimming) { _swim.Exit(0f); LeaveWater(); }
         _rb.linearVelocity = Vector3.zero;
         _rb.angularVelocity = Vector3.zero;
         _rb.useGravity = !frozen;
@@ -155,6 +168,7 @@ public class PlayerController
     {
         // Un grapple en curso apunta a un ancla que con el teletransporte queda lejos: no puede sobrevivirlo.
         _swinging?.CancelGrapple();
+        if(Swimming) { _swim.Exit(0f); LeaveWater(); }
         _rb.linearVelocity = Vector3.zero;
         _rb.position = position;
         _pjTransform.position = position;
@@ -162,6 +176,7 @@ public class PlayerController
     public void TeleportWRot(Transform trans)
     {
         _swinging?.CancelGrapple();
+        if(Swimming) { _swim.Exit(0f); LeaveWater(); }
         _rb.linearVelocity = Vector3.zero;
         _rb.position = trans.position;
         _pjTransform.position = trans.position;
@@ -171,7 +186,9 @@ public class PlayerController
     public void ArtificialUpdate()
     {
         _smoothedInput = Vector2.SmoothDamp(_smoothedInput, _rawInput, ref _smoothedVelocity, _smoothInputSpeed);
-        _pjViewer.Floor(_isSurface);
+        // Nadando no hay piso, pero tampoco está cayendo: sin animación de nado todavía, se usa la de caminar (ver
+        // PlayerViewer.Swim).
+        _pjViewer.Floor(_isSurface || Swimming);
     }
     
     public void ArtificialLateUpdate()
@@ -202,6 +219,10 @@ public class PlayerController
 
             return;
         }
+
+        // Nadando, el nado maneja el Rigidbody y el resto del controller no corre.
+        if (TrySwim())
+            return;
 
         if (_jumpGraceTime > 0f)
             _jumpGraceTime -= Time.fixedDeltaTime;
@@ -841,6 +862,122 @@ public class PlayerController
         if (_pjViewer.IsWaterSoundPlaying()) _pjViewer.WaterSoundStop();
         if (_pjViewer.IsTrailPlaying()) _pjViewer.StopTrail();
     }
+    // ---------------------------------------------------------------------------------------------------------------------
+    // Nado
+    // ---------------------------------------------------------------------------------------------------------------------
+
+    // Corre en cada FixedUpdate antes que el resto del controller. Devuelve true si Gekko está nadando (y ya se movió en este
+    // paso): ahí el controller no hace nada más. Devuelve false si no está en el agua o si acaba de salir y el resto del
+    // controller tiene que tomar el control en este mismo paso.
+    private bool TrySwim()
+    {
+        if (_swim == null) return false;
+
+        float dt = Time.fixedDeltaTime;
+        _swim.TickAir(dt);
+
+        if (!_swim.IsSwimming)
+        {
+            // Trepando no entra (puede trepar una pared que se mete en el agua). Recién saltó: tampoco.
+            if (_isClimbing || _jumpGraceTime > 0f) return false;
+            if (!_swim.TryEnter()) return false;
+
+            _isSurface = false;
+            _wasSurface = false;
+            _isGrounded = false;
+            _isClimbing = false;
+            _canJump = false;
+            _coyoteTimer = 0f;
+            _hasRef = false;
+            CancelJump();
+            // Si entró al agua con Saltar apretado (por ejemplo, saltando adentro), no sale disparado: hay que volver a apretar.
+            _swimJumpLatch = _jumpPressed;
+            _pjViewer.SplashSound();
+            _pjViewer.Swim(true);
+        }
+
+        // En el agua, arriba siempre es arriba.
+        _currentUp = Vector3.Slerp(_currentUp, Vector3.up, Mathf.Clamp01(10f * dt));
+
+        // Dirección del input relativa a la cámara, en el plano horizontal. El largo es la fuerza del input (stick a medias =
+        // nada más lento).
+        Vector3 dir = Vector3.zero;
+        if (_camTransform != null && _rawInput.sqrMagnitude > 0.01f && !_talking)
+        {
+            Vector3 camForward = Vector3.Cross(_camTransform.right, Vector3.up).normalized;
+            Vector3 camRight = Vector3.Cross(Vector3.up, camForward).normalized;
+            dir = Vector3.ClampMagnitude(camForward * _smoothedInput.y + camRight * _smoothedInput.x, 1f);
+        }
+
+        bool jumpNow = _jumpPressed && !_swimJumpLatch;
+        _swimJumpLatch = _jumpPressed;
+
+        GekkoSwimming.StepResult result = _swim.Step(dir, _speed * _speedMultiplier, jumpNow, _jumpPressed, _divePressed && !_talking, dt);
+
+        switch (result)
+        {
+            case GekkoSwimming.StepResult.Swimming:
+            {
+                _tongueM.CanUseTongue = false;
+                bool moving = dir.sqrMagnitude > 0.01f;
+
+                if (moving) Rotate(dir);
+                else KeepUpright(dt);
+
+                _isMoving = moving;
+                _pjViewer.Move(moving);
+                _pjViewer.Dive(_swim.IsUnderwater);
+
+                if (_pjViewer.IsWalkSoundPlaying()) _pjViewer.WalkSoundStop();
+                bool paddling = moving && !_swim.IsUnderwater;
+                if (paddling && !_pjViewer.IsWaterSoundPlaying()) _pjViewer.WaterSoundPlay();
+                else if (!paddling && _pjViewer.IsWaterSoundPlaying()) _pjViewer.WaterSoundStop();
+                return true;
+            }
+
+            case GekkoSwimming.StepResult.JumpOut:
+                LeaveWater();
+                Jump(_jumpForce * _swim.JumpFactor);
+                _pjViewer.JumpSoundPlay();
+                _pjViewer.SplashSound();
+                return true;
+
+            case GekkoSwimming.StepResult.LedgeHop:
+                // GekkoSwimming ya le puso la velocidad para subir a la orilla. El período de gracia evita que DetectSurface
+                // (que en el aire deja solo la velocidad vertical) le borre el empujón hacia adelante.
+                LeaveWater();
+                _isSurface = false;
+                _jumpGraceTime = 0.3f;
+                _pjViewer.Jump(true);
+                _pjViewer.SplashSound();
+                return true;
+
+            default:
+                // Salió del agua (se hizo pie, cascada, pared trepable): el resto del controller sigue en este mismo paso.
+                LeaveWater();
+                return false;
+        }
+    }
+
+    // Lo que hay que apagar al dejar de nadar, salga como salga.
+    private void LeaveWater()
+    {
+        _pjViewer.Swim(false);
+        _pjViewer.Dive(false);
+        if (_pjViewer.IsWaterSoundPlaying()) _pjViewer.WaterSoundStop();
+    }
+
+    // Quieto en el agua: endereza el cuerpo (por si entró inclinado, saltando desde una pared) sin cambiar hacia dónde mira.
+    private void KeepUpright(float dt)
+    {
+        Vector3 forward = Vector3.ProjectOnPlane(_pjTransform.forward, Vector3.up);
+        if (forward.sqrMagnitude < 0.0001f) return;
+        Quaternion target = Quaternion.LookRotation(forward.normalized, Vector3.up);
+        _pjTransform.rotation = Quaternion.Slerp(_pjTransform.rotation, target, Mathf.Clamp01(8f * dt));
+    }
+
+    public void SetSwimming(GekkoSwimming swim) { _swim = swim; }
+
     public void GetTongueManager(TongueManager tongue) { _tongueM = tongue; }
     public void GetSwinging(GekkoSwinging swinging) { _swinging = swinging; }
     public void SetSpeedMultiplier(float speed) => _speedMultiplier = speed;

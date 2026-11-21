@@ -29,6 +29,9 @@ public class WaterZone : MonoBehaviour
     [Tooltip("Metros por encima de la superficie que todavía cuentan como agua (Gekko metido hasta los pies).")]
     [SerializeField, Min(0f)] private float _heightAbove = 0.5f;
 
+    [Tooltip("Gekko puede nadar en esta agua. Apagado: sigue contando como agua (sin lengua), pero se hunde como antes; para el agua que es un límite del nivel, como el mar sin fondo de LvlTwo, donde caer es morir.")]
+    [SerializeField] private bool _swimmable = true;
+
     private Renderer _renderer;
 
     // true si worldPoint está dentro de alguna zona de agua.
@@ -55,6 +58,36 @@ public class WaterZone : MonoBehaviour
     private void OnDisable()
     {
         Zones.Remove(this);
+    }
+
+    // Superficie de la zona que tiene worldPoint dentro de su huella (sin mirar la altura): la Y de la cara de arriba de la
+    // malla justo sobre ese punto, y su normal. Lo usa GekkoWater para el nado.
+    public static bool TryGetSurface(Vector3 worldPoint, out float surfaceY, out Vector3 normal, out float depth)
+        => TryGetSurface(worldPoint, out surfaceY, out normal, out depth, out _);
+
+    public static bool TryGetSurface(Vector3 worldPoint, out float surfaceY, out Vector3 normal, out float depth, out bool swimmable)
+    {
+        swimmable = true;
+        for(int i = 0; i < Zones.Count; i++)
+        {
+            WaterZone zone = Zones[i];
+            if(zone._renderer == null) continue;
+
+            Bounds bounds = zone._renderer.localBounds;
+            Vector3 local = zone.transform.InverseTransformPoint(worldPoint);
+            if(local.x < bounds.min.x || local.x > bounds.max.x || local.z < bounds.min.z || local.z > bounds.max.z) continue;
+
+            surfaceY = zone.transform.TransformPoint(new Vector3(local.x, bounds.max.y, local.z)).y;
+            normal = zone.transform.up;
+            depth = zone._depth;
+            swimmable = zone._swimmable;
+            return true;
+        }
+
+        surfaceY = 0f;
+        normal = Vector3.up;
+        depth = 0f;
+        return false;
     }
 
     private bool IsInside(Vector3 worldPoint)

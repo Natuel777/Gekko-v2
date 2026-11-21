@@ -76,6 +76,7 @@ public static class Localizer
         { "ctrl_left", ("Mover izquierda", "Move Left") },
         { "ctrl_right", ("Mover derecha", "Move Right") },
         { "ctrl_jump", ("Saltar", "Jump") },
+        { "ctrl_dive", ("Bucear", "Dive") },
         { "ctrl_tongue", ("Lengua", "Tongue") },
         { "ctrl_grapple", ("Enganchar lengua", "Grapple Tongue") },
         { "ctrl_interact", ("Interactuar", "Interact") },

@@ -20,7 +20,8 @@ namespace Gekko.GrassSandbox
     /// engorda y no hay assets de malla intermedios que mantener.
     /// </summary>
     [ExecuteAlways]
-    public class GrassField : MonoBehaviour
+    // IPauseExempt: la pausa (ScreenGO) no lo apaga. Si lo apagara, OnDisable borra los chunks y el pasto desaparece.
+    public class GrassField : MonoBehaviour, IPauseExempt
     {
         private const string ChunkName = "GrassChunk_";
 

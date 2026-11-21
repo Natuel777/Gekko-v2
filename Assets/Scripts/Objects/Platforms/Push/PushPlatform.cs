@@ -3,6 +3,9 @@ using UnityEngine;
 public class PushPlatform : SlipperyPlatform
 {
     [SerializeField] private Vector3 _direction;
+
+    // Para el nado (GekkoWater): nadando, Gekko no choca con este collider y la corriente sale de acá.
+    public Vector3 Direction => _direction;
     protected override void OnCollisionStay(Collision col)
     {
         if (col.gameObject.TryGetComponent( out Player pj)) 

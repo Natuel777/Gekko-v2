@@ -37,6 +37,22 @@ public class RiverSolidSurface : MonoBehaviour
     [Min(0f)]
     [SerializeField] private float _currentForce = 150f;
 
+    [Tooltip("Gekko puede nadar en este río (ver GekkoSwimming). Apagado: se camina y resbala sobre la superficie sólida, como antes del nado. Para los ríos de decoración o de fondo, como el mar de LvlTwo.")]
+    [SerializeField] private bool _swimmable = true;
+
+    public bool Swimmable => _swimmable;
+
+    [Tooltip("Nadando en este río, qué parte de la corriente arrastra a Gekko (1 = a la velocidad del agua). Negativo = usa el valor general de Player > Nado.")]
+    [Range(-1f, 1.5f)]
+    [SerializeField] private float _swimCurrentFactor = -1f;
+
+    public float SwimCurrentFactor => _swimCurrentFactor;
+
+    [Tooltip("Gekko puede bucear en este río (Bucear baja, Saltar sube). Se baja hasta el fondo del volumen del río (SplineRiver > Volumen) o, sin volumen, hasta su profundidad.")]
+    [SerializeField] private bool _canDive = true;
+
+    public bool CanDive => _canDive;
+
     private SplineRiver _river;
     private GameObject _surface;
     private Mesh _mesh;

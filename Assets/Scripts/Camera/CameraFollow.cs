@@ -19,6 +19,8 @@ public class CameraFollow : MonoBehaviour
     [SerializeField] private float _airMinVerticalAngle = -30f;
     [Tooltip("Velocidad (grados/s) a la que sube el límite de abajo al apoyarse, por ejemplo al aterrizar con la cámara por debajo de Gekko.")]
     [SerializeField, Min(0.01f)] private float _verticalRangeSpeed = 90f;
+    [Tooltip("Límite de abajo (grados) mientras Gekko nada en la superficie: la cámara queda un poco por encima del agua.")]
+    [SerializeField] private float _swimMinVerticalAngle = 10f;
     private float _minVerticalAngle;
 
     // Mirar hacia arriba desde el piso (lo hace CameraRotation). Mientras se puede, el eje vertical tiene este margen de
@@ -285,7 +287,13 @@ public class CameraFollow : MonoBehaviour
         float targetMin;
         bool onFloor = false;
 
-        if (_pjC.InAir)
+        if (_pjC.Swimming)
+        {
+            // Nadando en la superficie la cámara no baja del agua (si no, entraría y saldría del efecto bajo el agua todo el
+            // tiempo). Buceando sí puede bajar, como en el aire.
+            targetMin = _pjC.Diving ? _airMinVerticalAngle : _swimMinVerticalAngle;
+        }
+        else if (_pjC.InAir)
         {
             targetMin = _airMinVerticalAngle;
         }

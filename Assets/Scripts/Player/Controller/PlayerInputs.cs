@@ -43,6 +43,8 @@ public class PlayerInputs
         _input.Enable();
         _input.Character.Jump.performed += JumpInput;
         _input.Character.Jump.canceled += JumpCancel;
+        _input.Character.Dive.performed += DiveInput;
+        _input.Character.Dive.canceled += DiveCancel;
         _input.Character.Movement.performed += MoveInput;
         _input.Character.Movement.canceled += MoveCancel; 
         _input.Character.Tongue.performed += TongueInput;
@@ -64,6 +66,8 @@ public class PlayerInputs
         _input.Disable();
         _input.Character.Jump.performed -= JumpInput;
         _input.Character.Jump.canceled -= JumpCancel;
+        _input.Character.Dive.performed -= DiveInput;
+        _input.Character.Dive.canceled -= DiveCancel;
         _input.Character.Movement.performed -= MoveInput;
         _input.Character.Movement.canceled -= MoveCancel;
         _input.Character.Tongue.performed -= TongueInput;
@@ -90,6 +94,8 @@ public class PlayerInputs
     {
         _input.Character.Jump.performed -= JumpInput;
         _input.Character.Jump.canceled -= JumpCancel;
+        _input.Character.Dive.performed -= DiveInput;
+        _input.Character.Dive.canceled -= DiveCancel;
         _input.Character.Movement.performed -= MoveInput;
         _input.Character.Movement.canceled -= MoveCancel;
         // _input.Character.Lock.performed -= LockInput; // Lock ya no existe en el action asset
@@ -103,6 +109,8 @@ public class PlayerInputs
     {
         _input.Character.Jump.performed += JumpInput;
         _input.Character.Jump.canceled += JumpCancel;
+        _input.Character.Dive.performed += DiveInput;
+        _input.Character.Dive.canceled += DiveCancel;
         _input.Character.Movement.performed += MoveInput;
         _input.Character.Movement.canceled += MoveCancel;
         // _input.Character.Lock.performed += LockInput; // Lock ya no existe en el action asset
@@ -144,6 +152,11 @@ public class PlayerInputs
 
         pjController.JumpPressed = true;
     }
+
+    // Bucear (C / Ctrl): mantenido baja a Gekko en el agua profunda (ver GekkoSwimming).
+    private void DiveInput(InputAction.CallbackContext value) => pjController.DivePressed = true;
+
+    private void DiveCancel(InputAction.CallbackContext value) => pjController.DivePressed = false;
 
     private void InteractInput(InputAction.CallbackContext value)
     {
