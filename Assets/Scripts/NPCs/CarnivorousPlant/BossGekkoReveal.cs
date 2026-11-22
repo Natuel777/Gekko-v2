@@ -29,6 +29,10 @@ public class BossGekkoReveal : MonoBehaviour
     [SerializeField] private LayerMask _groundLayer;
     [Tooltip("Metros de margen sobre el punto de piso encontrado.")]
     [SerializeField] private float _groundClearance = 0.05f;
+    [Tooltip("Después de activarlo, baja/sube al gekko para que el vértice más bajo de su malla (las patas) toque el piso. Corrige que el modelo hijo tenga un offset propio y quede flotando.")]
+    [SerializeField] private bool _alignMeshToGround = true;
+    [Tooltip("Metros entre las patas y el piso al alinear la malla (negativo = se hunde un poco en el pasto).")]
+    [SerializeField] private float _meshGroundOffset = 0f;
     [Tooltip("Arranca el diálogo del gekko apenas aparece, sin que el player tenga que acercarse y apretar interactuar.")]
     [SerializeField] private bool _autoStartDialogue = true;
     [Tooltip("Segundos entre que aparece el gekko y arranca el diálogo.")]
@@ -37,6 +41,8 @@ public class BossGekkoReveal : MonoBehaviour
 
     private int _dissolveId;
     private bool _triggered;
+    private bool _hasGroundY;
+    private float _groundY;
 
     private void Awake()
     {
@@ -76,6 +82,7 @@ public class BossGekkoReveal : MonoBehaviour
 
         PlaceNextToPlant(_friendGekko.transform);
         _friendGekko.SetActive(true);
+        AlignMeshToGround(_friendGekko);
 
         if(!_autoStartDialogue) yield break;
 
@@ -118,7 +125,45 @@ public class BossGekkoReveal : MonoBehaviour
 
         Vector3 origin = t.position + Vector3.up * 3f;
         if(Physics.Raycast(origin, Vector3.down, out RaycastHit hit, 20f, _groundLayer, QueryTriggerInteraction.Ignore))
+        {
             t.position = hit.point + Vector3.up * _groundClearance;
+            _groundY = hit.point.y;
+            _hasGroundY = true;
+        }
+    }
+
+    // El pivot queda en el piso, pero el modelo hijo tiene su propio offset (y la pose del animator/IK), así que
+    // las patas quedaban flotando. Fuerza una evaluación del animator, mide el vértice más bajo real de la malla
+    // y corre al gekko para que ese punto apoye sobre el piso.
+    private void AlignMeshToGround(GameObject gekko)
+    {
+        if(!_alignMeshToGround || !_hasGroundY) return;
+
+        foreach(Animator animator in gekko.GetComponentsInChildren<Animator>())
+            if(animator.isActiveAndEnabled) animator.Update(0f);
+
+        float minY = float.MaxValue;
+        Mesh baked = new Mesh();
+
+        foreach(SkinnedMeshRenderer smr in gekko.GetComponentsInChildren<SkinnedMeshRenderer>())
+        {
+            smr.BakeMesh(baked, true);
+            foreach(Vector3 v in baked.vertices)
+                minY = Mathf.Min(minY, smr.transform.TransformPoint(v).y);
+        }
+
+        foreach(MeshFilter mf in gekko.GetComponentsInChildren<MeshFilter>())
+        {
+            if(mf.sharedMesh == null) continue;
+            foreach(Vector3 v in mf.sharedMesh.vertices)
+                minY = Mathf.Min(minY, mf.transform.TransformPoint(v).y);
+        }
+
+        Destroy(baked);
+        if(minY == float.MaxValue) return;
+
+        gekko.transform.position += Vector3.up * (_groundY + _meshGroundOffset - minY);
+        Physics.SyncTransforms();
     }
 
     // Mismo patrón que CorruptedPlant (Assets/_Gekko/Purification): anima _Dissolve en instancias de material

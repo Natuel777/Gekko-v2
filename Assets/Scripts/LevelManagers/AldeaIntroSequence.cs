@@ -67,6 +67,14 @@ public class AldeaIntroSequence : MonoBehaviour
     [SerializeField] private float _purifyPushIn = 2.5f;
     [SerializeField] private float _holdAfterPurify = 2f;
 
+    [Header("Repetición (nivel ya purificado)")]
+    [Tooltip("Metros que la cámara arranca más atrás del plano de la casa cuando se rejuega un nivel ya ganado.")]
+    [Min(0f)]
+    [SerializeField] private float _repeticionRetroceso = 2.5f;
+    [Tooltip("Cuánto se acerca la cámara (metros) en la repetición. Poquito, para que no se meta en la casa.")]
+    [Min(0f)]
+    [SerializeField] private float _repeticionAcercamiento = 0.8f;
+
     // Niveles ganados antes de esta visita (zonas/casas 0.._yaPurificadas-1 ya sanas) y el índice de la zona/casa del
     // nivel que se acaba de ganar (-1 = ninguno).
     private int _yaPurificadas;
@@ -87,6 +95,10 @@ public class AldeaIntroSequence : MonoBehaviour
             return _wideShotPoint;
         }
     }
+
+    // En la repetición la cámara arranca un poco más atrás del plano de la casa.
+    private Vector3 PosicionInicial(Transform plano) =>
+        _repeticion ? plano.position - plano.forward * _repeticionRetroceso : plano.position;
 
     private int TotalVisitas => Mathf.Max(_zonas.Length, _casas.Length);
 
@@ -132,7 +144,7 @@ public class AldeaIntroSequence : MonoBehaviour
         Transform plano = PlanoInicial;
         if(_introCamera == null || plano == null) return;
 
-        _introCamera.transform.SetPositionAndRotation(plano.position, plano.rotation);
+        _introCamera.transform.SetPositionAndRotation(PosicionInicial(plano), plano.rotation);
         foreach(CinemachineCamera cam in FindObjectsByType<CinemachineCamera>(FindObjectsSortMode.None))
             cam.enabled = cam == _introCamera;
     }
@@ -151,14 +163,14 @@ public class AldeaIntroSequence : MonoBehaviour
         bool hayCamara = _introCamera != null && planoInicial != null;
         if(hayCamara)
         {
-            _introCamera.transform.SetPositionAndRotation(planoInicial.position, planoInicial.rotation);
+            _introCamera.transform.SetPositionAndRotation(PosicionInicial(planoInicial), planoInicial.rotation);
             EventManager.Trigger(_introCameraTag);
         }
 
         // Repetición de un nivel ya ganado: solo la casa del gekko rescatado (ya está ahí), con un acercamiento lento.
         if(_repeticion)
         {
-            if(hayCamara) yield return Acercar(planoInicial.position, planoInicial.rotation, _wideShotDrift, _wideShotDuration);
+            if(hayCamara) yield return Acercar(PosicionInicial(planoInicial), planoInicial.rotation, _repeticionAcercamiento, _wideShotDuration);
             else yield return new WaitForSeconds(_wideShotDuration);
 
             yield return new WaitForSeconds(_holdAfterPurify);
