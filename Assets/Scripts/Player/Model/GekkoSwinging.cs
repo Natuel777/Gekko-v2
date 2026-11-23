@@ -66,6 +66,17 @@ public sealed class GekkoSwinging
     private float _heightLimitOffset, _heightLimitSpring, _heightLimitDamper, _heightLimitMaxPull;
     #endregion
 
+    #region Swing Sounds
+    // Sonido de enganche (SoundNames.PlayerSwingAttach): suena cuando la punta de la lengua llega al gancho del swing (ver
+    // CheckSwingAttachArrival). La punta se acerca al ancla con un Lerp que se frena a medida que llega (ver DrawTongue) y nunca
+    // toca el punto justo, así que "llegó" es estar a esta distancia, en metros, o menos. Con 0.2 suena a los ~0.3-0.45 s de lanzar
+    // la lengua a un gancho que está a 3-8 m (cuenta hecha con la fórmula del Lerp, no medida en el juego).
+    private const float SwingAttachArrivalDistance = 0.2f;
+
+    // Ya sonó el enganche de este swing. Es una vez por lengua lanzada: StartSwing lo vuelve a armar.
+    private bool _swingAttachSoundPlayed;
+    #endregion
+
     private RotateGekkoWhileSwingin _gekkoRotation;
     private GekkoGrapple _grappleBehaviour;
     private GekkoDetection _detection;
@@ -170,6 +181,12 @@ public sealed class GekkoSwinging
         _joint.damper = 7f; //Consultar motivo del valor
         _joint.massScale = 4.5f; //Consultar motivo del valor
         BeginTongue();
+
+        // Gekko lanza la lengua hacia el gancho: suena al salir (SoundNames.PlayerSwingTongue). Va en StartSwing y no en BeginTongue
+        // porque BeginTongue lo comparten el swing y el grapple, y el grapple tiene su propio sonido (ver GekkoGrapple.TryStart).
+        // El enganche, en cambio, recién suena cuando la punta llega al gancho (ver CheckSwingAttachArrival): acá solo se lo rearma.
+        _swingAttachSoundPlayed = false;
+        if(AudioManager.instance) AudioManager.instance.Play(SoundNames.PlayerSwingTongue);
     }
 
     // Arranca el grapple hacia anchor (un GrapplePoint).
@@ -237,6 +254,22 @@ public sealed class GekkoSwinging
         if(!IsSwinging && !(_grappleBehaviour != null && _grappleBehaviour.IsTongueOut)) return;
 
         DrawTongue();
+
+        // Después de dibujar: usa la punta de la lengua de este mismo frame.
+        CheckSwingAttachArrival();
+    }
+
+    // Suena el enganche una sola vez por swing, cuando la punta de la lengua (la del LineRenderer: _currentGrapplePoint) llega al
+    // gancho. Solo en el swing: la lengua del grapple no tiene sonido de llegada. Si el swing se corta antes de que la punta llegue
+    // (se suelta el botón o hay un choque), IsSwinging pasa a false y no suena.
+    private void CheckSwingAttachArrival()
+    {
+        if(!IsSwinging || _swingAttachSoundPlayed) return;
+
+        if((_grapplePoint - _currentGrapplePoint).sqrMagnitude > SwingAttachArrivalDistance * SwingAttachArrivalDistance) return;
+
+        _swingAttachSoundPlayed = true;
+        if(AudioManager.instance) AudioManager.instance.Play(SoundNames.PlayerSwingAttach);
     }
 
     public void ArtificialFixedUpdate()

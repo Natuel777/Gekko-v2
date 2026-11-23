@@ -53,6 +53,7 @@ public enum SoundNames
     TurretBullet = 26,
     LvlTwo = 27,
     PlayerGrapple = 28,
+    PlayerSwingTongue = 29,
 }
 
 public enum LevelFlags
