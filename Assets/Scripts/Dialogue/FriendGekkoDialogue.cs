@@ -3,7 +3,8 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using Unity.Cinemachine;
 
-// Diálogo del gekko azul (Celeste) que aparece al purificar a CarniborousPlantBOSS (ver BossGekkoReveal).
+// Diálogo del gekko amigo que aparece al purificar a la planta jefe (ver BossGekkoReveal): Celeste (azul) en BossLvlOne,
+// Moki (verde) en LvlTwo. Mismo componente en los dos: cambian el diálogo y los materiales del objeto.
 // Puesta en escena de la charla (si _stageConversation está prendido):
 //   1. Fundido corto a negro (solo el fundido de ScreenFader, sin tocar inputs: el diálogo ya bloquea a Gekko).
 //   2. En negro: Gekko se ubica frente a Celeste a una distancia fija y los dos se miran.
@@ -25,7 +26,7 @@ public class FriendGekkoDialogue : DialogueNPC
     [Tooltip("Distancia entre los dos, en alturas de Gekko (2.2 = poco más de dos Gekkos de distancia).")]
     [Min(0.5f)]
     [SerializeField] private float _conversationDistance = 2.2f;
-    [Tooltip("Nombre de hablante (en speakerNames del diálogo) que corresponde a Gekko. Cualquier otro = Celeste.")]
+    [Tooltip("Nombre de hablante (en speakerNames del diálogo) que corresponde a Gekko. Cualquier otro = el gekko amigo (Celeste, Moki...).")]
     [SerializeField] private string _playerSpeakerName = "Gekko";
     [Tooltip("Cuántas líneas se ven en plano doble antes de pasar a primeros planos.")]
     [Min(0)]

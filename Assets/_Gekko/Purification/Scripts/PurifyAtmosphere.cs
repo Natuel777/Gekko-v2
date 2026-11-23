@@ -8,7 +8,8 @@ namespace Gekko.Purification
     /// total) y lleva suave, sin saltos, hacia ese nivel:
     ///  - el peso del Volume global "Corrupto" (1 - nivel),
     ///  - la niebla (color y densidad, o distancia si la niebla es lineal),
-    ///  - la intensidad y el color de la luz direccional.
+    ///  - la intensidad y el color de la luz direccional,
+    ///  - el skybox (mezcla entre el de la escena y uno corrupto con el mismo shader) y la luz ambiente.
     /// Con 1 de 4 regiones purificadas, todo se ve un 25 % menos corrupto.
     ///
     /// El estado "sano" son los valores que tiene la escena al arrancar (lo que armó el equipo); acá solo se
@@ -48,6 +49,19 @@ namespace Gekko.Purification
         [Tooltip("Color de la luz con todo corrupto.")]
         [SerializeField] private Color _luzColorCorrupta = new(0.72f, 0.66f, 0.88f, 1f);
 
+        [Header("Cielo")]
+        [Tooltip("Skybox con el look corrupto. Tiene que usar el mismo shader que el skybox de la escena (Lighting > Environment): se mezcla con Material.Lerp sobre una instancia. Vacío = no toca el cielo.")]
+        [SerializeField] private Material _skyboxCorrupto;
+        [Tooltip("Cómo se aclara el cielo con la purificación: 1 = parejo con el resto; más bajo = el cielo sigue oscuro hasta que queda poca corrupción (con 0.5, a 3 de 5 zonas purificadas todavía está 63 % corrupto).")]
+        [Range(0.1f, 1f)]
+        [SerializeField] private float _cieloRespuesta = 0.5f;
+        [Tooltip("Controlar la luz ambiente. En modo Trilight/Color mezcla hacia los colores de abajo; en modo Skybox la recalcula desde el cielo mezclado.")]
+        [SerializeField] private bool _controlarAmbiente = true;
+        [Tooltip("Ambiente con todo corrupto (modo Trilight: cielo / ecuador / suelo; modo Color usa solo el primero).")]
+        [SerializeField] private Color _ambienteCieloCorrupto = new(0.42f, 0.32f, 0.55f, 1f);
+        [SerializeField] private Color _ambienteEcuadorCorrupto = new(0.46f, 0.3f, 0.46f, 1f);
+        [SerializeField] private Color _ambienteSueloCorrupto = new(0.18f, 0.12f, 0.2f, 1f);
+
         // Estado sano (lo que tenía la escena).
         private bool _nieblaSanaActiva;
         private FogMode _nieblaSanaModo;
@@ -55,6 +69,9 @@ namespace Gekko.Purification
         private float _nieblaSanaDensidad, _nieblaSanaFin;
         private float _luzSanaIntensidad;
         private Color _luzSanaColor;
+        private Material _skyboxSano, _skyboxInstancia;
+        private Color _ambSanoCielo, _ambSanoEcuador, _ambSanoSuelo;
+        private float _proximoAmbiente;
         private bool _capturado;
 
         private float _nivelActual = -1f;
@@ -116,6 +133,19 @@ namespace Gekko.Purification
                 _luzSanaIntensidad = _luz.intensity;
                 _luzSanaColor = _luz.color;
             }
+
+            _ambSanoCielo = RenderSettings.ambientSkyColor;
+            _ambSanoEcuador = RenderSettings.ambientEquatorColor;
+            _ambSanoSuelo = RenderSettings.ambientGroundColor;
+
+            _skyboxSano = RenderSettings.skybox;
+            if(_skyboxCorrupto != null && _skyboxSano != null)
+            {
+                if(_skyboxSano.shader != _skyboxCorrupto.shader)
+                    Debug.LogWarning($"[{name}] El skybox corrupto usa otro shader que el de la escena: la mezcla no va a funcionar bien.", this);
+                // Instancia propia: nunca se toca el material del proyecto.
+                _skyboxInstancia = new Material(_skyboxSano) { name = _skyboxSano.name + " (Purify)" };
+            }
         }
 
         private void Aplicar(float nivel)
@@ -144,6 +174,31 @@ namespace Gekko.Purification
                 _luz.intensity = Mathf.Lerp(_luzSanaIntensidad, _luzSanaIntensidad * _luzIntensidadCorrupta, corrupcion);
                 _luz.color = Color.Lerp(_luzSanaColor, _luzColorCorrupta, corrupcion);
             }
+
+            if(_skyboxInstancia != null)
+            {
+                _skyboxInstancia.Lerp(_skyboxSano, _skyboxCorrupto, Mathf.Pow(corrupcion, _cieloRespuesta));
+                if(RenderSettings.skybox != _skyboxInstancia) RenderSettings.skybox = _skyboxInstancia;
+            }
+
+            if(_controlarAmbiente)
+            {
+                if(RenderSettings.ambientMode == AmbientMode.Skybox)
+                {
+                    // Recalcular el ambiente desde el cielo es caro: como mucho 5 veces por segundo durante la transición.
+                    if(_skyboxInstancia != null && Time.unscaledTime >= _proximoAmbiente)
+                    {
+                        _proximoAmbiente = Time.unscaledTime + 0.2f;
+                        DynamicGI.UpdateEnvironment();
+                    }
+                }
+                else
+                {
+                    RenderSettings.ambientSkyColor = Color.Lerp(_ambSanoCielo, _ambienteCieloCorrupto, corrupcion);
+                    RenderSettings.ambientEquatorColor = Color.Lerp(_ambSanoEcuador, _ambienteEcuadorCorrupto, corrupcion);
+                    RenderSettings.ambientGroundColor = Color.Lerp(_ambSanoSuelo, _ambienteSueloCorrupto, corrupcion);
+                }
+            }
         }
 
         private void Restaurar()
@@ -166,6 +221,24 @@ namespace Gekko.Purification
                 _luz.intensity = _luzSanaIntensidad;
                 _luz.color = _luzSanaColor;
             }
+
+            if(_skyboxInstancia != null)
+            {
+                RenderSettings.skybox = _skyboxSano;
+                if(_controlarAmbiente && RenderSettings.ambientMode == AmbientMode.Skybox) DynamicGI.UpdateEnvironment();
+            }
+
+            if(_controlarAmbiente)
+            {
+                RenderSettings.ambientSkyColor = _ambSanoCielo;
+                RenderSettings.ambientEquatorColor = _ambSanoEcuador;
+                RenderSettings.ambientGroundColor = _ambSanoSuelo;
+            }
+        }
+
+        private void OnDestroy()
+        {
+            if(_skyboxInstancia != null) Destroy(_skyboxInstancia);
         }
     }
 }

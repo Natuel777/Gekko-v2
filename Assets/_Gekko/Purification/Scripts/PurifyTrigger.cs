@@ -8,6 +8,7 @@ namespace Gekko.Purification
     /// Dispara la purificación de UNA región cuando pasa algo del juego, sin tocar los scripts existentes:
     ///  - un núcleo (<see cref="PurificationCore"/>) se rompe,
     ///  - un desafío (<see cref="PurificationChallenge"/>) se completa (la planta quedó purificada),
+    ///  - una torreta (<see cref="ChallengeTurret"/>) queda purificada,
     ///  - o cualquier UnityEvent llama a <see cref="Disparar"/> (fin de un puzzle, un trigger, etc.).
     /// Si hay varias fuentes asignadas, dispara con la primera que ocurra.
     ///
@@ -26,6 +27,8 @@ namespace Gekko.Purification
         [SerializeField] private PurificationCore _nucleo;
         [Tooltip("Desafío que dispara la región al completarse (planta purificada).")]
         [SerializeField] private PurificationChallenge _desafio;
+        [Tooltip("Torreta que dispara la región al quedar purificada.")]
+        [SerializeField] private ChallengeTurret _torreta;
 
         [Header("Impacto")]
         [Tooltip("Congelar el juego un instante al disparar (hitstop).")]
@@ -57,8 +60,8 @@ namespace Gekko.Purification
         public PurifyRegion Region => _region != null ? _region : GetComponent<PurifyRegion>();
         /// <summary>Núcleo que dispara esta región (null si no tiene). Lo usa BossPlantPhases para mostrar la zona.</summary>
         public PurificationCore Nucleo => _nucleo;
-        /// <summary>Si tiene algún núcleo o desafío asignado (si no, solo dispara por UnityEvent).</summary>
-        public bool TieneFuente => _nucleo != null || _desafio != null;
+        /// <summary>Si tiene algún núcleo, desafío o torreta asignado (si no, solo dispara por UnityEvent).</summary>
+        public bool TieneFuente => _nucleo != null || _desafio != null || _torreta != null;
 
         // Con "Enter Play Mode Options" sin recarga de dominio los estáticos sobreviven entre sesiones de Play.
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -78,22 +81,25 @@ namespace Gekko.Purification
         {
             if(_nucleo != null) _nucleo.Broken += OnNucleoRoto;
             if(_desafio != null) _desafio.Completed += Disparar;
+            if(_torreta != null) _torreta.Purified += OnTorretaPurificada;
         }
 
         private void OnDisable()
         {
             if(_nucleo != null) _nucleo.Broken -= OnNucleoRoto;
             if(_desafio != null) _desafio.Completed -= Disparar;
+            if(_torreta != null) _torreta.Purified -= OnTorretaPurificada;
 
             TerminarHitstop();
         }
 
-        // Si la fuente ya había ocurrido antes de arrancar (núcleo roto o desafío completo), la región queda
+        // Si la fuente ya había ocurrido antes de arrancar (núcleo roto, desafío completo o torreta purificada), la región queda
         // purificada directo, sin animación ni impacto.
         private void Start()
         {
             bool yaOcurrio = (_nucleo != null && _nucleo.IsBroken) ||
-                             (_desafio != null && _desafio.State == PurificationChallenge.ChallengeState.Completed);
+                             (_desafio != null && _desafio.State == PurificationChallenge.ChallengeState.Completed) ||
+                             (_torreta != null && _torreta.IsPurified);
 
             if(!yaOcurrio || _region == null) return;
 
@@ -102,6 +108,7 @@ namespace Gekko.Purification
         }
 
         private void OnNucleoRoto(PurificationCore nucleo) => Disparar();
+        private void OnTorretaPurificada(ChallengeTurret torreta) => Disparar();
 
         /// <summary>Purifica la región con impacto. Público para llamarlo desde UnityEvents. Solo dispara una vez.</summary>
         public void Disparar()

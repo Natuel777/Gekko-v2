@@ -9,10 +9,14 @@ using UnityEngine;
 // patitas, el target salta a cada una y la cámara las sigue hacia arriba (el damping del Rotation Composer suaviza el
 // paneo). Termina un rato después de la última patita. Mientras dura, Gekko y los NPCs quedan congelados, igual que en
 // ShieldBreakCinematic.
+// En vez de un desafío puede escuchar un TurretGroupPurified (todas las torretas de una zona purificadas): así lo usa el
+// árbol de la Second Zone, que se abre con el PrimerChallenge.
 public class VinesRevealCinematic : MonoBehaviour
 {
     [Tooltip("Desafío cuya cinemática de planta purificada, al terminar, dispara este plano.")]
     [SerializeField] private Challenge _challenge;
+    [Tooltip("Alternativa al desafío: grupo de torretas que, purificadas todas, disparan este plano (ej. el PrimerChallenge de LvlTwo). Si está asignado, se usa en vez del desafío.")]
+    [SerializeField] private TurretGroupPurified _turretGroup;
     [Tooltip("Enredaderas y patitas que se muestran: la cámara sigue cada patita que aparece.")]
     [SerializeField] private VinesClimbUnlock _unlock;
 
@@ -44,19 +48,21 @@ public class VinesRevealCinematic : MonoBehaviour
 
     private void OnEnable()
     {
-        if(_challenge == null || _unlock == null || _camera == null)
+        if((_challenge == null && _turretGroup == null) || _unlock == null || _camera == null)
         {
-            Debug.LogWarning($"[{name}] VinesRevealCinematic sin Challenge, VinesClimbUnlock o cámara asignados: no va a mostrar nada.", this);
+            Debug.LogWarning($"[{name}] VinesRevealCinematic sin Challenge (o Turret Group), VinesClimbUnlock o cámara asignados: no va a mostrar nada.", this);
             return;
         }
 
-        _challenge.CompletionBeatFinished += OnCompletionBeatFinished;
+        if(_turretGroup != null) _turretGroup.Completed += OnCompletionBeatFinished;
+        else _challenge.CompletionBeatFinished += OnCompletionBeatFinished;
         _unlock.FootprintRevealed += OnFootprintRevealed;
     }
 
     private void OnDisable()
     {
         if(_challenge != null) _challenge.CompletionBeatFinished -= OnCompletionBeatFinished;
+        if(_turretGroup != null) _turretGroup.Completed -= OnCompletionBeatFinished;
         if(_unlock != null) _unlock.FootprintRevealed -= OnFootprintRevealed;
         EndShot();
     }
