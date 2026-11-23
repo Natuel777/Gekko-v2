@@ -111,10 +111,21 @@ public class GameManager : MonoBehaviour , IGameManager
     {
         if(AudioManager.instance)
         AudioManager.instance.ResetAudio();
-        LevelOneManager.Instance.StartSong();
+        RestartLevelSong();
 
         if(RespawnController.Instance != null) RespawnController.Instance.TriggerRespawn(false);
         else checkpointManager.Respawn();
+    }
+
+    // ResetAudio corta todo, también la música del nivel: acá se vuelve a arrancar la del nivel actual. Cada nivel tiene su manager
+    // (LvlOne: LevelOneManager; LvlTwo: LevelTwoManager, que hereda de LevelManager) y el que no está en esta escena se saltea. El
+    // "!= null" de Unity también descarta al manager de un nivel anterior que ya se destruyó (el Instance estático queda apuntando
+    // a él). Antes se llamaba a LevelOneManager.Instance a secas: en LvlTwo, abierta directo, daba NullReferenceException y el
+    // respawn no seguía.
+    private void RestartLevelSong()
+    {
+        if (LevelManager.Instance != null) LevelManager.Instance.StartSong();
+        else if (LevelOneManager.Instance != null) LevelOneManager.Instance.StartSong();
     }
 
     // El menú de pausa está abierto de verdad. No es lo mismo que CanPause: ese queda en true también durante los fundidos de
