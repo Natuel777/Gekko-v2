@@ -52,6 +52,7 @@ public enum SoundNames
     TurretShoot = 25,
     TurretBullet = 26,
     LvlTwo = 27,
+    PlayerGrapple = 28,
 }
 
 public enum LevelFlags

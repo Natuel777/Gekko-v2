@@ -124,6 +124,12 @@ public sealed class GekkoGrapple
         // Finish.
         _rotation.StartLookAtGrapplePoint(_grapplePoint, _lookSpeed);
 
+        // Sale la lengua hacia el GrapplePoint (GekkoSwinging la dibuja apenas esto devuelve true): suena una vez por grapple. Va acá,
+        // en el punto común de los dos caminos que devuelven true (con y sin espera) y después de todas las validaciones: un click en
+        // cooldown, con otro grapple en curso o con una parábola inválida devuelve false antes y no suena. El segundo salto no pasa
+        // por acá (suelta la lengua en vez de tirarla).
+        if(AudioManager.instance) AudioManager.instance.Play(SoundNames.PlayerGrapple);
+
         if(_delayTime <= 0f)
         {
             StartFlight(velocity, flightTime);
