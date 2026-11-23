@@ -51,6 +51,7 @@ public enum SoundNames
     RuneActivation = 24,
     TurretShoot = 25,
     TurretBullet = 26,
+    LvlTwo = 27,
 }
 
 public enum LevelFlags

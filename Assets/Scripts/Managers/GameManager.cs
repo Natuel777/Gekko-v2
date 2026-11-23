@@ -187,7 +187,7 @@ public class GameManager : MonoBehaviour , IGameManager
         }
 
         ScreenManager.Instance.Push(_screenPause);
-        List<SoundNames> soundsToNotPause = new List<SoundNames>{ SoundNames.Menu, SoundNames.LvlOne};
+        List<SoundNames> soundsToNotPause = new List<SoundNames>{ SoundNames.Menu, SoundNames.LvlOne, SoundNames.LvlTwo};
         if(AudioManager.instance)
         AudioManager.instance.PauseAll(soundsToNotPause);
         Time.timeScale = 0f;
