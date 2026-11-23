@@ -13,6 +13,9 @@ public class DebugController
         if(altHeld && kb.digit1Key.wasPressedThisFrame) GameManager.Instance.LoadDebugLevel(1);
         else if(altHeld && kb.digit2Key.wasPressedThisFrame) GameManager.Instance.LoadDebugLevel(2);
         else if(altHeld && kb.digit3Key.wasPressedThisFrame) GameManager.Instance.LoadDebugLevel(3);
+        else if(altHeld && kb.digit4Key.wasPressedThisFrame) PurifyTurretGroups();
+        else if(altHeld && kb.digit5Key.wasPressedThisFrame) PurifyChallengeTurrets();
+        else if(altHeld && kb.digit6Key.wasPressedThisFrame) PurifyChallengePlant();
         else if(altHeld && kb.digit8Key.wasPressedThisFrame) PurifyNearestCarnivorousPlant();
         else if(kb.digit1Key.wasPressedThisFrame) GameManager.Instance.RespawnAt(0);
         else if(kb.digit2Key.wasPressedThisFrame) GameManager.Instance.RespawnAt(1);
@@ -45,6 +48,46 @@ public class DebugController
 
         Debug.Log($"[Debug] Alt+8: purificando {nearest.name}.");
         nearest.DebugPurify();
+    }
+
+    // Debug (Alt+4): purifica las torretas de las zonas sin planta (TurretGroupPurified; en LvlTwo, el PrimerChallenge,
+    // que abre el árbol de la Second Zone). Mismo camino que una bala devuelta: pintado, onda y cinemática del árbol.
+    private void PurifyTurretGroups()
+    {
+        int count = 0;
+        foreach(TurretGroupPurified group in Object.FindObjectsByType<TurretGroupPurified>(FindObjectsSortMode.None))
+            foreach(ChallengeTurret turret in group.Turrets)
+                if(turret != null && !turret.IsPurified) { turret.Purify(); count++; }
+
+        Debug.Log(count > 0 ? $"[Debug] Alt+4: {count} torretas del primer desafío purificadas." : "[Debug] Alt+4: no hay torretas de primer desafío sin purificar.");
+    }
+
+    // Debug (Alt+5): purifica las torretas que sostienen el escudo de la planta (MirrorChallenge; en LvlTwo, el
+    // ChallengeFinal). Cae el escudo con su cinemática, como al purificarlas con balas.
+    private void PurifyChallengeTurrets()
+    {
+        int count = 0;
+        foreach(ShieldBreakerChallenge challenge in Object.FindObjectsByType<ShieldBreakerChallenge>(FindObjectsSortMode.None))
+            foreach(IShieldBreaker breaker in challenge.ShieldBreakers)
+                if(breaker is ChallengeTurret turret && !turret.IsPurified) { turret.Purify(); count++; }
+
+        Debug.Log(count > 0 ? $"[Debug] Alt+5: {count} torretas del desafío de la planta purificadas." : "[Debug] Alt+5: no hay torretas del desafío de la planta sin purificar.");
+    }
+
+    // Debug (Alt+6): purifica la planta de los desafíos de torretas (en LvlTwo, la del ChallengeFinal): aparece Moki y
+    // arranca su charla. Conviene bajar antes el escudo con Alt+5, si no las torretas siguen disparando.
+    private void PurifyChallengePlant()
+    {
+        foreach(ShieldBreakerChallenge challenge in Object.FindObjectsByType<ShieldBreakerChallenge>(FindObjectsSortMode.None))
+        {
+            if(challenge.Plant == null || challenge.Plant.IsPurified) continue;
+
+            Debug.Log($"[Debug] Alt+6: purificando {challenge.Plant.name}.");
+            challenge.Plant.DebugPurify();
+            return;
+        }
+
+        Debug.Log("[Debug] Alt+6: no hay plantas de desafío sin purificar.");
     }
 
     // Debug: rompe de una todos los nucleos de purificacion activos en la escena, para poder

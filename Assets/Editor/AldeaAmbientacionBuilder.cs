@@ -769,7 +769,27 @@ public static class AldeaAmbientacionBuilder
         so.FindProperty("_luz").objectReferenceValue = sun;
         so.FindProperty("_nieblaColorCorrupta").colorValue = new Color(0.32f, 0.22f, 0.38f);
         so.FindProperty("_nieblaFinCorrupta").floatValue = 120f;
+        so.FindProperty("_skyboxCorrupto").objectReferenceValue = SkyboxCorrupto(sky);
         so.ApplyModifiedPropertiesWithoutUndo();
+    }
+
+    // Cielo corrupto: copia del atardecer (mismo shader, así PurifyAtmosphere lo puede mezclar) oscurecida
+    // a un violeta enfermo, casi sin estrellas y con nubes cargadas.
+    static Material SkyboxCorrupto(Material sano)
+    {
+        string path = Folder + "/M_Skybox_AldeaCorrupto.mat";
+        var m = AssetDatabase.LoadAssetAtPath<Material>(path);
+        if(m == null) { AssetDatabase.CopyAsset(AssetDatabase.GetAssetPath(sano), path); m = AssetDatabase.LoadAssetAtPath<Material>(path); }
+        m.SetColor("_SkyColor", new Color(0.11f, 0.06f, 0.17f));
+        m.SetColor("_HorizonColor", new Color(0.24f, 0.08f, 0.22f));
+        m.SetColor("_GroundColor", new Color(0.07f, 0.04f, 0.09f));
+        m.SetFloat("_SkyBlendPower", 0.6f);
+        m.SetFloat("_GroundBlendPower", 0.9f);
+        m.SetColor("_CloudColor", new Color(0.24f, 0.12f, 0.27f, 0.8f));
+        m.SetColor("_ShadowColor", new Color(0.09f, 0.03f, 0.12f, 0f));
+        m.SetFloat("_StarsAmount", 0.15f);
+        EditorUtility.SetDirty(m);
+        return m;
     }
     #endregion
 
