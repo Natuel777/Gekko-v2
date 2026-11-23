@@ -137,13 +137,14 @@ public class GameManager : MonoBehaviour , IGameManager
 
     public void LoadDebugLevel(int index)
     {
-        if(index < 1 || index > _levels.Length)
+        if(index < 1)
         {
             Debug.LogWarning($"Índice de nivel {index} fuera de rango.");
             return;
         }
-        if (AudioManager.instance) AudioManager.instance.ResetAudio();
-        checkpointManager.LoadDebugLevel(index);
+
+        // El audio se resetea solo si de verdad se carga un nivel (LoadScene recién cambia de escena al final del frame).
+        if (checkpointManager.LoadDebugLevel(index) && AudioManager.instance) AudioManager.instance.ResetAudio();
     }
 
     public void RestartLvl()

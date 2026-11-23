@@ -7,6 +7,7 @@ using UnityEngine;
 // cae el escudo (ej. "Enredaderas" en BossLvlOne) o cuando se purifica la planta (ej. las del árbol de la Second Zone en
 // LvlTwo). Va en el objeto padre: toma los renderers de todos sus hijos que tengan la propiedad de dissolve, sube el valor
 // de a poco y al terminar los oculta y avisa con Dissolved. Solo baja, nunca vuelve a aparecer.
+// En vez de un desafío puede escuchar un TurretGroupPurified (todas las torretas de una zona purificadas).
 public class ChallengeVinesDissolve : MonoBehaviour
 {
     public enum DissolveTrigger
@@ -20,6 +21,8 @@ public class ChallengeVinesDissolve : MonoBehaviour
     [SerializeField] private Challenge _challenge;
     [Tooltip("Cuándo se disuelven: al caer el escudo de la planta o al purificarla.")]
     [SerializeField] private DissolveTrigger _trigger = DissolveTrigger.ShieldDropped;
+    [Tooltip("Alternativa al desafío: grupo de torretas que, purificadas todas, disuelven las enredaderas (ej. el PrimerChallenge de LvlTwo). Si está asignado, se usa en vez del desafío y se ignora el trigger.")]
+    [SerializeField] private TurretGroupPurified _turretGroup;
 
     [Header("Dissolve")]
     [Tooltip("Propiedad expuesta del shader (Thorns.mat disuelve con _Dissolve: 0.03 entera -> 1 disuelta).")]
@@ -55,6 +58,13 @@ public class ChallengeVinesDissolve : MonoBehaviour
 
     private void OnEnable()
     {
+        if(_turretGroup != null)
+        {
+            _turretGroup.Completed += OnTriggered;
+            if(_turretGroup.IsCompleted || (_dissolving && !_finished)) StartDissolve();
+            return;
+        }
+
         if(_challenge == null)
         {
             Debug.LogWarning($"[{name}] ChallengeVinesDissolve sin Challenge asignado: las enredaderas no se van a disolver.", this);
@@ -75,6 +85,8 @@ public class ChallengeVinesDissolve : MonoBehaviour
 
     private void OnDisable()
     {
+        if(_turretGroup != null) _turretGroup.Completed -= OnTriggered;
+
         if(_challenge != null)
         {
             _challenge.ShieldDropped -= OnTriggered;

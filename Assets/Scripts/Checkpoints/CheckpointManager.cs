@@ -111,20 +111,37 @@ public class CheckpointManager
             Debug.LogWarning($"No hay checkpoint de debug en el índice {index}.");
     }
 
+    // Los nombres vacíos se saltean: la lista _levels del GameManager está vacía en las escenas, y con un nombre vacío
+    // SceneManager.LoadScene("") tiraba "Cannot load scene: Invalid scene name" cada vez que se apretaba Alt+1/2/3.
     public void InitializeDebugLevelsDictionary(string[] sceneNames)
     {
+        if(sceneNames == null) return;
+
         for(int i = 0; i < sceneNames.Length; i++)
-            _debugLevels[i + 1] = sceneNames[i];
+            if(!string.IsNullOrWhiteSpace(sceneNames[i])) _debugLevels[i + 1] = sceneNames[i].Trim();
     }
 
-    public void LoadDebugLevel(int index)
+    // Devuelve si cargó algo. Sin nombre propio para ese índice usa el nivel número 'index' de ScenesDictionary
+    // (1 = LvlOne, 2 = LvlTwo). Si la escena no existe o no está en Build Settings, solo avisa.
+    public bool LoadDebugLevel(int index)
     {
-        if(_debugLevels.TryGetValue(index, out var sceneName))
+        if(!_debugLevels.TryGetValue(index, out string sceneName) && ScenesDictionary.LevelIndex.TryGetValue(index, out ScenesNames level))
+            sceneName = ScenesDictionary.SceneName[level];
+
+        if(string.IsNullOrEmpty(sceneName))
         {
-            SceneManager.LoadScene(sceneName);
-            Debug.Log($"Nivel de debug '{sceneName}' cargado.");
-        }
-        else
             Debug.LogWarning($"No hay nivel de debug en el índice {index}.");
+            return false;
+        }
+
+        if(!Application.CanStreamedLevelBeLoaded(sceneName))
+        {
+            Debug.LogWarning($"Nivel de debug '{sceneName}' (índice {index}) no está en Build Settings.");
+            return false;
+        }
+
+        SceneManager.LoadScene(sceneName);
+        Debug.Log($"Nivel de debug '{sceneName}' cargado.");
+        return true;
     }
 }

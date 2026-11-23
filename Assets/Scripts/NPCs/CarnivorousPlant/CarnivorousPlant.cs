@@ -50,6 +50,10 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
     private SpriteRendererFactory _spriteRendererFactory;
     private ParticleSystemFactory _psFactory;
     private PlantDamageFlash _damageFlash;
+    private PlantPaintPurify _paint;
+    // Dónde pegó la lengua por última vez (OnTongueContact llega justo antes de Damage): lo usan las chispas del pintado.
+    private Vector3 _lastHitPoint;
+    private float _lastHitTime = -1f;
 
     public bool IsPurified => _purified;
     public bool IsShielded { get; private set; }
@@ -91,8 +95,13 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
         CacheHurtTrigger();
         _skinnedMeshRenderers = GetComponentsInChildren<SkinnedMeshRenderer>();
 
+        // Purificación pintada golpe a golpe (DataSO > Paint On Hit): reemplaza al parpadeo de daño, que cambiaría el material
+        // de transición en pleno pintado.
+        if(data.paintOnHit && data.paintShader != null && data.purifiedMaterial != null)
+            _paint = new PlantPaintPurify(this, _skinnedMeshRenderers, data);
+
         // El parpadeo de daño es opcional: solo existe si el DataSO trae un Damaged Material (hoy, el del boss).
-        if(data.damagedMaterial != null)
+        else if(data.damagedMaterial != null)
             _damageFlash = new PlantDamageFlash(_skinnedMeshRenderers, data.damagedMaterial, data.damagedMaterialSeconds);
 
         IdleState = new PlantIdleState(this);
@@ -276,7 +285,9 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
 
         if(CanBeHit)
         {
-            ShowHittedPS(TongueEntryPoint(tongueStart, tongueTip));
+            _lastHitPoint = TongueEntryPoint(tongueStart, tongueTip);
+            _lastHitTime = Time.time;
+            ShowHittedPS(_lastHitPoint);
             return;
         }
 
@@ -338,6 +349,8 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
 
         if(_hits < hitsNeeded)
         {
+            if(_paint != null) _paint.OnHit(_hits, hitsNeeded, RecentHitPoint());
+
             // Golpear a una planta ya no le cuesta vida a Gekko (comentado, no borrado, por si se quiere volver a activar).
             //if(data.hitHealthCost > 0f)
             //    EventManager.Trigger<float>("OnPlayerDamaged", data.hitHealthCost);
@@ -367,6 +380,11 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
 
         _purified = true;
         SetHitBoxActive(false);
+
+        // El último golpe de una planta de varios golpes también suena, con el tono más alto (ver Hurt Pitch Step).
+        if(hitsNeeded > 1 && data.hurtPitchStep > 0f && AudioManager.instance)
+            AudioManager.instance.PlayPitched(SoundNames.PlantHurt, 1f + data.hurtPitchStep * (hitsNeeded - 1));
+
         // Purificar a una planta (la boss incluida) ya no le cuesta vida a Gekko (comentado, no borrado, por si se quiere volver
         // a activar). Con esto Purify Health Cost y Hit Health Cost del DataSO quedan sin efecto.
         //EventManager.Trigger<float>("OnPlayerDamaged", data.purifyHealthCost);
@@ -494,7 +512,19 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
     {
         if(_hasHurtTrigger) _animatorCarnivorousPlant.SetTrigger("hurt");
 
-        if(AudioManager.instance) AudioManager.instance.Play(SoundNames.PlantHurt);
+        if(!AudioManager.instance) return;
+
+        // Con Hurt Pitch Step el tono sube con cada golpe (1º grave, el último más agudo).
+        if(data.hurtPitchStep > 0f) AudioManager.instance.PlayPitched(SoundNames.PlantHurt, 1f + data.hurtPitchStep * Mathf.Max(0, _hits - 1));
+        else AudioManager.instance.Play(SoundNames.PlantHurt);
+    }
+
+    // El punto de la lengua si es de este golpe (llega en el mismo frame que Damage); si no, null (las chispas van al centro).
+    private Vector3? RecentHitPoint() => Time.time - _lastHitTime < 0.25f ? _lastHitPoint : (Vector3?)null;
+
+    private void OnDestroy()
+    {
+        if(_paint != null) _paint.Dispose();
     }
 
     public void PlayPurifiedFeedback()
@@ -514,6 +544,13 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
     // Cambio de material unidireccional: la purificación de la planta es un estado terminal, no se revierte.
     private void ApplyPurifiedMaterial()
     {
+        // Con la purificación pintada el cambio no es directo: termina de pintarse, destello y recién ahí Purified Material.
+        if(_paint != null)
+        {
+            _paint.Complete(RecentHitPoint());
+            return;
+        }
+
         if(data.purifiedMaterial == null || _skinnedMeshRenderers == null) return;
 
         foreach(SkinnedMeshRenderer skinnedMesh in _skinnedMeshRenderers)

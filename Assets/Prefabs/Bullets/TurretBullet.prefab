@@ -71,6 +71,10 @@ MonoBehaviour:
   _name: TurretBullet
   bulletType: 2
   _lifetime: 3.5
+  _vfx: {fileID: 3070718326916053489}
+  _vfxPurificada: {fileID: 8926484042661614526, guid: bf70ed4afed02054cb17ce4796003de2, type: 3}
+  _trail: {fileID: 3092836900622649856}
+  _trailPurificado: {fileID: 2100000, guid: 9207e22ddfa5cb04e9892f2e20ab537b, type: 2}
 --- !u!1001 &7077120395049541760
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -128,6 +132,16 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 3f201c0932ada9746a756e87265fb9e6, type: 3}
+--- !u!2083052967 &3070718326916053489 stripped
+VisualEffect:
+  m_CorrespondingSourceObject: {fileID: 5236447819438840177, guid: 3f201c0932ada9746a756e87265fb9e6, type: 3}
+  m_PrefabInstance: {fileID: 7077120395049541760}
+  m_PrefabAsset: {fileID: 0}
+--- !u!96 &3092836900622649856 stripped
+TrailRenderer:
+  m_CorrespondingSourceObject: {fileID: 5250367337068817024, guid: 3f201c0932ada9746a756e87265fb9e6, type: 3}
+  m_PrefabInstance: {fileID: 7077120395049541760}
+  m_PrefabAsset: {fileID: 0}
 --- !u!4 &5003305735874641638 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 2835486067499654758, guid: 3f201c0932ada9746a756e87265fb9e6, type: 3}

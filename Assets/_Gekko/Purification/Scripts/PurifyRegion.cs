@@ -68,6 +68,8 @@ namespace Gekko.Purification
 
         private Coroutine _rutina;
         private bool _animando;
+        private bool _parcial; // la onda que corre es un tramo de AvanzarHasta, no la completa
+        private float _objetivoParcial, _segundosParcial;
         private bool _cambio = true;
 
         public string RegionId => _regionId;
@@ -84,7 +86,7 @@ namespace Gekko.Purification
             _cambio = true;
 
             // Si se desactivó a mitad de la onda Unity cortó la corrutina: se retoma desde donde quedó.
-            if(_animando) _rutina = StartCoroutine(RutinaOnda(false));
+            if(_animando) _rutina = StartCoroutine(_parcial ? RutinaParcial(_objetivoParcial, _segundosParcial) : RutinaOnda(false));
         }
 
         private void OnDisable()
@@ -107,7 +109,7 @@ namespace Gekko.Purification
         /// <summary>Purifica la región con la onda. Si ya está purificada o animando, no hace nada.</summary>
         public void Purify()
         {
-            if(Purificada || _animando) return;
+            if(Purificada || (_animando && !_parcial)) return;
 
             // Desactivada no puede correr la corrutina: queda purificada directo.
             if(!isActiveAndEnabled)
@@ -116,8 +118,40 @@ namespace Gekko.Purification
                 return;
             }
 
+            // Si estaba en un tramo parcial (AvanzarHasta), la onda completa sigue desde ahí.
+            bool desdeElPrincipio = Progreso <= 0f;
+            DetenerRutina();
             _animando = true;
-            _rutina = StartCoroutine(RutinaOnda(true));
+            _rutina = StartCoroutine(RutinaOnda(desdeElPrincipio));
+        }
+
+        /// <summary>
+        /// Avanza la onda solo hasta 'objetivo' (0..1, en el tiempo de la onda) en 'segundos', y la deja ahí: para purificar
+        /// de a partes (ej. la planta carnívora, 1/3 por golpe). Llegar a 1 la completa, con OnPurifyCompleted. Si ya
+        /// pasó ese punto, o está corriendo la onda completa (Purify), no hace nada.
+        /// </summary>
+        public void AvanzarHasta(float objetivo, float segundos)
+        {
+            objetivo = Mathf.Clamp01(objetivo);
+            if(Purificada || objetivo <= Progreso || (_animando && !_parcial)) return;
+
+            if(!isActiveAndEnabled)
+            {
+                if(objetivo >= 1f) SetPurifiedInstant();
+                else
+                {
+                    Progreso = objetivo;
+                    _cambio = true;
+                }
+                return;
+            }
+
+            DetenerRutina();
+            _animando = true;
+            _parcial = true;
+            _objetivoParcial = objetivo;
+            _segundosParcial = Mathf.Max(0.01f, segundos);
+            _rutina = StartCoroutine(RutinaParcial(_objetivoParcial, _segundosParcial));
         }
 
         /// <summary>Deja la región purificada sin animación ni eventos (para cargar partidas o saltear).</summary>
@@ -280,6 +314,34 @@ namespace Gekko.Purification
             if(_rutina != null) StopCoroutine(_rutina);
             _rutina = null;
             _animando = false;
+            _parcial = false;
+        }
+
+        // Tramo de AvanzarHasta: misma onda, pero frena en 'objetivo'. OnPurifyStarted solo en el primer tramo.
+        private IEnumerator RutinaParcial(float objetivo, float segundos)
+        {
+            if(Progreso <= 0f) OnPurifyStarted.Invoke();
+
+            float desde = Progreso;
+            float velocidad = Mathf.Max(0.0001f, objetivo - desde) / segundos;
+
+            while(Progreso < objetivo)
+            {
+                Progreso = Mathf.Min(objetivo, Progreso + velocidad * Time.deltaTime);
+                _cambio = true;
+                OnProgress.Invoke(Progreso);
+                yield return null;
+            }
+
+            _rutina = null;
+            _animando = false;
+            _parcial = false;
+
+            if(Progreso < 1f) yield break;
+
+            Purificada = true;
+            _cambio = true;
+            OnPurifyCompleted.Invoke();
         }
 
         #region Context Menu
