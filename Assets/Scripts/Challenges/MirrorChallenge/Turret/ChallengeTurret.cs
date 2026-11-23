@@ -97,6 +97,11 @@ public class ChallengeTurret : MonoBehaviour, IShieldBreaker
         if(IsPurified) return;
 
         IsPurified = true;
+
+        // Suena una sola vez, cuando la purifican (la guarda de arriba corta las demás llamadas). Antes de avisar a los demás para
+        // que no dependa de lo que hagan los suscriptores.
+        if(AudioManager.instance) AudioManager.instance.Play(SoundNames.TurretBullet);
+
         SendEvent(CreatureEvent.ChallengeTurretPurified);
         Purified?.Invoke(this);
         _shieldBreakerBroken?.Invoke(this);

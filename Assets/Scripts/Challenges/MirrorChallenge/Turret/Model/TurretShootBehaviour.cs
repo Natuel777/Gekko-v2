@@ -85,6 +85,10 @@ public class TurretShootBehaviour : IShooteable, IActivable, IServiceConsumer
 
         TurretBullet bullet = _bulletFactory.GetBullet<TurretBullet>(_bulletPrefab, _muzzle.position, _transform.rotation);
         bullet.Shoot(direction);
+
+        // Un sonido por bala, cuando sale. Va acá y no en ArtificialUpdate para que solo suene si de verdad se disparó (arriba se
+        // corta si no hay fábrica de balas).
+        if(AudioManager.instance) AudioManager.instance.Play(SoundNames.TurretShoot);
     }
  
     public void Activated(bool active = true)

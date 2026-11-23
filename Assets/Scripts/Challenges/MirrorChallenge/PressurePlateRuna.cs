@@ -92,6 +92,10 @@ public class PressurePlateRuna : MonoBehaviour
     {
         _activada = true;
 
+        // Suena apenas Gekko pisa, junto con el hundimiento de la piedra (no espera a que termine de bajar). Una vez por pisada:
+        // OnTriggerEnter ya descarta los demas colliders de Gekko y, con Un Solo Uso, las pisadas posteriores a la primera.
+        if (AudioManager.instance) AudioManager.instance.Play(SoundNames.PlankPlaced);
+
         Iniciar(ref _rutinaPiedra, MoverPiedra(true));
         Iniciar(ref _rutinaRuna, FundirRuna(true));
         StartCoroutine(ActuarTrasBajar());
