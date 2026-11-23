@@ -47858,6 +47858,8 @@ MonoBehaviour:
   _bankHeight: 0.6
   _margin: 6
   _bedCollider: 1
+  _volumeDepth: 0
+  _volumeMaterial: {fileID: 0}
   _generateTriggers: 1
   _triggerChunkLength: 3
   _triggerHeightAbove: 0.4
@@ -54730,6 +54732,24 @@ MonoBehaviour:
   _grappleFinishDistance: 1.5
   _grappleLookSpeed: 360
   _secondJumpMultiplier: 2.5
+  _swimSettings:
+    floatOffset: -0.15
+    bobAmplitude: 0.04
+    bobFrequency: 0.6
+    minDepth: 1
+    maxSlope: 20
+    speedFactor: 0.65
+    acceleration: 10
+    currentFactor: 0.5
+    jumpFactor: 0.9
+    ledgeMaxHeight: 1
+    diveSpeed: 2.5
+    ascendSpeed: 3
+    buoyancySpeed: 0.8
+    verticalAcceleration: 8
+    airDuration: 10
+    airRefillTime: 1.5
+    drownDamageInterval: 2
 --- !u!82 &1034676423
 AudioSource:
   m_ObjectHideFlags: 0
@@ -85012,6 +85032,8 @@ MonoBehaviour:
   _moveToZoneDuration: 2.5
   _purifyPushIn: 2.5
   _holdAfterPurify: 1.5
+  _repeticionRetroceso: 2.5
+  _repeticionAcercamiento: 0.8
 --- !u!4 &1475183845
 Transform:
   m_ObjectHideFlags: 0
@@ -123402,6 +123424,12 @@ MonoBehaviour:
   _luz: {fileID: 635856045}
   _luzIntensidadCorrupta: 0.8
   _luzColorCorrupta: {r: 0.72, g: 0.66, b: 0.88, a: 1}
+  _skyboxCorrupto: {fileID: 2100000, guid: 567d312312329994e8af7494667dbe1d, type: 2}
+  _cieloRespuesta: 0.5
+  _controlarAmbiente: 1
+  _ambienteCieloCorrupto: {r: 0.42, g: 0.32, b: 0.55, a: 1}
+  _ambienteEcuadorCorrupto: {r: 0.46, g: 0.3, b: 0.46, a: 1}
+  _ambienteSueloCorrupto: {r: 0.18, g: 0.12, b: 0.2, a: 1}
 --- !u!1 &2129233432
 GameObject:
   m_ObjectHideFlags: 0
