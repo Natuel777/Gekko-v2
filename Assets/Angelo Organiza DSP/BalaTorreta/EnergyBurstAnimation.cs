@@ -16,12 +16,39 @@ public class EnergyBurstAnimation : MonoBehaviour
     [SerializeField] private float releaseDuration = 0.6f;
     [SerializeField] private float liftHeight = 0.8f;
 
+    [Header("Emission")]
+    private Renderer targetRenderer;
+    private Renderer baseRenderer;
+    private int materialIndex;
+    [SerializeField] private float maxEmissionMultiplier = 5f;
+    [SerializeField]
+    private AnimationCurve emissionReleaseCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
+
     private float timer;
     private bool isPlaying;
 
     private Vector3 originalRotationSpeed;
     private bool originalRotating;
     private BurstPhase currentPhase;
+
+
+    private Color originalEmissionColor;
+    private Color originalBaseEmissionColor;
+    private MaterialPropertyBlock propertyBlock;
+    private bool hasEmission;
+    private bool hasBaseEmission;
+
+    private static readonly int EmissionColorID = Shader.PropertyToID("_EmissionColor");
+
+    private void Awake()
+    {
+        targetRenderer = GetComponentInChildren<Renderer>();
+        Transform baseTransform = transform.parent.Find("Base_lp");
+
+        if (baseTransform != null)
+            baseRenderer = baseTransform.GetComponent<Renderer>();
+        materialIndex = 0;
+    }
 
     void Update()
     {
@@ -55,6 +82,8 @@ public class EnergyBurstAnimation : MonoBehaviour
         basicAnimation.AddPositionOffset(shake);
         basicAnimation.AddRotationOffset(rotationShakeOffset);
 
+        UpdateEmission(Mathf.Lerp(1f, maxEmissionMultiplier, intensity));
+
         if (timer >= chargeDuration)
         {
             currentPhase = BurstPhase.Release;
@@ -75,6 +104,12 @@ public class EnergyBurstAnimation : MonoBehaviour
 
         basicAnimation.AddPositionOffset(Vector3.up * lift);
 
+        float emissionProgress = emissionReleaseCurve.Evaluate(progress);
+
+        float emissionMultiplier = Mathf.Lerp(maxEmissionMultiplier, 1f, emissionProgress);
+
+        UpdateEmission(emissionMultiplier);
+
         if (timer >= releaseDuration)
         {
             FinishBurst();
@@ -92,20 +127,72 @@ public class EnergyBurstAnimation : MonoBehaviour
         originalRotationSpeed = basicAnimation.RotationSpeed;
         originalRotating = basicAnimation.IsRotating;
 
+        CacheEmission();
+
         basicAnimation.IsRotating = true;
-        basicAnimation.RotationSpeed =
-            originalRotationSpeed * rotationMultiplier;
+        basicAnimation.RotationSpeed = originalRotationSpeed * rotationMultiplier;
 
         timer = 0f;
         currentPhase = BurstPhase.Charge;
         isPlaying = true;
     }
 
-    // Para que quien la dispare sepa cuándo terminó (la torreta espera a que acabe la carga para volver a disparar).
     public bool IsPlaying => isPlaying;
 
-    // Corta la animación donde esté y deja la rotación del cristal como estaba antes de Play. La torreta la usa si sale del
-    // estado de carga antes de tiempo (por ejemplo, al purificarla). Sin efecto si no está corriendo.
+    private void CacheEmission()
+    {
+        propertyBlock = new MaterialPropertyBlock();
+
+        if (targetRenderer != null)
+        {
+            Material material = targetRenderer.sharedMaterials[materialIndex];
+
+            if (material.HasProperty(EmissionColorID))
+            {
+                originalEmissionColor = material.GetColor(EmissionColorID);
+                hasEmission = true;
+            }
+        }
+
+        if (baseRenderer != null)
+        {
+            Material material = baseRenderer.sharedMaterials[materialIndex];
+
+            if (material.HasProperty(EmissionColorID))
+            {
+                originalBaseEmissionColor = material.GetColor(EmissionColorID);
+                hasBaseEmission = true;
+            }
+        }
+    }
+
+    private void UpdateEmission(float multiplier)
+    {
+        if (hasEmission)
+        {
+            targetRenderer.GetPropertyBlock(propertyBlock, materialIndex);
+
+            propertyBlock.SetColor(
+                EmissionColorID,
+                originalEmissionColor * multiplier
+            );
+
+            targetRenderer.SetPropertyBlock(propertyBlock, materialIndex);
+        }
+
+        if (hasBaseEmission)
+        {
+            baseRenderer.GetPropertyBlock(propertyBlock, materialIndex);
+
+            propertyBlock.SetColor(
+                EmissionColorID,
+                originalBaseEmissionColor * multiplier
+            );
+
+            baseRenderer.SetPropertyBlock(propertyBlock, materialIndex);
+        }
+    }
+
     public void Stop()
     {
         if (!isPlaying)
