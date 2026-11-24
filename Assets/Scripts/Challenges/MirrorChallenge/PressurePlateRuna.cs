@@ -35,10 +35,19 @@ public class PressurePlateRuna : MonoBehaviour
     [Tooltip("Cualquier objeto con IActivable: se le llama a Activated() cada vez que se pisa la placa. Para los espejos usar la lista de arriba, que alterna.")]
     [SerializeField] GameObject _objetoActivable;
 
+    // Optional: someone that needs the plate to wait before toggling the mirrors (e.g. MirrorRevealCinematic, which first takes the
+    // camera to the mirror so the player sees it rise). Returns the seconds to wait; 0 = toggle right away, as usual.
+    public System.Func<PressurePlateRuna, float> BeforeToggle;
+
     // Gekko's colliders that are on top right now. Gekko has more than one and each reports its own entry: without keeping count,
     // it would toggle once per collider (and two toggles leave the mirror as it was).
     readonly HashSet<Collider> _jugadorDentro = new HashSet<Collider>();
     bool _activada;
+    // True from the step until the mirrors are toggled (stone going down + BeforeToggle's wait, e.g. the camera travelling to the
+    // mirror). Landing on the plate can make Gekko leave and re-enter the trigger in that window (a bounce, or settling on the
+    // ground when a cinematic freezes him): that is not a new step, and a second toggle would lower the mirror right after
+    // raising it (or right after the camera shows it rising).
+    bool _alternePendiente;
     Coroutine _rutinaPiedra, _rutinaRuna;
     Vector3 _posInicialPiedra;
     Vector3 _tamanoRuna;
@@ -57,6 +66,8 @@ public class PressurePlateRuna : MonoBehaviour
     {
         // If it is turned off with Gekko on top, OnTriggerExit will never arrive.
         _jugadorDentro.Clear();
+        // Turning it off also stops the coroutine that was waiting to toggle.
+        _alternePendiente = false;
     }
 
     void OnTriggerEnter(Collider other)
@@ -98,7 +109,11 @@ public class PressurePlateRuna : MonoBehaviour
 
         Iniciar(ref _rutinaPiedra, MoverPiedra(true));
         Iniciar(ref _rutinaRuna, FundirRuna(true));
-        StartCoroutine(ActuarTrasBajar());
+        if (!_alternePendiente)
+        {
+            _alternePendiente = true;
+            StartCoroutine(ActuarTrasBajar());
+        }
     }
 
     void Soltar()
@@ -121,6 +136,10 @@ public class PressurePlateRuna : MonoBehaviour
     {
         yield return new WaitForSeconds(_duracionBajada);
 
+        float espera = BeforeToggle != null ? BeforeToggle(this) : 0f;
+        if (espera > 0f) yield return new WaitForSeconds(espera);
+
+        _alternePendiente = false;
         AlternarEspejos();
 
         if (_objetoActivable != null && _objetoActivable.TryGetComponent(out IActivable activable))

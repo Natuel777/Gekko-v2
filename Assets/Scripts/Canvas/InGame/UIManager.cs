@@ -29,6 +29,8 @@ public class UIManager : MonoBehaviour
     private readonly Queue<string> _sentences = new Queue<string>();
     private readonly Queue<string> _speakerNames = new Queue<string>();
     private IDialogueable _currentDialogue;
+    // Diálogo que se dibuja solo (ej. el libro): no se usa el panel de abajo, solo se le pasa el "avanzar".
+    private IDialogueView _customView;
     private bool _isTyping;
     private string _currentSentence;
     private Coroutine _typing;
@@ -127,6 +129,13 @@ public class UIManager : MonoBehaviour
         RunHookSafely(_currentDialogue.OnDialogueStart);
         InvokeSafely(OnActivatingDialogue);
 
+        // El objeto muestra el texto por su cuenta (ver IDialogueView): no se abre el panel ni se encolan frases.
+        if(dialogueable is IDialogueView view)
+        {
+            _customView = view;
+            return;
+        }
+
         Dialogue dialogue = _currentDialogue.Dialogue;
         bool perLineNames = dialogue.speakerNames != null && dialogue.speakerNames.Length == dialogue.sentences.Length;
 
@@ -148,6 +157,15 @@ public class UIManager : MonoBehaviour
     public void AdvanceDialogue()
     {
         if(_currentDialogue == null) return;
+
+        if(_customView != null)
+        {
+            bool keepOpen = true;
+            try { keepOpen = _customView.AdvanceView(); }
+            catch(System.Exception e) { Debug.LogException(e, this); keepOpen = false; }
+            if(!keepOpen) EndDialogue();
+            return;
+        }
 
         if(_isTyping)
         {
@@ -213,8 +231,9 @@ public class UIManager : MonoBehaviour
         if(_typing != null) StopCoroutine(_typing);
         _isTyping = false;
 
-        if(_dialogueGroup != null)
+        if(_dialogueGroup != null && _customView == null)
             StartCoroutine(FadeDialogue(false));
+        _customView = null;
 
         // Pase lo que pase en el hook del NPC o en quien escucha el evento, el cierre se completa: si no, el diálogo quedaba
         // abierto (HasActiveDialogue en true para siempre) o Player y la cámara nunca se enteraban de que terminó.

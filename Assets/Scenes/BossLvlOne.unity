@@ -1494,6 +1494,8 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 64
   _groundClearance: 0.05
+  _alignMeshToGround: 1
+  _meshGroundOffset: 0
   _autoStartDialogue: 1
   _dialogueDelay: 0.5
 --- !u!1001 &28462392
@@ -2897,7 +2899,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 35993213}
-  m_Mesh: {fileID: 0}
+  m_Mesh: {fileID: 1631860383}
 --- !u!114 &35993218
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -12197,6 +12199,17 @@ MonoBehaviour:
   _image: {fileID: 0}
   _audioClip: {fileID: 0}
   _nextScene: 6
+  _stageConversation: 1
+  _fadeToStage: 1
+  _conversationDistance: 2.2
+  _playerSpeakerName: Gekko
+  _twoShotLines: 1
+  _closeUpBack: 1.1
+  _closeUpSide: 0.8
+  _closeUpHeight: 0.2
+  _closeUpFaceRaise: 0.3
+  _closeUpFov: 28
+  _twoShotFov: 45
   _twoShotCamera: {fileID: 909428777}
   _twoShotCameraTag: DialogueTwoShot
   _sideDistance: 5
@@ -13990,6 +14003,12 @@ MonoBehaviour:
   _luz: {fileID: 1035787271}
   _luzIntensidadCorrupta: 0.748
   _luzColorCorrupta: {r: 0.72, g: 0.66, b: 0.88, a: 1}
+  _skyboxCorrupto: {fileID: 0}
+  _cieloRespuesta: 0.5
+  _controlarAmbiente: 1
+  _ambienteCieloCorrupto: {r: 0.42, g: 0.32, b: 0.55, a: 1}
+  _ambienteEcuadorCorrupto: {r: 0.46, g: 0.3, b: 0.46, a: 1}
+  _ambienteSueloCorrupto: {r: 0.18, g: 0.12, b: 0.2, a: 1}
 --- !u!114 &387141964
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -20726,6 +20745,7 @@ MonoBehaviour:
   _anchoBorde: 1.5
   _fundidoArea: 3
   _margenOnda: 4
+  _corruptoAfueraDeRegiones: 0
 --- !u!4 &449394378
 Transform:
   m_ObjectHideFlags: 0
@@ -23368,7 +23388,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 526872979}
-  m_Mesh: {fileID: 0}
+  m_Mesh: {fileID: 1085128239}
 --- !u!114 &526872983
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -31829,7 +31849,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 789656581}
-  m_Mesh: {fileID: 0}
+  m_Mesh: {fileID: 1631860383}
 --- !u!114 &789656586
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -33204,6 +33224,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 39907a5440a38474b8e0c8da6d1e9f20, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _flag: 0
   _director: {fileID: 0}
   _playOnce: 1
   _cinematicOnlyObjects:
@@ -37832,7 +37853,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 977983777}
-  m_Mesh: {fileID: 0}
+  m_Mesh: {fileID: 1631860383}
 --- !u!114 &977983782
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -38728,7 +38749,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1005009818}
-  m_Mesh: {fileID: 0}
+  m_Mesh: {fileID: 1981529886}
 --- !u!114 &1005009822
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -45307,7 +45328,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1168133939}
-  m_Mesh: {fileID: 0}
+  m_Mesh: {fileID: 1631860383}
 --- !u!114 &1168133944
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -45885,7 +45906,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1174942081}
-  m_Mesh: {fileID: 0}
+  m_Mesh: {fileID: 1651607911}
 --- !u!114 &1174942085
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -47976,6 +47997,7 @@ MonoBehaviour:
   _tongueAnim: {fileID: 1353431011}
   _trail: {fileID: 1823203557}
   _walkSound: {fileID: 1939514483}
+  _waterSound: {fileID: 0}
 --- !u!114 &1175801918
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -48685,6 +48707,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _challenge: {fileID: 2055570497}
+  _trigger: 0
+  _turretGroup: {fileID: 0}
   _dissolveProperty: _Dissolve
   _dissolveFrom: 0.03
   _dissolveTo: 1
@@ -52211,7 +52235,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1253897483}
-  m_Mesh: {fileID: 0}
+  m_Mesh: {fileID: 1631860383}
 --- !u!114 &1253897488
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -53782,6 +53806,7 @@ MonoBehaviour:
   _region: {fileID: 1287438077}
   _nucleo: {fileID: 914138335}
   _desafio: {fileID: 0}
+  _torreta: {fileID: 0}
   _hitstop: 0
   _hitstopEscala: 0.05
   _hitstopSegundos: 0.08
@@ -54507,6 +54532,7 @@ MonoBehaviour:
   _region: {fileID: 1311965720}
   _nucleo: {fileID: 0}
   _desafio: {fileID: 2055570497}
+  _torreta: {fileID: 0}
   _hitstop: 0
   _hitstopEscala: 0.05
   _hitstopSegundos: 0.08
@@ -55070,6 +55096,7 @@ MonoBehaviour:
   _region: {fileID: 1333419993}
   _nucleo: {fileID: 251703638}
   _desafio: {fileID: 0}
+  _torreta: {fileID: 0}
   _hitstop: 0
   _hitstopEscala: 0.05
   _hitstopSegundos: 0.08
@@ -65433,6 +65460,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _PSPrefabs:
   - {fileID: 7373510355921652563, guid: ad67ba9947ced2d438ec8eb5971f3e24, type: 3}
+  - {fileID: 7373510355921652563, guid: 11a1085a029a03f4b9dead676cc81c81, type: 3}
   _initialStockPerType: 6
 --- !u!1 &1423648219
 GameObject:
@@ -66560,6 +66588,7 @@ MonoBehaviour:
   _region: {fileID: 1458268959}
   _nucleo: {fileID: 1595928551}
   _desafio: {fileID: 0}
+  _torreta: {fileID: 0}
   _hitstop: 0
   _hitstopEscala: 0.05
   _hitstopSegundos: 0.08
@@ -72159,7 +72188,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1614257768}
-  m_Mesh: {fileID: 0}
+  m_Mesh: {fileID: 1631860383}
 --- !u!114 &1614257773
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -78100,7 +78129,7 @@ MonoBehaviour:
     zTo: 0
   - jointName: joint4_R
     baseEuler: {x: 313.02505, y: 90, z: 336.13586}
-    targetEuler: {x: 313.02506, y: 90.00001, z: 314.56763}
+    targetEuler: {x: 313.02505, y: 90.00001, z: 314.56763}
     sweepZ: 0
     zFrom: 0
     zTo: 0
@@ -78118,7 +78147,7 @@ MonoBehaviour:
     zTo: -84.533
   - jointName: joint19_R
     baseEuler: {x: 313.02505, y: 90, z: 206.72084}
-    targetEuler: {x: 313.02506, y: 90, z: 228.79486}
+    targetEuler: {x: 313.02505, y: 90, z: 228.79486}
     sweepZ: 0
     zFrom: 0
     zTo: 0
@@ -78135,7 +78164,7 @@ MonoBehaviour:
     zFrom: 0
     zTo: 0
   - jointName: joint1_R
-    baseEuler: {x: 0, y: 0, z: 44.545004}
+    baseEuler: {x: 0, y: 0, z: 44.545006}
     targetEuler: {x: 0, y: 0, z: 25.718357}
     sweepZ: 0
     zFrom: 0
@@ -78147,31 +78176,31 @@ MonoBehaviour:
     zFrom: 0
     zTo: 0
   - jointName: joint19Part1_R
-    baseEuler: {x: 0, y: 0, z: 359.95333}
+    baseEuler: {x: 0, y: 0, z: 359.95334}
     targetEuler: {x: 0, y: 0, z: 24.48712}
     sweepZ: 0
     zFrom: 0
     zTo: 0
   - jointName: joint21Part1_R
-    baseEuler: {x: 0, y: 0, z: 0.023333331}
+    baseEuler: {x: 0, y: 0, z: 0.023333332}
     targetEuler: {x: 0, y: 0, z: 332.6293}
     sweepZ: 0
     zFrom: 0
     zTo: 0
   - jointName: joint21Part2_R
-    baseEuler: {x: 0, y: 0, z: 0.023333331}
+    baseEuler: {x: 0, y: 0, z: 0.023333332}
     targetEuler: {x: 0, y: 0, z: 338.60727}
     sweepZ: 0
     zFrom: 0
     zTo: 0
   - jointName: joint21Part3_R
-    baseEuler: {x: 0, y: 0, z: 0.023333331}
+    baseEuler: {x: 0, y: 0, z: 0.023333332}
     targetEuler: {x: 0, y: 0, z: 338.4751}
     sweepZ: 0
     zFrom: 0
     zTo: 0
   - jointName: joint21Part4_R
-    baseEuler: {x: 0, y: 0, z: 0.023333331}
+    baseEuler: {x: 0, y: 0, z: 0.023333332}
     targetEuler: {x: 0, y: 0, z: 340.93973}
     sweepZ: 0
     zFrom: 0
@@ -78335,6 +78364,107 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e83af663fbca2d2bf77bcd79ddea99f2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _joints:
+  - jointName: joint6Part1_R
+    targetEuler: {x: 0, y: 0, z: 30.966562}
+    shake: 0
+    shakeEuler: {x: 0, y: 0, z: 0}
+  - jointName: joint1Part1_R
+    targetEuler: {x: 0, y: 0, z: 311.07727}
+    shake: 0
+    shakeEuler: {x: 0, y: 0, z: 0}
+  - jointName: joint1Part2_R
+    targetEuler: {x: 0, y: 0, z: 347.53406}
+    shake: 0
+    shakeEuler: {x: 0, y: 0, z: 0}
+  - jointName: joint4_R
+    targetEuler: {x: 313.02505, y: 89.99998, z: 12.748611}
+    shake: 0
+    shakeEuler: {x: 0, y: 0, z: 0}
+  - jointName: joint4Part1_R
+    targetEuler: {x: 0, y: 0, z: 343.44275}
+    shake: 0
+    shakeEuler: {x: 0, y: 0, z: 0}
+  - jointName: joint19_R
+    targetEuler: {x: 313.02505, y: 90, z: 165.07672}
+    shake: 0
+    shakeEuler: {x: 0, y: 0, z: 0}
+  - jointName: joint19Part1_R
+    targetEuler: {x: 0, y: 0, z: 36.435387}
+    shake: 0
+    shakeEuler: {x: 0, y: 0, z: 0}
+  - jointName: joint19Part2_R
+    targetEuler: {x: 0, y: 0, z: 341.65604}
+    shake: 0
+    shakeEuler: {x: 0, y: 0, z: 0}
+  - jointName: joint21_R
+    targetEuler: {x: 0, y: 180, z: 354.3404}
+    shake: 0
+    shakeEuler: {x: 0, y: 0, z: 0}
+  - jointName: joint21Part1_R
+    targetEuler: {x: 0, y: 0, z: 329.632}
+    shake: 0
+    shakeEuler: {x: 0, y: 0, z: 0}
+  - jointName: joint21Part3_R
+    targetEuler: {x: 0, y: 0, z: 339.97894}
+    shake: 0
+    shakeEuler: {x: 0, y: 0, z: 0}
+  - jointName: joint21Part4_R
+    targetEuler: {x: 0, y: 0, z: 343.80054}
+    shake: 0
+    shakeEuler: {x: 0, y: 0, z: 0}
+  - jointName: joint7_R
+    targetEuler: {x: 18.45717, y: 159.04684, z: 309.58325}
+    shake: 1
+    shakeEuler: {x: 36.804817, y: 153.66603, z: 308.57635}
+  - jointName: joint8_R
+    targetEuler: {x: 357.33203, y: 179.88391, z: 276.38034}
+    shake: 0
+    shakeEuler: {x: 0, y: 0, z: 0}
+  - jointName: joint10Part1_R
+    targetEuler: {x: 0, y: 0, z: 343.0939}
+    shake: 0
+    shakeEuler: {x: 0, y: 0, z: 0}
+  - jointName: joint13_R
+    targetEuler: {x: 0, y: 0, z: 261.3064}
+    shake: 0
+    shakeEuler: {x: 0, y: 0, z: 0}
+  - jointName: joint15_R
+    targetEuler: {x: 358.0073, y: 179.91331, z: 276.9829}
+    shake: 0
+    shakeEuler: {x: 0, y: 0, z: 0}
+  _restJoints:
+  - jointName: joint10Part1_R
+    restEuler: {x: 0, y: 0, z: 0}
+  _startDelay: 0.55
+  _settleTime: 0.35
+  _blendInTime: 0.15
+  _shakeCycleTime: 0.4
+  _releaseTime: 0.3
+  _settleCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
 --- !u!1 &1787354639
 GameObject:
   m_ObjectHideFlags: 0
@@ -84147,7 +84277,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1823686753}
-  m_Mesh: {fileID: 0}
+  m_Mesh: {fileID: 535832815}
 --- !u!114 &1823686757
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -86701,7 +86831,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1852295851}
-  m_Mesh: {fileID: 0}
+  m_Mesh: {fileID: 1631860383}
 --- !u!114 &1852295856
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -89462,6 +89592,24 @@ MonoBehaviour:
   _grappleFinishDistance: 1.5
   _grappleLookSpeed: 360
   _secondJumpMultiplier: 2.5
+  _swimSettings:
+    floatOffset: -0.15
+    bobAmplitude: 0.04
+    bobFrequency: 0.6
+    minDepth: 1
+    maxSlope: 20
+    speedFactor: 0.65
+    acceleration: 10
+    currentFactor: 0.5
+    jumpFactor: 0.9
+    ledgeMaxHeight: 1
+    diveSpeed: 2.5
+    ascendSpeed: 3
+    buoyancySpeed: 0.8
+    verticalAcceleration: 8
+    airDuration: 10
+    airRefillTime: 1.5
+    drownDamageInterval: 2
 --- !u!1 &1939862121
 GameObject:
   m_ObjectHideFlags: 0
@@ -93928,6 +94076,7 @@ MonoBehaviour:
   _plantPurifiedDirector: {fileID: 1653700232}
   _skipHoldSeconds: 3
   _skipPrompt: {fileID: 1152659630}
+  _objectToDisableOnCompletion: {fileID: 0}
   _cores:
   - {fileID: 1595928551}
   - {fileID: 914138335}
@@ -93968,6 +94117,12 @@ MonoBehaviour:
   _coreCamSeconds: 2
   _coreCamDistance: 4
   _coreCamHeight: 1.5
+  _showRegion: 1
+  _regionCamSeconds: 3.2
+  _regionCamBack: 1.1
+  _regionCamHeight: 1
+  _regionLookTowardPlant: 0.25
+  _regionPushIn: 0.15
   _camCoreBroken: {fileID: 1869698774}
   _camSeconds: 2.5
   _nibbleDelay: 0.8
@@ -96185,7 +96340,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2126477581}
-  m_Mesh: {fileID: 0}
+  m_Mesh: {fileID: 232230890}
 --- !u!114 &2126477585
 MonoBehaviour:
   m_ObjectHideFlags: 0

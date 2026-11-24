@@ -9,6 +9,7 @@ public class ParticleSystemFactory : Factory<GenericPS, PSType>
 
     private Dictionary<PSType, GenericPS> _prefabsByType;
     private Dictionary<PSType, ObjectPool<GenericPS>> _pools;
+    private readonly HashSet<PSType> _missingTypesLogged = new();
     private IGameManager _gameManager;
 
     private void Awake()
@@ -59,7 +60,9 @@ public class ParticleSystemFactory : Factory<GenericPS, PSType>
 
         if(!_prefabsByType.TryGetValue(type, out var prefab))
         {
-            Debug.LogError($"CannonBulletFactory: no bullet prefab registered for '{type}'.");
+            // Una sola vez por tipo: se pide en cada golpe y llenaba la consola.
+            if(_missingTypesLogged.Add(type))
+                Debug.LogError($"[{name}] ParticleSystemFactory: no hay prefab de partículas registrado para '{type}'. Agregalo a la lista PS Prefabs de esta escena.", this);
             return null;
         }
 
