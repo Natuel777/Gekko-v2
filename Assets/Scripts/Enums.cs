@@ -18,9 +18,6 @@ public enum ReafirmCanvas
     DeleteData
 }
 
-// OJO: los Sounds SO guardan este enum como NÚMERO. Los valores son explícitos para que insertar un sonido nuevo
-// en el medio no corra los demás (ya pasó: Purify terminó sonando como el gruñido de la planta).
-// Sonidos nuevos: SIEMPRE al final, con el número siguiente. Nunca renumerar ni reutilizar uno existente.
 public enum SoundNames
 {
     None = -1,
@@ -54,6 +51,7 @@ public enum SoundNames
     LvlTwo = 27,
     PlayerGrapple = 28,
     PlayerSwingTongue = 29,
+    PlayerLoose = 30,
 }
 
 public enum LevelFlags

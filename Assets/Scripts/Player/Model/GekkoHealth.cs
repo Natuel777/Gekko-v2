@@ -40,6 +40,7 @@ public class GekkoHealth : IDamageable
         // Sistema por hits: cada golpe cuesta un corazón entero, sin importar cuánto
         // "daño" declare la fuente (lava, bicho, etc.) — el valor de dmg ya no se usa.
         Debug.Log("Gekko took a hit!");
+        bool wasAlive = _currentHealth > 0f;
         _currentHealth -= 1f;
         _currentHealth = Mathf.Max(_currentHealth, 0f);
         _healthBar.UpdateHealthBar(_currentHealth, _maxHealth);
@@ -48,6 +49,12 @@ public class GekkoHealth : IDamageable
 
         bool isLethal = _currentHealth <= 0f;
         bool isRespawning = RespawnController.Instance != null && RespawnController.Instance.IsRunning;
+
+        // Perdió la última vida: suena el sonido de derrota (SoundNames.PlayerLoose), una sola vez por muerte. Va antes de los dos
+        // caminos de abajo porque la vida puede llegar a 0 con un golpe normal (isLethal) o con el costo de vida de una caída a una
+        // DeathZone, que llega con el respawn ya corriendo (isRespawning) y sale antes. "wasAlive" evita que suene de nuevo si entra
+        // otro golpe mientras el respawn sigue corriendo y la vida ya está en 0 (ahí isLethal vuelve a ser true).
+        if(wasAlive && isLethal && AudioManager.instance) AudioManager.instance.Play(SoundNames.PlayerLoose);
 
         // Golpe durante el respawn (ej. el costo de vida por caer a una DeathZone): solo baja la vida. El
         // DamageFeedback no va acá: su hitstop deja el timeScale en 0 (el respawn tiene CanPause en true y lo toma
