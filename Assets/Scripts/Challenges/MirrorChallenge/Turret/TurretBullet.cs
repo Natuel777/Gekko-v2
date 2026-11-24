@@ -20,6 +20,11 @@ public class TurretBullet : ShooteableObject, IReflectable
     [Tooltip("Mismo material del trail con los colores turquesa de la purificación.")]
     [SerializeField] private Material _trailPurificado;
 
+    [Header("Purified flight")]
+    [Tooltip("Cuánto se frena la bala al purificarse (cuando un espejo la redirige): 0.25 = va al 75% de la velocidad que tenía corrupta. 0 = no se frena.")]
+    [Range(0f, 1f)]
+    [SerializeField] private float _purifiedSpeedReduction = 0.25f;
+
     private VisualEffectAsset _vfxOriginal;
     private Material _trailOriginal;
     private bool _reflected;
@@ -111,9 +116,13 @@ public class TurretBullet : ShooteableObject, IReflectable
         transform.rotation = Quaternion.LookRotation(_direction);
     }
 
+    // Corrupted: the full speed of its data. Purified (a mirror sent it back): slowed down by _purifiedSpeedReduction. The pool reuses the
+    // bullet, but OnEnable puts _reflected back to false, so every new shot starts at full speed.
+    private float CurrentSpeed => _reflected ? data.speed * (1f - _purifiedSpeedReduction) : data.speed;
+
     private void Update()
     {
-        transform.position += _direction * data.speed * Time.deltaTime;
+        transform.position += _direction * CurrentSpeed * Time.deltaTime;
         _currentLifetime -= Time.deltaTime;
 
         if(_currentLifetime <= 0)

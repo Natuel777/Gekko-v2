@@ -56,6 +56,7 @@ public enum SoundNames
     BookSound2 = 32,
     BookSound3 = 33,
     BookSound4 = 34,
+    PlantPreparingAttack = 35,
 }
 
 public enum LevelFlags

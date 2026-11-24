@@ -196,6 +196,11 @@ public class PlantBiteWindup : MonoBehaviour
 
         // Current implementation, replace later with GenericPS.Play()
         if(_preparingAttackPS != null && !forSpit) _preparingAttackPS.Play();
+
+        // Like the particle, the sound belongs to the bite only: when spitting, PlantSpitBehaviour plays its own sound (PlantShoot).
+        // It is here, after the early return, so it plays once per preparation even if the caller had to retry Play() on several frames.
+        if(!forSpit && AudioManager.instance) AudioManager.instance.Play(SoundNames.PlantPreparingAttack);
+
         _target = lookTarget;
         _speed = forSpit ? _spitSpeedMultiplier : 1f;
         _phase = Phase.Windup;
