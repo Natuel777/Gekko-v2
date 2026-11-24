@@ -30,18 +30,19 @@ public class Lvl2Beaver : NPCBase
     protected override void Start()
     {
         base.Start();
+        _exclamation.enabled = false;
 
-        if (SaveManager.Instance) 
-            if (SaveManager.Instance.Has(LevelFlags.Lvl2_Beaver.ToString()))
-            {
-                _exclamation.enabled = false;
-                Destroy(_collParent.gameObject);
-                _currentDialogue = 2;
-                return;
-            }
-        _collMan = new MissionCollectiblesManager(_collParent);
-        _collMan.OnAllCollected += AllCollected;
-        _collMan.ArtificialOnEnable();
+        // if (SaveManager.Instance) 
+        //     if (SaveManager.Instance.Has(LevelFlags.Lvl2_Beaver.ToString()))
+        //     {
+        //         _exclamation.enabled = false;
+        //         Destroy(_collParent.gameObject);
+        //         _currentDialogue = 2;
+        //         return;
+        //     }
+        // _collMan = new MissionCollectiblesManager(_collParent);
+        // _collMan.OnAllCollected += AllCollected;
+        // _collMan.ArtificialOnEnable();
 
     }
     protected override void Update()
@@ -110,15 +111,15 @@ public class Lvl2Beaver : NPCBase
     private void OnEnable()
     {
         _dam.OnTouched += DamTouched;
-        if (_collMan == null) return;
-        _collMan.OnAllCollected += AllCollected;
-        _collMan.ArtificialOnEnable();
+        //if (_collMan == null) return;
+        //_collMan.OnAllCollected += AllCollected;
+        //_collMan.ArtificialOnEnable();
     }
     private void OnDisable()
     {
         _dam.OnTouched -= DamTouched;
-        if (_collMan == null) return;
-        _collMan.OnAllCollected -= AllCollected;
-        _collMan.ArtificialOnDisable();
+        //if (_collMan == null) return;
+        //_collMan.OnAllCollected -= AllCollected;
+        //_collMan.ArtificialOnDisable();
     }
 }
