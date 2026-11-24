@@ -267,8 +267,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 5156247800895053420}
-  - component: {fileID: 2782599506204599839}
   - component: {fileID: 5968711391518417727}
+  - component: {fileID: 5034200696533456303}
   m_Layer: 0
   m_Name: BreaverDam
   m_TagString: Untagged
@@ -293,8 +293,20 @@ Transform:
   - {fileID: 466689435908843104}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!65 &2782599506204599839
-BoxCollider:
+--- !u!114 &5968711391518417727
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1137726452419200954}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a3e4282f51c262e4a877ff8ac4e8c0d1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!64 &5034200696533456303
+MeshCollider:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -311,21 +323,10 @@ BoxCollider:
   m_IsTrigger: 0
   m_ProvidesContacts: 0
   m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 7.3229465, y: 4.837343, z: 24.013363}
-  m_Center: {x: 1.5122023, y: 7.6853485, z: 2.43219}
---- !u!114 &5968711391518417727
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1137726452419200954}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a3e4282f51c262e4a877ff8ac4e8c0d1, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  serializedVersion: 5
+  m_Convex: 0
+  m_CookingOptions: 30
+  m_Mesh: {fileID: -2463724033484077721, guid: 847961edc450ec44db4926402274daa1, type: 3}
 --- !u!1 &1254839966813181102
 GameObject:
   m_ObjectHideFlags: 0
@@ -542,7 +543,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ea29fa3dc1e5d4946a5c4956785cf6bb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _size: {x: 10, y: 22}
+  _size: {x: 15, y: 22}
   _height: 10
   _mask: {fileID: 2800000, guid: ec234b7320d2c7049ae27904f886ddd2, type: 3}
   _tintMask: {fileID: 2800000, guid: d7fa0f83fab20c7469de94e78956ea11, type: 3}
@@ -2539,15 +2540,15 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: -8679921383154817045, guid: 847961edc450ec44db4926402274daa1, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 1.8278751
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 847961edc450ec44db4926402274daa1, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 7.5080214
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 847961edc450ec44db4926402274daa1, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 2.7354202
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 847961edc450ec44db4926402274daa1, type: 3}
       propertyPath: m_LocalRotation.w
