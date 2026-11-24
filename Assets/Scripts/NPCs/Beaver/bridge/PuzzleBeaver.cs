@@ -11,14 +11,16 @@ public class PuzzleBeaver : NPCBase
     private bool _finish;
     [Header("Canvas")]
     [SerializeField] Image _exclamation;
-    [Header("Recompensa")]
+    [Header("Reward")]
     [SerializeField] private NotificationSO _notificationData;
 
-    [Header("Rotación hacia el jugador")]
+    [Header("Player detection")]
+    [Tooltip("Distancia a la que el Beaver detecta a Gekko: se gira hacia él y, la primera vez que lo detecta, lo llama con un sonido (una sola vez).")]
     [SerializeField] private float _detectionRange = 6f;
 
     private BugDetection _playerDetection;
     private bool _playerInRotationRange;
+    private bool _callPlayed;
 
 
     protected override void Start()
@@ -49,6 +51,7 @@ public class PuzzleBeaver : NPCBase
         {
             _playerInRotationRange = true;
             _lookAtPlayer.StartLooking(_playerTransform);
+            PlayCallSound();
         }
         
         else if(!inRange && _playerInRotationRange)
@@ -58,6 +61,16 @@ public class PuzzleBeaver : NPCBase
         }
 
         _lookAtPlayer.ArtificialUpdate();
+    }
+
+    // Calls out to Gekko only the first time he enters the detection range.
+    // The flag is only set once the sound can really be played (no AudioManager = try again on the next entry).
+    private void PlayCallSound()
+    {
+        if(_callPlayed || AudioManager.instance == null) return;
+
+        _callPlayed = true;
+        AudioManager.instance.Play(SoundNames.BeaverVoice);
     }
 
     public void StartAnim()
@@ -79,7 +92,7 @@ public class PuzzleBeaver : NPCBase
         _currentDialogue++;
         _exclamation.enabled = true;
         _finish = true;
-        //animacion o dialogo de terminado y dar frutilla
+        // finished animation or dialogue, and give the strawberry
     }  
 
     public override void OnDialogueStart()

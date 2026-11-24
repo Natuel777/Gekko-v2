@@ -13,8 +13,13 @@ public class Lvl2Beaver : NPCBase
     private MissionCollectiblesManager _collMan;
     [Header("Mission Collectibles")]
     [SerializeField] private Transform _collParent;
-    [Header("Recompensa")]
+    [Header("Reward")]
     [SerializeField] private NotificationSO _notificationData;
+    [Header("Player detection")]
+    [Tooltip("Distancia a la que el Beaver detecta a Gekko: la primera vez que lo detecta, lo llama con un sonido (una sola vez).")]
+    [SerializeField] private float _detectionRange = 21f;
+    private BugDetection _playerDetection;
+    private bool _callPlayed;
     public override Dialogue Dialogue 
     { 
         get
@@ -30,6 +35,8 @@ public class Lvl2Beaver : NPCBase
     protected override void Start()
     {
         base.Start();
+        // Created before the saved-mission early return below, so the call also works when the mission is already done.
+        _playerDetection = new BugDetection(transform, _playerTransform, _detectionRange);
 
         if (SaveManager.Instance) 
             if (SaveManager.Instance.Has(LevelFlags.Lvl2_Beaver.ToString()))
@@ -55,6 +62,18 @@ public class Lvl2Beaver : NPCBase
             _lookAtPlayer.ArtificialUpdate();
             _lookAtPlayer.StartLooking(_playerTransform);
         }
+
+        UpdateCallSound();
+    }
+    // Calls out to Gekko only the first time he enters the detection range.
+    // The flag is only set once the sound can really be played (no AudioManager = try again later).
+    private void UpdateCallSound()
+    {
+        if (_callPlayed || AudioManager.instance == null) return;
+        if (!_playerDetection.IsTargetInRange()) return;
+
+        _callPlayed = true;
+        AudioManager.instance.Play(SoundNames.BeaverVoice);
     }
     #region Dam
     private void DamTouched()
@@ -120,5 +139,10 @@ public class Lvl2Beaver : NPCBase
         if (_collMan == null) return;
         _collMan.OnAllCollected -= AllCollected;
         _collMan.ArtificialOnDisable();
+    }
+    private void OnDrawGizmosSelected()
+    {
+        Gizmos.color = Color.cyan;
+        Gizmos.DrawWireSphere(transform.position, _detectionRange);
     }
 }
