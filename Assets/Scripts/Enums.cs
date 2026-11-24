@@ -52,6 +52,10 @@ public enum SoundNames
     PlayerGrapple = 28,
     PlayerSwingTongue = 29,
     PlayerLoose = 30,
+    BookSound1 = 31,
+    BookSound2 = 32,
+    BookSound3 = 33,
+    BookSound4 = 34,
 }
 
 public enum LevelFlags

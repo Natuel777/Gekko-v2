@@ -4,20 +4,20 @@ using Unity.Cinemachine;
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
 
-// Libro de bitácora (prefab "Libro"). Mientras nadie lo lee da saltitos para llamar la atención. Al apretar E:
-//   - Pausa el juego (timeScale 0) para que las torretas no le hagan nada a Gekko mientras lee. Si se abre y cierra el
-//     menú de pausa en el medio, la pausa se vuelve a poner sola hasta cerrar el libro.
-//   - Pasa a una cámara propia que hace zoom sobre las páginas. Se arma por código mirando de frente a _pages, así
-//     funciona donde sea que se ponga el prefab.
-//   - El texto del diálogo se escribe en las páginas, dos frases por vista (izquierda / derecha), en vez de usar el panel
-//     de abajo. E / click: completa lo que se está escribiendo o pasa de hoja; después de la última vista cierra el libro.
-// UIManager sigue manejando el ciclo del diálogo (bloqueo de Gekko, avanzar, cerrar) a través de IDialogueView.
+// Logbook book ("Libro" prefab). While nobody is reading it, it hops around to get attention. When pressing E:
+//   - Pauses the game (timeScale 0) so the turrets can't hurt Gekko while he reads. If the pause menu is opened and closed
+//     in the middle, the pause is put back on by itself until the book is closed.
+//   - Switches to its own camera that zooms in on the pages. It is built by code, facing _pages head-on, so it
+//     works wherever the prefab is placed.
+//   - The dialogue text is written on the pages, two sentences per view (left / right), instead of using the bottom
+//     panel. E / click: finishes what is being written or turns the page; after the last view the book closes.
+// UIManager keeps handling the dialogue cycle (locking Gekko, advancing, closing) through IDialogueView.
 public class BookNPC : NPCBase, IDialogueView
 {
     private const int ReadCameraPriority = 100;
     private static readonly int EmissionColorId = Shader.PropertyToID("_EmissionColor");
 
-    [Header("Saltitos (llamar la atención)")]
+    [Header("Hops (get attention)")]
     [Tooltip("Pivote que se anima: tiene adentro el modelo, las páginas y la runa. Su origen está en la base del libro, así el aplastado apoya en el piso.")]
     [SerializeField] private Transform _visual;
     [Tooltip("Segundos entre un salto y el siguiente.")]
@@ -36,7 +36,7 @@ public class BookNPC : NPCBase, IDialogueView
     [Tooltip("Después de leerlo una vez deja de saltar y solo flota suave.")]
     [SerializeField] private bool _calmAfterRead = true;
 
-    [Header("Páginas")]
+    [Header("Pages")]
     [Tooltip("Centro de las páginas abiertas: forward = hacia adentro de la hoja, up = hacia arriba del texto. La cámara de lectura lo mira de frente.")]
     [SerializeField] private Transform _pages;
     [SerializeField] private TMP_Text _leftPage;
@@ -52,7 +52,17 @@ public class BookNPC : NPCBase, IDialogueView
     [Tooltip("Opcional: sonido al pasar de hoja.")]
     [SerializeField] private AudioClip _pageTurnClip;
 
-    [Header("Cámara de lectura")]
+    [Header("Talk sounds")]
+    [Tooltip("Sonidos con los que 'habla' el libro: suena uno por cada frase que se escribe en las hojas, elegido al azar. Un sonido no puede sonar dos veces seguidas: tiene que esperar un turno.")]
+    [SerializeField] private SoundNames[] _talkSounds =
+    {
+        SoundNames.BookSound1,
+        SoundNames.BookSound2,
+        SoundNames.BookSound3,
+        SoundNames.BookSound4
+    };
+
+    [Header("Reading camera")]
     [Tooltip("Mitad del tamaño a encuadrar (ancho, alto), en unidades locales de _pages.")]
     [SerializeField] private Vector2 _frameHalfSize = new Vector2(1.95f, 1.65f);
     [Tooltip("Corre el centro del encuadre (en unidades locales de _pages). Y positivo baja el libro en pantalla y deja lugar arriba para el HUD (corazones).")]
@@ -60,7 +70,7 @@ public class BookNPC : NPCBase, IDialogueView
     [Range(15f, 80f)]
     [SerializeField] private float _readFov = 35f;
 
-    [Header("Runa de la contratapa")]
+    [Header("Back cover rune")]
     [SerializeField] private DecalProjector _rune;
     [Tooltip("Velocidad del latido del brillo de la runa.")]
     [SerializeField] private float _runePulseSpeed = 2f;
@@ -71,7 +81,7 @@ public class BookNPC : NPCBase, IDialogueView
     private bool _reading;
     private bool _wasRead;
     private int _spread;
-    private bool _busy;         // fundido o escritura en curso
+    private bool _busy;         // fade or typing in progress
     private bool _typing;
     private bool _skipTyping;
     private Coroutine _spreadRoutine;
@@ -92,11 +102,12 @@ public class BookNPC : NPCBase, IDialogueView
     private Color _runeEmission;
 
     private AudioSource _audio;
+    private NoRepeatSoundPicker _talkPicker;
 
     protected override void Start()
     {
-        // La instancia de LvlTwo traía estas referencias apuntando a objetos que ya no existen (y NPCBase.Start tiraba
-        // NullReference): si faltan, se usan las del propio libro.
+        // The LvlTwo instance came with these references pointing to objects that no longer exist (and NPCBase.Start threw a
+        // NullReference): if they are missing, the book's own ones are used.
         if(_canvas == null) _canvas = GetComponentInChildren<Canvas>(true);
         if(_EIndicator == null && _canvas != null)
         {
@@ -112,13 +123,13 @@ public class BookNPC : NPCBase, IDialogueView
             _restRot = _visual.localRotation;
             _restScale = _visual.localScale;
         }
-        // Que dos libros en la misma escena no salten sincronizados.
+        // So two books in the same scene don't hop in sync.
         _hopClock = Random.Range(0f, _hopInterval);
 
         if(_nextIndicator != null) _indicatorScale = _nextIndicator.localScale;
         if(_pages != null) _pages.gameObject.SetActive(false);
 
-        // Material propio para hacer latir el brillo sin tocar el de las otras runas.
+        // Own material to pulse the glow without touching the other runes' one.
         if(_rune != null && _rune.material != null)
         {
             _runeMaterial = new Material(_rune.material);
@@ -149,7 +160,7 @@ public class BookNPC : NPCBase, IDialogueView
         if(_runeMaterial != null) Destroy(_runeMaterial);
     }
 
-    // ------------------------------------------------------------------ Interacción / diálogo
+    // ------------------------------------------------------------------ Interaction / dialogue
 
     public override void ShowInteractUI()
     {
@@ -157,7 +168,7 @@ public class BookNPC : NPCBase, IDialogueView
         base.ShowInteractUI();
     }
 
-    // No llama a base: el libro no gira hacia Gekko ni usa la cámara de NPC (_cam).
+    // Doesn't call base: the book doesn't turn towards Gekko nor use the NPC camera (_cam).
     public override void OnDialogueStart()
     {
         _reading = true;
@@ -186,7 +197,7 @@ public class BookNPC : NPCBase, IDialogueView
         if(_typing) { _skipTyping = true; return true; }
         if(_busy) return true;
 
-        if((_spread + 1) * 2 >= SentenceCount) return false; // era la última vista: se cierra el libro
+        if((_spread + 1) * 2 >= SentenceCount) return false; // it was the last view: the book closes
 
         _spread++;
         StartSpread(turnPage: true);
@@ -205,10 +216,10 @@ public class BookNPC : NPCBase, IDialogueView
         if(_pages != null) _pages.gameObject.SetActive(false);
         if(_canvas != null) _canvas.enabled = true;
 
-        // Si el menú de pausa está abierto, él se encarga de devolver el timeScale al cerrarse.
+        // If the pause menu is open, it takes care of giving the timeScale back when it closes.
         if(!PauseMenuOpen) Time.timeScale = _savedTimeScale;
 
-        if(_readCam != null) _readCam.gameObject.SetActive(false); // el brain vuelve a la cámara de juego con su blend
+        if(_readCam != null) _readCam.gameObject.SetActive(false); // the brain goes back to the gameplay camera with its blend
         if(_brain != null && _brainSaved) _brain.IgnoreTimeScale = _savedIgnoreTimeScale;
         _brainSaved = false;
         _hopClock = 0f;
@@ -216,13 +227,13 @@ public class BookNPC : NPCBase, IDialogueView
 
     private static bool PauseMenuOpen => GameManager.Instance != null && GameManager.Instance.IsPaused;
 
-    // El menú de pausa pone timeScale en 1 al cerrarse: mientras se lee, se vuelve a pausar.
+    // The pause menu sets timeScale to 1 when it closes: while reading, it is paused again.
     private void KeepPaused()
     {
         if(!PauseMenuOpen && Time.timeScale != 0f) Time.timeScale = 0f;
     }
 
-    // ------------------------------------------------------------------ Cámara
+    // ------------------------------------------------------------------ Camera
 
     private void ActivateReadCamera()
     {
@@ -239,7 +250,7 @@ public class BookNPC : NPCBase, IDialogueView
         lens.NearClipPlane = 0.05f;
         _readCam.Lens = lens;
 
-        // Distancia para que entre todo el libro (con la relación de aspecto real de la pantalla).
+        // Distance so the whole book fits (using the real aspect ratio of the screen).
         Vector3 scale = _pages.lossyScale;
         float halfW = _frameHalfSize.x * Mathf.Abs(scale.x);
         float halfH = _frameHalfSize.y * Mathf.Abs(scale.y);
@@ -252,7 +263,7 @@ public class BookNPC : NPCBase, IDialogueView
         _readCam.Priority = ReadCameraPriority;
         _readCam.gameObject.SetActive(true);
 
-        // Con timeScale en 0 el blend de Cinemachine no avanzaría: el zoom corre en tiempo real mientras se lee.
+        // With timeScale at 0 the Cinemachine blend would not advance: the zoom runs in real time while reading.
         var main = Camera.main;
         _brain = main != null ? main.GetComponent<CinemachineBrain>() : null;
         if(_brain != null && !_brainSaved)
@@ -263,7 +274,7 @@ public class BookNPC : NPCBase, IDialogueView
         }
     }
 
-    // ------------------------------------------------------------------ Páginas
+    // ------------------------------------------------------------------ Pages
 
     private void StartSpread(bool turnPage)
     {
@@ -319,6 +330,8 @@ public class BookNPC : NPCBase, IDialogueView
 
         page.ForceMeshUpdate();
         int total = page.textInfo.characterCount;
+        // One talk sound per sentence that really gets written: empty pages and text skipped with E stay silent.
+        if(total > 0 && !_skipTyping) PlayTalkSound();
         float shown = 0f;
         while(shown < total && !_skipTyping)
         {
@@ -362,6 +375,16 @@ public class BookNPC : NPCBase, IDialogueView
         _audio.PlayOneShot(_pageTurnClip);
     }
 
+    // Plays one random talk sound. The picker lives as long as the book, so the "no repeat" rule also holds
+    // between readings (the first sound of a new reading can't be the last one of the previous reading).
+    private void PlayTalkSound()
+    {
+        if(AudioManager.instance == null) return;
+
+        _talkPicker ??= new NoRepeatSoundPicker(_talkSounds);
+        if(_talkPicker.TryPick(out SoundNames sound)) AudioManager.instance.Play(sound);
+    }
+
     private void UpdateNextIndicator()
     {
         if(_nextIndicator == null) return;
@@ -371,7 +394,7 @@ public class BookNPC : NPCBase, IDialogueView
         if(show) _nextIndicator.localScale = _indicatorScale * (1f + 0.12f * Mathf.Sin(Time.unscaledTime * 6f));
     }
 
-    // ------------------------------------------------------------------ Saltitos
+    // ------------------------------------------------------------------ Hops
 
     private void ResetVisual()
     {
@@ -389,7 +412,7 @@ public class BookNPC : NPCBase, IDialogueView
 
         if(_calmAfterRead && _wasRead)
         {
-            // Ya leído: flota suave, sin saltar.
+            // Already read: floats softly, no hopping.
             float bob = (Mathf.Sin(_hopClock * 2.4f) * 0.5f + 0.5f) * _hopHeight * 0.12f;
             _visual.localPosition = _restPos + Vector3.up * bob;
             _visual.localRotation = _restRot;
@@ -397,13 +420,13 @@ public class BookNPC : NPCBase, IDialogueView
             return;
         }
 
-        const float anticipation = 0.12f; // se agacha antes de saltar
-        const float landing = 0.3f;       // rebote al caer
+        const float anticipation = 0.12f; // crouches before jumping
+        const float landing = 0.3f;       // bounce on landing
         float cycle = Mathf.Max(_hopInterval, anticipation + _hopDuration + landing);
         float p = _hopClock % cycle;
 
         float height = 0f;
-        float stretch = 0f; // >0 estira hacia arriba, <0 aplasta
+        float stretch = 0f; // >0 stretches upwards, <0 squashes
         float tilt = 0f;
 
         if(p < anticipation)
@@ -424,7 +447,7 @@ public class BookNPC : NPCBase, IDialogueView
             stretch = -_squash * (1f - k) * (1f - k) * Mathf.Cos(k * Mathf.PI * 2.5f);
         }
 
-        // Estira en Y y compensa en X/Z para que parezca que conserva el volumen.
+        // Stretches in Y and compensates in X/Z so it looks like it keeps its volume.
         float sy = 1f + stretch;
         float sxz = 1f / Mathf.Sqrt(Mathf.Max(sy, 0.1f));
 
@@ -433,7 +456,7 @@ public class BookNPC : NPCBase, IDialogueView
         _visual.localScale = Vector3.Scale(_restScale, new Vector3(sxz, sy, sxz));
     }
 
-    // ------------------------------------------------------------------ Runa
+    // ------------------------------------------------------------------ Rune
 
     private void UpdateRune()
     {
