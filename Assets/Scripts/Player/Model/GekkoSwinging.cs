@@ -12,68 +12,68 @@ public sealed class GekkoSwinging
     private Transform _camera, _transform, _tongueTip;
     
     #region Tongue Visual
-    // Cómo se dibuja la lengua: tres cosas, en este orden.
-    //   1) LA SOGA FÍSICA (RopeSimulation): decide la forma base. Se queda atrás cuando Gekko se mueve y rebota al frenar.
-    //      Puede colgar (slack positivo) o estar pre-tensada (slack negativo). La explicación completa está arriba de
-    //      esa clase.
-    //   2) LA TENSIÓN VISUAL (_ropeTautness): al dibujar, la forma de la soga se acerca a la recta boca -> ancla. Es lo que
-    //      deja la lengua pareja de punta a punta.
-    //   3) EL LATIGAZO (Spring + onda senoidal): una ondulación "artística" que aparece al enganchar y se apaga sola.
-    // La física manda, la tensión visual la endereza y el latigazo se le suma por encima recién al dibujar (ver
+    // How the tongue is drawn: three things, in this order.
+    //   1) THE PHYSICAL ROPE (RopeSimulation): decides the base shape. It lags behind when Gekko moves and bounces when Gekko stops.
+    //      It can hang (positive slack) or be pre-tensioned (negative slack). The full explanation is above
+    //      that class.
+    //   2) THE VISUAL TENSION (_ropeTautness): when drawing, the rope's shape is pulled towards the mouth -> anchor line. It is what
+    //      keeps the tongue even from end to end.
+    //   3) THE WHIP (Spring + sine wave): an "artistic" wave that appears on attaching and fades out on its own.
+    // Physics rules, the visual tension straightens it and the whip is added on top only when drawing (see
     // UpdateLineRenderer).
 
-    // Cantidad de hilos de la soga. La simulación y el LineRenderer tienen _quality + 1 puntos.
+    // Number of rope segments. The simulation and the LineRenderer have _quality + 1 points.
     private int _quality;
 
-    // Parámetros del latigazo (llegan desde el Inspector de Player):
-    //   _springStrength : qué tan rápido oscila.       _springDamper : qué tan rápido se apaga.
-    //   _springVelocity : empujón inicial al enganchar.  _waveCount    : cantidad de crestas de la onda.
-    //   _waveHeight     : altura máxima de la onda.      _waveAffectCurve : cuánto se nota la onda en cada punto de la
-    //                     soga (tiene que valer 0 en las dos puntas para que la lengua y el ancla no se despeguen).
+    // Whip parameters (they come from Player's Inspector):
+    //   _springStrength : how fast it oscillates.       _springDamper : how fast it dies out.
+    //   _springVelocity : initial kick on attaching.  _waveCount    : number of wave crests.
+    //   _waveHeight     : the wave's maximum height.      _waveAffectCurve : how noticeable the wave is at each point of the
+    //                     rope (it must be 0 at both ends so the tongue and the anchor don't come apart).
     private float _springDamper, _springStrength, _springVelocity, _waveCount, _waveHeight;
     private AnimationCurve _waveAffectCurve;
 
-    // La simulación de la soga (ver RopeSimulation.cs).
+    // The rope simulation (see RopeSimulation.cs).
     private RopeSimulation _rope;
 
-    // Lista de puntos que se le entrega al LineRenderer (puntos de la soga + latigazo). Se crea una sola vez y se
-    // reutiliza en cada frame, así dibujar no genera basura (GC).
+    // List of points handed to the LineRenderer (rope points + whip). It is created only once and reused every frame,
+    // so drawing doesn't generate garbage (GC).
     private Vector3[] _ropePoints;
 
-    // Largo de la soga respecto de la distancia real entre sus puntas (0.05 = 5% más larga, -0.02 = 2% más corta):
-    //   positivo : sobra soga, cuelga y se abomba. Una soga sin tensión se dobla de costado con cualquier acortamiento de
-    //              la distancia, así que por poco que sobre el abombado es grande (decenas de cm en una soga de 4 m).
-    //   0        : justo. Queda casi recta, pero todavía se abomba un poco cuando las puntas se mueven.
-    //   negativo : soga PRE-TENSADA. Siempre está estirada, así que todos los hilos tienen la misma tensión y no hay de
-    //              dónde doblarse. Es lo que la deja tensa y pareja de punta a punta.
+    // Rope length relative to the real distance between its ends (0.05 = 5% longer, -0.02 = 2% shorter):
+    //   positive : there is extra rope, it hangs and bulges. A rope with no tension bends sideways with any shortening of
+    //              the distance, so however little extra there is the bulge is large (tens of cm on a 4 m rope).
+    //   0        : exact. It stays almost straight, but still bulges a little when the ends move.
+    //   negative : PRE-TENSIONED rope. It is always stretched, so all segments have the same tension and there is nowhere
+    //              to bend. It is what keeps it taut and even from end to end.
     private float _ropeSlack;
 
-    // Cuánto se endereza lo que se VE de la soga: 0 = tal cual la simulación, 1 = recta de la boca al ancla. Es solo
-    // visual, no cambia la simulación ni el latigazo (ver UpdateLineRenderer).
+    // How much what is SEEN of the rope is straightened: 0 = exactly as the simulation, 1 = straight from the mouth to the anchor. It is only
+    // visual, it doesn't change the simulation or the whip (see UpdateLineRenderer).
     private float _ropeTautness;
 
-    // Lo más pre-tensada que puede estar la soga: -0.1 = 10% más corta que la distancia entre sus puntas. Más que eso no
-    // se ve mejor, y un valor cercano a -1 dejaría la soga sin largo.
+    // The most pre-tensioned the rope can be: -0.1 = 10% shorter than the distance between its ends. More than that doesn't
+    // look better, and a value close to -1 would leave the rope with no length.
     private const float MinRopeSlack = -0.1f;
     #endregion
 
     #region Height Limit
-    // Techo blando del swing (ver ApplyHeightLimit): Gekko no debería subir más arriba del punto de enganche.
-    //   _heightLimitOffset : corre el techo respecto de la altura del punto (0 = justo a su altura).
-    //   _heightLimitSpring : cuánto lo tira hacia abajo por cada metro que se pasó del techo (m/s² por metro).
-    //   _heightLimitDamper : cuánto frena su velocidad de subida mientras está pasado (m/s² por cada m/s).
-    //   _heightLimitMaxPull: tope de la aceleración hacia abajo (m/s²).
+    // Soft ceiling of the swing (see ApplyHeightLimit): Gekko shouldn't rise above the attach point.
+    //   _heightLimitOffset : shifts the ceiling relative to the point's height (0 = exactly at its height).
+    //   _heightLimitSpring : how much it pulls Gekko down for each meter it went past the ceiling (m/s² per meter).
+    //   _heightLimitDamper : how much it slows its upward velocity while it is past it (m/s² per m/s).
+    //   _heightLimitMaxPull: cap on the downward acceleration (m/s²).
     private float _heightLimitOffset, _heightLimitSpring, _heightLimitDamper, _heightLimitMaxPull;
     #endregion
 
     #region Swing Sounds
-    // Sonido de enganche (SoundNames.PlayerSwingAttach): suena cuando la punta de la lengua llega al gancho del swing (ver
-    // CheckSwingAttachArrival). La punta se acerca al ancla con un Lerp que se frena a medida que llega (ver DrawTongue) y nunca
-    // toca el punto justo, así que "llegó" es estar a esta distancia, en metros, o menos. Con 0.2 suena a los ~0.3-0.45 s de lanzar
-    // la lengua a un gancho que está a 3-8 m (cuenta hecha con la fórmula del Lerp, no medida en el juego).
+    // Attach sound (SoundNames.PlayerSwingAttach): plays when the tongue's tip reaches the swing hook (see
+    // CheckSwingAttachArrival). The tip approaches the anchor with a Lerp that slows down as it arrives (see DrawTongue) and never
+    // touches the exact point, so "arrived" means being at this distance, in meters, or less. With 0.2 it plays ~0.3-0.45 s after throwing
+    // the tongue at a hook 3-8 m away (computed with the Lerp formula, not measured in the game).
     private const float SwingAttachArrivalDistance = 0.2f;
 
-    // Ya sonó el enganche de este swing. Es una vez por lengua lanzada: StartSwing lo vuelve a armar.
+    // The attach sound already played for this swing. It is once per thrown tongue: StartSwing re-arms it.
     private bool _swingAttachSoundPlayed;
     #endregion
 
@@ -82,10 +82,10 @@ public sealed class GekkoSwinging
     private GekkoDetection _detection;
     
     #region Properties
-    // Colgado de la lengua, balanceándose con el SpringJoint.
+    // Hanging from the tongue, swinging with the SpringJoint.
     public bool IsSwinging { get; private set; }
-    // Durante todo el grapple (la espera y el vuelo). Nunca es true a la vez que IsSwinging: al arrancar el grapple se
-    // suelta el swing.
+    // During the whole grapple (the wait and the flight). It is never true at the same time as IsSwinging: when the grapple starts, the
+    // swing is released.
     public bool IsGrappling => _grappleBehaviour != null && _grappleBehaviour.IsGrappling;
     public Vector2 ThrustInput { set { _thrustInput = value; } }
     public Vector3 GrapplePoint => _grapplePoint;
@@ -121,14 +121,14 @@ public sealed class GekkoSwinging
         _spring.SetDamper(_springDamper);
         _spring.SetStrength(_springStrength);
 
-        // Se crean, una sola vez, la simulación de la soga y la lista de puntos para dibujar. Los dos tienen
-        // _quality + 1 puntos (siempre uno más que hilos). Se reservan acá para no crear arrays nuevos en cada frame.
+        // The rope simulation and the list of points to draw are created, only once. Both have
+        // _quality + 1 points (always one more than segments). They are allocated here so new arrays aren't created every frame.
         _rope = new RopeSimulation(_quality, ropeDamping, ropeGravity, ropeIterations);
         _ropePoints = new Vector3[_quality + 1];
 
-        // El sobrante de soga puede ser negativo: una soga más corta que la distancia entre sus puntas queda siempre
-        // estirada y recta, con la misma tensión en todos los hilos (soga pre-tensada). El mínimo evita un largo de 0.
-        // La tensión visual es un porcentaje: de 0 a 1.
+        // The rope's extra length can be negative: a rope shorter than the distance between its ends is always
+        // stretched and straight, with the same tension in all segments (pre-tensioned rope). The minimum avoids a length of 0.
+        // The visual tension is a percentage: from 0 to 1.
         _ropeSlack = Mathf.Max(MinRopeSlack, ropeSlack);
         _ropeTautness = Mathf.Clamp01(ropeTautness);
         _heightLimitOffset = heightLimitOffset;
@@ -138,11 +138,11 @@ public sealed class GekkoSwinging
         _gekkoRotation = new RotateGekkoWhileSwingin(this, _rb);
     }
 
-    // Click derecho (lo llama PlayerInputs al apretar el botón de enganche)
+    // Right click (called by PlayerInputs when the attach button is pressed)
     public void AttachTongue()
     {
-        // En pleno grapple no se puede enganchar nada nuevo: habría dos sistemas manejando a Gekko a la vez. La excepción
-        // es el segundo salto: ya no tiene lengua ni punto que alcanzar, así que se lo puede cortar enganchando otro gancho.
+        // During a grapple nothing new can be attached: two systems would be driving Gekko at once. The exception
+        // is the second jump: it no longer has a tongue or a point to reach, so it can be cut by attaching to another hook.
         bool interruptsSecondJump = _grappleBehaviour != null && _grappleBehaviour.IsSecondJumpFlying;
 
         if(IsGrappling && !interruptsSecondJump) return;
@@ -159,12 +159,12 @@ public sealed class GekkoSwinging
         }
     }
 
-    // Arranca el swing (SpringJoint) colgado de anchor.
+    // Starts the swing (SpringJoint) hanging from anchor.
     private void StartSwing(Vector3 anchor, bool interruptsSecondJump)
     {
-        // Recién con un punto válido se corta el vuelo: si no hay a qué engancharse, el salto sigue como estaba (AttachTongue
-        // ya validó el punto). Va antes de armar el swing porque cortar el vuelo apaga la lengua (HideTongue) y el swing la
-        // tiene que prender después.
+        // The flight is only cut with a valid point: if there is nothing to attach to, the jump continues as it was (AttachTongue
+        // already validated the point). It goes before building the swing because cutting the flight turns the tongue off (HideTongue) and the swing
+        // has to turn it on afterwards.
         if(interruptsSecondJump) _grappleBehaviour.EndSecondJump();
 
         IsSwinging = true;
@@ -173,57 +173,57 @@ public sealed class GekkoSwinging
         _joint = _transform.gameObject.AddComponent<SpringJoint>();
         _joint.autoConfigureConnectedAnchor = false;
         _joint.connectedAnchor = _grapplePoint;
-        //Optiomizar con el sqrmagnitude
+        // Optimize with sqrMagnitude
         float distanceFromPoint = Vector3.Distance(_transform.position, _grapplePoint);
-        _joint.maxDistance = distanceFromPoint * 0.8f; //Consultar motivo del valor
-        _joint.minDistance = distanceFromPoint * 0.25f; //Consultar motivo del valor
-        _joint.spring = 4.5f; //Consultar motivo del valor
-        _joint.damper = 7f; //Consultar motivo del valor
-        _joint.massScale = 4.5f; //Consultar motivo del valor
+        _joint.maxDistance = distanceFromPoint * 0.8f; // Check the reason for this value
+        _joint.minDistance = distanceFromPoint * 0.25f; // Check the reason for this value
+        _joint.spring = 4.5f; // Check the reason for this value
+        _joint.damper = 7f; // Check the reason for this value
+        _joint.massScale = 4.5f; // Check the reason for this value
         BeginTongue();
 
-        // Gekko lanza la lengua hacia el gancho: suena al salir (SoundNames.PlayerSwingTongue). Va en StartSwing y no en BeginTongue
-        // porque BeginTongue lo comparten el swing y el grapple, y el grapple tiene su propio sonido (ver GekkoGrapple.TryStart).
-        // El enganche, en cambio, recién suena cuando la punta llega al gancho (ver CheckSwingAttachArrival): acá solo se lo rearma.
+        // Gekko throws the tongue towards the hook: it plays on the way out (SoundNames.PlayerSwingTongue). It goes in StartSwing and not in BeginTongue
+        // because BeginTongue is shared by the swing and the grapple, and the grapple has its own sound (see GekkoGrapple.TryStart).
+        // The attach, on the other hand, only plays when the tip reaches the hook (see CheckSwingAttachArrival): here it is only re-armed.
         _swingAttachSoundPlayed = false;
         if(AudioManager.instance) AudioManager.instance.Play(SoundNames.PlayerSwingTongue);
     }
 
-    // Arranca el grapple hacia anchor (un GrapplePoint).
+    // Starts the grapple towards anchor (a GrapplePoint).
     private void StartGrapple(Vector3 anchor)
     {
-        // El grapple decide si puede arrancar (cooldown, parábola válida, o si corta un segundo salto en vuelo). Si dice que
-        // no, no cambió nada: ni la lengua ni el swing.
+        // The grapple decides whether it can start (cooldown, valid parabola, or whether it cuts a second jump in flight). If it says
+        // no, nothing changed: neither the tongue nor the swing.
         if(!_grappleBehaviour.TryStart(anchor)) return;
 
-        // El grapple ya tomó el control de Gekko: si estaba colgado de un swing, se lo suelta.
+        // The grapple already took control of Gekko: if it was hanging from a swing, it is released.
         if(IsSwinging) ReleaseSwing();
 
-        // La lengua sale de la boca hacia el GrapplePoint y queda dibujada hasta que termine el vuelo (ver
+        // The tongue comes out of the mouth towards the GrapplePoint and stays drawn until the flight ends (see
         // ArtificialLateUpdate).
         _grapplePoint = anchor;
         BeginTongue();
     }
 
-    // Arranque de la soga visual. Lo comparten el swing y el grapple, y cada enganche empieza de cero, sin "memoria" del
-    // anterior:
-    //  1) _currentGrapplePoint (la punta de la soga que viaja hacia el ancla) sale desde la lengua.
-    //  2) Reset(): toda la soga arranca colapsada en la lengua y quieta. Sin esto heredaría la forma y el
-    //     movimiento del enganche anterior. Después, mientras la punta viaja hacia el ancla (ver DrawTongue), la
-    //     soga se va desenrollando detrás de ella.
-    //  3) El Spring recibe su empujón inicial: es lo que dispara el latigazo.
-    // Hay que haber fijado _grapplePoint antes de llamarlo.
+    // Start of the visual rope. The swing and the grapple share it, and each attach starts from scratch, with no "memory" of the
+    // previous one:
+    //  1) _currentGrapplePoint (the tip of the rope that travels towards the anchor) leaves from the tongue.
+    //  2) Reset(): the whole rope starts collapsed at the tongue and still. Without this it would inherit the shape and
+    //     movement of the previous attach. Then, while the tip travels towards the anchor (see DrawTongue), the
+    //     rope unrolls behind it.
+    //  3) The Spring gets its initial kick: that is what fires the whip.
+    // _grapplePoint must have been set before calling it.
     private void BeginTongue()
     {
         _currentGrapplePoint = _tongueTip.position;
         _rope.Reset(_currentGrapplePoint);
         _spring.SetVelocity(_springVelocity);
 
-        // El LineRenderer necesita tener un punto por cada punto de la soga (hilos + 1) antes de recibir posiciones.
+        // The LineRenderer needs to have one point per rope point (segments + 1) before receiving positions.
         _lineRenderer.positionCount = _quality + 1;
 
-        // Se dibuja ya la pose inicial (sin avanzar la simulación) para que el primer frame se vea bien, aunque este
-        // método corra antes o después de ArtificialLateUpdate.
+        // The initial pose is drawn right now (without advancing the simulation) so the first frame looks right, whether this
+        // method runs before or after ArtificialLateUpdate.
         UpdateLineRenderer();
     }
 
@@ -231,37 +231,37 @@ public sealed class GekkoSwinging
     {
         _grappleBehaviour.ArtificialUpdate();
 
-        // Qué hay delante de la cámara (swing, grapple o nada) y el indicador sobre el ancla.
+        // What is in front of the camera (swing, grapple or nothing) and the indicator over the anchor.
         _detection.ArtificialUpdate();
 
-        // Sin joint no hay swing. Durante el grapple tampoco hay joint, así que el empuje (ODM) no corre: igual que en el
-        // repo, donde MovePlayer corta con activeGrapple.
+        // Without a joint there is no swing. During the grapple there is no joint either, so the thrust (ODM) doesn't run: just like in the
+        // repo, where MovePlayer cuts out with activeGrapple.
         if(!_joint) return;
 
         ODMGearMovement();
     }
 
-    // Lo llama Player.LateUpdate() una vez por frame. La soga se simula y se dibuja acá y no en ArtificialUpdate porque:
-    //  1) LateUpdate corre cuando todo ya se movió en este frame (el Rigidbody interpolado, las animaciones). Así se
-    //     lee la posición FINAL de la lengua. Si se leyera antes, la punta de la soga iría un frame atrasada respecto
-    //     de la boca y se vería temblar.
-    //  2) Es lo último que pasa antes de dibujar la pantalla, así que se muestra exactamente lo que se acaba de simular.
+    // Called by Player.LateUpdate() once per frame. The rope is simulated and drawn here and not in ArtificialUpdate because:
+    //  1) LateUpdate runs when everything has already moved this frame (the interpolated Rigidbody, the animations). That way the
+    //     tongue's FINAL position is read. If it were read earlier, the rope's tip would be a frame behind the mouth
+    //     and would look like it was shaking.
+    //  2) It is the last thing that happens before the screen is drawn, so exactly what was just simulated is shown.
     public void ArtificialLateUpdate()
     {
-        // La lengua se dibuja mientras haya swing O grapple con la lengua afuera. Durante el grapple no hay joint (el grapple
-        // no lo usa), pero la soga sigue yendo de la boca al ancla hasta que termina el vuelo. El segundo salto la suelta
-        // (IsTongueOut), aunque siga habiendo vuelo. Sin ninguno de los dos no hay soga.
+        // The tongue is drawn whenever there is a swing OR a grapple with the tongue out. During the grapple there is no joint (the grapple
+        // doesn't use one), but the rope keeps going from the mouth to the anchor until the flight ends. The second jump releases it
+        // (IsTongueOut), even if there is still flight. With neither of the two there is no rope.
         if(!IsSwinging && !(_grappleBehaviour != null && _grappleBehaviour.IsTongueOut)) return;
 
         DrawTongue();
 
-        // Después de dibujar: usa la punta de la lengua de este mismo frame.
+        // After drawing: it uses this same frame's tongue tip.
         CheckSwingAttachArrival();
     }
 
-    // Suena el enganche una sola vez por swing, cuando la punta de la lengua (la del LineRenderer: _currentGrapplePoint) llega al
-    // gancho. Solo en el swing: la lengua del grapple no tiene sonido de llegada. Si el swing se corta antes de que la punta llegue
-    // (se suelta el botón o hay un choque), IsSwinging pasa a false y no suena.
+    // The attach sound plays only once per swing, when the tongue's tip (the LineRenderer's: _currentGrapplePoint) reaches the
+    // hook. Only in the swing: the grapple's tongue has no arrival sound. If the swing is cut before the tip arrives
+    // (the button is released or there is a collision), IsSwinging becomes false and it doesn't play.
     private void CheckSwingAttachArrival()
     {
         if(!IsSwinging || _swingAttachSoundPlayed) return;
@@ -274,11 +274,11 @@ public sealed class GekkoSwinging
 
     public void ArtificialFixedUpdate()
     {
-        // Antes del guard del joint: la espera del grapple (Gekko clavado en el aire) necesita FixedUpdate y no hay joint.
+        // Before the joint guard: the grapple's wait (Gekko pinned in the air) needs FixedUpdate and there is no joint.
         _grappleBehaviour.ArtificialFixedUpdate();
 
-        // Antes del guard del joint: durante el grapple no hay joint y Gekko igual tiene que girar hacia el punto.
-        // RotateGekkoWhileSwingin se protege sola: solo gira con swing o con grapple.
+        // Before the joint guard: during the grapple there is no joint and Gekko still has to turn towards the point.
+        // RotateGekkoWhileSwingin protects itself: it only turns with a swing or a grapple.
         _gekkoRotation.ArtificialFixedUpdate();
 
         if(!_joint) return;
@@ -286,13 +286,13 @@ public sealed class GekkoSwinging
         ApplyHeightLimit();
     }
 
-    // Techo blando del swing: Gekko no puede subir más arriba del punto de enganche (+ _heightLimitOffset). Si se pasa,
-    // se lo tira hacia abajo como un resorte. Solo actúa sobre el eje Y, así que el swing horizontal sigue igual.
-    // Va en FixedUpdate porque es física real sobre el Rigidbody (a diferencia de ODMGearMovement, que corre en Update).
-    //  - Resorte: tira más fuerte cuanto más se pasó del techo.
-    //  - Amortiguador: frena la velocidad de SUBIDA. Solo la de subida, para no frenar también la vuelta hacia abajo.
-    //  - Tope: la aceleración total no pasa de _heightLimitMaxPull. Sin tope, si Gekko engancha un punto que está muy
-    //    por debajo de él, el resorte lo tiraría con una fuerza enorme de golpe.
+    // Soft ceiling of the swing: Gekko can't rise above the attach point (+ _heightLimitOffset). If it goes past it,
+    // it is pulled down like a spring. It only acts on the Y axis, so the horizontal swing stays the same.
+    // It goes in FixedUpdate because it is real physics on the Rigidbody (unlike ODMGearMovement, which runs in Update).
+    //  - Spring: pulls harder the further past the ceiling it went.
+    //  - Damper: slows the UPWARD velocity. Only the upward one, so the way back down isn't slowed too.
+    //  - Cap: the total acceleration doesn't exceed _heightLimitMaxPull. Without a cap, if Gekko attaches to a point that is far
+    //    below it, the spring would pull it with an enormous force all at once.
     private void ApplyHeightLimit()
     {
         float overshoot = _rb.position.y - (_grapplePoint.y + _heightLimitOffset);
@@ -301,62 +301,62 @@ public sealed class GekkoSwinging
         float upwardSpeed = Mathf.Max(0f, _rb.linearVelocity.y);
         float pull = Mathf.Min(_heightLimitSpring * overshoot + _heightLimitDamper * upwardSpeed, _heightLimitMaxPull);
 
-        // ForceMode.Acceleration: los valores están en m/s² y no dependen de la masa del Rigidbody.
+        // ForceMode.Acceleration: the values are in m/s² and don't depend on the Rigidbody's mass.
         _rb.AddForce(Vector3.down * pull, ForceMode.Acceleration);
     }
 
-    // Un frame de la lengua. Son 5 pasos, siempre en este orden:
-    //   1) avanza el latigazo   2) se ubican las dos puntas   3) se calcula el largo de la soga
-    //   4) avanza la simulación   5) se dibuja
+    // One frame of the tongue. There are 5 steps, always in this order:
+    //   1) the whip advances   2) the two ends are placed   3) the rope's length is computed
+    //   4) the simulation advances   5) it is drawn
     private void DrawTongue()
     {
         float deltaTime = Time.deltaTime;
 
-        // PASO 1 - El latigazo avanza un poquito: el Spring va perdiendo fuerza y la onda se achica hasta desaparecer.
-        // (BeginTongue le dio el empujón inicial con SetVelocity.)
+        // STEP 1 - The whip advances a little: the Spring loses strength and the wave shrinks until it disappears.
+        // (BeginTongue gave it the initial kick with SetVelocity.)
         _spring.Update(deltaTime);
 
-        // PASO 2 - ¿Dónde están las dos puntas de la soga?
-        //  - La boca: la posición real de la lengua de Gekko en este frame. Se mueve con él, incluso cuando se balancea.
-        //  - El ancla: no salta de golpe al objetivo. _currentGrapplePoint arranca en la lengua y se acerca a
-        //    _grapplePoint (el punto de enganche real) un poco en cada frame (Lerp, unas 8 veces por segundo). Da el
-        //    efecto de lengua "disparada", y la soga se va desenrollando detrás.
+        // STEP 2 - Where are the rope's two ends?
+        //  - The mouth: Gekko's tongue's real position this frame. It moves with Gekko, even while swinging.
+        //  - The anchor: it doesn't jump straight to the target. _currentGrapplePoint starts at the tongue and approaches
+        //    _grapplePoint (the real attach point) a bit each frame (Lerp, about 8 times per second). It gives the
+        //    effect of a "fired" tongue, and the rope unrolls behind it.
         Vector3 tongueTipPos = _tongueTip.position;
         _currentGrapplePoint = Vector3.Lerp(_currentGrapplePoint, _grapplePoint, deltaTime * 8f);
 
-        // PASO 3 - ¿Cuánto mide la soga? La distancia entre sus puntas más un sobrante (_ropeSlack), que puede ser negativo.
-        //  - Positivo: la soga cuelga y se abomba. Ejemplo: puntas a 5 m y slack 0.05 -> la soga mide 5.25 m.
-        //  - Negativo: la soga está pre-tensada. Ejemplo: puntas a 5 m y slack -0.02 -> mide 4.9 m, más corta que el hueco,
-        //    así que queda estirada y recta, con la misma tensión en todos los hilos. Se usa un valor chico (-0.02).
-        //  - NO se usa _joint.maxDistance: el joint se configura en 0.8 x la distancia inicial, o sea un 20% MÁS CORTO que
-        //    el hueco real entre las puntas. Una soga estirada tanto quedaría como una barra.
-        //  - Como sigue a la distancia actual, acortar o alargar el cable (ODMGearMovement) no necesita ningún caso
-        //    especial: la soga se acomoda sola.
+        // STEP 3 - How long is the rope? The distance between its ends plus extra length (_ropeSlack), which can be negative.
+        //  - Positive: the rope hangs and bulges. Example: ends 5 m apart and slack 0.05 -> the rope is 5.25 m long.
+        //  - Negative: the rope is pre-tensioned. Example: ends 5 m apart and slack -0.02 -> it is 4.9 m long, shorter than the gap,
+        //    so it ends up stretched and straight, with the same tension in all segments. A small value is used (-0.02).
+        //  - _joint.maxDistance is NOT used: the joint is configured at 0.8 x the initial distance, that is, 20% SHORTER than
+        //    the real gap between the ends. A rope stretched that much would look like a bar.
+        //  - Since it follows the current distance, shortening or lengthening the cable (ODMGearMovement) needs no special
+        //    case: the rope adjusts itself.
         float visibleDistance = Vector3.Distance(tongueTipPos, _currentGrapplePoint);
         float restLength = visibleDistance * (1f + _ropeSlack);
 
-        // PASO 4 - La simulación avanza: los puntos de en medio se mueven por inercia y gravedad, y los hilos
-        // conservan su largo (el detalle está explicado arriba de RopeSimulation).
+        // STEP 4 - The simulation advances: the points in between move by inertia and gravity, and the segments
+        // keep their length (the details are explained above RopeSimulation).
         _rope.Simulate(deltaTime, tongueTipPos, _currentGrapplePoint, restLength);
 
-        // PASO 5 - Se dibuja: se copian los puntos al LineRenderer, enderezados según _ropeTautness y con el latigazo.
+        // STEP 5 - It is drawn: the points are copied to the LineRenderer, straightened according to _ropeTautness and with the whip.
         UpdateLineRenderer();
     }
 
-    // Copia los puntos de la soga al LineRenderer, los endereza según _ropeTautness y les suma el latigazo. No hace
-    // avanzar nada: solo dibuja el estado actual (por eso BeginTongue también lo puede usar para mostrar la pose inicial).
+    // Copies the rope's points to the LineRenderer, straightens them according to _ropeTautness and adds the whip to them. It doesn't
+    // advance anything: it only draws the current state (that is why BeginTongue can also use it to show the initial pose).
     private void UpdateLineRenderer()
     {
-        // Los puntos que calculó la simulación: el 0 es la lengua y el último es el ancla.
+        // The points the simulation computed: 0 is the tongue and the last one is the anchor.
         Vector3[] simulated = _rope.Points;
         Vector3 ropeStart = simulated[0];
         Vector3 ropeEnd = simulated[_quality];
 
-        // Hacia dónde se curva el latigazo: una dirección "arriba" que sea perpendicular a la soga. Se obtiene girando
-        // un "arriba" común para que mire a lo largo de la soga (LookRotation).
-        // La dirección de la soga se calcula con _grapplePoint (el ancla real) y NUNCA con _currentGrapplePoint: en el
-        // primer frame de cada enganche _currentGrapplePoint es igual a la lengua, la dirección daría vector cero y
-        // LookRotation(Vector3.zero) tira un warning. El if es una red de seguridad por si lengua y ancla coinciden.
+        // Which way the whip curves: an "up" direction perpendicular to the rope. It is obtained by rotating
+        // a regular "up" so that it looks along the rope (LookRotation).
+        // The rope's direction is computed with _grapplePoint (the real anchor) and NEVER with _currentGrapplePoint: on the
+        // first frame of each attach _currentGrapplePoint equals the tongue, the direction would be a zero vector and
+        // LookRotation(Vector3.zero) throws a warning. The if is a safety net in case tongue and anchor coincide.
         Vector3 ropeDir = _grapplePoint - simulated[0];
         Vector3 up = ropeDir.sqrMagnitude > 0.0001f
             ? Quaternion.LookRotation(ropeDir.normalized) * Vector3.up
@@ -364,74 +364,74 @@ public sealed class GekkoSwinging
 
         for(int i = 0; i <= _quality; i++)
         {
-            // Posición relativa del punto dentro de la soga: 0 en la lengua, 0.5 en el medio, 1 en el ancla.
+            // Relative position of the point within the rope: 0 at the tongue, 0.5 in the middle, 1 at the anchor.
             float delta = i / (float)_quality;
 
-            // El latigazo en este punto = altura * onda * fuerza actual del spring * curva de atenuación:
-            //  - onda senoidal: sube y baja _waveCount veces a lo largo de la soga.
-            //  - _spring.Value: arranca alto al enganchar y se apaga solo (por eso el latigazo desaparece).
-            //  - curva: vale 0 en las dos puntas, así la lengua y el ancla no se despegan aunque la onda esté al máximo.
+            // The whip at this point = height * wave * the spring's current strength * attenuation curve:
+            //  - sine wave: goes up and down _waveCount times along the rope.
+            //  - _spring.Value: starts high on attaching and dies out on its own (that is why the whip disappears).
+            //  - curve: it is 0 at both ends, so the tongue and the anchor don't come apart even with the wave at its maximum.
             Vector3 whip = up * _waveHeight * Mathf.Sin(delta * _waveCount * Mathf.PI) * _spring.Value * _waveAffectCurve.Evaluate(delta);
 
-            // Tensión visual: el punto simulado se acerca a su lugar sobre la recta lengua -> ancla, que es donde estaría si
-            // la soga estuviera perfectamente tensa. Con _ropeTautness en 0 queda donde lo dejó la simulación; con 1,
-            // sobre la recta. Las dos puntas ya están sobre la recta, así que no se mueven. Es solo al dibujar: la
-            // simulación sigue por su cuenta y el desvío se vuelve a calcular en cada frame, no se acumula.
+            // Visual tension: the simulated point moves towards its place on the tongue -> anchor line, which is where it would be if
+            // the rope were perfectly taut. With _ropeTautness at 0 it stays where the simulation left it; with 1, it is
+            // on the line. Both ends are already on the line, so they don't move. It is only when drawing: the
+            // simulation goes on by itself and the deviation is recomputed every frame, it doesn't accumulate.
             Vector3 shapedPoint = Vector3.Lerp(simulated[i], Vector3.Lerp(ropeStart, ropeEnd, delta), _ropeTautness);
 
-            // Punto final = punto enderezado + latigazo. El latigazo se suma recién acá, al dibujar, y NO dentro de la
-            // simulación: si entrara ahí, la soga lo trataría como movimiento real y lo arrastraría consigo. Tampoco lo
-            // endereza la tensión visual: la onda queda siempre completa. Así el latigazo sigue siendo un efecto
-            // controlable y la física aporta el movimiento natural.
+            // Final point = straightened point + whip. The whip is only added here, when drawing, and NOT inside the
+            // simulation: if it went in there, the rope would treat it as real movement and drag it along. The visual tension doesn't
+            // straighten it either: the wave always stays complete. That way the whip remains a
+            // controllable effect and the physics provides the natural movement.
             _ropePoints[i] = shapedPoint + whip;
         }
 
-        // Se entregan todos los puntos al LineRenderer de una sola vez (más barato que un SetPosition por punto).
+        // All the points are handed to the LineRenderer at once (cheaper than a SetPosition per point).
         _lineRenderer.SetPositions(_ropePoints);
     }
 
-    // Space con la ventana del segundo salto abierta (ver GekkoGrapple.TrySecondJump): salta hacia donde mira la cámara.
-    // PlayerInputs lo llama UNA vez por pulsación, no en cada frame que se mantiene apretado.
+    // Space with the second jump window open (see GekkoGrapple.TrySecondJump): it jumps towards where the camera looks.
+    // PlayerInputs calls it ONCE per press, not every frame while it is held down.
     public void TrySecondJump() => _grappleBehaviour.TrySecondJump(_camera.forward);
 
-    // Corta un grapple en curso, sin cooldown. Lo llama PlayerController.Teleport: el vuelo apunta a un ancla que con el
-    // teletransporte quedó lejos.
+    // Cuts a grapple in progress, without cooldown. Called by PlayerController.Teleport: the flight points at an anchor that
+    // ended up far away after the teleport.
     public void CancelGrapple() => _grappleBehaviour?.Cancel();
 
-    // Lo llama Player.OnCollisionEnter con cada choque sólido. Colgado del swing lo corta, como siempre. Si no, el choque
-    // le toca al grapple, que lo usa para terminar el vuelo.
+    // Called by Player.OnCollisionEnter with every solid collision. While hanging from the swing it cuts it, as always. Otherwise the collision
+    // goes to the grapple, which uses it to end the flight.
     public void ArtificialOnCollisionEnter()
     {
         if(IsSwinging) StopSwing();
         else _grappleBehaviour.ArtificialOnCollisionEnter();
     }
 
-    //Requiere muchísima optimización
-    // Corta el swing y apaga la lengua. Lo llaman PlayerInputs (al soltar el botón de la lengua), los choques y los triggers.
+    // Requires a lot of optimization
+    // Cuts the swing and turns the tongue off. Called by PlayerInputs (when the tongue button is released), collisions and triggers.
     public void StopSwing()
     {
-        // Soltar el botón de la lengua en pleno grapple no lo corta: el vuelo termina solo, al chocar, al llegar al punto
-        // o por tiempo (ver GekkoGrapple). En el repo tampoco hay nada que corte el vuelo salvo tocar algo.
+        // Releasing the tongue button in the middle of a grapple doesn't cut it: the flight ends on its own, on collision, on reaching the point
+        // or on time (see GekkoGrapple). In the repo nothing cuts the flight either except touching something.
         if(IsGrappling) return;
 
         ReleaseSwing();
         HideTongue();
     }
 
-    // Suelta el swing: sin joint, IsSwinging = false (con eso PlayerController, el techo de altura y la rotación hacia el
-    // punto dejan de tratar a Gekko como balanceándose). NO toca la lengua: durante el grapple se sigue dibujando.
+    // Releases the swing: without a joint, IsSwinging = false (with that, PlayerController, the height ceiling and the rotation towards the
+    // point stop treating Gekko as swinging). It does NOT touch the tongue: during the grapple it keeps being drawn.
     private void ReleaseSwing()
     {
         IsSwinging = false;
         Object.Destroy(_joint);
-        // Destroy es diferido (se ejecuta al final del frame): sin esta línea, ArtificialUpdate y ArtificialFixedUpdate
-        // seguirían viendo el joint "vivo" durante el resto de este frame y le seguirían aplicando empuje, techo y rotación.
+        // Destroy is deferred (it runs at the end of the frame): without this line, ArtificialUpdate and ArtificialFixedUpdate
+        // would keep seeing the joint "alive" for the rest of this frame and would keep applying thrust, ceiling and rotation to it.
         _joint = null;
     }
 
-    // Apaga la lengua: el LineRenderer queda sin puntos y el latigazo se reinicia. La soga no hace falta resetearla acá:
-    // cada enganche nuevo empieza con _rope.Reset() en BeginTongue. Es público porque GekkoGrapple la llama al terminar el
-    // vuelo (mientras dura el grapple la lengua se queda dibujada).
+    // Turns the tongue off: the LineRenderer is left with no points and the whip is reset. The rope doesn't need to be reset here:
+    // each new attach starts with _rope.Reset() in BeginTongue. It is public because GekkoGrapple calls it when the
+    // flight ends (while the grapple lasts the tongue stays drawn).
     public void HideTongue()
     {
         _lineRenderer.positionCount = 0;

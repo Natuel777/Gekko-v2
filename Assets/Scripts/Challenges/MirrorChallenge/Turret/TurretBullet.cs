@@ -9,7 +9,7 @@ public class TurretBullet : ShooteableObject, IReflectable
     private ShooteableObjectFactory _bulletFactory;
     private int _lastReflectFrame = -1;
 
-    [Header("Look purificado (al rebotar en un espejo)")]
+    [Header("Purified look (when bouncing off a mirror)")]
     [Tooltip("VFX de la bala (VFX_BulletTurret). Al rebotar pasa a usar el asset purificado.")]
     [SerializeField] private VisualEffect _vfx;
     [Tooltip("Mismo VFX con los colores turquesa de la purificación.")]
@@ -19,16 +19,16 @@ public class TurretBullet : ShooteableObject, IReflectable
     [Tooltip("Mismo material del trail con los colores turquesa de la purificación.")]
     [SerializeField] private Material _trailPurificado;
 
-    // Lo original, para volver al look corrupto cuando la pool reutiliza la bala.
+    // The originals, to go back to the corrupted look when the pool reuses the bullet.
     private VisualEffectAsset _vfxOriginal;
     private Material _trailOriginal;
 
-    // Un espejo la devolvió (ver Reflect): desde ahí es una bala purificada. No daña a Gekko y, si alcanza a una torreta, la
-    // purifica. Se apaga en OnEnable porque la pool reutiliza las balas.
+    // A mirror sent it back (see Reflect): from then on it is a purified bullet. It doesn't damage Gekko and, if it reaches a turret,
+    // it purifies it. Turned off in OnEnable because the pool reuses bullets.
     private bool _reflected;
 
-    // La bala es un trigger que se mueve por transform: sin un Rigidbody de por medio Unity no avisa (OnTriggerEnter) cuando
-    // toca un collider estático, como el de un espejo. Cinemático y sin gravedad: no se mueve por física, solo habilita los eventos.
+    // The bullet is a trigger that moves by transform: without a Rigidbody around, Unity doesn't notify (OnTriggerEnter) when it
+    // touches a static collider, like a mirror's. Kinematic and without gravity: it isn't moved by physics, it only enables the events.
     private void Awake()
     {
         if(!TryGetComponent(out Rigidbody rb)) rb = gameObject.AddComponent<Rigidbody>();
@@ -53,23 +53,27 @@ public class TurretBullet : ShooteableObject, IReflectable
         FaceDirection();
     }
 
-    // Invierte la dirección por completo (no es un rebote contra la normal). Si dos colliders del mismo espejo avisan en el
-    // mismo frame solo cuenta una vez: invertir dos veces la dejaría como estaba.
-    public void Reflect()
+    // Mirror without a bounce point: sends it back the way it came, fully inverting the direction (it is not a bounce off the normal).
+    public void Reflect() => ReflectTowards(-_direction);
+
+    // Mirror with a bounce point: it goes towards direction (unit, non-zero; see Mirror). From here on it is a purified bullet.
+    // If two colliders of the same mirror notify in the same frame it only counts once: with Reflect(), inverting twice would leave it
+    // as it was.
+    public void ReflectTowards(Vector3 direction)
     {
         if(_lastReflectFrame == Time.frameCount) return;
 
         _lastReflectFrame = Time.frameCount;
-        _direction = -_direction;
+        _direction = direction.normalized;
         _reflected = true;
 
-        // Ahora vuela para el otro lado: el humo tiene que quedar atrás y la flecha de punta hacia donde va.
+        // Now it flies another way: the smoke must stay behind and the arrow must point towards where it is going.
         FaceDirection();
         AplicarLook(true);
     }
 
-    // Look corrupto (violeta) o purificado (turquesa). Cambiar el asset del VFX lo reinicia: el humo viejo desaparece y
-    // arranca el turquesa desde el punto del rebote. El trail cambia de color entero, también lo ya dibujado.
+    // Corrupted (violet) or purified (turquoise) look. Changing the VFX asset restarts it: the old smoke disappears and the
+    // turquoise one starts from the bounce point. The trail changes color entirely, including what was already drawn.
     private void AplicarLook(bool purificada)
     {
         if(_vfx != null && _vfxOriginal != null && _vfxPurificada != null)
@@ -82,14 +86,14 @@ public class TurretBullet : ShooteableObject, IReflectable
         {
             _trail.sharedMaterial = purificada ? _trailPurificado : _trailOriginal;
 
-            // Reutilizada por la pool: sin esto dibujaría un trail desde donde murió la vez anterior.
+            // Reused by the pool: without this it would draw a trail from where it died last time.
             if(!purificada) _trail.Clear();
         }
     }
 
-    // La bala mira hacia donde vuela. El VFX se orienta con el transform (la flecha va a lo largo de su eje Z y el humo sale por -Z),
-    // así que sin esto la bala nace con la rotación de la torreta, que no gira hacia Gekko, y no apunta hacia donde va. Con una
-    // dirección nula no se toca la rotación (LookRotation avisa con un warning).
+    // The bullet looks where it flies. The VFX is oriented with the transform (the arrow runs along its Z axis and the smoke comes out of -Z),
+    // so without this the bullet is born with the turret's rotation, which doesn't turn towards Gekko, and doesn't point where it is going. With a
+    // null direction the rotation is left alone (LookRotation warns about it).
     private void FaceDirection()
     {
         if(_direction.sqrMagnitude < 0.0001f) return;
@@ -104,15 +108,15 @@ public class TurretBullet : ShooteableObject, IReflectable
 
         if(_currentLifetime <= 0 && TryResolveBulletFactory())
         {
-            //Llamar a PSFactory para hit effect
+            // Call PSFactory for the hit effect
             _bulletFactory.ReturnBullet(this);
         }
     }
 
     private void OnTriggerEnter(Collider other)
     {
-        // Devuelta por un espejo: ya está purificada, así que no daña a Gekko. Si alcanza a una torreta (el collider puede estar
-        // en un hijo), la purifica y la bala vuelve a la pool. Cualquier otra cosa se ignora.
+        // Sent back by a mirror: it is already purified, so it doesn't damage Gekko. If it reaches a turret (the collider may be
+        // in a child), it purifies it and the bullet goes back to the pool. Anything else is ignored.
         if(_reflected)
         {
             ChallengeTurret turret = other.GetComponentInParent<ChallengeTurret>();
@@ -126,7 +130,7 @@ public class TurretBullet : ShooteableObject, IReflectable
 
         if(other.TryGetComponent(out Player player))
         {
-            Debug.Log("La yuta, la yuta...");
+            Debug.Log("The cops, the cops...");
             EventManager.Trigger<float>("OnPlayerDamaged", data.damage);
 
             //if(_hitEffect != null) _hitEffect.Play();
@@ -135,7 +139,7 @@ public class TurretBullet : ShooteableObject, IReflectable
         }
     }
 
-    // _bulletFactory recién se resuelve en Update cuando se acaba la vida: si pega antes, todavía es null.
+    // _bulletFactory is only resolved in Update when its life runs out: if it hits before that, it is still null.
     private void ReturnToPool()
     {
         if(TryResolveBulletFactory()) _bulletFactory.ReturnBullet(this);

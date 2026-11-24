@@ -45,7 +45,7 @@ public class CarnivorousPlantDataSO : ScriptableObject
     [Min(0f)]
     public float damagedMaterialSeconds = 0.5f;
 
-    [Header("Purificación pintada (golpe a golpe)")]
+    [Header("Painted purification (hit by hit)")]
     [Tooltip("Cada golpe que cuenta pinta la planta de abajo hacia arriba con el material purificado (1/3 por golpe con 3 golpes), con el mismo shader que las torretas. El golpe final termina de pintarla, hace un destello y deja Purified Material. Reemplaza al material de daño (Damaged Material).")]
     public bool paintOnHit = false;
     [Tooltip("Shader Gekko/Purification/Paint Transition.")]
@@ -78,7 +78,7 @@ public class CarnivorousPlantDataSO : ScriptableObject
     [Min(0f)]
     public float paintFinalSlowMoSeconds = 0.5f;
 
-    [Header("Sonido de golpe")]
+    [Header("Hit sound")]
     [Tooltip("Cuánto sube el tono del sonido de golpe con cada golpe (0.15 = +15% por golpe). 0 = siempre igual.")]
     [Min(0f)]
     public float hurtPitchStep = 0f;

@@ -4,9 +4,9 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
-// Feedback de golpe: hitstop, destello en viñeta, empujón, temblor de cámara e
-// invulnerabilidad con parpadeo. Vive en el Player (necesita su Rigidbody y un
-// CinemachineImpulseSource propio). Todo lo que anima usa tiempo sin escala.
+// Hit feedback: hitstop, vignette flash, knockback, camera shake and
+// invulnerability with blinking. It lives on the Player (it needs its Rigidbody and its own
+// CinemachineImpulseSource). Everything it animates uses unscaled time.
 public class DamageFeedback : MonoBehaviour
 {
     public static DamageFeedback Instance { get; private set; }
@@ -14,7 +14,7 @@ public class DamageFeedback : MonoBehaviour
     [Header("Hitstop")]
     [SerializeField] private float _hitstopDurationMs = 80f;
 
-    [Header("Viñeta de daño")]
+    [Header("Damage vignette")]
     [SerializeField] private Image _vignetteImage;
     [SerializeField] private Color _damageColor = new Color(0.667f, 0.196f, 0.941f, 0.85f); // #AA32F0
     [SerializeField] private Color _alternateColor = new Color(0.909f, 0.204f, 0.247f, 0.85f); // #E8343F
@@ -23,22 +23,22 @@ public class DamageFeedback : MonoBehaviour
     [SerializeField, Range(0f, 1f)] private float _vignetteRadius = 0.55f;
     [SerializeField, Range(0.01f, 1f)] private float _vignetteSoftness = 0.35f;
 
-    [Header("Viñeta de vida crítica (1 de vida)")]
+    [Header("Critical health vignette (1 life left)")]
     [SerializeField] private Color _lowHealthColor = new Color(0.667f, 0.196f, 0.941f, 0.85f);
     [SerializeField] private float _lowHealthMinIntensity = 0.35f;
     [SerializeField] private float _lowHealthMaxIntensity = 0.85f;
     [SerializeField] private float _lowHealthCycleDuration = 1.2f;
 
-    [Header("Empujón")]
+    [Header("Knockback")]
     [SerializeField] private float _knockbackDistance = 0.7f;
     [SerializeField] private float _knockbackDuration = 0.25f;
 
-    [Header("Temblor de cámara (Cinemachine Impulse)")]
+    [Header("Camera shake (Cinemachine Impulse)")]
     [SerializeField] private CinemachineImpulseSource _impulseSource;
     [SerializeField] private float _shakeAmplitude = 0.15f;
     [SerializeField] private float _shakeDuration = 0.36f;
 
-    [Header("Invulnerabilidad")]
+    [Header("Invulnerability")]
     [SerializeField] private float _invulnerabilityDuration = 1f;
     [SerializeField] private float _blinkInterval = 0.12f;
     [SerializeField] private Renderer[] _renderersToBlink;
@@ -90,12 +90,12 @@ public class DamageFeedback : MonoBehaviour
 #endif
     }
 
-    [ContextMenu("Debug/Probar golpe")]
+    [ContextMenu("Debug/Test hit")]
     private void DebugTriggerHit() => TriggerHit();
 
-    // Empujón pedido por la fuente del golpe (ej. LittleBarricade) antes de mandar "OnPlayerDamaged", que solo
-    // lleva el monto. Vale solo para el golpe de este mismo frame: si el daño no llega (invulnerable, respawn),
-    // no queda colgado para el próximo.
+    // Knockback requested by the hit's source (e.g. LittleBarricade) before sending "OnPlayerDamaged", which only
+    // carries the amount. It only applies to this same frame's hit: if the damage doesn't arrive (invulnerable, respawn),
+    // it doesn't stay hanging for the next one.
     private Vector3 _pendingDirection;
     private float _pendingDistance;
     private int _pendingFrame = -1;
@@ -107,8 +107,8 @@ public class DamageFeedback : MonoBehaviour
         _pendingFrame = Time.frameCount;
     }
 
-    // Sin dirección conocida (la mayoría de las fuentes de daño actuales solo mandan
-    // el monto, no de dónde vino el golpe): empuja hacia atrás según hacia dónde mira Gekko.
+    // No known direction (most current damage sources only send
+    // the amount, not where the hit came from): it pushes backwards according to where Gekko is facing.
     public void TriggerHit()
     {
         if(_pendingFrame == Time.frameCount)
@@ -135,7 +135,7 @@ public class DamageFeedback : MonoBehaviour
     #region Hitstop
     private IEnumerator HitstopRoutine()
     {
-        if(_hitstopActive) yield break; // no acumular si llegan dos golpes juntos
+        if(_hitstopActive) yield break; // don't stack if two hits arrive together
         _hitstopActive = true;
 
         float previousScale = Time.timeScale;
@@ -143,9 +143,9 @@ public class DamageFeedback : MonoBehaviour
 
         yield return new WaitForSecondsRealtime(_hitstopDurationMs / 1000f);
 
-        // Si el jugador pausó durante el hitstop, no restaurar el timeScale: el hitstop usa tiempo real y
-        // termina igual aunque el menú de pausa esté abierto. Restaurarlo acá reanudaría físicas/animaciones
-        // (enredaderas, barricadas, etc.) por detrás del menú; que lo restaure GameManager al despausar.
+        // If the player paused during the hitstop, don't restore timeScale: the hitstop uses real time and
+        // ends anyway even with the pause menu open. Restoring it here would resume physics/animations
+        // (vines, barricades, etc.) behind the menu; GameManager restores it when unpausing.
         bool isPaused = GameManager.Instance != null && GameManager.Instance.CanPause;
         if(!isPaused)
             Time.timeScale = previousScale > 0f ? previousScale : 1f;
@@ -164,7 +164,7 @@ public class DamageFeedback : MonoBehaviour
         _flashTimer = 0f;
     }
 
-    // Mismo destello de viñeta que el daño pero con otro color (ej. dorado al curarse con una frutilla).
+    // Same vignette flash as damage but with another color (e.g. golden when healing with a strawberry).
     public void FlashVignette(Color color)
     {
         if(_vignetteMaterial == null) return;
@@ -216,10 +216,10 @@ public class DamageFeedback : MonoBehaviour
     #endregion
 
     #region Empujón
-    // El golpe NO bloquea el input: antes se desactivaban los controles durante el empujón y, al reactivarlos, una
-    // tecla de movimiento que se seguía manteniendo no volvía a leerse (el Input System solo avisa cuando cambia), así
-    // que Gekko quedaba quieto hasta soltar y volver a apretar. Ahora el empujón solo se aplica en los frames en que el
-    // jugador no se está moviendo; si mantiene una dirección, conserva el control total.
+    // The hit does NOT block input: controls used to be disabled during the knockback and, when re-enabled, a
+    // movement key that was still held wasn't read again (the Input System only notifies on change), so
+    // Gekko stayed still until releasing and pressing again. Now the knockback is only applied on the frames in which the
+    // player isn't moving; if the player holds a direction, they keep full control.
     private IEnumerator KnockbackRoutine(Vector3 fromDirection, float knockbackDistance)
     {
         if(_player == null || _player.PjController == null) yield break;
@@ -237,7 +237,7 @@ public class DamageFeedback : MonoBehaviour
             bool playerMoving = _player.PjController.RawInput.sqrMagnitude > 0.01f;
             if(!playerMoving)
             {
-                // Derivada de una posición ease-out cúbica: arranca rápido, frena hasta 0.
+                // Derivative of a cubic ease-out position: it starts fast, slows down to 0.
                 float speed = (3f * knockbackDistance / _knockbackDuration) * (1f - u) * (1f - u);
                 _player.PjController.ApplyKnockbackVelocity(dir * speed);
             }

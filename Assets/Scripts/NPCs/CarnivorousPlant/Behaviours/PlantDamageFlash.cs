@@ -1,20 +1,20 @@
 using UnityEngine;
 
-// Parpadeo de daño de la planta: cuando Gekko la daña (golpe que cuenta, sin purificarla), todos sus SkinnedMeshRenderer pasan al
-// material "herido" (DamagedPlant.mat: el mismo de la planta pero teñido de rojo) durante unos segundos, y después vuelven a los
-// materiales que tenían.
+// Plant damage flash: when Gekko damages it (a hit that counts, without purifying it), all of its SkinnedMeshRenderers switch to the
+// "hurt" material (DamagedPlant.mat: the plant's own material tinted red) for a few seconds, and then go back to the
+// materials they had.
 //
-// Clase plana: la maneja CarnivorousPlant con Play() y ArtificialLateUpdate(). El plazo se mira con Time.time en LateUpdate y no
-// con una corrutina ni en Update: la planta frena su Update mientras está aturdida por el golpe (justo cuando corre este efecto)
-// y una corrutina muere si se apaga el GameObject. Así, si el efecto se interrumpe, el material se restaura en el primer
-// LateUpdate que corra después de vencido el plazo.
+// Plain class: CarnivorousPlant drives it with Play() and ArtificialLateUpdate(). The deadline is checked with Time.time in LateUpdate and not
+// with a coroutine or in Update: the plant stops its Update while it is stunned by the hit (exactly when this effect runs)
+// and a coroutine dies if the GameObject is turned off. That way, if the effect is interrupted, the material is restored in the first
+// LateUpdate that runs after the deadline has passed.
 public class PlantDamageFlash
 {
     private readonly SkinnedMeshRenderer[] _renderers;
     private readonly Material _damagedMaterial;
     private readonly float _duration;
 
-    // Materiales de cada renderer antes del parpadeo (mismo índice que _renderers).
+    // Materials of each renderer before the flash (same index as _renderers).
     private readonly Material[][] _originals;
     private bool _active;
     private float _endTime;
@@ -33,8 +33,8 @@ public class PlantDamageFlash
     {
         if(_renderers == null || _damagedMaterial == null || _duration <= 0f) return;
 
-        // Otro golpe con el parpadeo en curso solo reinicia el plazo. Los originales ya están guardados y no se vuelven a leer:
-        // a esta altura los renderers tienen puesto el material herido.
+        // Another hit while the flash is running only restarts the deadline. The originals are already saved and are not read again:
+        // by this point the renderers have the hurt material on.
         if(!_active)
         {
             for(int i = 0; i < _renderers.Length; i++)
@@ -65,7 +65,7 @@ public class PlantDamageFlash
         if(_active && Time.time >= _endTime) Restore();
     }
 
-    // Corta el parpadeo ya y devuelve los materiales originales (lo usa la purificación, que pone su propio material después).
+    // Cuts the flash right now and gives back the original materials (used by purification, which sets its own material afterwards).
     public void Cancel()
     {
         if(_active) Restore();

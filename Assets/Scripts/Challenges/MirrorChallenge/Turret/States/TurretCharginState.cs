@@ -16,13 +16,13 @@ public class TurretCharginState : IState
 
     public void Exit()
     {
-        // Si la carga ya terminó no hace nada; si se sale antes (la purificaron en plena carga) la corta y deja el cristal como estaba.
+        // If charging has already finished it does nothing; if it exits early (purified mid-charge) it cuts the animation and leaves the crystal as it was.
         _parent.view.StopCharge();
     }
 
     public void Update()
     {
-        // Cuando la animación de carga terminó, la torreta vuelve a disparar. Sin animación asignada la carga dura 0 s.
+        // When the charge animation has finished, the turret goes back to shooting. With no animation assigned, charging takes 0 s.
         if(!_parent.view.IsCharging) _parent.SendEvent(CreatureEvent.ChallengeTurretCharged);
     }
 
@@ -31,8 +31,8 @@ public class TurretCharginState : IState
         if(evt == CreatureEvent.ChallengeTurretCharged)
             _parent.SetState(_parent.activeState);
 
-        // La bala que le devuelve el espejo puede llegar justo mientras carga (las últimas balas de la ráfaga todavía vuelan).
-        // Sin esto el evento se perdía, la torreta terminaba de cargar y volvía a disparar estando purificada.
+        // The bullet the mirror sends back can arrive right while it is charging (the last bullets of the burst are still flying).
+        // Without this the event was lost: the turret finished charging and went back to shooting while already purified.
         if(evt == CreatureEvent.ChallengeTurretPurified)
             _parent.SetState(_parent.purifiedState);
     }

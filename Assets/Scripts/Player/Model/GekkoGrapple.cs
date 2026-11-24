@@ -4,23 +4,23 @@ public sealed class GekkoGrapple
 {
     private enum Phase { Idle, Freezing, Flying }
 
-    // Metros que se toman por debajo de Gekko como "punto más bajo" para calcular la altura del arco (el "- 1" del repo,
-    // que está pensado para un jugador de ~2 m). Se escala con el tamaño de Gekko, igual que _overshootYAxis.
+    // Meters taken below Gekko as the "lowest point" to compute the arc's height (the repo's "- 1",
+    // which is meant for a ~2 m player). It is scaled with Gekko's size, just like _overshootYAxis.
     private const float LowestPointOffset = 1f;
 
-    // Segundos de más, sobre el tiempo de vuelo calculado, que se espera antes de cortar el vuelo si no chocó con nada.
-    // El vuelo normal termina antes, al chocar (ver ArtificialOnCollisionEnter) o al llegar al punto (ver
-    // ReachedGrapplePoint): esto es solo la red de seguridad que en el repo es el ResetRestrictions a los 3 s, pero
-    // ajustada al vuelo real en vez de un valor fijo.
+    // Extra seconds, on top of the computed flight time, to wait before cutting the flight if it didn't hit anything.
+    // The normal flight ends earlier, on collision (see ArtificialOnCollisionEnter) or on reaching the point (see
+    // ReachedGrapplePoint): this is just the safety net that in the repo is the ResetRestrictions at 3 s, but
+    // adjusted to the real flight instead of a fixed value.
     private const float FlightTimeMargin = 0.5f;
 
-    // Layer SwingAttach, la de los ganchos de swing (Gancho.prefab). No es un peligro, así que GekkoCollision no lo trata como
-    // tal (no corta el swing).
+    // SwingAttach layer, the one for swing hooks (Gancho.prefab). It is not a hazard, so GekkoCollision doesn't treat it as
+    // one (it doesn't cut the swing).
     public const int SwingAttachLayer = 16;
 
-    // Layer GrapplePoint, la de los ganchos de grapple (GrapplePoint.prefab). El click derecho apuntando a uno arranca el
-    // grapple (ver GekkoDetection). Su trigger abre la ventana del segundo salto; tampoco es un peligro, así que
-    // GekkoCollision no corta el swing con él.
+    // GrapplePoint layer, the one for grapple hooks (GrapplePoint.prefab). Right-clicking while aiming at one starts the
+    // grapple (see GekkoDetection). Its trigger opens the second jump window; it is not a hazard either, so
+    // GekkoCollision doesn't cut the swing with it.
     public const int GrapplePointLayer = 18;
 
     private readonly GekkoSwinging _swinging;
@@ -34,21 +34,21 @@ public sealed class GekkoGrapple
     private Vector3 _grapplePoint;
     private bool _secondJumpEnabled = false;
 
-    // Segundo salto (ver TrySecondJump). _secondJumpActive es true mientras el vuelo en curso es uno de esos saltos.
-    // _grappleDistance es lo que midió el último grapple (de donde arrancó al gancho): la base del alcance del salto.
+    // Second jump (see TrySecondJump). _secondJumpActive is true while the current flight is one of those jumps.
+    // _grappleDistance is what the last grapple measured (from where it started to the hook): the base of the jump's reach.
     private bool _secondJumpActive;
     private float _grappleDistance;
 
-    // true desde que arranca la espera hasta que termina el vuelo.
+    // true from when the wait starts until the flight ends.
     public bool IsGrappling => _phase != Phase.Idle;
     public bool SecondJumpEnabled => _secondJumpEnabled;
 
-    // La lengua está enganchada al gancho: durante la espera y el vuelo del grapple. El segundo salto la suelta, aunque
-    // siga habiendo vuelo (IsGrappling). GekkoSwinging lo usa para saber si tiene que dibujarla.
+    // The tongue is attached to the hook: during the grapple's wait and flight. The second jump releases it, even if there is
+    // still flight (IsGrappling). GekkoSwinging uses it to know whether it has to draw it.
     public bool IsTongueOut => _phase != Phase.Idle && !_secondJumpActive;
 
-    // El vuelo en curso es el de un segundo salto. A diferencia del grapple, a este vuelo se lo puede interrumpir enganchando
-    // un swing (ver EndSecondJump) o un grapple nuevo (ver TryStart): ya no hay lengua ni punto que alcanzar.
+    // The current flight is a second jump's. Unlike the grapple, this flight can be interrupted by attaching to
+    // a swing (see EndSecondJump) or a new grapple (see TryStart): there is no tongue or point to reach anymore.
     public bool IsSecondJumpFlying => _phase == Phase.Flying && _secondJumpActive;
 
     public GekkoGrapple(GekkoSwinging swinging, Rigidbody rb, Transform t, float overshootYAxis, float grapplingCD, float delayTime,
@@ -66,16 +66,16 @@ public sealed class GekkoGrapple
         _secondJumpMultiplier = Mathf.Max(0f, secondJumpMultiplier);
     }
 
-    // Lo llama GekkoSwinging.ArtificialUpdate en cada frame, haya swing o no: el cooldown y los timers del vuelo tienen
-    // que seguir corriendo después de soltar el swing, cuando ya no hay joint.
+    // Called by GekkoSwinging.ArtificialUpdate every frame, whether there is a swing or not: the cooldown and the flight timers have
+    // to keep running after releasing the swing, when there is no joint anymore.
     public void ArtificialUpdate()
     {
         if(_cooldownTimer > 0f) _cooldownTimer -= Time.deltaTime;
 
         if(_phase == Phase.Idle) return;
 
-        // En el segundo salto no hay punto que alcanzar (el destino es solo una referencia en el aire): termina al chocar
-        // o por tiempo.
+        // In the second jump there is no point to reach (the destination is just a reference in the air): it ends on collision
+        // or on time.
         if(_phase == Phase.Flying && !_secondJumpActive && ReachedGrapplePoint())
         {
             Finish(true);
@@ -91,8 +91,8 @@ public sealed class GekkoGrapple
         else Finish(true);
     }
 
-    // Lo llama GekkoSwinging.ArtificialFixedUpdate. Solo hace algo mientras Gekko espera para salir disparado: lo sostiene
-    // quieto (velocidad 0; la gravedad ya la apagó TryStart). Es el "freeze" del repo, que ahí es rb.velocity = zero.
+    // Called by GekkoSwinging.ArtificialFixedUpdate. It only does something while Gekko waits to be launched: it holds Gekko
+    // still (velocity 0; TryStart already turned gravity off). It is the repo's "freeze", which there is rb.velocity = zero.
     public void ArtificialFixedUpdate()
     {
         if(_phase != Phase.Freezing) return;
@@ -100,34 +100,34 @@ public sealed class GekkoGrapple
         _rb.linearVelocity = Vector3.zero;
     }
 
-    // Intenta arrancar el grapple hacia grapplePoint: es el click derecho apuntando a un GrapplePoint (ver GekkoDetection).
-    // Devuelve false, sin cambiar nada, si todavía hay cooldown, si ya hay un grapple en curso o si la parábola hacia ese
-    // punto no se puede calcular. La única excepción a "ya hay un grapple en curso" es el segundo salto: a ese vuelo se lo
-    // corta y el grapple nuevo toma el control. No pasa por Finish, así que no arranca un cooldown nuevo: se respeta el que
-    // quedaba del grapple anterior. GekkoSwinging solo prende la lengua (y suelta el swing, si lo hay) si esto devuelve true.
+    // Tries to start the grapple towards grapplePoint: it is the right click aiming at a GrapplePoint (see GekkoDetection).
+    // Returns false, without changing anything, if there is still a cooldown, if a grapple is already in progress or if the parabola to that
+    // point can't be computed. The only exception to "a grapple is already in progress" is the second jump: that flight is
+    // cut and the new grapple takes control. It doesn't go through Finish, so it doesn't start a new cooldown: the one left over
+    // from the previous grapple is respected. GekkoSwinging only turns the tongue on (and releases the swing, if there is one) if this returns true.
     public bool TryStart(Vector3 grapplePoint)
     {
         if((_phase != Phase.Idle && !IsSecondJumpFlying) || _cooldownTimer > 0f) return false;
 
-        // Se calcula ya, aunque con espera la velocidad recién se use en Launch: así, si el punto no tiene una parábola
-        // válida, no se cambia nada (un segundo salto en vuelo, por ejemplo, sigue como estaba).
+        // It is computed now, even though with a wait the velocity is only used in Launch: that way, if the point has no valid
+        // parabola, nothing changes (a second jump in flight, for example, continues as it was).
         if(!TryCalculateLaunch(grapplePoint, out Vector3 velocity, out float flightTime)) return false;
 
         _grapplePoint = grapplePoint;
 
-        // Lo que mide este grapple (de donde arranca hasta el gancho) es la base del alcance del segundo salto. Y como
-        // arranca un grapple nuevo, el vuelo deja de ser un segundo salto.
+        // What this grapple measures (from where it starts to the hook) is the base of the second jump's reach. And since a new grapple
+        // is starting, the flight stops being a second jump.
         _grappleDistance = Vector3.Distance(_transform.position, _grapplePoint);
         _secondJumpActive = false;
 
-        // Gekko empieza a girar, de a poco, para mirar al punto: desde ya, o sea también durante la espera. Se corta en
+        // Gekko starts turning, gradually, to look at the point: right away, that is, also during the wait. It is stopped in
         // Finish.
         _rotation.StartLookAtGrapplePoint(_grapplePoint, _lookSpeed);
 
-        // Sale la lengua hacia el GrapplePoint (GekkoSwinging la dibuja apenas esto devuelve true): suena una vez por grapple. Va acá,
-        // en el punto común de los dos caminos que devuelven true (con y sin espera) y después de todas las validaciones: un click en
-        // cooldown, con otro grapple en curso o con una parábola inválida devuelve false antes y no suena. El segundo salto no pasa
-        // por acá (suelta la lengua en vez de tirarla).
+        // The tongue goes out towards the GrapplePoint (GekkoSwinging draws it as soon as this returns true): it plays once per grapple. It goes here,
+        // at the common point of the two paths that return true (with and without a wait) and after all the validations: a click during
+        // cooldown, with another grapple in progress or with an invalid parabola returns false earlier and doesn't play. The second jump doesn't go
+        // through here (it releases the tongue instead of throwing it).
         if(AudioManager.instance) AudioManager.instance.Play(SoundNames.PlayerGrapple);
 
         if(_delayTime <= 0f)
@@ -136,7 +136,7 @@ public sealed class GekkoGrapple
             return true;
         }
 
-        // Espera: sin velocidad y sin gravedad, así queda clavado en el aire y no se va hundiendo de a poco.
+        // Wait: no velocity and no gravity, so it stays pinned in the air and doesn't slowly sink.
         _phase = Phase.Freezing;
         _phaseTimer = _delayTime;
         _rb.useGravity = false;
@@ -145,26 +145,26 @@ public sealed class GekkoGrapple
     }
 
 
-    // Segundo salto: un salto igual al del grapple (la misma parábola y el mismo arco), pero hacia donde mira la cámara en
-    // vez de hacia el gancho. Solo se puede dar mientras la ventana está abierta (_secondJumpEnabled: desde que Gekko
-    // entra volando al trigger de un GrapplePoint hasta que sale), y se gasta al usarlo. Sigue siendo con Space.
+    // Second jump: a jump just like the grapple's (the same parabola and the same arc), but towards where the camera looks
+    // instead of towards the hook. It can only be done while the window is open (_secondJumpEnabled: from when Gekko
+    // flies into a GrapplePoint's trigger until it leaves), and it is spent when used. It is still done with Space.
     //
-    // A dónde llega: se apunta a un destino sobre la línea de la cámara, a (distancia del último grapple x
-    // _secondJumpMultiplier) de Gekko. Con multiplicador 1 salta tan lejos como saltó el grapple; con 2, el doble; con 0,
-    // derecho hacia arriba. La dirección es la de la cámara completa, con cabeceo: con la cámara mirando hacia abajo el
-    // destino queda más bajo y el salto aterriza antes; mirando hacia arriba, sube.
+    // Where it reaches: it aims at a destination on the camera's line, at (distance of the last grapple x
+    // _secondJumpMultiplier) from Gekko. With multiplier 1 it jumps as far as the grapple did; with 2, double; with 0,
+    // straight up. The direction is the full camera one, pitch included: with the camera looking down, the
+    // destination ends up lower and the jump lands sooner; looking up, it goes higher.
     //
-    // direction es hacia donde mira la cámara (la pasa GekkoSwinging). Devuelve false, sin cambiar nada, si la ventana
-    // está cerrada o si el salto no se puede calcular. Ignora el cooldown: justo se acaba de arrancar, al terminar el
-    // grapple que abrió la ventana.
+    // direction is where the camera looks (GekkoSwinging passes it). Returns false, without changing anything, if the window
+    // is closed or if the jump can't be computed. It ignores the cooldown: it has just been started, when the
+    // grapple that opened the window ended.
     public bool TrySecondJump(Vector3 direction)
     {
         if(!_secondJumpEnabled) return false;
 
-        // En el agua no hay segundo salto (el grapple en sí ya no arranca en el agua: lo corta GekkoDetection).
+        // No second jump in water (the grapple itself no longer starts in water: GekkoDetection cuts it).
         if(GekkoWater.IsInWater(_transform)) return false;
 
-        // Sin dirección, o sin un grapple previo que haya medido algo, no hay alcance.
+        // With no direction, or without a previous grapple that measured something, there is no reach.
         if(direction.sqrMagnitude <= 0.0001f || _grappleDistance <= 0.0001f) return false;
 
         direction.Normalize();
@@ -172,11 +172,11 @@ public sealed class GekkoGrapple
 
         if(!TryCalculateLaunch(target, out Vector3 velocity, out float flightTime)) return false;
 
-        // Se gasta: un segundo salto por ventana. El vuelo pasa a ser un segundo salto (sin lengua y sin "llegar al punto").
+        // It is spent: one second jump per window. The flight becomes a second jump (with no tongue and no "reaching the point").
         _secondJumpEnabled = false;
         _secondJumpActive = true;
 
-        // El destino reemplaza al gancho como punto de la parábola, la lengua se suelta y Gekko gira hacia donde salta.
+        // The destination replaces the hook as the parabola's point, the tongue is released and Gekko turns towards where it jumps.
         _grapplePoint = target;
         _swinging.HideTongue();
         _rotation.StartLookInDirection(direction, _lookSpeed);
@@ -185,9 +185,9 @@ public sealed class GekkoGrapple
         return true;
     }
 
-    // Lo llama GekkoSwinging.StartSwing cuando Gekko engancha un swing en pleno segundo salto: el vuelo se corta ahí y el
-    // swing toma el control, conservando la velocidad que llevaba. Cuenta como cualquier otro fin de vuelo (arranca el
-    // cooldown del grapple). No hace nada si el vuelo no es un segundo salto: al grapple no se lo interrumpe así.
+    // Called by GekkoSwinging.StartSwing when Gekko attaches to a swing in the middle of a second jump: the flight is cut there and the
+    // swing takes control, keeping the velocity it had. It counts like any other end of flight (it starts the grapple's
+    // cooldown). It does nothing if the flight is not a second jump: the grapple isn't interrupted this way.
     public void EndSecondJump()
     {
         if(IsSecondJumpFlying) Finish(true);
@@ -198,8 +198,8 @@ public sealed class GekkoGrapple
         if(_phase == Phase.Flying) Finish(true);
     }
 
-    // La ventana del segundo salto la abre el trigger de un GrapplePoint (no el de un gancho de swing) mientras dura el
-    // vuelo del grapple, y se cierra al salir de él (ver ArtificialOnTriggerExit).
+    // The second jump window is opened by a GrapplePoint's trigger (not a swing hook's) while the grapple's
+    // flight lasts, and it closes when leaving it (see ArtificialOnTriggerExit).
     public void ArtificialOnTriggerEnter(Collider other)
     {
         if(other.gameObject.layer == GrapplePointLayer && _phase == Phase.Flying)
@@ -217,8 +217,8 @@ public sealed class GekkoGrapple
         {
             ParticleSystem ps = other.GetComponentInChildren<ParticleSystem>();
             
-            // La ventana del segundo salto se cierra al salir del trigger, haya o no partícula que apagar (antes solo se
-            // cerraba si el gancho tenía partícula).
+            // The second jump window closes when leaving the trigger, whether or not there is a particle to turn off (before, it only
+            // closed if the hook had a particle).
             _secondJumpEnabled = false;
 
             if(ps != null)
@@ -228,30 +228,30 @@ public sealed class GekkoGrapple
         }
     }
 
-    // Gekko ya está a _finishDistance o menos del punto de enganche. Los metros valen para un Gekko de escala 1 y se
-    // escalan con su tamaño real, igual que _overshootYAxis.
+    // Gekko is already at _finishDistance or less from the attach point. The meters are for a scale-1 Gekko and are
+    // scaled with its real size, just like _overshootYAxis.
     private bool ReachedGrapplePoint()
     {
         float distance = _finishDistance * _transform.lossyScale.y;
         return (_grapplePoint - _transform.position).sqrMagnitude <= distance * distance;
     }
 
-    // Corta el grapple sin cooldown. Lo usa el teletransporte (PlayerController.Teleport): un grapple en curso apunta a un
-    // ancla que ahora quedó lejos, y si estaba esperando saldría disparado hacia ella desde el lugar nuevo.
+    // Cuts the grapple without cooldown. Used by the teleport (PlayerController.Teleport): a grapple in progress points at an
+    // anchor that is now far away, and if it was waiting it would shoot towards it from the new place.
     public void Cancel()
     {
-        // La ventana del segundo salto tampoco sobrevive al teletransporte: Gekko queda lejos del gancho.
+        // The second jump window doesn't survive the teleport either: Gekko ends up far from the hook.
         _secondJumpEnabled = false;
 
         if(_phase != Phase.Idle) Finish(false);
     }
 
-    // Fin de la espera: se recalcula la parábola desde donde Gekko quedó y sale disparado.
+    // End of the wait: the parabola is recomputed from where Gekko ended up and it is launched.
     private void Launch()
     {
         if(!TryCalculateLaunch(_grapplePoint, out Vector3 velocity, out float flightTime))
         {
-            // No debería pasar (TryStart ya lo validó), pero si pasa no se puede quedar clavado: se corta.
+            // It shouldn't happen (TryStart already validated it), but if it does it can't stay pinned: it is cut.
             Finish(true);
             return;
         }
@@ -259,8 +259,8 @@ public sealed class GekkoGrapple
         StartFlight(velocity, flightTime);
     }
 
-    // El equivalente a SetVelocity del repo: la velocidad se asigna UNA vez. El Invoke de 0.1 s que usa el repo acá no hace
-    // falta: el drag del Rigidbody es 0 y el controller ya está dormido (IsGrappling), así que nada la pisa.
+    // The equivalent of the repo's SetVelocity: the velocity is assigned ONCE. The repo's 0.1 s Invoke isn't needed here:
+    // the Rigidbody's drag is 0 and the controller is already asleep (IsGrappling), so nothing overwrites it.
     private void StartFlight(Vector3 velocity, float flightTime)
     {
         _phase = Phase.Flying;
@@ -269,8 +269,8 @@ public sealed class GekkoGrapple
         _rb.linearVelocity = velocity;
     }
 
-    // Único lugar donde termina un grapple (por choque, por llegar al punto, por tiempo, por cancelación o por un
-    // cálculo inválido).
+    // The only place where a grapple ends (by collision, by reaching the point, by time, by cancellation or by an invalid
+    // computation).
     private void Finish(bool startCooldown)
     {
         _phase = Phase.Idle;
@@ -279,22 +279,22 @@ public sealed class GekkoGrapple
 
         if(startCooldown) _cooldownTimer = _grapplingCD;
 
-        // Si cortó durante la espera la gravedad estaba apagada. Si no, ya estaba prendida y esto no cambia nada. En los
-        // dos casos PlayerController la vuelve a decidir en su próximo FixedUpdate.
+        // If it was cut during the wait, gravity was off. If not, it was already on and this changes nothing. In both cases
+        // PlayerController decides it again in its next FixedUpdate.
         _rb.useGravity = true;
 
-        // Termina el vuelo, termina la lengua. El controller se despierta solo: ya no hay IsGrappling.
+        // The flight ends, the tongue ends. The controller wakes up on its own: there is no IsGrappling anymore.
         _swinging.HideTongue();
 
-        // Ya no hay nada que mirar: PlayerController se despierta y endereza a Gekko solo.
+        // There is nothing left to look at: PlayerController wakes up and straightens Gekko on its own.
         _rotation.StopLookAtGrapplePoint();
     }
 
-    // Arma la parábola. La altura del arco sale igual que en el ExecuteGrapple del repo: se parte de un punto más bajo que
-    // Gekko y se llega hasta el punto de enganche más un margen (_overshootYAxis), para que el arco pase por ENCIMA del
-    // punto y no lo roce. Los metros valen para un Gekko de escala 1 y se escalan con su tamaño real.
-    // Devuelve false si el resultado no sirve (ver el return).
-    // target es el punto por el que tiene que pasar la parábola: el gancho (grapple) o el destino del segundo salto.
+    // Builds the parabola. The arc's height comes out the same as in the repo's ExecuteGrapple: it starts from a point lower than
+    // Gekko and reaches the attach point plus a margin (_overshootYAxis), so the arc passes ABOVE the
+    // point and doesn't graze it. The meters are for a scale-1 Gekko and are scaled with its real size.
+    // Returns false if the result is useless (see the return).
+    // target is the point the parabola must pass through: the hook (grapple) or the second jump's destination.
     private bool TryCalculateLaunch(Vector3 target, out Vector3 velocity, out float flightTime)
     {
         float scale = _transform.lossyScale.y;
@@ -305,26 +305,26 @@ public sealed class GekkoGrapple
         float grapplePointRelativeYPos = target.y - lowestY;
         float highestPointOnArc = grapplePointRelativeYPos + overshoot;
 
-        // Si el punto está por debajo del punto más bajo, el arco sube solo el margen.
+        // If the point is below the lowest point, the arc only rises by the margin.
         if(grapplePointRelativeYPos < 0f) highestPointOnArc = overshoot;
 
         velocity = CalculateJumpVelocity(start, target, highestPointOnArc, out flightTime);
 
-        // Un NaN o infinito no se le puede asignar a un Rigidbody (Unity tira error y no lo aplica), y un tiempo de vuelo
-        // así dejaría el vuelo sin fin. Pasa, por ejemplo, con un _overshootYAxis negativo.
+        // A NaN or infinity can't be assigned to a Rigidbody (Unity throws an error and doesn't apply it), and such a flight time
+        // would leave the flight endless. It happens, for example, with a negative _overshootYAxis.
         return IsValid(velocity) && IsValid(flightTime) && flightTime > 0f;
     }
 
-    // Velocidad inicial para ir de startPoint a endPoint en una parábola cuyo punto más alto queda trajectoryHeight por
-    // encima de startPoint. Supone que lo único que acelera a Gekko es Physics.gravity.
-    // flightTime es el tiempo que tarda en llegar a endPoint: es justo el denominador de velocityXZ, así que sale gratis.
+    // Initial velocity to go from startPoint to endPoint in a parabola whose highest point is trajectoryHeight above
+    // startPoint. It assumes the only thing accelerating Gekko is Physics.gravity.
+    // flightTime is the time it takes to reach endPoint: it is exactly the denominator of velocityXZ, so it comes for free.
     public Vector3 CalculateJumpVelocity(Vector3 startPoint, Vector3 endPoint, float trajectoryHeight, out float flightTime)
     {
         float gravity = Physics.gravity.y;
         float displacementY = endPoint.y - startPoint.y;
         Vector3 displacementXZ = new Vector3(endPoint.x - startPoint.x, 0f, endPoint.z - startPoint.z);
 
-        // Tiempo en subir hasta el punto más alto + tiempo en bajar desde ahí hasta endPoint.
+        // Time to go up to the highest point + time to come down from there to endPoint.
         flightTime = Mathf.Sqrt(-2f * trajectoryHeight / gravity)
                    + Mathf.Sqrt(2f * (displacementY - trajectoryHeight) / gravity);
 

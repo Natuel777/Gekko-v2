@@ -2,33 +2,33 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-// Animación por código de la "preparación" del ataque cuerpo a cuerpo de la planta (el mordisco).
+// Code-driven animation of the plant's melee attack "preparation" (the bite).
 //
-// Tiene dos fases, y la duración de cada una se configura en el Inspector:
-//  1. Windup: los huesos pasan de la pose con la que arrancan a la rotación objetivo, de forma progresiva. Arrancan desde la pose
-//     que tenga la planta en ese momento: si viene del intervalo entre mordiscos, la de cansada (PlantTiredAnimation), así la
-//     transición es directa y sin saltos; si no, la que tenga el Animator.
-//  2. Return: vuelven rápido a la rotación base (la de fábrica), que es donde termina la preparación.
-// Cuando termina el Return la preparación está completa (Completed) y recién ahí PlantBiteState dispara el mordisco de
-// siempre (CarnivorousPlant.Bite, con su animación 'nibble'). No reemplaza a esa animación: es el paso previo.
+// It has two phases, and the duration of each one is set in the Inspector:
+//  1. Windup: the bones go from the pose they start with to the target rotation, progressively. They start from the pose
+//     the plant has at that moment: if it comes from the interval between bites, the tired one (PlantTiredAnimation), so the
+//     transition is direct and without jumps; otherwise, the one the Animator has.
+//  2. Return: they quickly go back to the base rotation (the factory one), which is where the preparation ends.
+// When the Return ends the preparation is complete (Completed) and only then does PlantBiteState trigger the usual bite
+// (CarnivorousPlant.Bite, with its 'nibble' animation). It doesn't replace that animation: it is the step before it.
 //
-// Las rotaciones son LOCALES, las mismas que muestra el Inspector en el Transform de cada hueso. En joint7_R el eje Z no sigue
-// el camino arranque -> objetivo: durante el Windup barre de Z From a Z To (ver JointPose.sweepZ), y la mezcla del arranque
-// (Blend In Time) es la que lo lleva de la pose con la que venía a ese Z From. Además de la cabeza (joint6_R y joint7_R) anima las
-// hojas (joint1*, joint4*, joint6Part*, joint19*, joint21*): cada una va, eje por eje, de la pose con la que arranca a su objetivo.
+// The rotations are LOCAL, the same ones the Inspector shows on each bone's Transform. On joint7_R the Z axis doesn't follow the
+// start -> target path: during the Windup it sweeps from Z From to Z To (see JointPose.sweepZ), and the start blend
+// (Blend In Time) is what takes it from the pose it came with to that Z From. Besides the head (joint6_R and joint7_R) it animates the
+// leaves (joint1*, joint4*, joint6Part*, joint19*, joint21*): each one goes, axis by axis, from the pose it starts with to its target.
 //
-// Además, durante el Windup gira la planta entera (el transform raíz) hacia el player, sobre su eje vertical y a velocidad
-// limitada (Root Turn Speed). Es lo que apunta el HitBox del mordisco: como los huesos vuelven a su pose base en el Return, la
-// dirección en la que muerde la define este giro. En el Return la planta queda quieta, así que el player puede esquivar el
-// mordisco saliendo de la zona (o corriendo más rápido de lo que ella gira). La planta se queda mirando hacia donde terminó.
+// Also, during the Windup the whole plant (the root transform) turns towards the player, around its vertical axis and at a
+// limited speed (Root Turn Speed). That is what aims the bite's HitBox: since the bones go back to their base pose in the Return, the
+// direction it bites in is defined by this turn. In the Return the plant stays still, so the player can dodge the
+// bite by leaving the zone (or by running faster than it turns). The plant keeps facing where it ended up.
 //
-// La usa también PlantSpitBehaviour: antes de cada escupida la planta hace esta misma preparación y escupe recién cuando
-// termina. Eso lo elige Play(..., forSpit: true), y entonces la animación entera (Windup, Return y mezcla) corre Spit Speed
-// Multiplier veces más rápido. El mordisco la sigue usando a velocidad normal.
+// PlantSpitBehaviour also uses it: before each spit the plant does this same preparation and only spits when it
+// finishes. That is chosen by Play(..., forSpit: true), and then the whole animation (Windup, Return and blend) runs Spit Speed
+// Multiplier times faster. The bite keeps using it at normal speed.
 //
-// El Animator reescribe estos huesos en cada frame (Idle, nibble y spittle tienen curvas de todos), así que la pose se aplica
-// en LateUpdate, después de él. El Execution Order la deja además después del LateUpdate de CarnivorousPlant, que es donde se
-// aplica el aim de joint7_R: mientras corre la preparación gana esta pose.
+// The Animator rewrites these bones every frame (Idle, nibble and spittle have curves for all of them), so the pose is applied
+// in LateUpdate, after it. Execution Order also places it after CarnivorousPlant's LateUpdate, which is where
+// joint7_R's aim is applied: while the preparation runs, this pose wins.
 [DisallowMultipleComponent]
 [DefaultExecutionOrder(100)]
 public class PlantBiteWindup : MonoBehaviour
@@ -76,7 +76,7 @@ public class PlantBiteWindup : MonoBehaviour
         new JointPose("joint7_R",      new Vector3(356.112091f, 184.17572f, 312.88327f),  new Vector3(10.3371201f, 168.730225f, 312.00238f), -3.811f, -84.533f),
         new JointPose("joint19_R",     new Vector3(313.025055f, 90f, 206.72084f),         new Vector3(313.025055f, 90f, 228.794861f)),
         new JointPose("joint21_R",     new Vector3(0f, 180f, 313.276215f),                new Vector3(0f, 180f, 309.197266f)),
-        // Las hojas que se sumaron después. La base es la rotación que tiene cada hueso en el prefab.
+        // The leaves that were added later. The base is the rotation each bone has in the prefab.
         new JointPose("joint6Part2_R",  new Vector3(0f, 0f, 359.506653f),  new Vector3(0f, 0f, 344.839569f)),
         new JointPose("joint1_R",       new Vector3(0f, 0f, 44.545004f),   new Vector3(0f, 0f, 25.7183571f)),
         new JointPose("joint1Part1_R",  new Vector3(0f, 0f, 356.76f),      new Vector3(0f, 0f, 331.908081f)),
@@ -125,26 +125,26 @@ public class PlantBiteWindup : MonoBehaviour
         public Transform transform;
         public JointPose pose;
         public Quaternion baseRot;
-        public Quaternion startRot;   // la pose que tenía el hueso cuando arrancó el Windup (ver Play)
-        public Vector3 startEuler;    // lo mismo, en Euler: el Windup interpola por eje, desde acá
-        public Quaternion applied;    // lo último que se escribió en el hueso
-        public Quaternion returnFrom; // dónde estaba el hueso cuando arrancó el Return
+        public Quaternion startRot;   // the pose the bone had when the Windup started (see Play)
+        public Vector3 startEuler;    // the same, in Euler: the Windup interpolates per axis, from here
+        public Quaternion applied;    // the last thing written to the bone
+        public Quaternion returnFrom; // where the bone was when the Return started
     }
 
     private Bone[] _bones = Array.Empty<Bone>();
     private Phase _phase;
     private float _elapsed;
-    private float _speed = 1f; // 1 para el mordisco, Spit Speed Multiplier para la escupida
+    private float _speed = 1f; // 1 for the bite, Spit Speed Multiplier for the spit
     private bool _cancelled;
-    private Transform _target; // hacia quién gira la planta durante el Windup
+    private Transform _target; // who the plant turns towards during the Windup
 
-    // El componente está activo y encontró al menos un hueso. Si no, PlantBiteState muerde de una, como siempre.
+    // The component is active and found at least one bone. If not, PlantBiteState bites right away, as usual.
     public bool IsAvailable => isActiveAndEnabled && _bones.Length > 0;
 
-    // Windup o Return en curso: los huesos son de esta animación (el aim de joint7_R espera).
+    // Windup or Return in progress: the bones belong to this animation (joint7_R's aim waits).
     public bool IsPlaying => _phase != Phase.Idle;
 
-    // La última preparación llegó hasta el final (no la cortó un Cancel). Se apaga al arrancar otra.
+    // The last preparation reached the end (a Cancel didn't cut it). Turned off when another one starts.
     public bool Completed { get; private set; }
 
     private void Awake()
@@ -157,7 +157,7 @@ public class PlantBiteWindup : MonoBehaviour
 
             if(joint == null)
             {
-                Debug.LogWarning($"[PlantBiteWindup] No encontré el hueso '{pose.jointName}' dentro de '{name}': se ignora.", this);
+                Debug.LogWarning($"[PlantBiteWindup] Bone '{pose.jointName}' not found inside '{name}': ignored.", this);
                 continue;
             }
 
@@ -169,32 +169,32 @@ public class PlantBiteWindup : MonoBehaviour
 
     private void OnDisable()
     {
-        // Apagado en medio de la preparación: el Animator se queda con los huesos y no cuenta como completa.
+        // Turned off in the middle of the preparation: the Animator keeps the bones and it doesn't count as complete.
         _phase = Phase.Idle;
         Completed = false;
     }
 
-    // Arranca la preparación desde la pose base. lookTarget es hacia quién gira la planta entera durante el Windup (null = no
-    // gira). forSpit = la preparación es para escupir (PlantSpitBehaviour) y no para el mordisco: corre Spit Speed Multiplier
-    // veces más rápido, y la planta gira hacia lookTarget igual que en el mordisco (con la velocidad de giro escalada por lo
-    // mismo, así llega a la misma orientación). La partícula de la preparación (Preparing Attack PS) es solo del mordisco: al
-    // escupir no sale. false si no se puede ahora: apagado, sin huesos, o todavía volviendo de una preparación cortada (quien
-    // llama reintenta en el próximo frame).
+    // Starts the preparation from the base pose. lookTarget is who the whole plant turns towards during the Windup (null = it doesn't
+    // turn). forSpit = the preparation is for spitting (PlantSpitBehaviour) and not for the bite: it runs Spit Speed Multiplier
+    // times faster, and the plant turns towards lookTarget just like in the bite (with the turn speed scaled by the same
+    // factor, so it reaches the same orientation). The preparation's particle (Preparing Attack PS) belongs to the bite only: when
+    // spitting it doesn't play. false if it can't be done now: turned off, no bones, or still returning from a cut preparation (the
+    // caller retries on the next frame).
     public bool Play(Transform lookTarget = null, bool forSpit = false)
     {
         if(!IsAvailable || _phase != Phase.Idle) return false;
 
-        // El Windup arranca desde la pose que tienen los huesos ahora: la de cansada si la planta viene del intervalo entre mordiscos
-        // (PlantTiredAnimation), o la del Animator. Es lo que se ve en pantalla: Play se llama desde Update, antes de que el Animator
-        // reescriba los huesos de este frame, así que todavía tienen lo que se dibujó en el anterior (la pose de cansada incluida,
-        // que se aplica en LateUpdate).
+        // The Windup starts from the pose the bones have now: the tired one if the plant comes from the interval between bites
+        // (PlantTiredAnimation), or the Animator's. It is what is shown on screen: Play is called from Update, before the Animator
+        // rewrites this frame's bones, so they still hold what was drawn in the previous one (the tired pose included,
+        // which is applied in LateUpdate).
         foreach(Bone bone in _bones)
         {
             bone.startRot = bone.transform.localRotation;
             bone.startEuler = bone.startRot.eulerAngles;
         }
 
-        // Implementaciòn actual, luego reemplazar por GenericPS.Play()
+        // Current implementation, replace later with GenericPS.Play()
         if(_preparingAttackPS != null && !forSpit) _preparingAttackPS.Play();
         _target = lookTarget;
         _speed = forSpit ? _spitSpeedMultiplier : 1f;
@@ -205,7 +205,7 @@ public class PlantBiteWindup : MonoBehaviour
         return true;
     }
 
-    // Corta el Windup: los huesos vuelven a la base con el mismo Return rápido, desde donde estén. No cuenta como completa.
+    // Stops the Windup: the bones go back to the base with the same quick Return, from wherever they are. It doesn't count as complete.
     public void Cancel()
     {
         if(_phase != Phase.Windup) return;
@@ -224,10 +224,10 @@ public class PlantBiteWindup : MonoBehaviour
         else UpdateReturn();
     }
 
-    // Gira la planta entera hacia el player, solo sobre su propio eje vertical (así conserva la inclinación que tenga en la
-    // escena) y a velocidad limitada: por eso un player que se mueve rápido se le escapa de la zona. La velocidad se escala por
-    // _speed (igual que el tiempo de la animación): al escupir, el Windup dura menos y gira proporcionalmente más rápido, así
-    // llega a la misma orientación que en el mordisco.
+    // Turns the whole plant towards the player, only around its own vertical axis (so it keeps whatever tilt it has in the
+    // scene) and at a limited speed: that is why a fast-moving player escapes its zone. The speed is scaled by
+    // _speed (just like the animation's time): when spitting, the Windup lasts less and turns proportionally faster, so
+    // it reaches the same orientation as in the bite.
     private void TurnRoot()
     {
         if(_target == null || _rootTurnSpeed <= 0f || _rootFacingAxis.sqrMagnitude < 0.0001f) return;
@@ -251,8 +251,8 @@ public class PlantBiteWindup : MonoBehaviour
         float progress = Progress(_windupDuration);
         float k = _windupCurve.Evaluate(progress);
 
-        // Al arrancar se mezcla con la pose con la que venían los huesos, para que el primer frame no pegue un salto (sobre todo en
-        // el Z de joint7_R, que no parte de donde estaba sino de Z From).
+        // On start it blends with the pose the bones came with, so the first frame doesn't jump (especially on
+        // joint7_R's Z, which doesn't start from where it was but from Z From).
         float blend = _blendInTime > 0f ? Mathf.SmoothStep(0f, 1f, _elapsed / _blendInTime) : 1f;
 
         foreach(Bone bone in _bones)
@@ -277,7 +277,7 @@ public class PlantBiteWindup : MonoBehaviour
         if(progress >= 1f) Finish();
     }
 
-    // El Return arranca desde lo último que se escribió (el final del Windup, o donde lo cortó el Cancel), así no hay saltos.
+    // The Return starts from the last thing written (the end of the Windup, or where Cancel cut it), so there are no jumps.
     private void BeginReturn()
     {
         foreach(Bone bone in _bones)
@@ -289,7 +289,7 @@ public class PlantBiteWindup : MonoBehaviour
 
     private void Finish()
     {
-        // Termina exactamente en la rotación base, aunque la curva no llegue a 1.
+        // It ends exactly at the base rotation, even if the curve doesn't reach 1.
         foreach(Bone bone in _bones)
             Apply(bone, bone.baseRot);
 
@@ -305,7 +305,7 @@ public class PlantBiteWindup : MonoBehaviour
         bone.applied = rotation;
     }
 
-    // Pose del Windup con avance k: de la pose con la que arrancó el hueso (startEuler) a la objetivo, eje por eje.
+    // Windup pose at progress k: from the pose the bone started with (startEuler) to the target, axis by axis.
     private static Quaternion WindupPose(Bone bone, float k)
     {
         JointPose pose = bone.pose;
@@ -318,7 +318,7 @@ public class PlantBiteWindup : MonoBehaviour
         return Quaternion.Euler(x, y, z);
     }
 
-    // Como Mathf.LerpAngle (por el camino más corto) pero sin limitar k a 0..1: una curva con rebote se ve como está dibujada.
+    // Like Mathf.LerpAngle (along the shortest path) but without clamping k to 0..1: a bouncing curve looks the way it is drawn.
     private static float LerpAngle(float from, float to, float k) => from + Mathf.DeltaAngle(from, to) * k;
 
     private static Transform FindBone(Transform root, string boneName)
@@ -336,8 +336,8 @@ public class PlantBiteWindup : MonoBehaviour
         return null;
     }
 
-    // Para probar la animación suelta desde el Inspector (menú de tres puntos del componente), sin acercar al player.
-    [ContextMenu("Probar preparación (Play Mode)")]
+    // To test the animation on its own from the Inspector (the component's three-dot menu), without bringing the player close.
+    [ContextMenu("Test preparation (Play Mode)")]
     private void TestPlay()
     {
         if(Application.isPlaying) Play();

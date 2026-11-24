@@ -37,8 +37,8 @@ public class GameManager : MonoBehaviour , IGameManager
 
         else
         {
-            // Duplicado: el GameManager de la escena anterior sigue vivo (DontDestroyOnLoad). Se destruye y no se registra; si no,
-            // el ServiceLocator avisaba "IGameManager is already registered" en cada cambio de escena.
+            // Duplicate: the previous scene's GameManager is still alive (DontDestroyOnLoad). It is destroyed and not registered; otherwise
+            // the ServiceLocator warned "IGameManager is already registered" on every scene change.
             Destroy(gameObject);
             return;
         }
@@ -53,7 +53,7 @@ public class GameManager : MonoBehaviour , IGameManager
         EventManager.Unsubscribe("OnLevelFinished", ShowFinishScreen);
     }
 
-    // Lo dispara FinishLevelTrigger cuando termina (o se saltea) la cinemática de final.
+    // Triggered by FinishLevelTrigger when the ending cinematic finishes (or is skipped).
     private void ShowFinishScreen()
     {
         var screenFinish = Instantiate(Resources.Load<ScreenFinishLevel>("Canvas_Finish"));
@@ -69,7 +69,7 @@ public class GameManager : MonoBehaviour , IGameManager
         CanPause = false;
         Time.timeScale = 1f;
 
-        // Foto del progreso al empezar cada escena de juego: al reiniciar el nivel se vuelve a esto.
+        // Snapshot of the progress when each game scene starts: restarting the level goes back to this.
         bool isGameplay = scene.name != ScenesDictionary.SceneName[ScenesNames.Menu]
                        && scene.name != ScenesDictionary.SceneName[ScenesNames.LoadScene];
         if (isGameplay)
@@ -84,8 +84,8 @@ public class GameManager : MonoBehaviour , IGameManager
     private List<string> _levelStartFlags;
     private bool _hasLevelSnapshot;
 
-    // Deja todo como al empezar la escena: contadores de arándanos/frutillas, frutillas y eventos marcados como hechos,
-    // checkpoint del intento y lo contado por LevelStats. Lo de niveles anteriores se conserva.
+    // Leaves everything as it was when the scene started: blueberry/strawberry counters, strawberries and events marked as done,
+    // the attempt's checkpoint and what LevelStats counted. Progress from previous levels is kept.
     private void ResetLevelProgress()
     {
         if (_hasLevelSnapshot)
@@ -117,20 +117,20 @@ public class GameManager : MonoBehaviour , IGameManager
         else checkpointManager.Respawn();
     }
 
-    // ResetAudio corta todo, también la música del nivel: acá se vuelve a arrancar la del nivel actual. Cada nivel tiene su manager
-    // (LvlOne: LevelOneManager; LvlTwo: LevelTwoManager, que hereda de LevelManager) y el que no está en esta escena se saltea. El
-    // "!= null" de Unity también descarta al manager de un nivel anterior que ya se destruyó (el Instance estático queda apuntando
-    // a él). Antes se llamaba a LevelOneManager.Instance a secas: en LvlTwo, abierta directo, daba NullReferenceException y el
-    // respawn no seguía.
+    // ResetAudio stops everything, including the level's music: here the current level's music is started again. Each level has its own manager
+    // (LvlOne: LevelOneManager; LvlTwo: LevelTwoManager, which inherits from LevelManager) and the one that isn't in this scene is skipped. Unity's
+    // "!= null" also discards a previous level's manager that was already destroyed (the static Instance keeps pointing to it).
+    // Before, LevelOneManager.Instance was called directly: in LvlTwo, opened directly, it gave a NullReferenceException and the
+    // respawn didn't continue.
     private void RestartLevelSong()
     {
         if (LevelManager.Instance != null) LevelManager.Instance.StartSong();
         else if (LevelOneManager.Instance != null) LevelOneManager.Instance.StartSong();
     }
 
-    // El menú de pausa está abierto de verdad. No es lo mismo que CanPause: ese queda en true también durante los fundidos de
-    // ScreenFader, el respawn y las secuencias de MomDuck, donde no se pausa nada (ver Pause). Es lo que usan los sistemas que
-    // tienen que saber si el juego está pausado sin depender de haber recibido PauseEvent / UnPauseEvent.
+    // The pause menu is really open. It is not the same as CanPause: that one is also true during ScreenFader's fades, the respawn and
+    // MomDuck's sequences, where nothing is paused (see Pause). This is what systems use that need to know whether the game is paused
+    // without depending on having received PauseEvent / UnPauseEvent.
     public bool IsPaused => _screenPause != null && _screenPause.isActiveAndEnabled;
 
     public void RespawnAt(int index) {checkpointManager.RespawnAt(index);}
@@ -139,11 +139,11 @@ public class GameManager : MonoBehaviour , IGameManager
     {
         if(index < 1)
         {
-            Debug.LogWarning($"Índice de nivel {index} fuera de rango.");
+            Debug.LogWarning($"Level index {index} out of range.");
             return;
         }
 
-        // El audio se resetea solo si de verdad se carga un nivel (LoadScene recién cambia de escena al final del frame).
+        // The audio is only reset if a level is really being loaded (LoadScene only changes the scene at the end of the frame).
         if (checkpointManager.LoadDebugLevel(index) && AudioManager.instance) AudioManager.instance.ResetAudio();
     }
 

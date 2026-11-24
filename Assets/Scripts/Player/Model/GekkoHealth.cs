@@ -8,7 +8,7 @@ public class GekkoHealth : IDamageable
     public float CurrentHealth => _currentHealth;
     public float MaxHealth => _maxHealth;
 
-    // Para el HUD de vida (ej. marchitar la hoja correspondiente).
+    // For the health HUD (e.g. withering the matching leaf).
     public event System.Action<float> OnDamaged;
 
     public GekkoHealth(HealthBar healthBar)
@@ -34,11 +34,11 @@ public class GekkoHealth : IDamageable
 
     public void Damage(float dmg)
     {
-        // Ventana de invulnerabilidad del DamageFeedback: ni vida ni efectos.
+        // DamageFeedback's invulnerability window: neither health nor effects.
         if(DamageFeedback.Instance != null && DamageFeedback.Instance.IsInvulnerable) return;
 
-        // Sistema por hits: cada golpe cuesta un corazón entero, sin importar cuánto
-        // "daño" declare la fuente (lava, bicho, etc.) — el valor de dmg ya no se usa.
+        // Per-hit system: every hit costs a whole heart, no matter how much
+        // "damage" the source declares (lava, bug, etc.) — the dmg value is no longer used.
         Debug.Log("Gekko took a hit!");
         bool wasAlive = _currentHealth > 0f;
         _currentHealth -= 1f;
@@ -50,24 +50,23 @@ public class GekkoHealth : IDamageable
         bool isLethal = _currentHealth <= 0f;
         bool isRespawning = RespawnController.Instance != null && RespawnController.Instance.IsRunning;
 
-        // Perdió la última vida: suena el sonido de derrota (SoundNames.PlayerLoose), una sola vez por muerte. Va antes de los dos
-        // caminos de abajo porque la vida puede llegar a 0 con un golpe normal (isLethal) o con el costo de vida de una caída a una
-        // DeathZone, que llega con el respawn ya corriendo (isRespawning) y sale antes. "wasAlive" evita que suene de nuevo si entra
-        // otro golpe mientras el respawn sigue corriendo y la vida ya está en 0 (ahí isLethal vuelve a ser true).
+        // Lost the last life: the defeat sound plays (SoundNames.PlayerLoose), once per death. It goes before the two paths below because
+        // health can reach 0 with a normal hit (isLethal) or with the life cost of falling into a DeathZone, which arrives with the
+        // respawn already running (isRespawning) and returns early. "wasAlive" prevents it from playing again if another hit comes in while
+        // the respawn is still running and health is already 0 (there isLethal is true again).
         if(wasAlive && isLethal && AudioManager.instance) AudioManager.instance.Play(SoundNames.PlayerLoose);
 
-        // Golpe durante el respawn (ej. el costo de vida por caer a una DeathZone): solo baja la vida. El
-        // DamageFeedback no va acá: su hitstop deja el timeScale en 0 (el respawn tiene CanPause en true y lo toma
-        // como pausa) y su empujón devuelve los inputs en medio de la transición. Si es letal, el respawn que ya
-        // está corriendo restaura la vida del checkpoint.
+        // Hit during the respawn (e.g. the life cost of falling into a DeathZone): it only lowers health. DamageFeedback doesn't belong here:
+        // its hitstop leaves timeScale at 0 (the respawn has CanPause set to true and takes it as a pause) and its knockback gives the inputs back
+        // in the middle of the transition. If it is lethal, the respawn that is already running restores the checkpoint's health.
         if(isRespawning)
         {
             if (AudioManager.instance) AudioManager.instance.Play(SoundNames.PlayerHurt);
             return;
         }
 
-        // Golpe que mata: directo a la transición de respawn (iris), sin el combo de
-        // hitstop/empujón/temblor/parpadeo del DamageFeedback (no tiene sentido si ya se muere).
+        // Killing hit: straight to the respawn transition (iris), without DamageFeedback's combo of
+        // hitstop/knockback/shake/blink (pointless if it is already dying).
         if(isLethal)
         {
             if(RespawnController.Instance != null) RespawnController.Instance.TriggerRespawn(false);
@@ -75,8 +74,8 @@ public class GekkoHealth : IDamageable
         }
         else
         {
-            // El hitstop/vignette/empujón/temblor/invulnerabilidad vive en DamageFeedback;
-            // reemplaza el shake suelto que había acá (ahora usa Cinemachine Impulse de verdad).
+            // The hitstop/vignette/knockback/shake/invulnerability lives in DamageFeedback;
+            // it replaces the loose shake that used to be here (it now uses a real Cinemachine Impulse).
             DamageFeedback.Instance?.TriggerHit();
         }
 

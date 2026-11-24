@@ -1,23 +1,13 @@
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
 
-// Espejo: si está activo, las balas de torreta (IReflectable) que lo tocan salen en la dirección contraria. Nada más: no
-// sabe nada de ningún desafío. Mismo esquema que ChallengeTurret: el MonoBehaviour es fino y la lógica vive en los behaviours
-// (Model/) y en los estados (States/). Lo prenden y apagan otros (placas de presión, etc.) a través de IActivable.
-//
-// Al activarse se levanta: gira el pivot (_pivot) sobre su eje X local, desde la pose en que está acostado, y al apagarse se
-// vuelve a acostar. Sin _pivot es un espejo fijo.
-//
-// Layout del prefab Mirror: este componente va en la raíz; el pivot es la bisagra (con la chapa como hijo) y el collider que
-// refleja es el de la chapa (_surface), que gira con el pivot. Ese collider tiene que ser sólido (Gekko no lo atraviesa): las
-// balas son triggers. Si el espejo es fijo se puede poner el collider en este mismo GameObject y dejar _surface vacío.
 public class Mirror : MonoBehaviour, IActivable
 {
-    [Header("Estado")]
+    [Header("State")]
     [Tooltip("Si arranca activo (parado y devolviendo balas). Los espejos 'acostados' del puzzle arrancan apagados.")]
     [SerializeField] private bool _startActive = true;
 
-    [Header("Levantar")]
+    [Header("Raise")]
     [Tooltip("Pivot que gira para levantar el espejo: la bisagra, con la chapa (y su collider) como hijo. Vacío = el espejo no se mueve.")]
     [SerializeField] private Transform _pivot;
     [Tooltip("Cuánto gira el pivot sobre su eje X local al activarse, a partir de la rotación que tiene acostado. -90 lo levanta.")]
@@ -26,11 +16,15 @@ public class Mirror : MonoBehaviour, IActivable
     [Min(0.01f)]
     [SerializeField] private float _raiseSeconds = 0.6f;
 
-    [Header("Superficie")]
+    [Header("Surface")]
     [Tooltip("Collider de la chapa que refleja (el que gira con el pivot). Vacío = se usa un Collider de este mismo GameObject.")]
     [SerializeField] private Collider _surface;
 
-    [Header("Runa")]
+    [Header("Bounce")]
+    [Tooltip("Hacia dónde sale la bala al rebotar: el espejo la apunta a la posición de este Transform, desde donde la toca. Un Empty de la escena, por ejemplo sobre la torreta que tiene que alcanzar (la bala sigue de largo si no choca con nada). Ponelo fuera del pivot y del marco: giran al levantar el espejo y moverían el punto. Vacío = la bala vuelve por donde vino (invierte su dirección).")]
+    [SerializeField] private Transform _bounceTarget;
+
+    [Header("Rune")]
     [Tooltip("Decal de la runa (el de la placa de presión) sobre la piedra principal del marco. Se enciende cuando el espejo termina de levantarse. Vacío = sin runa.")]
     [SerializeField] private DecalProjector _rune;
     [Tooltip("Segundos del fade de la runa al encenderse/apagarse.")]
@@ -60,7 +54,7 @@ public class Mirror : MonoBehaviour, IActivable
     {
         _stateMachine = new StateMachine();
 
-        reflect = new MirrorReflectBehaviour();
+        reflect = new MirrorReflectBehaviour(_bounceTarget);
         raise = new MirrorRaiseBehaviour(_pivot, _raisedAngle, _raiseSeconds);
         rune = new MirrorRuneBehaviour(_rune, _runeSeconds, _runeStartScale);
 
@@ -69,22 +63,22 @@ public class Mirror : MonoBehaviour, IActivable
 
         SetupSurface();
 
-        // El espejo que nace activo ya está parado: no se levanta a la vista.
+        // A mirror that starts active is already standing: it doesn't visibly raise itself.
         raise.Snap(_startActive);
         rune.Snap(_startActive);
 
-        // En Awake y no en Start: un Activated() externo temprano no tiene que quedar pisado por el estado inicial.
+        // In Awake and not in Start: an early external Activated() must not be overwritten by the initial state.
         _stateMachine.SetState(_startActive ? activeState : inactiveState);
     }
 
-    // La chapa que refleja cuelga del pivot: Unity le avisa los triggers a ella y no a este GameObject, así que se le agrega un
-    // MirrorSurface que los pasa para acá.
+    // The reflecting plate hangs from the pivot: Unity sends the triggers to it and not to this GameObject, so a MirrorSurface is added to it
+    // to forward them here.
     private void SetupSurface()
     {
         if(_surface == null)
         {
             if(!TryGetComponent(out Collider _))
-                Debug.LogWarning($"[{name}] Mirror sin collider: asigná _surface o poné un Collider en este GameObject, si no no refleja nada.", this);
+                Debug.LogWarning($"[{name}] Mirror without a collider: assign _surface or add a Collider to this GameObject, otherwise it reflects nothing.", this);
 
             return;
         }
@@ -101,24 +95,36 @@ public class Mirror : MonoBehaviour, IActivable
         rune.ArtificialUpdate(raise.IsFullyRaised);
     }
 
-    // Lo llaman el collider de este GameObject (si lo tiene) y el MirrorSurface de la chapa.
+    // Called by this GameObject's collider (if it has one) and by the plate's MirrorSurface.
     private void OnTriggerEnter(Collider other)
     {
         TryReflect(other);
     }
 
-    // Algo tocó la superficie: se lo devuelve si el espejo está activo y es reflejable (ver MirrorReflectBehaviour).
+    // Something touched the surface: it is sent back if the mirror is active and it is reflectable (see MirrorReflectBehaviour).
     public bool TryReflect(Collider other) => reflect.TryReflect(other);
 
     public void Activated(bool active = true) => _stateMachine.SetState(active ? activeState : inactiveState);
 
-    // Lo contrario de lo que está: parado se acuesta y acostado se levanta. Lo usan las placas del puzzle (PressurePlateRuna).
+    // The opposite of its current state: standing, it lies down; lying down, it raises itself. Used by the puzzle's plates (PressurePlateRuna).
     public void Toggle() => Activated(!IsActive);
 
-    // Para probarlo desde el Inspector (menú de tres puntos del componente) sin placas de presión.
-    [ContextMenu("Alternar (Play Mode)")]
+    // To test it from the Inspector (the component's three-dot menu) without pressure plates.
+    [ContextMenu("Toggle (Play Mode)")]
     private void TestToggle()
     {
         if(Application.isPlaying) Toggle();
     }
+
+#if UNITY_EDITOR
+    // With the mirror selected: a line to the bounce point, to see where the bullet will go.
+    private void OnDrawGizmosSelected()
+    {
+        if(_bounceTarget == null) return;
+
+        Gizmos.color = Color.cyan;
+        Gizmos.DrawLine(transform.position, _bounceTarget.position);
+        Gizmos.DrawWireSphere(_bounceTarget.position, 0.25f);
+    }
+#endif
 }

@@ -51,14 +51,14 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
     private ParticleSystemFactory _psFactory;
     private PlantDamageFlash _damageFlash;
     private PlantPaintPurify _paint;
-    // Dónde pegó la lengua por última vez (OnTongueContact llega justo antes de Damage): lo usan las chispas del pintado.
+    // Where the tongue last hit (OnTongueContact arrives right before Damage): used by the paint sparks.
     private Vector3 _lastHitPoint;
     private float _lastHitTime = -1f;
 
     public bool IsPurified => _purified;
     public bool IsShielded { get; private set; }
     public Animator Animator => _animatorCarnivorousPlant;
-    // (golpes recibidos, golpes necesarios)
+    // (hits received, hits needed)
     public event System.Action<int, int> Hit;
     public event System.Action Purified;
 
@@ -95,12 +95,12 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
         CacheHurtTrigger();
         _skinnedMeshRenderers = GetComponentsInChildren<SkinnedMeshRenderer>();
 
-        // Purificación pintada golpe a golpe (DataSO > Paint On Hit): reemplaza al parpadeo de daño, que cambiaría el material
-        // de transición en pleno pintado.
+        // Hit-by-hit painted purification (DataSO > Paint On Hit): replaces the damage flash, which would change the transition material
+        // in the middle of the painting.
         if(data.paintOnHit && data.paintShader != null && data.purifiedMaterial != null)
             _paint = new PlantPaintPurify(this, _skinnedMeshRenderers, data);
 
-        // El parpadeo de daño es opcional: solo existe si el DataSO trae un Damaged Material (hoy, el del boss).
+        // The damage flash is optional: it only exists if the DataSO has a Damaged Material (today, the boss's).
         else if(data.damagedMaterial != null)
             _damageFlash = new PlantDamageFlash(_skinnedMeshRenderers, data.damagedMaterial, data.damagedMaterialSeconds);
 
@@ -110,24 +110,24 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
         BiteState = new PlantBiteState(this);
         PurifiedState = new PlantPurifiedState(this);
 
-        // La preparación del mordisco es opcional (hoy, solo el boss) y también la usa la escupida, por eso se busca antes.
+        // The bite windup is optional (today, only the boss) and the spit also uses it, which is why it is looked up beforehand.
         _biteWindup = GetComponent<PlantBiteWindup>();
 
-        // La reacción a los golpes que no purifican también es opcional (hoy, solo el boss).
+        // The reaction to hits that don't purify is also optional (today, only the boss).
         _hurtReaction = GetComponent<PlantHurtReaction>();
 
-        // Y la pose de planta cansada del intervalo entre mordiscos (hoy, solo el boss): ver SetInBiteInterval.
+        // And so is the tired-plant pose for the interval between bites (today, only the boss): see SetInBiteInterval.
         _tired = GetComponent<PlantTiredAnimation>();
 
         spitBehaviour = new PlantSpitBehaviour(_head, _firePoint, _venomPrefab, data.shootInterval, data.rotateToPlayer, data.rotationSpeed, _muzzlePS, PlaySpit, _biteWindup);
 
-        // El aim del hueso es opcional: solo existe si la planta tiene un _aimJoint asignado (hoy, el boss).
+        // The bone aim is optional: it only exists if the plant has an _aimJoint assigned (today, the boss).
         if(_aimJoint != null && data.rotateToPlayer)
             _aimBehaviour = new PlantAimBehaviour(_aimJoint, _aimJointAxis, data.rotationSpeed, _aimBlendTime);
 
-        // El HitBox del mordisco también es opcional: solo existe si el prefab tiene un hijo con PlantBiteHitBox (hoy, el boss).
-        // Sin él la planta muerde como siempre (daño en el pico de la embestida). Arranca apagado: se prende únicamente durante
-        // la embestida.
+        // The bite's HitBox is also optional: it only exists if the prefab has a child with PlantBiteHitBox (today, the boss).
+        // Without it the plant bites as usual (damage at the peak of the lunge). It starts off: it is only turned on during
+        // the lunge.
         _hitBox = GetComponentInChildren<PlantBiteHitBox>(true);
         if(_hitBox != null)
         {
@@ -144,7 +144,7 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
 
     private void Start()
     {
-        // Se resuelve acá (no en Awake) para garantizar que el Player ya seteó GameManager.Instance.Pj.
+        // Resolved here (not in Awake) to guarantee the Player has already set GameManager.Instance.Pj.
         playerTransform = GameManager.Instance.Pj.transform;
         detection = new BugDetection(transform, playerTransform, data.detectionRange);
         biteDetection = new BugDetection(transform, playerTransform, data.biteRange);
@@ -153,8 +153,8 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
 
     public bool IsPlayerInBiteRange() => biteDetection.IsTargetInRange();
 
-    // Mientras corre una cinemática (ParkourCinematicTrigger, cámaras del boss al romper un núcleo) la planta no ataca:
-    // se saltea el FSM, igual que HeavyBeetle. Sin esto seguía escupiéndole a Gekko congelado con la cámara en otro lado.
+    // While a cinematic runs (ParkourCinematicTrigger, the boss cameras when a core is broken) the plant doesn't attack:
+    // the FSM is skipped, just like HeavyBeetle. Without this it kept spitting at a frozen Gekko with the camera elsewhere.
     private bool _frozenForCinematic;
 
     private void OnEnable()
@@ -172,8 +172,8 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
         EventManager.Unsubscribe("OnCinematicEnd", UnfreezeForCinematic);
         _frozenForCinematic = false;
 
-        // Apagada en plena embestida: la corrutina muere con ella, así que el hitbox no puede quedar prendido ni la planta
-        // "embistiendo" para siempre.
+        // Turned off mid-lunge: the coroutine dies with it, so the hitbox can't stay on nor the plant stay
+        // "lunging" forever.
         _isLunging = false;
         InBiteInterval = false;
         if(_tired != null) _tired.Stop();
@@ -199,20 +199,20 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
         UpdateDetection();
     }
 
-    // LateUpdate y no Update: el Animator reescribe la pose de los huesos después de Update, así que el giro del hueso tiene
-    // que ir después para que no se lo pise (ver PlantAimBehaviour).
+    // LateUpdate and not Update: the Animator rewrites the bones' pose after Update, so the bone's rotation has to
+    // go afterwards so it doesn't get overwritten (see PlantAimBehaviour).
     private void LateUpdate()
     {
-        // Antes del return de abajo: el parpadeo de daño corre también en las plantas sin aim, y durante el aturdimiento (Update
-        // está frenado).
+        // Before the return below: the damage flash also runs on plants without aim, and during the stun (Update
+        // is stopped).
         if(_damageFlash != null) _damageFlash.ArtificialLateUpdate();
 
         if(_aimBehaviour == null) return;
 
-        // Apunta mientras escupe. Aturdida por un golpe de lengua o purificada no: ahí el hueso vuelve a la animación.
-        // Tampoco mientras corre la preparación del mordisco: los huesos son de esa animación y el aim retoma cuando termina
-        // (sube desde cero, sin salto), así no se pelean por joint7_R.
-        // spitBehaviour se lee en cada frame porque BossPlantPhases lo reemplaza al cambiar de fase.
+        // Aims while spitting. Not when stunned by a tongue hit or purified: there the bone goes back to the animation.
+        // Nor while the bite windup runs: the bones belong to that animation and the aim resumes when it finishes
+        // (rising from zero, without a jump), so they don't fight over joint7_R.
+        // spitBehaviour is read every frame because BossPlantPhases replaces it when the phase changes.
         bool windupPlaying = _biteWindup != null && _biteWindup.IsPlaying;
         bool aiming = !_purified && Time.time >= _staggerUntil && !windupPlaying && spitBehaviour != null && spitBehaviour.IsSpitting;
 
@@ -239,14 +239,14 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
     public void SetState(IState state) => _eventFSM.SetState(state);
     public void SendEvent(CreatureEvent e) => _eventFSM.SendEvent(e);
 
-    // Intervalo entre mordiscos (lo marca PlantBiteState): la única ventana en la que se puede dañar a una planta cuya data pide
-    // vulnerableOnlyInBiteInterval (hoy, el boss). La embestida nunca cuenta, aunque corra dentro del intervalo.
+    // Interval between bites (set by PlantBiteState): the only window in which a plant whose data asks for
+    // vulnerableOnlyInBiteInterval (today, the boss) can be damaged. The lunge never counts, even if it runs inside the interval.
     public bool InBiteInterval { get; private set; }
 
-    // Entrar al intervalo dispara la animación de "planta cansada" (PlantTiredAnimation, opcional: hoy, solo el boss): es la señal
-    // de que ahora se la puede golpear. Dura lo que dure el intervalo (Bite Interval del DataSO) y se corta al salir de él. Por
-    // acá pasan todos los caminos: se acaba el tiempo y arranca la preparación del próximo mordisco, el player se va del rango, la
-    // planta se purifica. Avisa solo cuando el valor cambia.
+    // Entering the interval triggers the "tired plant" animation (PlantTiredAnimation, optional: today, only the boss): it is the signal
+    // that it can now be hit. It lasts as long as the interval (the DataSO's Bite Interval) and is cut when leaving it. All
+    // paths go through here: time runs out and the next bite's windup starts, the player leaves the range, the
+    // plant is purified. It only notifies when the value changes.
     public void SetInBiteInterval(bool value)
     {
         if(InBiteInterval == value) return;
@@ -259,8 +259,8 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
         else _tired.Stop();
     }
 
-    // Mientras corre la reacción a un golpe (PlantHurtReaction) la planta no se puede dañar, igual que durante la preparación del
-    // mordisco. Cuenta también para la marca de golpe bloqueado de OnTongueContact.
+    // While a hit reaction (PlantHurtReaction) runs the plant can't be damaged, just like during the bite
+    // windup. It also counts for OnTongueContact's blocked-hit mark.
     private bool IsHurtReacting => _hurtReaction != null && _hurtReaction.IsPlaying;
 
     private bool CanBeHit => !_isLunging && !IsHurtReacting && (!data.vulnerableOnlyInBiteInterval || InBiteInterval);
@@ -351,18 +351,18 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
         {
             if(_paint != null) _paint.OnHit(_hits, hitsNeeded, RecentHitPoint());
 
-            // Golpear a una planta ya no le cuesta vida a Gekko (comentado, no borrado, por si se quiere volver a activar).
+            // Hitting a plant no longer costs Gekko health (commented out, not deleted, in case it needs to be turned on again).
             //if(data.hitHealthCost > 0f)
             //    EventManager.Trigger<float>("OnPlayerDamaged", data.hitHealthCost);
 
             PlayHurt();
 
-            // Material de daño por Damaged Material Seconds del DataSO. Solo en los golpes que cuentan y no purifican: el golpe
-            // final lo corta PlayPurifiedFeedback, y los bloqueados (planta invulnerable) ni llegan acá.
+            // Damage material for the DataSO's Damaged Material Seconds. Only on hits that count and don't purify: the final hit
+            // is cut by PlayPurifiedFeedback, and blocked ones (invulnerable plant) never even get here.
             if(_damageFlash != null) _damageFlash.Play();
 
-            // Con PlantHurtReaction el golpe dispara su animación, y el ataque se pausa lo que ella dure para que no peleen por los
-            // huesos (se toma el mayor entre eso y el aturdimiento del DataSO). Mientras corre la planta es invulnerable: CanBeHit.
+            // With PlantHurtReaction the hit triggers its animation, and the attack is paused for as long as it lasts so they don't fight over
+            // the bones (the larger of that and the DataSO's stun is used). While it runs the plant is invulnerable: CanBeHit.
             float pauseSeconds = data.hurtStaggerSeconds;
             if(_hurtReaction != null && _hurtReaction.Play()) pauseSeconds = Mathf.Max(pauseSeconds, _hurtReaction.Duration);
 
@@ -370,8 +370,8 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
             {
                 _staggerUntil = Time.time + pauseSeconds;
 
-                // Aturdida: el FSM se frena, así que se corta la preparación del mordisco (si estaba en eso). PlantBiteState la
-                // retoma de cero al terminar el aturdimiento.
+                // Stunned: the FSM stops, so the bite windup is cut (if it was in one). PlantBiteState
+                // restarts it from zero when the stun ends.
                 if(_biteWindup != null) _biteWindup.Cancel();
             }
 
@@ -381,19 +381,19 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
         _purified = true;
         SetHitBoxActive(false);
 
-        // El último golpe de una planta de varios golpes también suena, con el tono más alto (ver Hurt Pitch Step).
+        // The last hit on a multi-hit plant also plays, with the highest pitch (see Hurt Pitch Step).
         if(hitsNeeded > 1 && data.hurtPitchStep > 0f && AudioManager.instance)
             AudioManager.instance.PlayPitched(SoundNames.PlantHurt, 1f + data.hurtPitchStep * (hitsNeeded - 1));
 
-        // Purificar a una planta (la boss incluida) ya no le cuesta vida a Gekko (comentado, no borrado, por si se quiere volver
-        // a activar). Con esto Purify Health Cost y Hit Health Cost del DataSO quedan sin efecto.
+        // Purifying a plant (the boss included) no longer costs Gekko health (commented out, not deleted, in case it needs to be turned
+        // on again). With this, the DataSO's Purify Health Cost and Hit Health Cost have no effect.
         //EventManager.Trigger<float>("OnPlayerDamaged", data.purifyHealthCost);
         SetState(PurifiedState);
         Purified?.Invoke();
     }
 
-    // Debug (Alt+8, ver DebugController): purifica de una, sin escudo, sin contar golpes y sin costo de vida.
-    // Sigue el mismo camino que el último golpe, así la cinemática, el desafío y el gekko amigo reaccionan igual.
+    // Debug (Alt+8, see DebugController): purifies right away, without shield, without counting hits and without health cost.
+    // It follows the same path as the last hit, so the cinematic, the challenge and the friendly gekko react the same way.
     public void DebugPurify()
     {
         if(_purified) return;
@@ -425,7 +425,7 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
         Vector3 toPlayer = (playerTransform.position - _head.position);
         toPlayer.Normalize();
 
-        // Avance objetivo en espacio local del padre del head.
+        // Target advance in the head's parent's local space.
         Vector3 localOffset = _head.parent != null
             ? _head.parent.InverseTransformDirection(toPlayer) * data.biteLungeDistance
             : toPlayer * data.biteLungeDistance;
@@ -435,7 +435,7 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
 
         float half = data.biteLungeDuration * 0.5f;
 
-        // Fase ida: avanza y rota hacia el player.
+        // Forward phase: advances and rotates towards the player.
         float t = 0f;
         while(t < half)
         {
@@ -446,10 +446,10 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
             yield return null;
         }
 
-        // Pico de la embestida. Con HitBox el daño lo aplica el trigger; sin él (plantas chicas) sale acá, una sola vez.
+        // Peak of the lunge. With HitBox the trigger applies the damage; without it (small plants) it happens here, only once.
         if(_hitBox == null) OnBiteHitBoxContact(GameManager.Instance.Pj);
 
-        // Fase vuelta: regresa a la pose original.
+        // Return phase: goes back to the original pose.
         t = 0f;
         while(t < half)
         {
@@ -460,7 +460,7 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
             yield return null;
         }
 
-        // Asegurar la pose base exacta al terminar.
+        // Make sure the exact base pose is set when finished.
         _head.localPosition = _headStartLocalPos;
         _head.localRotation = _headStartLocalRot;
         SetHitBoxActive(false);
@@ -493,7 +493,7 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
 
     public void SetShielded(bool shielded) => IsShielded = shielded;
 
-    // El Animator original solo tiene "nibble": el trigger "hurt" es opcional.
+    // The original Animator only has "nibble": the "hurt" trigger is optional.
     private void CacheHurtTrigger()
     {
         if(_animatorCarnivorousPlant == null || _animatorCarnivorousPlant.runtimeAnimatorController == null) return;
@@ -514,12 +514,12 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
 
         if(!AudioManager.instance) return;
 
-        // Con Hurt Pitch Step el tono sube con cada golpe (1º grave, el último más agudo).
+        // With Hurt Pitch Step the pitch rises with each hit (1st low, the last one highest).
         if(data.hurtPitchStep > 0f) AudioManager.instance.PlayPitched(SoundNames.PlantHurt, 1f + data.hurtPitchStep * Mathf.Max(0, _hits - 1));
         else AudioManager.instance.Play(SoundNames.PlantHurt);
     }
 
-    // El punto de la lengua si es de este golpe (llega en el mismo frame que Damage); si no, null (las chispas van al centro).
+    // The tongue's point if it belongs to this hit (it arrives in the same frame as Damage); otherwise null (the sparks go to the center).
     private Vector3? RecentHitPoint() => Time.time - _lastHitTime < 0.25f ? _lastHitPoint : (Vector3?)null;
 
     private void OnDestroy()
@@ -541,10 +541,10 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
                 if(go != null) go.SetActive(false);
     }
 
-    // Cambio de material unidireccional: la purificación de la planta es un estado terminal, no se revierte.
+    // One-way material change: the plant's purification is a terminal state, it is not reverted.
     private void ApplyPurifiedMaterial()
     {
-        // Con la purificación pintada el cambio no es directo: termina de pintarse, destello y recién ahí Purified Material.
+        // With painted purification the change is not direct: it finishes being painted, flash, and only then Purified Material.
         if(_paint != null)
         {
             _paint.Complete(RecentHitPoint());

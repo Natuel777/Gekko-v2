@@ -3,40 +3,40 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
 
-// Placa de presion con runa: cuando Gekko la pisa, la piedra central baja, la runa (decal) se enciende con un fade suave y
-// la placa alterna el estado de los espejos asignados (el que esta parado se acuesta y el acostado se levanta).
+// Rune pressure plate: when Gekko steps on it, the central stone sinks, the rune (decal) lights up with a soft fade and
+// the plate toggles the state of the assigned mirrors (a standing one lies down and a lying one stands up).
 //
-// Dos modos (Un Solo Uso):
-//  - Tildado: la piedra queda hundida y la runa encendida, y la placa se activa una sola vez.
-//  - Destildado: es una placa de presion de verdad. Cada vez que Gekko la pisa alterna los espejos; la piedra queda abajo
-//    mientras Gekko esta encima y sube cuando se baja.
+// Two modes (Un Solo Uso field):
+//  - Checked: the stone stays sunk and the rune stays lit, and the plate activates only once.
+//  - Unchecked: it is a real pressure plate. Every time Gekko steps on it, it toggles the mirrors; the stone stays down
+//    while Gekko is on top and goes back up when Gekko steps off.
 public class PressurePlateRuna : MonoBehaviour
 {
-    [Header("Piedra")]
+    [Header("Stone")]
     [SerializeField] Transform _piedra;
-    [SerializeField] float _hundimiento = -0.07f;     // offset en Y local de la piedra
-    [SerializeField] float _duracionBajada = 0.25f;   // lo que tarda en bajar (y en subir, si la placa es reutilizable)
+    [SerializeField] float _hundimiento = -0.07f;     // local Y offset of the stone
+    [SerializeField] float _duracionBajada = 0.25f;   // how long it takes to go down (and up, if the plate is reusable)
 
-    [Header("Runa")]
+    [Header("Rune")]
     [SerializeField] DecalProjector _runa;
-    [SerializeField] float _delayRuna = 0.1f;          // espera desde que empieza a bajar la piedra
+    [SerializeField] float _delayRuna = 0.1f;          // wait from when the stone starts sinking
     [SerializeField] float _duracionRuna = 0.8f;
     [SerializeField, Range(0.5f, 1f)] float _escalaInicialRuna = 0.85f;
 
-    [Header("Espejos")]
+    [Header("Mirrors")]
     [Tooltip("Espejos que alterna la placa cada vez que Gekko la pisa: el que esta parado se acuesta y el acostado se levanta. Una placa puede alterar varios espejos y un mismo espejo puede estar en varias placas: asi se arma el puzzle.")]
     [SerializeField] Mirror[] _espejos;
 
-    [Header("Uso")]
+    [Header("Usage")]
     [Tooltip("Tildado: la placa se activa una sola vez y la piedra queda hundida. Destildado: se puede pisar todas las veces que se quiera; alterna los espejos cada vez que Gekko entra y la piedra sube cuando se baja.")]
     [SerializeField] bool _unSoloUso = false;
 
-    [Header("Activable (opcional)")]
+    [Header("Activable (optional)")]
     [Tooltip("Cualquier objeto con IActivable: se le llama a Activated() cada vez que se pisa la placa. Para los espejos usar la lista de arriba, que alterna.")]
     [SerializeField] GameObject _objetoActivable;
 
-    // Los colliders de Gekko que estan encima ahora. Gekko tiene mas de uno y cada uno avisa su entrada: sin llevar la cuenta
-    // se alternaria una vez por collider (y dos cambios dejan el espejo como estaba).
+    // Gekko's colliders that are on top right now. Gekko has more than one and each reports its own entry: without keeping count,
+    // it would toggle once per collider (and two toggles leave the mirror as it was).
     readonly HashSet<Collider> _jugadorDentro = new HashSet<Collider>();
     bool _activada;
     Coroutine _rutinaPiedra, _rutinaRuna;
@@ -48,14 +48,14 @@ public class PressurePlateRuna : MonoBehaviour
         _posInicialPiedra = _piedra.localPosition;
         _tamanoRuna = _runa.size;
 
-        // La runa arranca apagada hasta que Gekko pise la placa
+        // The rune starts off until Gekko steps on the plate
         _runa.fadeFactor = 0f;
         _runa.enabled = false;
     }
 
     void OnDisable()
     {
-        // Si la apagan con Gekko encima no va a llegar el OnTriggerExit.
+        // If it is turned off with Gekko on top, OnTriggerExit will never arrive.
         _jugadorDentro.Clear();
     }
 
@@ -63,7 +63,7 @@ public class PressurePlateRuna : MonoBehaviour
     {
         if (other.GetComponentInParent<Player>() == null) return;
 
-        // La placa se pisa una sola vez, cuando entra el primer collider de Gekko.
+        // The plate is stepped on only once, when Gekko's first collider enters.
         DescartarColliders();
         bool estabaLibre = _jugadorDentro.Count == 0;
         _jugadorDentro.Add(other);
@@ -82,7 +82,7 @@ public class PressurePlateRuna : MonoBehaviour
         if (_jugadorDentro.Count == 0 && !_unSoloUso) Soltar();
     }
 
-    // Un collider destruido o apagado con Gekko encima no avisa con OnTriggerExit: se lo descarta para no dar la placa por ocupada.
+    // A collider destroyed or disabled with Gekko on top doesn't notify with OnTriggerExit: it is discarded so the plate isn't considered occupied.
     void DescartarColliders()
     {
         _jugadorDentro.RemoveWhere(c => c == null || !c.enabled || !c.gameObject.activeInHierarchy);
@@ -92,8 +92,8 @@ public class PressurePlateRuna : MonoBehaviour
     {
         _activada = true;
 
-        // Suena apenas Gekko pisa, junto con el hundimiento de la piedra (no espera a que termine de bajar). Una vez por pisada:
-        // OnTriggerEnter ya descarta los demas colliders de Gekko y, con Un Solo Uso, las pisadas posteriores a la primera.
+        // Plays as soon as Gekko steps on it, together with the stone sinking (it doesn't wait for it to finish going down). Once per step:
+        // OnTriggerEnter already discards Gekko's other colliders and, with Un Solo Uso, every step after the first.
         if (AudioManager.instance) AudioManager.instance.Play(SoundNames.PlankPlaced);
 
         Iniciar(ref _rutinaPiedra, MoverPiedra(true));
@@ -107,16 +107,16 @@ public class PressurePlateRuna : MonoBehaviour
         Iniciar(ref _rutinaRuna, FundirRuna(false));
     }
 
-    // Corta la animacion anterior (si sigue corriendo) y arranca la nueva: pisar y salir rapido no deja dos animaciones
-    // peleando por la piedra o la runa.
+    // Stops the previous animation (if it is still running) and starts the new one: stepping on and quickly leaving doesn't leave two animations
+    // fighting over the stone or the rune.
     void Iniciar(ref Coroutine rutina, IEnumerator nueva)
     {
         if (rutina != null) StopCoroutine(rutina);
         rutina = StartCoroutine(nueva);
     }
 
-    // La piedra termina de bajar y recien ahi actua la placa. Va aparte de la animacion de la piedra: si Gekko sale antes de que
-    // termine, esa animacion se corta pero la pisada ya cuenta.
+    // The stone finishes going down and only then does the plate act. It is separate from the stone's animation: if Gekko leaves before it
+    // finishes, that animation is cut but the step already counts.
     IEnumerator ActuarTrasBajar()
     {
         yield return new WaitForSeconds(_duracionBajada);
@@ -137,7 +137,7 @@ public class PressurePlateRuna : MonoBehaviour
         }
     }
 
-    // Baja la piedra (o la sube) desde donde este, con el rebote del final.
+    // Lowers the stone (or raises it) from wherever it is, with the bounce at the end.
     IEnumerator MoverPiedra(bool hundir)
     {
         Vector3 desde = _piedra.localPosition;
@@ -151,8 +151,8 @@ public class PressurePlateRuna : MonoBehaviour
         _piedra.localPosition = destino;
     }
 
-    // Enciende la runa (con su delay y su escala) o la apaga con un fade. Parte del fade que tenga en ese momento, asi cortar
-    // una animacion a medias no pega saltos.
+    // Lights the rune (with its delay and scale) or turns it off with a fade. It starts from whatever fade it has at that moment, so cutting
+    // an animation midway doesn't cause jumps.
     IEnumerator FundirRuna(bool encender)
     {
         if (encender)
@@ -169,7 +169,7 @@ public class PressurePlateRuna : MonoBehaviour
         {
             _runa.fadeFactor = Mathf.Lerp(fadeDesde, fadeHasta, Mathf.SmoothStep(0f, 1f, t));
 
-            // Al encenderse la runa "se asienta" (crece hasta su tamano); al apagarse solo se desvanece.
+            // When the rune lights up it "settles" (grows to its size); when it turns off it just fades out.
             if (encender)
             {
                 float escala = Mathf.Lerp(escalaDesde, 1f, EaseOutCubic(t));
@@ -185,7 +185,7 @@ public class PressurePlateRuna : MonoBehaviour
         else _runa.enabled = false;
     }
 
-    // Pequeño rebote al final para que la piedra "haga click"
+    // Small bounce at the end so the stone "clicks"
     static float EaseOutBack(float t)
     {
         const float c1 = 1.2f;

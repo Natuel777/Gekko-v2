@@ -2,42 +2,42 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-// Animación por código de la "planta cansada": la pose que toma el boss en el intervalo entre mordiscos (Bite Interval del
-// DataSO, CarnivorousPlantDataSO.biteInterval), que es la ventana en la que Gekko puede dañarla (ver CarnivorousPlant.CanBeHit).
-// Es la señal visual de que ahora está vulnerable. Mismo estilo que PlantBiteWindup y PlantHurtReaction: va en el mismo
-// GameObject que CarnivorousPlant, aplica la pose de los huesos en LateUpdate (el Animator los reescribe en cada frame) y sus
-// tiempos se ajustan en el Inspector.
+// Code-driven animation of the "tired plant": the pose the boss takes in the interval between bites (the DataSO's Bite Interval,
+// CarnivorousPlantDataSO.biteInterval), which is the window in which Gekko can damage it (see CarnivorousPlant.CanBeHit).
+// It is the visual signal that it is now vulnerable. Same style as PlantBiteWindup and PlantHurtReaction: it goes on the same
+// GameObject as CarnivorousPlant, applies the bones' pose in LateUpdate (the Animator rewrites them every frame) and its
+// timings are adjusted in the Inspector.
 //
-// Arranca cuando CarnivorousPlant entra al intervalo (SetInBiteInterval(true), justo después de cada mordisco) y se corta cuando
-// el intervalo termina (SetInBiteInterval(false): empieza la preparación del próximo mordisco, el player se fue del rango, la
-// planta se purificó...). Fases:
-//  1. Wait: durante Start Delay segundos los huesos siguen siendo del Animator, que está con la animación del mordisco ('nibble',
-//     unos 0,8 s). Así el mordisco se ve entero y la planta recién se cansa cuando terminó de morder.
-//  2. Settle: los huesos pasan de su rotación por defecto (la que tienen en el prefab, que se lee al arrancar la escena) a la pose
-//     de cansada (Target Euler). Los primeros Blend In Time segundos se mezclan con la pose que dejó el Animator, para que no haya
-//     un salto al tomar los huesos.
-//  3. Hold: la planta se queda en esa pose hasta que termina el intervalo. Los huesos con Shake (hoy, joint7_R, la cabeza) oscilan
-//     entre Target Euler y Shake Euler: el gesto de "no" con la cabeza.
-//  4. Release: al terminar el intervalo los huesos vuelven a la pose del Animator durante Release Time segundos. Si lo que sigue
-//     es la preparación del mordisco (PlantBiteWindup), ella arranca desde la pose de cansada y toma sola los huesos que anima;
-//     este Release suaviza el resto, los que la preparación no toca. Los huesos de reposo (ver abajo) no vuelven a la pose del
-//     Animator sino a la suya.
+// It starts when CarnivorousPlant enters the interval (SetInBiteInterval(true), right after each bite) and is cut when
+// the interval ends (SetInBiteInterval(false): the next bite's preparation starts, the player left the range, the
+// plant was purified...). Phases:
+//  1. Wait: for Start Delay seconds the bones still belong to the Animator, which is playing the bite animation ('nibble',
+//     about 0.8 s). That way the bite is seen in full and the plant only gets tired once it has finished biting.
+//  2. Settle: the bones go from their default rotation (the one they have in the prefab, which is read when the scene starts) to the
+//     tired pose (Target Euler). The first Blend In Time seconds are blended with the pose the Animator left, so there is no
+//     jump when taking the bones.
+//  3. Hold: the plant stays in that pose until the interval ends. Bones with Shake (today, joint7_R, the head) oscillate
+//     between Target Euler and Shake Euler: the head's "no" gesture.
+//  4. Release: when the interval ends the bones go back to the Animator's pose over Release Time seconds. If what follows
+//     is the bite preparation (PlantBiteWindup), it starts from the tired pose and takes by itself the bones it animates;
+//     this Release smooths the rest, the ones the preparation doesn't touch. Rest bones (see below) don't go back to the
+//     Animator's pose but to their own.
 //
-// Huesos de reposo (Rest Joints): hoy, joint10Part1_R. Su rotación es una curva constante (identidad) en los tres clips del
-// Animator (Idle, nibble y spittle): no hay nada que la mueva, así que "volver a la pose del Animator" no alcanza para devolverlo y
-// se quedaba clavado en la pose de cansada. Por eso tiene una pose de reposo propia ((0,0,0) en joint10Part1_R, la de fábrica) y
-// esta animación lo lleva ahí, hasta quedar exactamente en ella, cuando:
-//  - termina el intervalo (el Release), que es también cuando arranca la preparación del mordisco (PlantBiteWindup);
-//  - llega un golpe de lengua (arranca PlantHurtReaction): lo suelta en Release Time segundos y ya no vuelve a tomarlo por lo que
-//    queda de ese intervalo (el próximo intervalo lo vuelve a bajar);
-//  - el componente se apaga en plena animación (la pausa apaga todos los de la escena): se lo repone al volver a prenderse.
+// Rest bones (Rest Joints): today, joint10Part1_R. Its rotation is a constant curve (identity) in the Animator's three clips
+// (Idle, nibble and spittle): nothing moves it, so "going back to the Animator's pose" isn't enough to give it back and
+// it stayed pinned in the tired pose. That is why it has its own rest pose ((0,0,0) in joint10Part1_R, the factory one) and
+// this animation takes it there, until it is exactly on it, when:
+//  - the interval ends (the Release), which is also when the bite preparation starts (PlantBiteWindup);
+//  - a tongue hit arrives (PlantHurtReaction starts): it releases it over Release Time seconds and doesn't take it again for the
+//    rest of that interval (the next interval lowers it again);
+//  - the component is turned off in the middle of the animation (the pause turns off all the scene's): it is restored when it is turned back on.
 //
-// No tiene una duración fija: dura lo que dure el intervalo, también si algo lo estira (la reacción a un golpe pausa el ataque y,
-// con él, el intervalo). Del intervalo sale solo el tiempo del Settle, que se achica si lo que queda de ventana es corto.
+// It has no fixed duration: it lasts as long as the interval, also if something stretches it (a hit reaction pauses the attack and,
+// with it, the interval). The interval only determines the Settle's time, which shrinks if what is left of the window is short.
 //
-// Convive con las otras dos animaciones: PlantBiteWindup (Execution Order 100) y PlantHurtReaction (110) se aplican después de esta
-// y leen la pose de cansada como la que tienen los huesos en ese momento: la preparación arranca desde ella y la reacción a un
-// golpe también, y al terminar vuelve a ella porque esta animación sigue corriendo por debajo.
+// It coexists with the other two animations: PlantBiteWindup (Execution Order 100) and PlantHurtReaction (110) are applied after this one
+// and read the tired pose as the one the bones have at that moment: the preparation starts from it and so does the hit reaction,
+// and when it ends it goes back to it because this animation keeps running underneath.
 [DisallowMultipleComponent]
 [DefaultExecutionOrder(90)]
 public class PlantTiredAnimation : MonoBehaviour
@@ -93,7 +93,7 @@ public class PlantTiredAnimation : MonoBehaviour
         new JointPose("joint15_R",      new Vector3(358.007294f, 179.913315f, 276.98291f)),
     };
 
-    // Un hueso de reposo: ver "Huesos de reposo" arriba.
+    // A rest bone: see "Rest bones" above.
     [Serializable]
     private struct RestJoint
     {
@@ -137,7 +137,7 @@ public class PlantTiredAnimation : MonoBehaviour
     [Tooltip("Avance del Settle (0 = rotación por defecto, 1 = pose de cansada) a lo largo del tiempo normalizado de la fase.")]
     [SerializeField] private AnimationCurve _settleCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
 
-    // Qué parte de la ventana, como máximo, se puede llevar el Settle: el resto queda para el Hold, donde se ve el gesto de 'no'.
+    // The most of the window that the Settle can take: the rest is left for the Hold, where the 'no' gesture is seen.
     private const float SettleMaxPortion = 0.6f;
 
     private enum Phase { Idle, Wait, Active, Release }
@@ -146,30 +146,30 @@ public class PlantTiredAnimation : MonoBehaviour
     {
         public Transform transform;
         public JointPose pose;
-        public Quaternion defaultRot;  // rotación por defecto (la del prefab), leída en Awake
-        public Quaternion target;      // pose de cansada
-        public Quaternion shakeTarget; // la otra punta del gesto de 'no'
-        public Quaternion from;        // lo que mostraba el hueso cuando la animación lo tomó (para la mezcla del arranque)
-        public Quaternion applied;     // lo último que se escribió en el hueso
-        public Quaternion releaseFrom; // dónde estaba el hueso cuando arrancó el Release
-        public bool hasRest;           // es un hueso de reposo (ver Rest Joints)
-        public Quaternion rest;        // su pose de reposo
+        public Quaternion defaultRot;  // default rotation (the prefab's), read in Awake
+        public Quaternion target;      // tired pose
+        public Quaternion shakeTarget; // the other end of the 'no' gesture
+        public Quaternion from;        // what the bone showed when the animation took it (for the start blend)
+        public Quaternion applied;     // the last thing written to the bone
+        public Quaternion releaseFrom; // where the bone was when the Release started
+        public bool hasRest;           // it is a rest bone (see Rest Joints)
+        public Quaternion rest;        // its rest pose
     }
 
     private Bone[] _bones = Array.Empty<Bone>();
-    private PlantHurtReaction _hurt; // para soltar los huesos de reposo cuando llega un golpe (opcional)
+    private PlantHurtReaction _hurt; // to release the rest bones when a hit arrives (optional)
     private Phase _phase;
-    private float _elapsed; // tiempo dentro de la fase actual
-    private float _settle;  // duración del Settle de esta vez (ver UpdateWait)
-    private float _window;  // lo que queda del intervalo una vez pasado el Start Delay
-    private bool _restHeld; // llegó un golpe en este intervalo: los huesos de reposo ya no se toman (se limpia en Play)
-    private float _restMix; // 0 = los huesos de reposo en la pose de cansada, 1 = en su pose de reposo
-    private bool _restPending; // se apagó en plena animación: al prenderse hay que devolver los huesos de reposo a su pose
+    private float _elapsed; // time within the current phase
+    private float _settle;  // duration of this time's Settle (see UpdateWait)
+    private float _window;  // what is left of the interval once the Start Delay has passed
+    private bool _restHeld; // a hit arrived in this interval: the rest bones are no longer taken (cleared in Play)
+    private float _restMix; // 0 = rest bones in the tired pose, 1 = in their rest pose
+    private bool _restPending; // it was turned off in the middle of the animation: when turned on, the rest bones must be returned to their pose
 
-    // El componente está activo y encontró al menos un hueso. Si no, la planta no hace nada en el intervalo (como siempre).
+    // The component is active and found at least one bone. If not, the plant does nothing in the interval (as always).
     public bool IsAvailable => isActiveAndEnabled && _bones.Length > 0;
 
-    // Esperando, en la pose de cansada o soltando los huesos: la animación todavía está en curso.
+    // Waiting, in the tired pose or releasing the bones: the animation is still in progress.
     public bool IsPlaying => _phase != Phase.Idle;
 
     private void Awake()
@@ -182,11 +182,11 @@ public class PlantTiredAnimation : MonoBehaviour
 
             if(joint == null)
             {
-                Debug.LogWarning($"[PlantTiredAnimation] No encontré el hueso '{pose.jointName}' dentro de '{name}': se ignora.", this);
+                Debug.LogWarning($"[PlantTiredAnimation] Bone '{pose.jointName}' not found inside '{name}': ignored.", this);
                 continue;
             }
 
-            // Awake corre antes de que el Animator toque los huesos por primera vez: lo que tienen ahora es la pose del prefab.
+            // Awake runs before the Animator touches the bones for the first time: what they have now is the prefab's pose.
             bones.Add(new Bone
             {
                 transform = joint,
@@ -205,7 +205,7 @@ public class PlantTiredAnimation : MonoBehaviour
 
             if(bone == null)
             {
-                Debug.LogWarning($"[PlantTiredAnimation] El hueso de reposo '{rest.jointName}' no está entre los Joints de '{name}': se ignora.", this);
+                Debug.LogWarning($"[PlantTiredAnimation] Rest bone '{rest.jointName}' is not among the Joints of '{name}': ignored.", this);
                 continue;
             }
 
@@ -218,8 +218,8 @@ public class PlantTiredAnimation : MonoBehaviour
 
     private void OnEnable()
     {
-        // Se había apagado en plena animación (ver OnDisable): los huesos de reposo se quedaron en la pose de cansada y nadie los
-        // mueve, así que se los devuelve acá. El resto lo repone el Animator solo.
+        // It had been turned off in the middle of the animation (see OnDisable): the rest bones stayed in the tired pose and nobody
+        // moves them, so they are given back here. The Animator restores the rest by itself.
         if(!_restPending) return;
 
         _restPending = false;
@@ -230,17 +230,17 @@ public class PlantTiredAnimation : MonoBehaviour
 
     private void OnDisable()
     {
-        // Apagado en medio de la animación: el Animator se queda con los huesos que anima. Los de reposo no los repone nadie, así
-        // que se anota para devolverlos cuando se vuelva a prender (OnEnable); mientras está apagado no se los toca, así la pausa
-        // deja a toda la planta congelada en la misma pose.
+        // Turned off in the middle of the animation: the Animator keeps the bones it animates. Nobody restores the rest ones, so
+        // it is noted down to give them back when it is turned on again (OnEnable); while it is off they aren't touched, so the pause
+        // leaves the whole plant frozen in the same pose.
         if(_phase == Phase.Active || _phase == Phase.Release) _restPending = true;
 
         _phase = Phase.Idle;
     }
 
-    // Arranca la animación. interval es lo que dura el intervalo entre mordiscos (Bite Interval del DataSO): con él se ajusta el
-    // Settle. No hay un "termina sola": se corta con Stop cuando el intervalo termina. false si no se puede ahora (apagado, sin
-    // huesos); si ya está en curso no hace nada.
+    // Starts the animation. interval is how long the interval between bites lasts (the DataSO's Bite Interval): the Settle is adjusted
+    // with it. There is no "ends by itself": it is cut with Stop when the interval ends. false if it can't be done now (turned off, no
+    // bones); if it is already in progress it does nothing.
     public bool Play(float interval)
     {
         if(!IsAvailable) return false;
@@ -254,7 +254,7 @@ public class PlantTiredAnimation : MonoBehaviour
         return true;
     }
 
-    // Termina el intervalo: si ya había tomado los huesos, los suelta de a poco (Release); si todavía esperaba, no hay nada que soltar.
+    // The interval ends: if it had already taken the bones, it releases them gradually (Release); if it was still waiting, there is nothing to release.
     public void Stop()
     {
         if(_phase == Phase.Wait)
@@ -276,8 +276,8 @@ public class PlantTiredAnimation : MonoBehaviour
     {
         if(_phase == Phase.Idle) return;
 
-        // Un golpe de lengua (arranca la reacción de PlantHurtReaction) suelta los huesos de reposo por lo que queda del intervalo.
-        // Se mira en cada frame, también durante el Wait, así no se pierde un golpe que llega antes de que la cansada tome los huesos.
+        // A tongue hit (PlantHurtReaction starts) releases the rest bones for what is left of the interval.
+        // It is checked every frame, also during the Wait, so a hit that arrives before the tired pose takes the bones isn't missed.
         if(_hurt != null && _hurt.IsPlaying) _restHeld = true;
 
         _elapsed += Time.deltaTime;
@@ -294,16 +294,16 @@ public class PlantTiredAnimation : MonoBehaviour
     {
         if(_elapsed < _startDelay) return;
 
-        // Toma los huesos: lo que muestran ahora (la pose del Animator, que ya está soltando el mordisco) es de donde se mezcla.
+        // Takes the bones: what they show now (the Animator's pose, which is already releasing the bite) is what it blends from.
         foreach(Bone bone in _bones)
             bone.from = bone.transform.localRotation;
 
         _settle = Mathf.Min(_settleTime, _window * SettleMaxPortion);
 
-        // Si ya llegó un golpe, los huesos de reposo arrancan sueltos.
+        // If a hit already arrived, the rest bones start released.
         _restMix = _restHeld ? 1f : 0f;
 
-        // Lo que se pasó del Start Delay en este frame ya cuenta como tiempo de animación.
+        // What went past the Start Delay in this frame already counts as animation time.
         _elapsed -= _startDelay;
         _phase = Phase.Active;
         UpdateActive();
@@ -313,15 +313,15 @@ public class PlantTiredAnimation : MonoBehaviour
     {
         float k = _settleCurve.Evaluate(Progress(_elapsed, _settle));
 
-        // Al arrancar se mezcla con la pose que dejó el Animator, para que el primer frame no pegue un salto.
+        // On start it blends with the pose the Animator left, so the first frame doesn't jump.
         float blend = _blendInTime > 0f ? Mathf.SmoothStep(0f, 1f, _elapsed / _blendInTime) : 1f;
 
-        // Gesto de 'no': 0 = Target Euler, 1 = Shake Euler. Arranca en 0 cuando termina el Settle, así la cabeza llega a su pose y
-        // recién ahí empieza a sacudirse, sin saltos.
+        // 'No' gesture: 0 = Target Euler, 1 = Shake Euler. It starts at 0 when the Settle ends, so the head reaches its pose and
+        // only then starts shaking, without jumps.
         float holdTime = Mathf.Max(0f, _elapsed - _settle);
         float shake = 0.5f - 0.5f * Mathf.Cos(holdTime / _shakeCycleTime * Mathf.PI * 2f);
 
-        // Los huesos de reposo se sueltan (hacia su pose de reposo) cuando llega un golpe, en Release Time segundos, y ahí se quedan.
+        // The rest bones are released (towards their rest pose) when a hit arrives, over Release Time seconds, and they stay there.
         float restStep = _releaseTime > 0f ? Time.deltaTime / _releaseTime : 1f;
         _restMix = Mathf.MoveTowards(_restMix, _restHeld ? 1f : 0f, restStep);
         float restK = Mathf.SmoothStep(0f, 1f, _restMix);
@@ -345,8 +345,8 @@ public class PlantTiredAnimation : MonoBehaviour
         float progress = Progress(_elapsed, _releaseTime);
         float k = Mathf.SmoothStep(0f, 1f, progress);
 
-        // Hacia la pose que tengan los huesos antes de esta animación en este frame (la del Animator): al llegar no hay salto. Los
-        // huesos de reposo no tienen quién los mueva (ver Rest Joints): van a su pose de reposo y terminan exactamente en ella.
+        // Towards the pose the bones have before this animation in this frame (the Animator's): on arrival there is no jump. The rest
+        // bones have nobody moving them (see Rest Joints): they go to their rest pose and end exactly on it.
         foreach(Bone bone in _bones)
         {
             Quaternion destination = bone.hasRest ? bone.rest : bone.transform.localRotation;
@@ -380,15 +380,15 @@ public class PlantTiredAnimation : MonoBehaviour
         return null;
     }
 
-    // Para probar la animación suelta desde el Inspector (menú de tres puntos del componente), sin pelear con la planta: queda
-    // cansada hasta que se la suelta con "Soltar".
-    [ContextMenu("Probar cansada (Play Mode)")]
+    // To test the animation on its own from the Inspector (the component's three-dot menu), without fighting the plant: it stays
+    // tired until it is released with "Release".
+    [ContextMenu("Test tired (Play Mode)")]
     private void TestPlay()
     {
         if(Application.isPlaying) Play(3f);
     }
 
-    [ContextMenu("Soltar (Play Mode)")]
+    [ContextMenu("Release (Play Mode)")]
     private void TestStop()
     {
         if(Application.isPlaying) Stop();

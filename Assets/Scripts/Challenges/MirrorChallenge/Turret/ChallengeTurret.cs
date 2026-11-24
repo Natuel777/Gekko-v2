@@ -27,21 +27,23 @@ public class ChallengeTurret : MonoBehaviour, IShieldBreaker
     #region Purification
     public bool IsPurified { get; private set; }
 
-    // Para que un desafío (MirrorChallenge) cuente las torretas purificadas.
+    // So a challenge (MirrorChallenge) can count the purified turrets.
     public event System.Action<ChallengeTurret> Purified;
 
-    // Como destructor de escudo, "rota" = purificada.
+    // As a shield breaker, "broken" = purified.
     bool IShieldBreaker.IsBroken => IsPurified;
+
     event System.Action<IShieldBreaker> IShieldBreaker.ShieldBreakerBroken
     {
         add => _shieldBreakerBroken += value;
         remove => _shieldBreakerBroken -= value;
     }
+    
     private System.Action<IShieldBreaker> _shieldBreakerBroken;
     #endregion
 
-    // Mientras corre una cinemática (la cámara mostrando la planta al purificar una torreta) no dispara, igual que la planta:
-    // si no, le tiraba a Gekko congelado con la cámara en otro lado.
+    // While a cinematic is running (the camera showing the plant when a turret is purified) it doesn't shoot, just like the plant:
+    // otherwise it would shoot at a frozen Gekko with the camera elsewhere.
     private bool _frozenForCinematic;
 
     private void OnEnable()
@@ -65,7 +67,7 @@ public class ChallengeTurret : MonoBehaviour, IShieldBreaker
     {
         _stateMachine = new StateMachine();
 
-        // Dsp agregar yRotation de ser necesario
+        // Add yRotation later if needed
         shoot = new TurretShootBehaviour(_data.yRotationSpeed, transform, _data.detectionRange, _muzzle, _data.fireRate,
                                         _bulletPrefab);
         if(_chargeAnimation == null) _chargeAnimation = GetComponentInChildren<EnergyBurstAnimation>(true);
@@ -98,8 +100,6 @@ public class ChallengeTurret : MonoBehaviour, IShieldBreaker
 
         IsPurified = true;
 
-        // Suena una sola vez, cuando la purifican (la guarda de arriba corta las demás llamadas). Antes de avisar a los demás para
-        // que no dependa de lo que hagan los suscriptores.
         if(AudioManager.instance) AudioManager.instance.Play(SoundNames.TurretBullet);
 
         SendEvent(CreatureEvent.ChallengeTurretPurified);
@@ -107,7 +107,7 @@ public class ChallengeTurret : MonoBehaviour, IShieldBreaker
         _shieldBreakerBroken?.Invoke(this);
     }
 
-    [ContextMenu("Purificar (Play Mode)")]
+    [ContextMenu("Purify (Play Mode)")]
     private void TestPurify()
     {
         if(Application.isPlaying) Purify();
