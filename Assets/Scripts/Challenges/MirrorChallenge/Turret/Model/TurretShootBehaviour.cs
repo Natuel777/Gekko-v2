@@ -80,7 +80,7 @@ public class TurretShootBehaviour : IShooteable, IActivable, IServiceConsumer
         if(!_initialized || !TryResolveService()) return;
 
         TurretBullet bullet = _bulletFactory.GetBullet<TurretBullet>(_bulletPrefab, _muzzle.position, _transform.rotation);
-        bullet.Shoot(direction);
+        bullet.Shoot(direction, _transform);
 
         if(AudioManager.instance) AudioManager.instance.Play(SoundNames.TurretShoot);
     }

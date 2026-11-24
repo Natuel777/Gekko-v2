@@ -7,6 +7,7 @@ public class TurretBullet : ShooteableObject, IReflectable
     [SerializeField] private float _lifetime = 3.5f;
     private float _currentLifetime;
     private ShooteableObjectFactory _bulletFactory;
+    private ParticleSystemFactory _psFactory;
     private int _lastReflectFrame = -1;
 
     [Header("Purified look (when bouncing off a mirror)")]
@@ -19,13 +20,17 @@ public class TurretBullet : ShooteableObject, IReflectable
     [Tooltip("Mismo material del trail con los colores turquesa de la purificación.")]
     [SerializeField] private Material _trailPurificado;
 
-    // The originals, to go back to the corrupted look when the pool reuses the bullet.
     private VisualEffectAsset _vfxOriginal;
     private Material _trailOriginal;
-
-    // A mirror sent it back (see Reflect): from then on it is a purified bullet. It doesn't damage Gekko and, if it reaches a turret,
-    // it purifies it. Turned off in OnEnable because the pool reuses bullets.
     private bool _reflected;
+
+    // The turret that fired it (see Shoot). The muzzle is inside that turret's collider, so the bullet is born touching it: while it is
+    // corrupted the owner's colliders are ignored. Once a mirror sends the bullet back the owner is a target like any other turret,
+    // which is why this is decided here and not with layers (a layer would also ignore the purified bullet).
+    private Transform _owner;
+
+    // Already handed back to the pool during this life (see ReturnToPool).
+    private bool _returned;
 
     // The bullet is a trigger that moves by transform: without a Rigidbody around, Unity doesn't notify (OnTriggerEnter) when it
     // touches a static collider, like a mirror's. Kinematic and without gravity: it isn't moved by physics, it only enables the events.
@@ -44,16 +49,21 @@ public class TurretBullet : ShooteableObject, IReflectable
     {
         _currentLifetime = _lifetime;
         _reflected = false;
+        _returned = false;
+        _owner = null;
         AplicarLook(false);
     }
 
-    public void Shoot(Vector3 direction)
+    public void Shoot(Vector3 direction) => Shoot(direction, null);
+
+    // owner: the turret that fires it (its root). The pool reuses bullets, so it is set on every shot.
+    public void Shoot(Vector3 direction, Transform owner)
     {
+        _owner = owner;
         _direction = direction;
         FaceDirection();
     }
 
-    // Mirror without a bounce point: sends it back the way it came, fully inverting the direction (it is not a bounce off the normal).
     public void Reflect() => ReflectTowards(-_direction);
 
     // Mirror with a bounce point: it goes towards direction (unit, non-zero; see Mirror). From here on it is a purified bullet.
@@ -106,17 +116,25 @@ public class TurretBullet : ShooteableObject, IReflectable
         transform.position += _direction * data.speed * Time.deltaTime;
         _currentLifetime -= Time.deltaTime;
 
-        if(_currentLifetime <= 0 && TryResolveBulletFactory())
+        if(_currentLifetime <= 0)
         {
             // Call PSFactory for the hit effect
-            _bulletFactory.ReturnBullet(this);
+            ReturnToPool();
         }
     }
 
-    private void OnTriggerEnter(Collider other)
+    private void OnTriggerEnter(Collider other) => HandleContact(other);
+
+    // Only fires if the bullet's collider is made solid (today it is a trigger): it gets exactly the same treatment.
+    private void OnCollisionEnter(Collision other) => HandleContact(other.collider);
+
+    private void HandleContact(Collider other)
     {
+        // Several colliders can notify in the same physics step: the first one decides.
+        if(_returned) return;
+
         // Sent back by a mirror: it is already purified, so it doesn't damage Gekko. If it reaches a turret (the collider may be
-        // in a child), it purifies it and the bullet goes back to the pool. Anything else is ignored.
+        // in a child) it purifies it, the shooter included, and the bullet goes back to the pool. Anything else is ignored.
         if(_reflected)
         {
             ChallengeTurret turret = other.GetComponentInParent<ChallengeTurret>();
@@ -128,21 +146,55 @@ public class TurretBullet : ShooteableObject, IReflectable
             return;
         }
 
-        if(other.TryGetComponent(out Player player))
+        if(other.TryGetComponent(out Player _))
         {
             Debug.Log("The cops, the cops...");
             EventManager.Trigger<float>("OnPlayerDamaged", data.damage);
-
             //if(_hitEffect != null) _hitEffect.Play();
-
             ReturnToPool();
+            return;
         }
+
+        //if(_hitEffect != null) _hitEffect.Play();
+        if(StopsBullet(other)) Impact();
     }
 
-    // _bulletFactory is only resolved in Update when its life runs out: if it hits before that, it is still null.
+    // What a corrupted bullet crashes into: solid colliders, and nothing else.
+    //  - Triggers (zones, checkpoints, cameras...): the turret can stand inside one, and the bullet would die the moment it is born.
+    //  - Its own turret: the muzzle is inside its collider (see _owner).
+    //  - Mirrors: the mirror is the one that sends it back, and an inactive one lets it through. If the bullet died here, whether it
+    //    reflects or not would depend on which of the two OnTriggerEnter Unity calls first.
+    //  - Gekko's other colliders: only the one with the Player script hurts him, but none of them is "environment".
+    private bool StopsBullet(Collider other)
+    {
+        if(other.isTrigger) return false;
+        if(_owner != null && other.transform.IsChildOf(_owner)) return false;
+        if(other.TryGetComponent(out MirrorSurface _) || other.TryGetComponent(out Mirror _)) return false;
+        if(other.GetComponentInParent<Player>() != null) return false;
+
+        return true;
+    }
+
+    // Hit something solid: it dissipates.
+    private void Impact()
+    {
+        //if(TryResolvePSFactory())
+        //{
+        //    GenericPS ps = PSFactory.Create(PSType.VenomHit, transform.position, transform.rotation);
+        //    ps?.Initialize();
+        //}
+
+        ReturnToPool();
+    }
+
+    // Once per life: two contacts in the same step (or a contact and the end of its lifetime) must not hand the bullet over twice. The
+    // pool doesn't check it, so the bullet would end up twice in its stock and be given to two different shots at once.
     private void ReturnToPool()
     {
-        if(TryResolveBulletFactory()) _bulletFactory.ReturnBullet(this);
+        if(_returned || !TryResolveBulletFactory()) return;
+
+        _returned = true;
+        _bulletFactory.ReturnBullet(this);
     }
 
     private bool TryResolveBulletFactory()
@@ -150,5 +202,12 @@ public class TurretBullet : ShooteableObject, IReflectable
         if(_bulletFactory != null) return true;
 
         return ServiceLocator.Instance.TryGet(out _bulletFactory);
+    }
+
+    private bool TryResolvePSFactory()
+    {
+        if(_psFactory != null) return true;
+
+        return ServiceLocator.Instance.TryGet(out _psFactory);
     }
 }
