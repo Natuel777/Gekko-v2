@@ -24329,6 +24329,11 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 768a87b7a7f83444487a90e4d35f66c3, type: 3}
+--- !u!23 &342916841 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 2218706778756754778, guid: 768a87b7a7f83444487a90e4d35f66c3, type: 3}
+  m_PrefabInstance: {fileID: 342916840}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &343848260
 GameObject:
   m_ObjectHideFlags: 0
@@ -59048,6 +59053,16 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 6898218028fd2a6439d5611ab4af7763, type: 3}
+--- !u!23 &805204219 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 8243380863365330265, guid: 6898218028fd2a6439d5611ab4af7763, type: 3}
+  m_PrefabInstance: {fileID: 805204218}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &805204220 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 7219202735174326059, guid: 6898218028fd2a6439d5611ab4af7763, type: 3}
+  m_PrefabInstance: {fileID: 805204218}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &805474666
 GameObject:
   m_ObjectHideFlags: 0
@@ -61330,6 +61345,16 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 6898218028fd2a6439d5611ab4af7763, type: 3}
+--- !u!23 &844193109 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 8243380863365330265, guid: 6898218028fd2a6439d5611ab4af7763, type: 3}
+  m_PrefabInstance: {fileID: 844193108}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &844193110 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 7219202735174326059, guid: 6898218028fd2a6439d5611ab4af7763, type: 3}
+  m_PrefabInstance: {fileID: 844193108}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &844352329
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -72162,23 +72187,23 @@ MonoBehaviour:
   - m_EditModeType: 1
     m_Knots:
     - Position:
-        x: 1
-        y: 0
-        z: 0
+        x: 0.97266304
+        y: -0.000000007450581
+        z: -0.0038146973
       TangentIn:
         x: -0
         y: -0
-        z: -0.28609884
+        z: -0.2839908
       TangentOut:
         x: 0
         y: 0
-        z: 0.40136668
+        z: 0.4019099
       Rotation:
         value:
-          x: -0.00007646076
-          y: 0.055121727
-          z: -0.00001108569
-          w: 0.9984796
+          x: -0.00007590834
+          y: 0.051792346
+          z: -0.000010863738
+          w: 0.99865794
     - Position:
         x: 0.74203825
         y: 0.00043824315
@@ -72186,17 +72211,17 @@ MonoBehaviour:
       TangentIn:
         x: -0
         y: -0
-        z: -0.33649644
+        z: -0.33434564
       TangentOut:
         x: 0
         y: 0
-        z: 0.22559825
+        z: 0.22420615
       Rotation:
         value:
-          x: -0.000056702185
-          y: -0.3685867
-          z: -0.00009335217
-          w: 0.9295934
+          x: -0.00005737209
+          y: -0.36432466
+          z: -0.000094045055
+          w: 0.93127203
     - Position:
         x: 0.08326006
         y: 0.00043824315
@@ -72294,17 +72319,17 @@ MonoBehaviour:
       TangentIn:
         x: -0
         y: -0
-        z: -0.20954837
+        z: -0.20669305
       TangentOut:
         x: 0
         y: 0
-        z: 0.21707012
+        z: 0.21220022
       Rotation:
         value:
-          x: 0.00016753872
-          y: 0.4422052
-          z: -0.000061251594
-          w: 0.8969138
+          x: 0.00016828711
+          y: 0.4350925
+          z: -0.00006318393
+          w: 0.9003858
     m_MetaData:
     - Mode: 0
       Tension: 0.5
@@ -137503,7 +137528,7 @@ GameObject:
   - component: {fileID: 1685437514}
   - component: {fileID: 1685437513}
   m_Layer: 0
-  m_Name: PathCanvas
+  m_Name: Caminos
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -137592,6 +137617,13 @@ MonoBehaviour:
   - {fileID: 1212351604}
   - {fileID: 842513238}
   - {fileID: 1148854631}
+  - {fileID: 342916841}
+  - {fileID: 844193110}
+  - {fileID: 844193109}
+  - {fileID: 844193110}
+  - {fileID: 844193109}
+  - {fileID: 805204220}
+  - {fileID: 805204219}
 --- !u!4 &1685437514
 Transform:
   m_ObjectHideFlags: 0
