@@ -86,6 +86,8 @@ public class BreakableBox : MonoBehaviour, IDamageable
     private IEnumerator OpenRoutine()
     {
         _opened = true;
+        // Apenas se abre deja de ser objetivo de la lengua/aim: así la lengua va directo a los arándanos
+        DisableColliders();
         if (_animator) _animator.SetBool(EstaAbiertaHash, true);
         SpawnParticles(_openParticles);
 
@@ -187,6 +189,12 @@ public class BreakableBox : MonoBehaviour, IDamageable
             yield return null;
         }
         if (target) target.localScale = baseScale;
+    }
+
+    private void DisableColliders()
+    {
+        foreach (Collider col in GetComponentsInChildren<Collider>())
+            col.enabled = false;
     }
 
     private void SpawnParticles(ParticleSystem ps)

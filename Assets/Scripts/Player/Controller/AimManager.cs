@@ -27,6 +27,11 @@ public class AimManager : MonoBehaviour
         if (_pjController.TongueOut) return;
 
         ToggleLock();
+        // Si el target apagó su collider (ej. la flor "box" al abrirse) deja de ser apuntable: se suelta el lock
+        // para que el próximo ToggleLock agarre otro (los arándanos).
+        if (_target != null && _target.TryGetComponent(out Collider targetCol) && !targetCol.enabled)
+            TargetNull();
+
         if (_target != null)
         {
 
