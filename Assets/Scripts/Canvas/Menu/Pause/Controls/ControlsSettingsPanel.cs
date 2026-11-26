@@ -34,11 +34,15 @@ public class ControlsSettingsPanel : MonoBehaviour
         Localizer.OnLanguageChanged -= Refresh;
     }
 
-    // Restablecer: vuelve a las teclas originales en pantalla; queda pendiente hasta Aplicar.
+    // Restablecer: vuelve a las teclas originales en pantalla (quedan pendientes hasta Aplicar) y la sensibilidad
+    // del mouse / invertir Y a sus valores por defecto (esas se aplican al instante, como al moverlas a mano).
     private void ResetControls()
     {
         InputRebindStore.ResetAll();
         foreach (var row in _rows) row.Refresh();
+
+        var sensitivity = GetComponent<CameraSensitivityPanel>();
+        if (sensitivity) sensitivity.ResetToDefaults();
     }
 
     private void ApplyControls()

@@ -83,6 +83,8 @@ public static class Localizer
         { "ctrl_restart", ("Reiniciar", "Restart") },
         { "ctrl_pause", ("Pausa", "Pause") },
         { "ctrl_reset", ("Restablecer controles", "Reset Controls") },
+        { "graphics_reset", ("Restablecer gráficos", "Reset Graphics") },
+        { "sound_reset", ("Restablecer sonido", "Reset Sound") },
         { "ctrl_press_key", ("Presioná una tecla...", "Press a key...") },
 
         // Títulos y botones de Opciones / Pausa
@@ -134,7 +136,9 @@ public static class Localizer
         { "mouse_sensitivity", ("Sensibilidad del mouse", "Mouse Sensitivity") },
         { "desc_mouse_sensitivity", ("Qué tan rápido gira la cámara con el mouse.", "How fast the camera turns with the mouse.") },
         { "desc_rebind", ("Seleccioná la acción y presioná la tecla nueva.", "Select the action and press the new key.") },
-        { "desc_ctrl_reset", ("Vuelve todas las teclas a su configuración original (después apretá Aplicar).", "Restore all key bindings to their defaults (then press Apply).") },
+        { "desc_ctrl_reset", ("Vuelve la sensibilidad del mouse y todas las teclas a su configuración original (las teclas se guardan al apretar Aplicar).", "Restore mouse sensitivity and all key bindings to their defaults (key bindings are saved when you press Apply).") },
+        { "desc_graphics_reset", ("Vuelve la resolución, la calidad, la pantalla completa y la iluminación a sus valores originales.", "Restore resolution, quality, fullscreen and lighting to their default values.") },
+        { "desc_sound_reset", ("Vuelve todos los volúmenes y la música a sus valores originales.", "Restore all volumes and music to their default values.") },
 
         // Cartel de presentación del boss (BossTitleCard)
         { "boss1_name", ("Planta Corrupta", "Corrupted Plant") },

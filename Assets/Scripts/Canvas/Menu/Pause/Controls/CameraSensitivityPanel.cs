@@ -32,6 +32,19 @@ public class CameraSensitivityPanel : MonoBehaviour
         }
     }
 
+    // Valores por defecto: los mismos que usa CameraFollow cuando no hay nada guardado.
+    private const float DefaultSensitivity = 1f;
+    private const bool DefaultInvertY = false;
+
+    // Lo llama ControlsSettingsPanel desde "Restablecer controles".
+    public void ResetToDefaults()
+    {
+        if (_sensitivitySlider) _sensitivitySlider.SetValueWithoutNotify(DefaultSensitivity);
+        if (_invertYToggle) _invertYToggle.SetIsOnWithoutNotify(DefaultInvertY);
+        SetSensitivity(DefaultSensitivity);
+        SetInvertY(DefaultInvertY);
+    }
+
     private void SetSensitivity(float value)
     {
         if (_cameraFollow) { _cameraFollow.SetCameraSensitivity(value); return; }

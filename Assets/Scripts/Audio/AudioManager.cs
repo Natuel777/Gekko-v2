@@ -21,8 +21,17 @@ public class AudioManager : MonoBehaviour, ISaveLoad
     private List<AudioSource> _pausedSources;
     private Dictionary<SoundNames, List<AudioSource>> _activeSourcesByName = new();
 
+    // Valores del prefab (antes de que LoadGame los pise con lo guardado): son los que usa "Restablecer sonido".
+    private float _defaultMaster, _defaultMusic, _defaultSfx;
+    private bool _defaultMusicEnabled;
+
     private void Awake()
     {
+        _defaultMaster = masterValue;
+        _defaultMusic = musicValue;
+        _defaultSfx = sfxValue;
+        _defaultMusicEnabled = musicEnabled;
+
         if (!instance) instance = this;
         else Destroy(gameObject);
 
@@ -242,6 +251,17 @@ public class AudioManager : MonoBehaviour, ISaveLoad
         audioMixer.SetFloat("SFXVolume", Mathf.Log10(value) * 20);
         sfxValue = value;
     }
+    // Opciones > Sonido > Restablecer: vuelve a los valores del prefab, los aplica al mixer y los guarda.
+    public void ResetToDefaults()
+    {
+        musicEnabled = _defaultMusicEnabled;
+        SetMasterVolume(_defaultMaster);
+        SetMusicVolume(_defaultMusic);
+        SetSFXVolume(_defaultSfx);
+        SaveGame();
+        PlayerPrefs.Save();
+    }
+
     public void SaveGame()
     {
         PlayerPrefs.SetFloat(PlayerPrefsKeys.masterValueKey, masterValue);
