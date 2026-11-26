@@ -29,6 +29,12 @@ Shader "Gekko/Grass"
         _ShadowTint   ("Tinte en sombra", Color) = (0.35, 0.45, 0.55, 1)
         _LightWrap    ("Wrap de luz", Range(0, 1)) = 0.5
         _Translucency ("Translucidez a contraluz", Range(0, 2)) = 0.6
+        _AmbientStrength ("Fuerza de la luz ambiente", Range(0, 2)) = 0.5
+
+        [Header(Ajuste final de color)]
+        _Saturation   ("Saturacion", Range(0, 2)) = 1
+        _Brightness   ("Brillo", Range(0, 2)) = 1
+        _FogAmount    ("Cuanto le afecta la niebla", Range(0, 1)) = 1
 
         // Purificacion por regiones (Assets/_Gekko/Purification). Solo se nota dentro
         // del area de una PurifyRegion; afuera el pasto queda igual que antes.
@@ -84,6 +90,10 @@ Shader "Gekko/Grass"
             float  _PushDown;
             float  _LightWrap;
             float  _Translucency;
+            float  _AmbientStrength;
+            float  _Saturation;
+            float  _Brightness;
+            float  _FogAmount;
             float4 _PurifyCorruptTint;
             float4 _PurifyEdgeColor;
             float  _PurifyCorruptSaturation;
@@ -289,16 +299,25 @@ Shader "Gekko/Grass"
                 float wrapped = saturate((ndl + _LightWrap) / (1.0 + _LightWrap));
                 wrapped *= lerp(1.0, mainLight.shadowAttenuation, 0.8);
 
+                // Luz ambiente MULTIPLICADA por el color del pasto. Antes se sumaba gris
+                // (SampleSH * 0.3) encima del color, y eso lo lavaba: quedaba mas claro y gris.
+                float3 albedo = color;
                 color *= lerp(_ShadowTint.rgb, float3(1.0, 1.0, 1.0), wrapped);
                 color *= mainLight.color;
-                color += SampleSH(N) * 0.3;
+                color += albedo * SampleSH(N) * _AmbientStrength;
 
                 // Translucidez: cuando la luz viene de atras, la punta se enciende.
                 float backlight = saturate(dot(-mainLight.direction, V));
                 color += _TopColor.rgb * (pow(backlight, 4.0) * _Translucency * height);
                 color += purifyEmission;
 
-                color = MixFog(color, IN.fogFactor);
+                // Ajuste final para acercarlo a los colores del Inspector.
+                float luma = dot(color, float3(0.2126, 0.7152, 0.0722));
+                color = lerp(luma.xxx, color, _Saturation) * _Brightness;
+                color = max(color, 0.0);
+
+                // La niebla de la escena tira a gris: se puede bajar solo para el pasto.
+                color = lerp(color, MixFog(color, IN.fogFactor), _FogAmount);
                 return half4(color, 1.0);
             }
             ENDHLSL
