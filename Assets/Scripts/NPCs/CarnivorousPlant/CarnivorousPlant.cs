@@ -8,6 +8,12 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
     public Transform playerTransform;
     [SerializeField] private BugBullet _venomPrefab;
 
+    [Header("Attacks")]
+    [Tooltip("Si está apagado, la planta no ataca cuerpo a cuerpo (no muerde), aunque Gekko esté en el rango del mordisco. Prendido, solo muerde cuando no está protegida por el escudo (Is Shielded).")]
+    [SerializeField] private bool _meleeAttack = true;
+    [Tooltip("Si está apagado, la planta no escupe veneno. Prendido, solo escupe cuando no está protegida por el escudo (Is Shielded).")]
+    [SerializeField] private bool _spitAttack = true;
+
     [Header("Transforms")]
     [SerializeField] private Transform _head;
     [SerializeField] private Transform _firePoint;
@@ -57,8 +63,12 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
 
     public bool IsPurified => _purified;
     public bool IsShielded { get; private set; }
-    // Encerrada (ej. LvlTwo: dentro de las enredaderas): no ataca, ni escupe ni muerde. Lo maneja el desafío.
+    // Locked in (e.g. LvlTwo: inside the vines): it doesn't attack, it neither spits nor bites. The challenge handles it.
     public bool AttackLocked { get; private set; }
+    // What the plant may do right now. The Inspector switches (Melee Attack, Spit Attack) turn an attack off for good; the shield
+    // (the roots, see SetShielded) turns both off for as long as it is up, whatever the switches say.
+    public bool CanMelee => _meleeAttack && !IsShielded;
+    public bool CanSpit => _spitAttack && !IsShielded;
     public Animator Animator => _animatorCarnivorousPlant;
     // (hits received, hits needed)
     public event System.Action<int, int> Hit;
@@ -197,8 +207,8 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
 
         if(Time.time < _staggerUntil) return;
 
-        // Encerrada: no corre la FSM ni la detección. Al liberarse, si el player ya está en rango, el próximo
-        // UpdateDetection lo detecta como recién entrado y arranca a atacar.
+        // Locked in: neither the FSM nor the detection run. When released, if Gekko is already in range, the next
+        // UpdateDetection sees Gekko as just entered and the plant starts attacking.
         if(AttackLocked) return;
 
         _eventFSM.UpdateState();
@@ -215,12 +225,13 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
 
         if(_aimBehaviour == null) return;
 
-        // Aims while spitting. Not when stunned by a tongue hit or purified: there the bone goes back to the animation.
+        // Aims while spitting. Not when stunned by a tongue hit, purified or unable to spit (shield up, Spit Attack off): there
+        // the bone goes back to the animation.
         // Nor while the bite windup runs: the bones belong to that animation and the aim resumes when it finishes
         // (rising from zero, without a jump), so they don't fight over joint7_R.
         // spitBehaviour is read every frame because BossPlantPhases replaces it when the phase changes.
         bool windupPlaying = _biteWindup != null && _biteWindup.IsPlaying;
-        bool aiming = !_purified && Time.time >= _staggerUntil && !windupPlaying && spitBehaviour != null && spitBehaviour.IsSpitting;
+        bool aiming = !_purified && Time.time >= _staggerUntil && !windupPlaying && CanSpit && spitBehaviour != null && spitBehaviour.IsSpitting;
 
         _aimBehaviour.ArtificialLateUpdate(playerTransform, aiming);
     }
@@ -269,7 +280,9 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
     // windup. It also counts for OnTongueContact's blocked-hit mark.
     private bool IsHurtReacting => _hurtReaction != null && _hurtReaction.IsPlaying;
 
-    private bool CanBeHit => !_isLunging && !IsHurtReacting && (!data.vulnerableOnlyInBiteInterval || InBiteInterval);
+    // Without melee (Melee Attack off) there is no interval between bites to wait for: it can be hit at any time, otherwise a plant
+    // that only spits could never be purified.
+    private bool CanBeHit => !_isLunging && !IsHurtReacting && (!data.vulnerableOnlyInBiteInterval || InBiteInterval || !_meleeAttack);
 
     public bool TryResolveService()
     {
@@ -506,7 +519,7 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
         AttackLocked = locked;
         if(!locked) return;
 
-        // Se encierra: vuelve a reposo, sin escupir ni morder.
+        // Locked in: back to rest, neither spitting nor biting.
         _playerInRange = false;
         if(_biteWindup != null) _biteWindup.Cancel();
         if(IdleState != null) SetState(IdleState);

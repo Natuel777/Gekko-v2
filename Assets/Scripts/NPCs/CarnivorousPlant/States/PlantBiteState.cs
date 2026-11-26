@@ -1,11 +1,13 @@
 using UnityEngine;
 
-// Ataque melee por proximidad (segundo umbral, biteRange). No aplica daño directo: dispara la embestida del head, y el daño +
-// knockback lo aplica el HitBox (que la planta prende durante la embestida) si el Gekko está adentro en ese momento. Estar en
-// biteRange alcanza para que la planta ataque, pero no para que pegue: hay que estar también dentro del HitBox.
+// Proximity melee attack (second threshold, biteRange). It doesn't apply damage directly: it triggers the head's lunge, and the damage +
+// knockback is applied by the HitBox (which the plant turns on during the lunge) if Gekko is inside it at that moment. Being in
+// biteRange is enough for the plant to attack, but not for it to hit: Gekko also has to be inside the HitBox.
 //
-// Si la planta tiene PlantBiteWindup (hoy, el boss), cada mordisco va precedido de su animación de preparación: el mordisco
-// sale recién cuando ésta termina. Sin el componente (o apagado) muerde de una, como siempre.
+// If the plant has a PlantBiteWindup (today, the boss), each bite is preceded by its preparation animation: the bite only
+// comes out when that one ends. Without the component (or turned off) it bites right away, as usual.
+//
+// It only lives while the plant can bite (CarnivorousPlant.CanMelee: Melee Attack on and no shield): if that stops being true, it goes back to spitting.
 public class PlantBiteState : IState
 {
     private readonly CarnivorousPlant _plant;
@@ -17,7 +19,7 @@ public class PlantBiteState : IState
     public void Enter()
     {
         _plant.spitBehaviour.StopSpitting();
-        _biteTimer = 0f; // arranca el mordisco (con su preparación, si tiene) ni bien entra al rango
+        _biteTimer = 0f; // the bite (with its preparation, if it has one) starts as soon as it enters the range
         _windingUp = false;
         _plant.SetInBiteInterval(false);
     }
@@ -26,7 +28,7 @@ public class PlantBiteState : IState
     {
         _plant.SetInBiteInterval(false);
 
-        // Se fue del rango (o la planta cambió de estado) en plena preparación: no hay mordisco y la pose vuelve sola a la base.
+        // Gekko left the range (or the plant changed state) in the middle of the preparation: no bite, and the pose goes back to the base by itself.
         if(!_windingUp) return;
 
         _windingUp = false;
@@ -37,8 +39,9 @@ public class PlantBiteState : IState
 
     public void Update()
     {
-        // Si el player se alejó al rango medio, vuelve a escupir.
-        if(!_plant.IsPlayerInBiteRange())
+        // If Gekko moved away to mid range, or the plant can't bite anymore (the shield went up, Melee Attack was turned off),
+        // it goes back to spitting. Leaving cuts a preparation in progress (see Exit).
+        if(!_plant.IsPlayerInBiteRange() || !_plant.CanMelee)
         {
             _plant.SetState(_plant.AttackState);
             return;
@@ -48,7 +51,7 @@ public class PlantBiteState : IState
 
         if(_windingUp)
         {
-            // El mordisco espera a que termine la preparación entera (Windup + Return).
+            // The bite waits for the whole preparation to end (Windup + Return).
             if(windup != null && windup.IsPlaying) return;
 
             _windingUp = false;
@@ -64,11 +67,11 @@ public class PlantBiteState : IState
 
         if(_biteTimer > 0f) return;
 
-        // Se acabó el intervalo: de acá hasta el próximo mordisco (preparación + embestida) la planta no se puede dañar.
+        // The interval is over: from here until the next bite (preparation + lunge) the plant can't be damaged.
         _plant.SetInBiteInterval(false);
 
-        // Sin preparación muerde de una. Con preparación la arranca; si Play() dice que no (todavía vuelve de una cortada)
-        // se reintenta en el próximo frame.
+        // Without a preparation it bites right away. With one it starts it; if Play() says no (it is still returning from a cut
+        // one) it is retried on the next frame.
         if(windup == null) BiteNow();
         
         else _windingUp = windup.Play(_plant.playerTransform);
@@ -80,7 +83,7 @@ public class PlantBiteState : IState
         if (AudioManager.instance) AudioManager.instance.Play(SoundNames.PlantGrowl);
         _biteTimer = _plant.data.biteInterval;
 
-        // Arranca el Bite Interval: la ventana en la que Gekko puede dañarla (la embestida en sí sigue siendo intocable).
+        // Starts the Bite Interval: the window in which Gekko can damage it (the lunge itself is still untouchable).
         _plant.SetInBiteInterval(true);
     }
 
