@@ -82,12 +82,15 @@ public class AudioManager : MonoBehaviour, ISaveLoad
         source.clip = sound.soundClip;
         source.outputAudioMixerGroup = sound.audioMixer;
         source.volume = sound.volume;
+
         if(pitch)
         {
             float pi = Random.Range(_minPitch,_maxPitch);
             source.pitch = pi;
         }
+        
         else source.pitch = sound.pitch;
+        
         source.loop = sound.loop;
     }
     public void Play(SoundNames name, bool loop = false, bool pitch = false)

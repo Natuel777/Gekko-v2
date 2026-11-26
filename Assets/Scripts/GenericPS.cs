@@ -12,6 +12,7 @@ public class GenericPS : MonoBehaviour
     private List<ParticleSystem> _ps;
     [SerializeField] private PSType _type;
     [SerializeField] private bool _autoReturnToFactory = false;
+    [SerializeField] private SoundNames _soundToPlay = SoundNames.None; 
     private ParticleSystemFactory _factory;
     private bool _initialized;
 
@@ -30,6 +31,9 @@ public class GenericPS : MonoBehaviour
 
         foreach(ParticleSystem ps in _ps)
             ps.Play();
+
+        if(_soundToPlay != SoundNames.None)
+            AudioManager.instance.Play(_soundToPlay);
     }
 
     private void Update()
