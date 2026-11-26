@@ -17,7 +17,48 @@ public class GraphicsSettingsPanel : MonoBehaviour
     [SerializeField] private Slider _brightnessSlider;
     [SerializeField, Min(0f)] private float _maxExposureEV = 2f;
 
+    [Tooltip("Restablecer gráficos: resolución nativa, pantalla completa, calidad por defecto del proyecto y brillo neutro.")]
+    [SerializeField] private Button _resetButton;
+
     private const float BrightnessSliderDefault = 50f;
+
+    // Nivel de calidad con el que arranca el juego (el de Project Settings > Quality), leído antes de que
+    // ApplySavedQualityOnStart lo cambie por el guardado. Es el que usa "Restablecer gráficos".
+    private static int _defaultQualityLevel = -1;
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+    private static void CaptureDefaultQuality() => _defaultQualityLevel = QualitySettings.GetQualityLevel();
+
+    private void OnDisable()
+    {
+        if (_resetButton) _resetButton.onClick.RemoveListener(ResetGraphics);
+    }
+
+    private void ResetGraphics()
+    {
+        // Calidad
+        if (_defaultQualityLevel >= 0 && _defaultQualityLevel < QualitySettings.names.Length)
+            QualitySettings.SetQualityLevel(_defaultQualityLevel, true);
+        PlayerPrefs.DeleteKey(PlayerPrefsKeys.qualityLevelKey);
+
+        // Resolución nativa del monitor + pantalla completa (en el editor la Game View manda, como en el resto del panel).
+        PlayerPrefs.DeleteKey(PlayerPrefsKeys.resolutionWidthKey);
+        PlayerPrefs.DeleteKey(PlayerPrefsKeys.resolutionHeightKey);
+        PlayerPrefs.SetInt(PlayerPrefsKeys.fullscreenKey, 1);
+        if (!Application.isEditor)
+            Screen.SetResolution(Screen.currentResolution.width, Screen.currentResolution.height, true);
+        Screen.fullScreen = true;
+
+        // Brillo
+        PlayerPrefs.SetFloat(PlayerPrefsKeys.brightnessKey, BrightnessSliderDefault);
+        ApplyBrightness(BrightnessSliderDefault, _maxExposureEV);
+
+        PlayerPrefs.Save();
+
+        // Vuelve a armar las filas con los valores nuevos.
+        InitialiceValues();
+        if (AudioManager.instance) AudioManager.instance.Play(SoundNames.UiButton);
+    }
 
     private readonly List<Vector2Int> _resolutions = new List<Vector2Int>();
 
@@ -106,6 +147,12 @@ public class GraphicsSettingsPanel : MonoBehaviour
             _brightnessSlider.onValueChanged.RemoveListener(SetBrightness);
             _brightnessSlider.onValueChanged.AddListener(SetBrightness);
         }
+
+        if (_resetButton)
+        {
+            _resetButton.onClick.RemoveListener(ResetGraphics);
+            _resetButton.onClick.AddListener(ResetGraphics);
+        }
     }
 
     private void SetShakeEnabled(bool value)
@@ -127,8 +174,15 @@ public class GraphicsSettingsPanel : MonoBehaviour
         ApplyBrightness(sliderValue, _maxExposureEV);
     }
 
-    // Aplica el brillo guardado al Volume global de la escena actual (si hay uno con Color Adjustments habilitado).
-    // Se llama tanto desde este panel como al cargar cada escena de juego, para que afecte aunque no se abra Opciones.
+    // Brillo: un Volume global propio, creado una sola vez y que sobrevive a los cambios de escena, con prioridad
+    // altísima y SOLO el Gain de Lift Gamma Gain. Antes se escribía la Post Exposure del "primer Volume" que encontraba
+    // FindFirstObjectByType, y en juego ese era el "Underwater Volume (runtime)" (peso 0, solo bajo el agua): el slider
+    // no hacía nada. Tampoco se volvía a aplicar al cargar otra escena. Usar el Gain (que ningún perfil del juego toca)
+    // evita además pisar la exposición que cada escena / zona corrupta ya tiene: el brillo se multiplica encima de todo.
+    private const float BrightnessVolumePriority = 1000f;
+    private static Volume _brightnessVolume;
+    private static LiftGammaGain _brightnessGain;
+
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     private static void ApplySavedBrightnessOnStart()
     {
@@ -138,13 +192,32 @@ public class GraphicsSettingsPanel : MonoBehaviour
 
     private static void ApplyBrightness(float sliderValue, float maxExposureEV)
     {
-        var volume = FindFirstObjectByType<Volume>();
-        if (!volume || !volume.profile) return;
-        if (!volume.profile.TryGet(out ColorAdjustments colorAdjustments)) return;
+        EnsureBrightnessVolume();
 
-        float exposure = (sliderValue - BrightnessSliderDefault) / BrightnessSliderDefault * maxExposureEV;
-        colorAdjustments.postExposure.overrideState = true;
-        colorAdjustments.postExposure.value = exposure;
+        // Mismo rango que antes: 0 = -maxEV, 50 = neutro, 100 = +maxEV. El Gain multiplica el color lineal por (1 + w),
+        // así que w = 2^EV - 1 da el mismo resultado que subir/bajar esos EV de exposición.
+        float ev = (sliderValue - BrightnessSliderDefault) / BrightnessSliderDefault * maxExposureEV;
+        float multiplier = Mathf.Pow(2f, ev);
+        _brightnessGain.gain.Override(new Vector4(1f, 1f, 1f, multiplier - 1f));
+    }
+
+    private static void EnsureBrightnessVolume()
+    {
+        if (_brightnessVolume != null && _brightnessGain != null) return;
+
+        var go = new GameObject("Brightness Volume (runtime)");
+        Object.DontDestroyOnLoad(go);
+        go.layer = 0; // Default: es la capa que miran las cámaras (Volume Mask).
+
+        _brightnessVolume = go.AddComponent<Volume>();
+        _brightnessVolume.isGlobal = true;
+        _brightnessVolume.priority = BrightnessVolumePriority;
+        _brightnessVolume.weight = 1f;
+
+        var profile = ScriptableObject.CreateInstance<VolumeProfile>();
+        profile.name = "Brightness (runtime)";
+        _brightnessGain = profile.Add<LiftGammaGain>(false);
+        _brightnessVolume.sharedProfile = profile;
     }
 
     // Screen.resolutions solo lista lo que el monitor soporta: la mas grande es la nativa, no se puede pasar de ahi.
