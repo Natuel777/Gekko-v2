@@ -1,4 +1,5 @@
 using UnityEngine;
+using Unity.Cinemachine;
 
 [RequireComponent(typeof(Rigidbody))]
 public class Player : MonoBehaviour
@@ -14,6 +15,8 @@ public class Player : MonoBehaviour
     private DebugController _debugController;
     private BlueberryComboTracker _blueberryCombo;
     private GekkoSwinging _swinging;
+    private CinemachineBrain _brain;
+    private bool _cameraLocked;
 
     [Header("Health")]
     [SerializeField] private HealthBar _healthBar;
@@ -204,6 +207,7 @@ public class Player : MonoBehaviour
 
     private void Update()
     {
+        UpdateCameraLock();
         _pjController.ArtificialUpdate();
         health?.ArtificialUpdate();
         _debugController.ArtificialUpdate();
@@ -280,6 +284,44 @@ public class Player : MonoBehaviour
     {
         if (active) EnablePlayerControl();
         else DisablePlayerControl();
+    }
+
+    // Mientras la cámara que se ve no sea la de juego (cinemática, Timeline, plano de una cámara que toma prioridad), Gekko
+    // no se mueve, no salta y no saca la lengua. Así cualquier cámara nueva del nivel lo bloquea sola, sin que su script
+    // tenga que acordarse de llamar a Inputs(false). Al volver a la cámara de juego se libera.
+    private void UpdateCameraLock()
+    {
+        bool locked = IsNonGameplayCameraLive();
+        if(locked == _cameraLocked) return;
+        _cameraLocked = locked;
+
+        if(locked && _swinging != null && _swinging.IsSwinging) _swinging.StopSwing();
+        _pjInputs?.SetCameraLocked(locked);
+    }
+
+    private bool IsNonGameplayCameraLive()
+    {
+        if(_brain == null)
+        {
+            Camera main = Camera.main;
+            if(main == null) return false;
+            _brain = main.GetComponent<CinemachineBrain>();
+            if(_brain == null) return false;
+        }
+
+        CameraStateManager states = CameraStateManager.Instance;
+        // Sin cámara de juego registrada no se puede saber cuál es "otra": no bloquea (si no, quedaría trabado siempre).
+        if(states == null || states.CurrentCamera == null) return false;
+
+        Object live = _brain.ActiveVirtualCamera as Object;
+        if(live == null) return false;
+        if(live == states.CurrentCamera) return false;
+
+        if(states.Cameras != null)
+            foreach(CinemachineCamera cam in states.Cameras)
+                if(cam != null && live == cam) return false;
+
+        return true;
     }
 
     // Para cinemáticas: además de bloquear el input, corta la física (gravedad/salto en curso) para que
