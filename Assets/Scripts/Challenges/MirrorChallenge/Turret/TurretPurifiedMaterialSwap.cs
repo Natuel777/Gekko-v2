@@ -88,6 +88,16 @@ public class TurretPurifiedMaterialSwap : MonoBehaviour
         }
     }
 
+    // Red de seguridad: si la torreta quedó purificada pero el pintado no arrancó (se perdió el evento, se cortó la
+    // rutina, etc.), se arranca acá. Si ya está aplicado no hace nada.
+    private void LateUpdate()
+    {
+        if(_aplicado || _rutina != null || !_turret.IsPurified || _from == null || _to == null) return;
+
+        Debug.LogWarning($"[{name}] La torreta estaba purificada pero sin pintar: se pinta ahora.", this);
+        OnTurretPurified(_turret);
+    }
+
     private void OnDestroy()
     {
         if(_transicion != null) Destroy(_transicion);
@@ -96,6 +106,8 @@ public class TurretPurifiedMaterialSwap : MonoBehaviour
     private void OnTurretPurified(ChallengeTurret turret)
     {
         if(_aplicado || _from == null || _to == null) return;
+
+        if(_rutina != null) return;
 
         if(_paintShader == null || !isActiveAndEnabled)
         {
@@ -125,6 +137,10 @@ public class TurretPurifiedMaterialSwap : MonoBehaviour
 
         if(!hayBounds)
         {
+            LogMaterialesActuales();
+            Destroy(_transicion);
+            _transicion = null;
+            _rutina = null;
             TerminarSinEfecto();
             yield break;
         }
@@ -196,6 +212,18 @@ public class TurretPurifiedMaterialSwap : MonoBehaviour
         _aplicado = true;
     }
 
+    // Diagnóstico: ningún renderer tenía "From". Muestra qué materiales tienen, para encontrar quién los cambió.
+    private void LogMaterialesActuales()
+    {
+        var sb = new System.Text.StringBuilder();
+        foreach(Renderer r in Renderers())
+        {
+            sb.Append("\n  ").Append(r.name).Append(": ");
+            foreach(Material m in r.sharedMaterials) sb.Append(m != null ? m.name : "null").Append(", ");
+        }
+        Debug.LogWarning($"[{name}] Ningún renderer usa '{(_from != null ? _from.name : "null")}' al purificarse. Materiales:{sb}", this);
+    }
+
     // Las partículas del borde no se tocan (tienen su propio material).
     private IEnumerable<Renderer> Renderers()
     {
@@ -210,7 +238,8 @@ public class TurretPurifiedMaterialSwap : MonoBehaviour
 
         for(int i = 0; i < materials.Length; i++)
         {
-            if(materials[i] != de) continue;
+            // También acepta una instancia del material ("CorruptTurret (Instance)"), por si algún script usó r.material.
+            if(!EsMismoMaterial(materials[i], de)) continue;
 
             materials[i] = a;
             changed = true;
@@ -218,6 +247,13 @@ public class TurretPurifiedMaterialSwap : MonoBehaviour
 
         if(changed) r.sharedMaterials = materials;
         return changed;
+    }
+
+    private static bool EsMismoMaterial(Material actual, Material buscado)
+    {
+        if(actual == buscado) return true;
+        if(actual == null || buscado == null) return false;
+        return actual.name == buscado.name + " (Instance)";
     }
 
     // Instancia del shader de transición con las texturas de los dos Lit (ver PaintTransitionMaterial) y el look del borde.

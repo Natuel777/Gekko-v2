@@ -102,9 +102,25 @@ public class ChallengeTurret : MonoBehaviour, IShieldBreaker
 
         if(AudioManager.instance) AudioManager.instance.Play(SoundNames.TurretBullet);
 
-        SendEvent(CreatureEvent.ChallengeTurretPurified);
-        Purified?.Invoke(this);
-        _shieldBreakerBroken?.Invoke(this);
+        // Each step is protected: if one listener throws an exception, the rest (e.g. TurretPurifiedMaterialSwap, which
+        // paints the turret) still run. Before, an exception in an earlier listener cut the invocation list and the turret
+        // stayed purified but with the corrupt material.
+        try { SendEvent(CreatureEvent.ChallengeTurretPurified); }
+        catch(System.Exception e) { Debug.LogException(e, this); }
+
+        InvokeSafely(Purified);
+        InvokeSafely(_shieldBreakerBroken);
+    }
+
+    private void InvokeSafely<T>(System.Action<T> evt) where T : class
+    {
+        if(evt == null) return;
+
+        foreach(System.Delegate listener in evt.GetInvocationList())
+        {
+            try { ((System.Action<T>)listener)(this as T); }
+            catch(System.Exception e) { Debug.LogException(e, this); }
+        }
     }
 
     [ContextMenu("Purify (Play Mode)")]

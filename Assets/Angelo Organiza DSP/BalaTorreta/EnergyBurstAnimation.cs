@@ -203,6 +203,11 @@ public class EnergyBurstAnimation : MonoBehaviour
 
     private void FinishBurst()
     {
+        // Saca el override de emisión: si no, el renderer queda para siempre con la emisión del material que tenía al
+        // empezar la carga (la violeta del corrupto), aunque después la torreta se purifique y cambie de material.
+        if (targetRenderer != null) targetRenderer.SetPropertyBlock(null, materialIndex);
+        if (baseRenderer != null) baseRenderer.SetPropertyBlock(null, materialIndex);
+
         basicAnimation.RotationSpeed = originalRotationSpeed;
         basicAnimation.IsRotating = originalRotating;
 
