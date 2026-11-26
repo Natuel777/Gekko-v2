@@ -32,6 +32,8 @@ public class VineShield : MonoBehaviour
     private Coroutine _routine;
 
     public bool IsUp => !_dropped;
+    // Terminaron de retraerse del todo (justo antes de avisar con Dropped).
+    public bool IsDown => _finished;
     public event Action<VineShield> Dropped;
 
     private void Awake() => EnsureInit();

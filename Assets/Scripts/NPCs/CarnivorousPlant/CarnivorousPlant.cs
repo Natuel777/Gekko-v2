@@ -57,6 +57,8 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
 
     public bool IsPurified => _purified;
     public bool IsShielded { get; private set; }
+    // Encerrada (ej. LvlTwo: dentro de las enredaderas): no ataca, ni escupe ni muerde. Lo maneja el desafío.
+    public bool AttackLocked { get; private set; }
     public Animator Animator => _animatorCarnivorousPlant;
     // (hits received, hits needed)
     public event System.Action<int, int> Hit;
@@ -194,6 +196,10 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
         if(_frozenForCinematic) return;
 
         if(Time.time < _staggerUntil) return;
+
+        // Encerrada: no corre la FSM ni la detección. Al liberarse, si el player ya está en rango, el próximo
+        // UpdateDetection lo detecta como recién entrado y arranca a atacar.
+        if(AttackLocked) return;
 
         _eventFSM.UpdateState();
         UpdateDetection();
@@ -492,6 +498,19 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
     }
 
     public void SetShielded(bool shielded) => IsShielded = shielded;
+
+    public void SetAttackLocked(bool locked)
+    {
+        if(AttackLocked == locked) return;
+
+        AttackLocked = locked;
+        if(!locked) return;
+
+        // Se encierra: vuelve a reposo, sin escupir ni morder.
+        _playerInRange = false;
+        if(_biteWindup != null) _biteWindup.Cancel();
+        if(IdleState != null) SetState(IdleState);
+    }
 
     // The original Animator only has "nibble": the "hurt" trigger is optional.
     private void CacheHurtTrigger()
