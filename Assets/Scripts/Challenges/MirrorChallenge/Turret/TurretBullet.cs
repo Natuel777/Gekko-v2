@@ -34,11 +34,8 @@ public class TurretBullet : ShooteableObject, IReflectable
     // which is why this is decided here and not with layers (a layer would also ignore the purified bullet).
     private Transform _owner;
 
-    // Already handed back to the pool during this life (see ReturnToPool).
     private bool _returned;
 
-    // The bullet is a trigger that moves by transform: without a Rigidbody around, Unity doesn't notify (OnTriggerEnter) when it
-    // touches a static collider, like a mirror's. Kinematic and without gravity: it isn't moved by physics, it only enables the events.
     private void Awake()
     {
         if(!TryGetComponent(out Rigidbody rb)) rb = gameObject.AddComponent<Rigidbody>();
@@ -173,11 +170,8 @@ public class TurretBullet : ShooteableObject, IReflectable
 
     private void HandleContact(Collider other)
     {
-        // Several colliders can notify in the same physics step: the first one decides.
         if(_returned) return;
 
-        // Sent back by a mirror: it is already purified, so it doesn't damage Gekko. If it reaches a turret (the collider may be
-        // in a child) it purifies it, the shooter included, and the bullet goes back to the pool. Anything else is ignored.
         if(_reflected)
         {
             ChallengeTurret turret = other.GetComponentInParent<ChallengeTurret>();
@@ -185,7 +179,7 @@ public class TurretBullet : ShooteableObject, IReflectable
             if(turret == null) return;
 
             turret.Purify();
-            ReturnToPool();
+            Impact();
             return;
         }
 
@@ -193,12 +187,10 @@ public class TurretBullet : ShooteableObject, IReflectable
         {
             Debug.Log("The cops, the cops...");
             EventManager.Trigger<float>("OnPlayerDamaged", data.damage);
-            //if(_hitEffect != null) _hitEffect.Play();
-            ReturnToPool();
+            Impact();
             return;
         }
 
-        //if(_hitEffect != null) _hitEffect.Play();
         if(StopsBullet(other)) Impact();
     }
 
@@ -218,14 +210,13 @@ public class TurretBullet : ShooteableObject, IReflectable
         return true;
     }
 
-    // Hit something solid: it dissipates.
     private void Impact()
     {
-        //if(TryResolvePSFactory())
-        //{
-        //    GenericPS ps = PSFactory.Create(PSType.VenomHit, transform.position, transform.rotation);
-        //    ps?.Initialize();
-        //}
+        if(TryResolvePSFactory())
+        {
+            GenericPS ps = _psFactory.Create(PSType.TurretBulletHit, transform.position, transform.rotation);
+            ps?.Initialize();
+        }
 
         ReturnToPool();
     }
