@@ -82,4 +82,5 @@ public enum LevelFlags
     Lvl2_HideSeek_1,
     Lvl2_HideSeek_2,
     Lvl2_purification2,
+    Lvl2_04,
 }
