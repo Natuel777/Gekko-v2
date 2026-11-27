@@ -37,6 +37,10 @@ public class GekkoHealth : IDamageable
         // DamageFeedback's invulnerability window: neither health nor effects.
         if(DamageFeedback.Instance != null && DamageFeedback.Instance.IsInvulnerable) return;
 
+        // Frozen for a cinematic (OnCinematicStart): he can't move or dodge, so nothing can hurt him (a turret bullet, a bite...).
+        Player pj = GameManager.Instance != null ? GameManager.Instance.Pj : null;
+        if(pj != null && pj.IsFrozenForCinematic) return;
+
         // Per-hit system: every hit costs a whole heart, no matter how much
         // "damage" the source declares (lava, bug, etc.) — the dmg value is no longer used.
         Debug.Log("Gekko took a hit!");

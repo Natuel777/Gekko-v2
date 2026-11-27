@@ -328,9 +328,13 @@ public class Player : MonoBehaviour
     // Gekko no siga en movimiento si entró a la cinemática en el aire.
     public void SetFrozenForCinematic(bool frozen)
     {
+        IsFrozenForCinematic = frozen;
         Inputs(!frozen);
         _pjController.SetFrozenForCinematic(frozen);
     }
+
+    // True while a cinematic has him frozen (GekkoHealth ignores damage meanwhile).
+    public bool IsFrozenForCinematic { get; private set; }
 
     #if UNITY_EDITOR
     private void OnDrawGizmosSelected()
