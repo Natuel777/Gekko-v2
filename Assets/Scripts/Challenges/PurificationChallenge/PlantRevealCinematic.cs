@@ -124,7 +124,7 @@ public class PlantRevealCinematic : MonoBehaviour, IDialogueable
     {
         if(_hintDelay > 0f) yield return new WaitForSeconds(_hintDelay);
 
-        if(_hint.sentences == null || _hint.sentences.Length == 0) yield break;
+        if(_hint.LocalizedSentences.Length == 0) yield break;
         if(UIManager.Instance == null || UIManager.Instance.HasActiveDialogue()) yield break;
 
         UIManager.Instance.StartDialogue(this);

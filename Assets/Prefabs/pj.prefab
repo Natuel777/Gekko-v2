@@ -8867,6 +8867,24 @@ MonoBehaviour:
   _grappleFinishDistance: 1.5
   _grappleLookSpeed: 360
   _secondJumpMultiplier: 2.5
+  _swimSettings:
+    floatOffset: -0.15
+    bobAmplitude: 0.04
+    bobFrequency: 0.6
+    minDepth: 1
+    maxSlope: 20
+    speedFactor: 0.4
+    acceleration: 10
+    currentFactor: 0.5
+    jumpFactor: 0.9
+    ledgeMaxHeight: 1
+    diveSpeed: 2.5
+    ascendSpeed: 3
+    buoyancySpeed: 0.8
+    verticalAcceleration: 8
+    airDuration: 10
+    airRefillTime: 1.5
+    drownDamageInterval: 2
 --- !u!114 &3519779183654367666
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -10610,6 +10628,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _tongueAnim: {fileID: 5310055692725688556}
   _trail: {fileID: 8157527786946792090}
+  _waterSplashPrefab: {fileID: 2407010111255062579, guid: 579843e3cd9172c40ba47d2c73aa93fc, type: 3}
+  _splashScale: 1.75
+  _splashIntensityRange: {x: 0.7, y: 1.3}
   _walkSound: {fileID: 1797564581683207236}
   _waterSound: {fileID: 4629988016717345608}
 --- !u!114 &273704494578557869

@@ -49,6 +49,9 @@ public class Mirror : MonoBehaviour, IActivable
 
     public bool IsActive => reflect.IsActive;
 
+    // The reflecting plate's collider (MirrorTutorial aims its demo shot at it). Null if the mirror uses its own collider.
+    public Collider Surface => _surface;
+
     #region Initialization
     private void Awake()
     {

@@ -47,6 +47,13 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
     [Min(0f)]
     [SerializeField] private float _blockedHitMarkerOffset = 0.2f;
 
+    [Header("Vulnerable Feedback")]
+    [Tooltip("Partículas de 'mareada' (ej. Mareado, sobre la cabeza del jefe): se ven solo mientras Gekko le puede pegar (misma condición que el daño de la lengua: sin escudo, sin purificar y en su ventana vulnerable). Vacío = nada.")]
+    [SerializeField] private GameObject _vulnerableFx;
+
+    private TrailRenderer[] _vulnerableFxTrails;
+    private bool _vulnerableFxOn = true; // el prefab lo trae prendido: Start lo apaga
+
     private bool _playerInRange = false;
     private bool _purified = false;
     private int _hits;
@@ -161,6 +168,35 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
         detection = new BugDetection(transform, playerTransform, data.detectionRange);
         biteDetection = new BugDetection(transform, playerTransform, data.biteRange);
         SetState(IdleState);
+
+        if(_vulnerableFx != null)
+        {
+            _vulnerableFxTrails = _vulnerableFx.GetComponentsInChildren<TrailRenderer>(true);
+            SetVulnerableFx(false);
+        }
+    }
+
+    // The dizzy stars show exactly when a tongue hit does damage (same condition as OnTongueContact). For the boss that is the
+    // interval between bites (the tired pose), minus the hit reaction: after a hit they go out and come back when it can be hit again.
+    private void UpdateVulnerableFx()
+    {
+        if(_vulnerableFxTrails == null) return;
+        SetVulnerableFx(!_purified && !IsShielded && CanBeHit);
+    }
+
+    private void SetVulnerableFx(bool on)
+    {
+        if(on == _vulnerableFxOn) return;
+        _vulnerableFxOn = on;
+
+        // The whole object goes on/off: not just the stars but also their trails (the lines circling over the head) and its
+        // spin animation. Off at once: stars or lines still floating while the plant prepares the next bite would say the wrong thing.
+        _vulnerableFx.SetActive(on);
+        if(!on) return;
+
+        // Turned back on: the stars start over (Play On Awake) and the trails don't draw a stroke from where they were last time.
+        foreach(TrailRenderer trail in _vulnerableFxTrails)
+            if(trail != null) trail.Clear();
     }
 
     public bool IsPlayerInBiteRange() => biteDetection.IsTargetInRange();
@@ -222,6 +258,8 @@ public class CarnivorousPlant : MonoBehaviour, IDamageable, IHitOncePerLick, IPa
         // Before the return below: the damage flash also runs on plants without aim, and during the stun (Update
         // is stopped).
         if(_damageFlash != null) _damageFlash.ArtificialLateUpdate();
+        // Also before the return: it has to update during the stun and when purified (to turn the stars off).
+        UpdateVulnerableFx();
 
         if(_aimBehaviour == null) return;
 

@@ -20,6 +20,13 @@ public class LocalizedText : MonoBehaviour
         Localizer.OnLanguageChanged -= Refresh;
     }
 
+    // Cambia la clave desde código (ej. LoadingScreen, según la zona que se carga) y actualiza el texto.
+    public void SetKey(string key)
+    {
+        _key = key;
+        Refresh();
+    }
+
     public void Refresh()
     {
         if (!_text) _text = GetComponent<TMP_Text>();

@@ -3384,6 +3384,7 @@ Transform:
   - {fileID: 406050768}
   - {fileID: 8558520833005103344}
   - {fileID: 3425592572586960009}
+  - {fileID: 2132827387}
   m_Father: {fileID: 1748802349}
   m_LocalEulerAnglesHint: {x: 0, y: 90, z: 0}
 --- !u!114 &26294468
@@ -3416,6 +3417,7 @@ MonoBehaviour:
   _aimBlendTime: 0.25
   _blockedHitMarker: 0
   _blockedHitMarkerOffset: 0.2
+  _vulnerableFx: {fileID: 2132827388}
 --- !u!136 &26294469
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -48734,6 +48736,11 @@ MonoBehaviour:
     - "\xA1Gekko! Gracias por salvarme... estuve atrapado ah\xED adentro mucho tiempo."
     - "Mi misi\xF3n es salvarlos a todos. Vamos a ir de a poco."
     - "Gracias por todo. Volvamos a la aldea, as\xED la vamos purificando de a poco."
+    sentencesEnglish:
+    - Gekko! Thank you for saving me... I was trapped in there for a long time.
+    - My mission is to save everyone. We'll go little by little.
+    - Thanks for everything. Let's go back to the village, so we can purify it little
+      by little.
     speakerNames:
     - Celeste
     - Gekko
@@ -48741,6 +48748,7 @@ MonoBehaviour:
   _image: {fileID: 0}
   _audioClip: {fileID: 0}
   _nextScene: 6
+  _rescateId: 
   _stageConversation: 1
   _fadeToStage: 1
   _conversationDistance: 2.2
@@ -91140,7 +91148,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 9147602581419627614, guid: 17902970a5566db48ad3584c3f61d567, type: 3}
       propertyPath: '_dialogue.Array.data[0].sentences.Array.data[0]'
-      value: Hi, do you know where my mom is?
+      value: "Hola, \xBFsab\xE9s d\xF3nde est\xE1 mi mam\xE1?"
       objectReference: {fileID: 0}
     - target: {fileID: 9147602581419627614, guid: 17902970a5566db48ad3584c3f61d567, type: 3}
       propertyPath: '_dialogue.Array.data[0].sentences.Array.data[1]'
@@ -91152,7 +91160,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 9147602581419627614, guid: 17902970a5566db48ad3584c3f61d567, type: 3}
       propertyPath: '_dialogue.Array.data[1].sentences.Array.data[0]'
-      value: Oh! you know where my mom is? thank you.
+      value: "\xA1Oh! \xBFSab\xE9s d\xF3nde est\xE1 mi mam\xE1? Gracias."
       objectReference: {fileID: 0}
     - target: {fileID: 9147602581419627614, guid: 17902970a5566db48ad3584c3f61d567, type: 3}
       propertyPath: '_dialogue.Array.data[1].sentences.Array.data[1]'
@@ -91164,6 +91172,30 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 9147602581419627614, guid: 17902970a5566db48ad3584c3f61d567, type: 3}
       propertyPath: '_dialogue.Array.data[2].sentences.Array.data[0]'
+      value: "\xA1S\xED, mami!"
+      objectReference: {fileID: 0}
+    - target: {fileID: 9147602581419627614, guid: 17902970a5566db48ad3584c3f61d567, type: 3}
+      propertyPath: _dialogue.Array.data[0].sentencesEnglish.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 9147602581419627614, guid: 17902970a5566db48ad3584c3f61d567, type: 3}
+      propertyPath: _dialogue.Array.data[1].sentencesEnglish.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 9147602581419627614, guid: 17902970a5566db48ad3584c3f61d567, type: 3}
+      propertyPath: _dialogue.Array.data[2].sentencesEnglish.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 9147602581419627614, guid: 17902970a5566db48ad3584c3f61d567, type: 3}
+      propertyPath: '_dialogue.Array.data[0].sentencesEnglish.Array.data[0]'
+      value: Hi, do you know where my mom is?
+      objectReference: {fileID: 0}
+    - target: {fileID: 9147602581419627614, guid: 17902970a5566db48ad3584c3f61d567, type: 3}
+      propertyPath: '_dialogue.Array.data[1].sentencesEnglish.Array.data[0]'
+      value: Oh! you know where my mom is? thank you.
+      objectReference: {fileID: 0}
+    - target: {fileID: 9147602581419627614, guid: 17902970a5566db48ad3584c3f61d567, type: 3}
+      propertyPath: '_dialogue.Array.data[2].sentencesEnglish.Array.data[0]'
       value: Yes mommy!
       objectReference: {fileID: 0}
     m_RemovedComponents: []
@@ -120267,14 +120299,38 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 9147602581419627614, guid: 17902970a5566db48ad3584c3f61d567, type: 3}
       propertyPath: '_dialogue.Array.data[0].sentences.Array.data[0]'
-      value: Hello, you found me, but can you find my mom and tell me?
+      value: "Hola, me encontraste, pero \xBFpod\xE9s encontrar a mi mam\xE1 y avisarme?"
       objectReference: {fileID: 0}
     - target: {fileID: 9147602581419627614, guid: 17902970a5566db48ad3584c3f61d567, type: 3}
       propertyPath: '_dialogue.Array.data[1].sentences.Array.data[0]'
-      value: Oh you did find me and my mom, thanks.
+      value: "\xA1Oh, nos encontraste a m\xED y a mi mam\xE1, gracias!"
       objectReference: {fileID: 0}
     - target: {fileID: 9147602581419627614, guid: 17902970a5566db48ad3584c3f61d567, type: 3}
       propertyPath: '_dialogue.Array.data[2].sentences.Array.data[0]'
+      value: Tengo que buscar un nuevo lugar para esconderme.
+      objectReference: {fileID: 0}
+    - target: {fileID: 9147602581419627614, guid: 17902970a5566db48ad3584c3f61d567, type: 3}
+      propertyPath: _dialogue.Array.data[0].sentencesEnglish.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 9147602581419627614, guid: 17902970a5566db48ad3584c3f61d567, type: 3}
+      propertyPath: _dialogue.Array.data[1].sentencesEnglish.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 9147602581419627614, guid: 17902970a5566db48ad3584c3f61d567, type: 3}
+      propertyPath: _dialogue.Array.data[2].sentencesEnglish.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 9147602581419627614, guid: 17902970a5566db48ad3584c3f61d567, type: 3}
+      propertyPath: '_dialogue.Array.data[0].sentencesEnglish.Array.data[0]'
+      value: Hello, you found me, but can you find my mom and tell me?
+      objectReference: {fileID: 0}
+    - target: {fileID: 9147602581419627614, guid: 17902970a5566db48ad3584c3f61d567, type: 3}
+      propertyPath: '_dialogue.Array.data[1].sentencesEnglish.Array.data[0]'
+      value: Oh you did find me and my mom, thanks.
+      objectReference: {fileID: 0}
+    - target: {fileID: 9147602581419627614, guid: 17902970a5566db48ad3584c3f61d567, type: 3}
+      propertyPath: '_dialogue.Array.data[2].sentencesEnglish.Array.data[0]'
       value: I have to find a new place to hide.
       objectReference: {fileID: 0}
     m_RemovedComponents: []
@@ -198654,36 +198710,54 @@ MonoBehaviour:
   _dialogue:
   - speakerName: Maria
     sentences:
-    - 'Hello, can you help me find my five children? '
+    - "Hola, \xBFme ayud\xE1s a encontrar a mis cinco hijos?"
+    - "S\xE9 que est\xE1n cerca, pero no los encuentro. Por favor."
+    sentencesEnglish:
+    - Hello, can you help me find my five children?
     - I know they are nearby but I can't find them, please.
     speakerNames: []
   - speakerName: Maria
     sentences:
+    - "Gracias por ayudarme. Todav\xEDa te faltan cinco de mis hijos."
+    sentencesEnglish:
     - Thank you for helping, you are missing five of my children.
     speakerNames: []
   - speakerName: Maria
     sentences:
+    - "Gracias, hay cuatro hijos m\xE1s por ac\xE1."
+    sentencesEnglish:
     - Thank you, there are four more children arround here.
     speakerNames: []
   - speakerName: Maria
     sentences:
+    - "Gracias. Me faltan tres hijos m\xE1s."
+    sentencesEnglish:
     - Thanks. I'm missing three more children.
     speakerNames: []
   - speakerName: Maria
     sentences:
+    - "\xA1Lo est\xE1s haciendo genial! Te faltan dos m\xE1s."
+    sentencesEnglish:
     - You are doing great, you need to find two more.
     speakerNames: []
   - speakerName: Maria
     sentences:
+    - "\xA1Ya casi! Falta uno m\xE1s, amigo."
+    sentencesEnglish:
     - You are almost there, one more my friend.
     speakerNames: []
   - speakerName: Maria
     sentences:
+    - "\xA1Ay, por todas las migas! Encontraste a todos mis beb\xE9s."
+    - "Estoy tan feliz... tom\xE1 esto."
+    sentencesEnglish:
     - Oh breadcrums! You found all of my babies.
     - I'm so happy, take this.
     speakerNames: []
   - speakerName: Maria
     sentences:
+    - "Gracias otra vez, peque\xF1o h\xE9roe."
+    sentencesEnglish:
     - Thank you again little hero.
     speakerNames: []
   _imagedialogue: {fileID: -694802106, guid: 24afd743cd98c06438c9dd6b18ffc3a4, type: 3}
@@ -230217,7 +230291,8 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 9147602581419627614, guid: 17902970a5566db48ad3584c3f61d567, type: 3}
       propertyPath: '_dialogue.Array.data[0].sentences.Array.data[0]'
-      value: Sir, do you have the knowledge of where my mother could be?
+      value: "Se\xF1or, \xBFtendr\xEDa usted conocimiento de d\xF3nde podr\xEDa estar
+        mi madre?"
       objectReference: {fileID: 0}
     - target: {fileID: 9147602581419627614, guid: 17902970a5566db48ad3584c3f61d567, type: 3}
       propertyPath: '_dialogue.Array.data[0].sentences.Array.data[1]'
@@ -230229,7 +230304,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 9147602581419627614, guid: 17902970a5566db48ad3584c3f61d567, type: 3}
       propertyPath: '_dialogue.Array.data[1].sentences.Array.data[0]'
-      value: Thank you sir, I will go to my mother's side.
+      value: "Gracias, se\xF1or. Ir\xE9 junto a mi madre."
       objectReference: {fileID: 0}
     - target: {fileID: 9147602581419627614, guid: 17902970a5566db48ad3584c3f61d567, type: 3}
       propertyPath: '_dialogue.Array.data[1].sentences.Array.data[1]'
@@ -230241,6 +230316,30 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 9147602581419627614, guid: 17902970a5566db48ad3584c3f61d567, type: 3}
       propertyPath: '_dialogue.Array.data[2].sentences.Array.data[0]'
+      value: "Mi m\xE1s profundo agradecimiento, se\xF1or."
+      objectReference: {fileID: 0}
+    - target: {fileID: 9147602581419627614, guid: 17902970a5566db48ad3584c3f61d567, type: 3}
+      propertyPath: _dialogue.Array.data[0].sentencesEnglish.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 9147602581419627614, guid: 17902970a5566db48ad3584c3f61d567, type: 3}
+      propertyPath: _dialogue.Array.data[1].sentencesEnglish.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 9147602581419627614, guid: 17902970a5566db48ad3584c3f61d567, type: 3}
+      propertyPath: _dialogue.Array.data[2].sentencesEnglish.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 9147602581419627614, guid: 17902970a5566db48ad3584c3f61d567, type: 3}
+      propertyPath: '_dialogue.Array.data[0].sentencesEnglish.Array.data[0]'
+      value: Sir, do you have the knowledge of where my mother could be?
+      objectReference: {fileID: 0}
+    - target: {fileID: 9147602581419627614, guid: 17902970a5566db48ad3584c3f61d567, type: 3}
+      propertyPath: '_dialogue.Array.data[1].sentencesEnglish.Array.data[0]'
+      value: Thank you sir, I will go to my mother's side.
+      objectReference: {fileID: 0}
+    - target: {fileID: 9147602581419627614, guid: 17902970a5566db48ad3584c3f61d567, type: 3}
+      propertyPath: '_dialogue.Array.data[2].sentencesEnglish.Array.data[0]'
       value: My deepest thanks, sir.
       objectReference: {fileID: 0}
     m_RemovedComponents: []
@@ -242324,6 +242423,8 @@ MonoBehaviour:
     speakerName: Planta
     sentences:
     - 'PLACEHOLDER: la planta ha sido purificada.'
+    sentencesEnglish:
+    - 'PLACEHOLDER: the plant has been purified.'
     speakerNames: []
   _image: {fileID: 0}
   _audioClip: {fileID: 0}
@@ -252546,14 +252647,38 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 9147602581419627614, guid: 17902970a5566db48ad3584c3f61d567, type: 3}
       propertyPath: '_dialogue.Array.data[0].sentences.Array.data[0]'
-      value: I'm lost, Can you find my mom?
+      value: "Estoy perdida, \xBFpod\xE9s encontrar a mi mam\xE1?"
       objectReference: {fileID: 0}
     - target: {fileID: 9147602581419627614, guid: 17902970a5566db48ad3584c3f61d567, type: 3}
       propertyPath: '_dialogue.Array.data[1].sentences.Array.data[0]'
-      value: ohhh, she is across the river,  thanks.
+      value: "Ohhh, est\xE1 del otro lado del r\xEDo, gracias."
       objectReference: {fileID: 0}
     - target: {fileID: 9147602581419627614, guid: 17902970a5566db48ad3584c3f61d567, type: 3}
       propertyPath: '_dialogue.Array.data[2].sentences.Array.data[0]'
+      value: "No habr\xEDa encontrado a mi mam\xE1 sin vos, gracias."
+      objectReference: {fileID: 0}
+    - target: {fileID: 9147602581419627614, guid: 17902970a5566db48ad3584c3f61d567, type: 3}
+      propertyPath: _dialogue.Array.data[0].sentencesEnglish.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 9147602581419627614, guid: 17902970a5566db48ad3584c3f61d567, type: 3}
+      propertyPath: _dialogue.Array.data[1].sentencesEnglish.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 9147602581419627614, guid: 17902970a5566db48ad3584c3f61d567, type: 3}
+      propertyPath: _dialogue.Array.data[2].sentencesEnglish.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 9147602581419627614, guid: 17902970a5566db48ad3584c3f61d567, type: 3}
+      propertyPath: '_dialogue.Array.data[0].sentencesEnglish.Array.data[0]'
+      value: I'm lost, Can you find my mom?
+      objectReference: {fileID: 0}
+    - target: {fileID: 9147602581419627614, guid: 17902970a5566db48ad3584c3f61d567, type: 3}
+      propertyPath: '_dialogue.Array.data[1].sentencesEnglish.Array.data[0]'
+      value: ohhh, she is across the river,  thanks.
+      objectReference: {fileID: 0}
+    - target: {fileID: 9147602581419627614, guid: 17902970a5566db48ad3584c3f61d567, type: 3}
+      propertyPath: '_dialogue.Array.data[2].sentencesEnglish.Array.data[0]'
       value: I would'nt have found my mom without you, thanks.
       objectReference: {fileID: 0}
     m_RemovedComponents: []
@@ -319372,6 +319497,73 @@ MeshCollider:
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: -6701824176614652249, guid: fc44d87a9e11a0b4580b3c35035ac8df, type: 3}
+--- !u!1001 &2132827386
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 26294467}
+    m_Modifications:
+    - target: {fileID: 2014427277893369152, guid: 1c528b1e41f6bd14e9ecfa841c126962, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2014427277893369152, guid: 1c528b1e41f6bd14e9ecfa841c126962, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 4.43
+      objectReference: {fileID: 0}
+    - target: {fileID: 2014427277893369152, guid: 1c528b1e41f6bd14e9ecfa841c126962, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0.98
+      objectReference: {fileID: 0}
+    - target: {fileID: 2014427277893369152, guid: 1c528b1e41f6bd14e9ecfa841c126962, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.5753111
+      objectReference: {fileID: 0}
+    - target: {fileID: 2014427277893369152, guid: 1c528b1e41f6bd14e9ecfa841c126962, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: -0.061915077
+      objectReference: {fileID: 0}
+    - target: {fileID: 2014427277893369152, guid: 1c528b1e41f6bd14e9ecfa841c126962, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: -0.813653
+      objectReference: {fileID: 0}
+    - target: {fileID: 2014427277893369152, guid: 1c528b1e41f6bd14e9ecfa841c126962, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0.05614792
+      objectReference: {fileID: 0}
+    - target: {fileID: 2014427277893369152, guid: 1c528b1e41f6bd14e9ecfa841c126962, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2014427277893369152, guid: 1c528b1e41f6bd14e9ecfa841c126962, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 1464.3
+      objectReference: {fileID: 0}
+    - target: {fileID: 2014427277893369152, guid: 1c528b1e41f6bd14e9ecfa841c126962, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7060119871750384788, guid: 1c528b1e41f6bd14e9ecfa841c126962, type: 3}
+      propertyPath: m_Name
+      value: Mareado
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 1c528b1e41f6bd14e9ecfa841c126962, type: 3}
+--- !u!4 &2132827387 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 2014427277893369152, guid: 1c528b1e41f6bd14e9ecfa841c126962, type: 3}
+  m_PrefabInstance: {fileID: 2132827386}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &2132827388 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 7060119871750384788, guid: 1c528b1e41f6bd14e9ecfa841c126962, type: 3}
+  m_PrefabInstance: {fileID: 2132827386}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &2133597725
 GameObject:
   m_ObjectHideFlags: 0
@@ -331355,7 +331547,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 9147602581419627614, guid: 17902970a5566db48ad3584c3f61d567, type: 3}
       propertyPath: '_dialogue.Array.data[0].sentences.Array.data[0]'
-      value: Help me, I lost my mom
+      value: "Ayudame, perd\xED a mi mam\xE1."
       objectReference: {fileID: 0}
     - target: {fileID: 9147602581419627614, guid: 17902970a5566db48ad3584c3f61d567, type: 3}
       propertyPath: '_dialogue.Array.data[0].sentences.Array.data[1]'
@@ -331367,7 +331559,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 9147602581419627614, guid: 17902970a5566db48ad3584c3f61d567, type: 3}
       propertyPath: '_dialogue.Array.data[1].sentences.Array.data[0]'
-      value: Oh! thanks, I will go with her.
+      value: "\xA1Oh! Gracias, voy a ir con ella."
       objectReference: {fileID: 0}
     - target: {fileID: 9147602581419627614, guid: 17902970a5566db48ad3584c3f61d567, type: 3}
       propertyPath: '_dialogue.Array.data[1].sentences.Array.data[1]'
@@ -331379,6 +331571,30 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 9147602581419627614, guid: 17902970a5566db48ad3584c3f61d567, type: 3}
       propertyPath: '_dialogue.Array.data[2].sentences.Array.data[0]'
+      value: Gracias otra vez.
+      objectReference: {fileID: 0}
+    - target: {fileID: 9147602581419627614, guid: 17902970a5566db48ad3584c3f61d567, type: 3}
+      propertyPath: _dialogue.Array.data[0].sentencesEnglish.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 9147602581419627614, guid: 17902970a5566db48ad3584c3f61d567, type: 3}
+      propertyPath: _dialogue.Array.data[1].sentencesEnglish.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 9147602581419627614, guid: 17902970a5566db48ad3584c3f61d567, type: 3}
+      propertyPath: _dialogue.Array.data[2].sentencesEnglish.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 9147602581419627614, guid: 17902970a5566db48ad3584c3f61d567, type: 3}
+      propertyPath: '_dialogue.Array.data[0].sentencesEnglish.Array.data[0]'
+      value: Help me, I lost my mom
+      objectReference: {fileID: 0}
+    - target: {fileID: 9147602581419627614, guid: 17902970a5566db48ad3584c3f61d567, type: 3}
+      propertyPath: '_dialogue.Array.data[1].sentencesEnglish.Array.data[0]'
+      value: Oh! thanks, I will go with her.
+      objectReference: {fileID: 0}
+    - target: {fileID: 9147602581419627614, guid: 17902970a5566db48ad3584c3f61d567, type: 3}
+      propertyPath: '_dialogue.Array.data[2].sentencesEnglish.Array.data[0]'
       value: Thank you again.
       objectReference: {fileID: 0}
     m_RemovedComponents: []

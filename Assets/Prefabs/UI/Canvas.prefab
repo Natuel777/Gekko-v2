@@ -440,6 +440,7 @@ GameObject:
   - component: {fileID: 603900127090502059}
   - component: {fileID: 4324550765633778078}
   - component: {fileID: 4973034456196070087}
+  - component: {fileID: 2967264696386381572}
   m_Layer: 0
   m_Name: Label
   m_TagString: Untagged
@@ -494,7 +495,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "Manten\xE9 E para saltear"
+  m_text: Hold E to skip
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 2e55b29349a03a64a9793946f7121bac, type: 2}
   m_sharedMaterial: {fileID: -470118723626038596, guid: 2e55b29349a03a64a9793946f7121bac, type: 2}
@@ -565,6 +566,20 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!114 &2967264696386381572
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2894665236347608457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8039d28c2422a84419bb9f24e765ee5b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _key: skip_cinematic
+  _uppercase: 0
 --- !u!1 &2904967227377919030
 GameObject:
   m_ObjectHideFlags: 0
@@ -2443,6 +2458,13 @@ MonoBehaviour:
   _dialogueFadeDuration: 0.2
   _closeDistance: 8
   _dialogueImage: {fileID: 749486686956627572}
+  _speakerPortraits:
+  - speakerName: Moki
+    image: {fileID: -1217959035, guid: cc9daf04070898843b8976b91415660f, type: 3}
+  - speakerName: Gekko
+    image: {fileID: -2121233185, guid: cc9daf04070898843b8976b91415660f, type: 3}
+  - speakerName: Celeste
+    image: {fileID: 1328983238, guid: cc9daf04070898843b8976b91415660f, type: 3}
 --- !u!82 &5530510072546824154
 AudioSource:
   m_ObjectHideFlags: 0

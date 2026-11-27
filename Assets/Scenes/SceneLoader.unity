@@ -456,6 +456,7 @@ GameObject:
   - component: {fileID: 95015908}
   - component: {fileID: 95015907}
   - component: {fileID: 95015906}
+  - component: {fileID: 95015909}
   m_Layer: 0
   m_Name: ZoneNameBig
   m_TagString: Untagged
@@ -483,7 +484,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 'Bosque '
+  m_text: Forest
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 56feca412e1bd6745922ebc8e18b3cc3, type: 2}
   m_sharedMaterial: {fileID: 1795129164824434389, guid: 56feca412e1bd6745922ebc8e18b3cc3, type: 2}
@@ -581,6 +582,20 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: -49.854065}
   m_SizeDelta: {x: 720.0909, y: 106.8301}
   m_Pivot: {x: 0, y: 1}
+--- !u!114 &95015909
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 95015905}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8039d28c2422a84419bb9f24e765ee5b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _key: zone_1_name
+  _uppercase: 0
 --- !u!1 &146726620
 GameObject:
   m_ObjectHideFlags: 0
@@ -746,6 +761,28 @@ MonoBehaviour:
   - 'Ojo: mientras la planta siga viva, los escarabajos purificados se vuelven a
     corromper.'
   - "Mov\xE9 el mouse para girar la c\xE1mara y apret\xE1 P para pausar el juego."
+  _tipsEnglish:
+  - 'Left-click to shoot your tongue: use it to eat bugs, grab fruit and pull objects
+    toward you.'
+  - Your tongue has a limited reach. Get closer to the target before shooting it.
+  - Use the mouse wheel to switch the target your tongue is aiming at.
+  - Hold right-click to grapple with your tongue and swing. Use WASD to build momentum
+    while you swing.
+  - While swinging, hold Space to shorten the rope.
+  - Some surfaces can be climbed. Try walking into walls.
+  - Eating a blueberry while hurt heals 20% of your health.
+  - With full health, eat 5 blueberries to trigger a speed boost.
+  - While the boost is active, each extra blueberry adds 2 more seconds of speed.
+  - Bouncy platforms, like mushrooms, launch you into the air to reach high places.
+  - 'Touch a checkpoint to save your progress: if you run out of health, you''ll
+    start from there.'
+  - Stuck? Press R to go back to the last checkpoint. If you haven't touched one
+    yet, the level restarts.
+  - Press E to talk to characters. Press E or left-click to advance the dialogue.
+  - Break all the cores to bring down the carnivorous plant's shield. Purify it to
+    open the way.
+  - 'Careful: as long as the plant is alive, purified beetles get corrupted again.'
+  - Move the mouse to turn the camera and press P to pause the game.
   _interval: 6
   _fadeDuration: 1
 --- !u!225 &174175611
@@ -2776,6 +2813,7 @@ GameObject:
   - component: {fileID: 720342123}
   - component: {fileID: 720342124}
   - component: {fileID: 720342125}
+  - component: {fileID: 720342126}
   m_Layer: 0
   m_Name: ZoneLabelSmall
   m_TagString: Untagged
@@ -2830,7 +2868,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: ZONA 1
+  m_text: ZONE 1
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 56feca412e1bd6745922ebc8e18b3cc3, type: 2}
   m_sharedMaterial: {fileID: 1795129164824434389, guid: 56feca412e1bd6745922ebc8e18b3cc3, type: 2}
@@ -2901,6 +2939,20 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!114 &720342126
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 720342122}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8039d28c2422a84419bb9f24e765ee5b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _key: zone_1_label
+  _uppercase: 0
 --- !u!1 &734889881
 GameObject:
   m_ObjectHideFlags: 0
@@ -15557,6 +15609,7 @@ GameObject:
   - component: {fileID: 1991584568}
   - component: {fileID: 1991584570}
   - component: {fileID: 1991584569}
+  - component: {fileID: 1991584571}
   m_Layer: 5
   m_Name: TipTitle
   m_TagString: Untagged
@@ -15603,7 +15656,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: CONSEJO
+  m_text: TIP
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 56feca412e1bd6745922ebc8e18b3cc3, type: 2}
   m_sharedMaterial: {fileID: 1795129164824434389, guid: 56feca412e1bd6745922ebc8e18b3cc3, type: 2}
@@ -15682,6 +15735,20 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1991584567}
   m_CullTransparentMesh: 1
+--- !u!114 &1991584571
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1991584567}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8039d28c2422a84419bb9f24e765ee5b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _key: tip_title
+  _uppercase: 0
 --- !u!1 &2023260017
 GameObject:
   m_ObjectHideFlags: 0

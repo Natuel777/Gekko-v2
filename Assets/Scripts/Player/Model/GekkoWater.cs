@@ -54,6 +54,7 @@ public static class GekkoWater
         public bool CanDive;        // dentro de un DeepWaterZone
         public float BottomY;       // hasta dónde se puede bajar buceando (solo vale con CanDive)
         public bool NoSwim;         // agua que no se nada (WaterZone con "Se puede nadar" apagado): se hunde, como antes
+        public bool OutsideSwimZone; // NoSwim porque es un río que se nada solo en sus SwimZone y el punto está afuera
         public float CurrentFactor; // cuánto arrastra la corriente en esta agua; negativo = el valor general de SwimSettings
         public bool IsFlat(float maxSlopeDeg) => Vector3.Angle(Normal, Vector3.up) <= maxSlopeDeg;
     }
@@ -98,6 +99,17 @@ public static class GekkoWater
             bool hasSolid = rivers[i].TryGetComponent(out RiverSolidSurface solid);
             info.NoSwim = hasSolid && !solid.Swimmable;
             info.CurrentFactor = hasSolid ? solid.SwimCurrentFactor : -1f;
+            // Ríos que se nadan solo en sus pozones (SwimZone): fuera de ellos, como uno que no se nada. Adentro, el pozón es agua
+            // mansa: su propia corriente.
+            if(hasSolid && solid.Swimmable && solid.SwimOnlyInZones)
+            {
+                if(!SwimZone.TryFind(point, out SwimZone swimZone))
+                {
+                    info.NoSwim = true;
+                    info.OutsideSwimZone = true;
+                }
+                else if(swimZone.CurrentFactor >= 0f) info.CurrentFactor = swimZone.CurrentFactor;
+            }
             // Buceo en el río: hasta el fondo de su agua (volumen o cauce), un poco antes para no salirse por abajo.
             if(hasSolid && solid.CanDive)
             {

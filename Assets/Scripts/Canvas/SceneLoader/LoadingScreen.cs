@@ -23,6 +23,34 @@ public class LoadingScreen : MonoBehaviour
     private void Awake()
     {
         if (_canvasGroup != null) _canvasGroup.alpha = 0f;
+        ShowZoneOf(AsyncLoader.GetSceneToLoad());
+    }
+
+    // Cartel de la zona que se está cargando (claves del Localizer: chico arriba, grande abajo). Sin zona (ej. el menú) se oculta.
+    private static readonly System.Collections.Generic.Dictionary<ScenesNames, (string label, string name)> ZoneKeys =
+        new System.Collections.Generic.Dictionary<ScenesNames, (string, string)>
+        {
+            { ScenesNames.Level1, ("zone_1_label", "zone_1_name") },
+            { ScenesNames.Level2, ("zone_2_label", "zone_2_name") },
+            { ScenesNames.Aldea, ("zone_village_label", "zone_village_name") },
+        };
+
+    private void ShowZoneOf(ScenesNames scene)
+    {
+        bool has = ZoneKeys.TryGetValue(scene, out var keys);
+        SetZoneText(_zoneLabel, has ? keys.label : null);
+        SetZoneText(_zoneName, has ? keys.name : null);
+    }
+
+    private static void SetZoneText(TMP_Text text, string key)
+    {
+        if (text == null) return;
+        text.gameObject.SetActive(key != null);
+        if (key == null) return;
+
+        // Con LocalizedText se le cambia la clave (así sigue al idioma); si no, se escribe directo.
+        if (text.TryGetComponent(out LocalizedText localized)) localized.SetKey(key);
+        else text.text = Localizer.Get(key);
     }
 
     private IEnumerator Start()
@@ -84,8 +112,7 @@ public class LoadingScreen : MonoBehaviour
         _canvasGroup.alpha = to;
     }
 
-    // Opcional: llamarlo desde donde se dispara la transición para mostrar el nombre de zona
-    // antes de ir a "SceneLoader", o simplemente asignar el texto a mano en el Inspector por ahora.
+    // Texto libre para el cartel de zona (normalmente lo pone ShowZoneOf según la escena que se carga).
     public void SetZoneInfo(string label, string name)
     {
         if (_zoneLabel != null) _zoneLabel.text = label;

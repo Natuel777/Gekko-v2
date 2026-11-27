@@ -39,6 +39,12 @@ public class PressurePlateRuna : MonoBehaviour
     // camera to the mirror so the player sees it rise). Returns the seconds to wait; 0 = toggle right away, as usual.
     public System.Func<PressurePlateRuna, float> BeforeToggle;
 
+    // Fires on every step, when the stone starts sinking (e.g. PlateHighlight stops calling attention to the plate).
+    public event System.Action<PressurePlateRuna> Pressed;
+
+    // The plate's rune decal: PlateHighlight makes it pulse while the plate has not been stepped on yet.
+    public DecalProjector Runa => _runa;
+
     // Gekko's colliders that are on top right now. Gekko has more than one and each reports its own entry: without keeping count,
     // it would toggle once per collider (and two toggles leave the mirror as it was).
     readonly HashSet<Collider> _jugadorDentro = new HashSet<Collider>();
@@ -106,6 +112,9 @@ public class PressurePlateRuna : MonoBehaviour
         // Plays as soon as Gekko steps on it, together with the stone sinking (it doesn't wait for it to finish going down). Once per step:
         // OnTriggerEnter already discards Gekko's other colliders and, with Un Solo Uso, every step after the first.
         if (AudioManager.instance) AudioManager.instance.Play(SoundNames.PlankPlaced);
+
+        try { Pressed?.Invoke(this); }
+        catch (System.Exception e) { Debug.LogException(e, this); }
 
         Iniciar(ref _rutinaPiedra, MoverPiedra(true));
         Iniciar(ref _rutinaRuna, FundirRuna(true));

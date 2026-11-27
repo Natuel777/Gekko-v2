@@ -25,6 +25,16 @@ public class UIManager : MonoBehaviour
     [SerializeField] private float _dialogueFadeDuration = 0.2f;
     [SerializeField] private float _closeDistance = 8f;
     [SerializeField] private Image _dialogueImage;
+    [Tooltip("Retrato por nombre de hablante (speakerNames del diálogo): en cada línea se muestra el del que habla. " +
+             "Si el hablante no está en la lista se usa la imagen del NPC (IDialogueable.Image).")]
+    [SerializeField] private SpeakerPortrait[] _speakerPortraits;
+
+    [System.Serializable]
+    private struct SpeakerPortrait
+    {
+        public string speakerName;
+        public Sprite image;
+    }
 
     private readonly Queue<string> _sentences = new Queue<string>();
     private readonly Queue<string> _speakerNames = new Queue<string>();
@@ -36,6 +46,7 @@ public class UIManager : MonoBehaviour
     private Coroutine _typing;
     private AudioSource _audioTalk;
     private AudioClip _audioClip;
+    private Sprite _npcImage;
     private int _countLetters;
 
     public delegate void ActivatingDialogue();
@@ -124,7 +135,8 @@ public class UIManager : MonoBehaviour
         if(_currentDialogue != null || dialogueable == null) return;
 
         _currentDialogue = dialogueable;
-        _dialogueImage.sprite = dialogueable.Image;
+        _npcImage = dialogueable.Image;
+        SetDialogueImage(_npcImage);
         _audioClip = dialogueable.AudioClip;
         RunHookSafely(_currentDialogue.OnDialogueStart);
         InvokeSafely(OnActivatingDialogue);
@@ -137,13 +149,15 @@ public class UIManager : MonoBehaviour
         }
 
         Dialogue dialogue = _currentDialogue.Dialogue;
-        bool perLineNames = dialogue.speakerNames != null && dialogue.speakerNames.Length == dialogue.sentences.Length;
+        // Frases en el idioma elegido (español / inglés), ver Dialogue.LocalizedSentences.
+        string[] sentences = dialogue.LocalizedSentences;
+        bool perLineNames = dialogue.speakerNames != null && dialogue.speakerNames.Length == sentences.Length;
 
         _sentences.Clear();
         _speakerNames.Clear();
-        for(int i = 0; i < dialogue.sentences.Length; i++)
+        for(int i = 0; i < sentences.Length; i++)
         {
-            _sentences.Enqueue(dialogue.sentences[i]);
+            _sentences.Enqueue(sentences[i]);
             _speakerNames.Enqueue(perLineNames ? dialogue.speakerNames[i] : dialogue.speakerName);
         }
 
@@ -189,7 +203,9 @@ public class UIManager : MonoBehaviour
         _currentSentence = _sentences.Dequeue();
 
         string speaker = _speakerNames.Count > 0 ? _speakerNames.Dequeue() : string.Empty;
-        if(_dialogueName != null) _dialogueName.text = speaker;
+        // Se muestra el nombre traducido (ej. Ladybug -> Vaquita de San Antonio); el interno sigue para retratos y eventos.
+        if(_dialogueName != null) _dialogueName.text = Localizer.GetSpeakerName(speaker);
+        SetDialogueImage(GetSpeakerPortrait(speaker) ?? _npcImage);
 
         // Aviso de "empieza una línea nueva y la dice X" (ej. FriendGekkoDialogue cambia de plano según quién habla).
         try { OnDialogueLine?.Invoke(speaker); }
@@ -197,6 +213,27 @@ public class UIManager : MonoBehaviour
 
         if(_typing != null) StopCoroutine(_typing);
         _typing = StartCoroutine(TypeLine(_currentSentence));
+    }
+
+    // Retrato del hablante según _speakerPortraits (sin distinguir mayúsculas). Null si no está en la lista.
+    private Sprite GetSpeakerPortrait(string speaker)
+    {
+        if(_speakerPortraits == null || string.IsNullOrEmpty(speaker)) return null;
+
+        foreach(SpeakerPortrait portrait in _speakerPortraits)
+        {
+            if(portrait.image != null && string.Equals(portrait.speakerName, speaker, System.StringComparison.OrdinalIgnoreCase))
+                return portrait.image;
+        }
+        return null;
+    }
+
+    // Sin sprite se oculta la imagen (si no, el Image de UI se dibuja como un cuadrado blanco).
+    private void SetDialogueImage(Sprite sprite)
+    {
+        if(_dialogueImage == null) return;
+        _dialogueImage.sprite = sprite;
+        _dialogueImage.enabled = sprite != null;
     }
 
     private IEnumerator TypeLine(string sentence)

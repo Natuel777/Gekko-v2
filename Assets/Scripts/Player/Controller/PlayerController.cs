@@ -662,7 +662,8 @@ public class PlayerController
             _collider.material.dynamicFriction = 0f;
             _collider.material.staticFriction = 0f;
 
-            if (!_wasOnWater) _pjViewer.SplashSound();
+            // Cae sobre agua que no se nada (poco profunda, o un tobogán de agua): splash a sus pies.
+            if (!_wasOnWater) _pjViewer.Splash(center - _currentUp * (half + _collider.radius * scale), scale, 0.4f);
             _wasOnWater = true;
         }
         else
@@ -879,6 +880,8 @@ public class PlayerController
         {
             // Trepando no entra (puede trepar una pared que se mete en el agua). Recién saltó: tampoco.
             if (_isClimbing || _jumpGraceTime > 0f) return false;
+            // Antes de entrar: al entrar se frena de golpe, y la velocidad de caída decide qué tan grande es el splash.
+            float fallSpeed = Mathf.Max(0f, -_rb.linearVelocity.y);
             if (!_swim.TryEnter()) return false;
 
             _isSurface = false;
@@ -891,7 +894,10 @@ public class PlayerController
             CancelJump();
             // Si entró al agua con Saltar apretado (por ejemplo, saltando adentro), no sale disparado: hay que volver a apretar.
             _swimJumpLatch = _jumpPressed;
-            _pjViewer.SplashSound();
+            // Entrando caminando = splash chico; cayendo desde alto (~25 veces su tamaño por segundo) = splash completo.
+            // Si volvió a nadar estando ya bajo el agua (ver GekkoSwimming.CheckUnderwater) no hubo chapuzón.
+            float scale = _pjTransform.lossyScale.x;
+            if (!_swim.EnteredFromBelow) _pjViewer.Splash(SplashPoint(), scale, fallSpeed / (25f * scale));
             _pjViewer.Swim(true);
         }
 
@@ -938,7 +944,7 @@ public class PlayerController
                 LeaveWater();
                 Jump(_jumpForce * _swim.JumpFactor);
                 _pjViewer.JumpSoundPlay();
-                _pjViewer.SplashSound();
+                _pjViewer.Splash(SplashPoint(), _pjTransform.lossyScale.x, 0.6f);
                 return true;
 
             case GekkoSwimming.StepResult.LedgeHop:
@@ -948,7 +954,7 @@ public class PlayerController
                 _isSurface = false;
                 _jumpGraceTime = 0.3f;
                 _pjViewer.Jump(true);
-                _pjViewer.SplashSound();
+                _pjViewer.Splash(SplashPoint(), _pjTransform.lossyScale.x, 0.4f);
                 return true;
 
             default:
@@ -956,6 +962,14 @@ public class PlayerController
                 LeaveWater();
                 return false;
         }
+    }
+
+    // Donde va el splash del nado: debajo de Gekko, sobre la superficie del agua.
+    private Vector3 SplashPoint()
+    {
+        Vector3 p = _pjTransform.TransformPoint(_collider.center);
+        p.y = _swim.SurfaceY;
+        return p;
     }
 
     // Lo que hay que apagar al dejar de nadar, salga como salga.

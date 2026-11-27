@@ -42,6 +42,11 @@ public class RiverSolidSurface : MonoBehaviour
 
     public bool Swimmable => _swimmable;
 
+    [Tooltip("Solo se nada dentro de las SwimZone (pozones, remansos). En el resto del río se resbala sobre la superficie y la corriente lo arrastra, como antes del nado: así el río no es un atajo para cruzar el nivel. Apagado = se nada en todo el río.")]
+    [SerializeField] private bool _swimOnlyInZones = false;
+
+    public bool SwimOnlyInZones => _swimOnlyInZones;
+
     [Tooltip("Nadando en este río, qué parte de la corriente arrastra a Gekko (1 = a la velocidad del agua). Negativo = usa el valor general de Player > Nado.")]
     [Range(-1f, 1.5f)]
     [SerializeField] private float _swimCurrentFactor = -1f;

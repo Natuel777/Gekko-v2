@@ -6,7 +6,7 @@ public enum ScenesNames
     Level1,
     Level2,
     Intentocin,
-    BossLvlOne,
+    BossLvlOne, // Escena borrada (el jefe del nivel 1 está en LvlOne). No sacar: los enums se guardan como número y Aldea pasaría de 6 a 5.
     Aldea
 }
 public enum ReafirmCanvas
@@ -82,4 +82,5 @@ public enum LevelFlags
     Lvl2_HideSeek_1,
     Lvl2_HideSeek_2,
     Lvl2_purification2,
+    Lvl2_04,
 }

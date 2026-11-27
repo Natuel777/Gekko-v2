@@ -4,7 +4,7 @@ using UnityEngine.SceneManagement;
 
 // Stats de UN nivel: tiempo jugado, cuánto se recogió de cada coleccionable y cuántos había.
 // Va puesto en la escena donde arranca el nivel (LvlOne, LvlTwo) y sobrevive a las escenas que siguen siendo parte
-// del mismo nivel (LvlOne -> BossLvlOne -> Aldea), así el Canvas_Finish que abre la Aldea muestra lo del nivel 1.
+// del mismo nivel (LvlOne -> Aldea), así el Canvas_Finish que abre la Aldea muestra lo del nivel 1.
 // Cada nivel cuenta por separado: cuando carga otra escena con LevelStats (otro nivel o reiniciar) la nueva reemplaza
 // a la vieja, y al volver al menú se descarta. Lo recogido se cuenta acá, no con el acumulado de CollectiblesRegister
 // (ese suma todos los niveles y se carga del guardado).
@@ -13,7 +13,7 @@ public class LevelStats : MonoBehaviour
     public static LevelStats Instance { get; private set; }
 
     [Tooltip("Escenas que siguen siendo parte de este nivel: el tiempo sigue corriendo y sus coleccionables se suman al total.")]
-    [SerializeField] private string[] _continuationScenes = { "BossLvlOne" };
+    [SerializeField] private string[] _continuationScenes = { };
     [Tooltip("Al cargar alguna de estas escenas las stats del nivel se descartan.")]
     [SerializeField] private string[] _discardScenes = { "Menu" };
 
