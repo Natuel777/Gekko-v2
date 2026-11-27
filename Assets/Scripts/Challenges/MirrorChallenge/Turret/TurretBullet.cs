@@ -87,6 +87,9 @@ public class TurretBullet : ShooteableObject, IReflectable
         AplicarLook(true);
     }
 
+    // For visual-only copies of the bullet (MirrorTutorial's demo shot): switches between the corrupted and purified look.
+    public void ShowPurifiedLook(bool purified) => AplicarLook(purified);
+
     // Corrupted (violet) or purified (turquoise) look. Changing the VFX asset restarts it: the old smoke disappears and the
     // turquoise one starts from the bounce point. The trail changes color entirely, including what was already drawn.
     private void AplicarLook(bool purificada)

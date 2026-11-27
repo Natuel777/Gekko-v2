@@ -13,6 +13,8 @@ using Gekko.Purification;
 //  - La secuencia muestra la aldea entera, la cámara viaja hasta la zona, se purifica, se guarda el progreso y cierra
 //    con la pantalla de victoria (EventManager "OnLevelFinished", lo mismo que dispara FinishLevelTrigger).
 //  - Casas: mismo criterio, el gekko de la casa del nivel ganado aparece; los de otros niveles ya ganados están ahí.
+//    Las casas de gekkos rescatados (AldeaHabitante con nombre de rescate: Celeste, Moki) además piden que ese gekko se
+//    haya rescatado de verdad (FriendGekkoDialogue lo registra en AldeaRescates al terminar la charla).
 // El progreso (hasta qué nivel se ganó) se guarda en PlayerPrefs (PlayerPrefsKeys.aldeaZonasPurificadasKey).
 public class AldeaIntroSequence : MonoBehaviour
 {
@@ -82,6 +84,8 @@ public class AldeaIntroSequence : MonoBehaviour
     private bool _forzado;
     // El nivel ganado ya se había ganado antes: sin purificación, la cámara va directo a la casa de su gekko.
     private bool _repeticion;
+    // El gekko de la casa del nivel ganado aparece en esta visita (si depende de un rescate, solo si fue rescatado).
+    private bool _casaActualAparece;
 
     private Transform PlanoInicial
     {
@@ -107,6 +111,7 @@ public class AldeaIntroSequence : MonoBehaviour
     public static void ResetearProgreso()
     {
         PlayerPrefs.DeleteKey(PlayerPrefsKeys.aldeaZonasPurificadasKey);
+        AldeaRescates.Borrar();
         PlayerPrefs.Save();
     }
 
@@ -127,14 +132,45 @@ public class AldeaIntroSequence : MonoBehaviour
         for(int i = 0; i < Mathf.Min(_yaPurificadas, _zonas.Length); i++)
             if((i != _actual || _repeticion) && _zonas[i].region != null) _zonas[i].region.SetPurifiedInstant();
 
+        if(!_forzado) MigrarRescatesViejos();
+
+        // Casas: el gekko del nivel recién ganado arranca escondido y aparece en la secuencia; los demás están en su casa
+        // desde el primer frame si ya llegaron (rescatados, o nivel ganado si la casa no depende de un rescate).
         for(int i = 0; i < _casas.Length; i++)
         {
-            if(_casas[i].gekko == null) continue;
-            if(i < _yaPurificadas && (i != _actual || _repeticion)) _casas[i].gekko.MostrarInstantaneo();
-            else _casas[i].gekko.Esconder();
+            AldeaHabitante gekko = _casas[i].gekko;
+            if(gekko == null) continue;
+
+            bool llego = GekkoLlego(i);
+            if(i == _actual && !_repeticion)
+            {
+                _casaActualAparece = llego;
+                gekko.Esconder();
+            }
+            else if(llego) gekko.MostrarInstantaneo();
+            else gekko.Esconder();
         }
 
         ActivarCamaraIntroDeEntrada();
+    }
+
+    // Si el gekko de la casa i ya vive en la aldea. Casas con nombre de rescate (Celeste, Moki...): solo si ese gekko fue
+    // rescatado (ver AldeaRescates). Sin nombre, o con _forzarZonasPurificadas (pruebas): según los niveles ganados.
+    private bool GekkoLlego(int i)
+    {
+        AldeaHabitante gekko = _casas[i].gekko;
+        if(_forzado || !gekko.DependeDeRescate) return i < _yaPurificadas || i == _actual;
+        return AldeaRescates.EstaRescatado(gekko.RescateId);
+    }
+
+    // Partidas guardadas antes de que existiera AldeaRescates: si ya se habían ganado niveles, sus gekkos cuentan como
+    // rescatados (si no, al actualizar desaparecerían de sus casas).
+    private void MigrarRescatesViejos()
+    {
+        if(AldeaRescates.HayDatos || _yaPurificadas <= 0) return;
+
+        for(int i = 0; i < Mathf.Min(_yaPurificadas, _casas.Length); i++)
+            if(_casas[i].gekko != null && _casas[i].gekko.DependeDeRescate) AldeaRescates.Registrar(_casas[i].gekko.RescateId);
     }
 
     // La cámara de la intro tiene que ser la única activa desde el primer frame: si la de Gekko llega a estar activa
@@ -210,7 +246,7 @@ public class AldeaIntroSequence : MonoBehaviour
             Debug.Log($"[Aldea] Zona {_actual + 1}/{_zonas.Length} purificada ({zona.nombre}).");
         }
 
-        if(_actual >= 0 && _actual < _casas.Length && _casas[_actual].gekko != null)
+        if(_casaActualAparece && _actual >= 0 && _actual < _casas.Length && _casas[_actual].gekko != null)
         {
             Casa casa = _casas[_actual];
 

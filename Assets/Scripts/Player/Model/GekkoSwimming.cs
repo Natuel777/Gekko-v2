@@ -46,7 +46,7 @@ public class SwimSettings
     [Min(0.1f)] public float airDuration = 10f;
     [Tooltip("Segundos que tarda en llenarse la barra fuera del agua.")]
     [Min(0.1f)] public float airRefillTime = 1.5f;
-    [Tooltip("Sin aire, recibe un golpe cada estos segundos.")]
+    [Tooltip("Sin uso: sin aire Gekko ya no recibe daño, sube solo a la superficie (ver GekkoSwimming.OutOfAir). Se deja para no perder el valor guardado.")]
     [Min(0.1f)] public float drownDamageInterval = 2f;
 }
 
@@ -79,7 +79,6 @@ public class GekkoSwimming
     private float _reenterBlock;
     private float _air = 1f;
     private float _lastSentAir = -1f;
-    private float _drownTimer;
     private float _bobPhase;
 
     public bool IsSwimming => _swimming;
@@ -87,7 +86,11 @@ public class GekkoSwimming
     public bool IsUnderwater { get; private set; }
     public bool CanDiveHere => _swimming && _water.CanDive;
     public float Air01 => _air;
+    // Se quedó sin aire buceando: sube solo hasta asomar (sin daño) y no puede volver a bajar hasta recuperar un poco de aire.
+    public bool OutOfAir { get; private set; }
     public float JumpFactor => _s.jumpFactor;
+    // Altura de la superficie del agua en la que nada (o en la que nadaba hasta recién salir). Para el splash.
+    public float SurfaceY => _water.SurfaceY;
 
     private float Scale => _pj.lossyScale.x;
     private float Radius => _collider.radius * Scale;
@@ -117,20 +120,15 @@ public class GekkoSwimming
         {
             _air = Mathf.Max(0f, _air - dt / _s.airDuration);
 
-            if(_air <= 0f)
-            {
-                _drownTimer += dt;
-                if(_drownTimer >= _s.drownDamageInterval)
-                {
-                    _drownTimer = 0f;
-                    EventManager.Trigger<float>("OnPlayerDamaged", 1f);
-                }
-            }
+            // Sin aire no hay daño: Gekko sube solo a la superficie y no puede volver a bajar hasta asomar (ver Step).
+            if(_air <= 0f) OutOfAir = true;
         }
         else
         {
+            // El aire se recarga ni bien asoma la cabeza (o fuera del agua). Puede volver a bucear con un poco de aire (medio
+            // segundo en la superficie): si no, apenas asoma bajaría y subiría en el lugar.
             _air = Mathf.Min(1f, _air + dt / _s.airRefillTime);
-            _drownTimer = 0f;
+            if(_air >= 0.3f) OutOfAir = false;
         }
 
         if(_reenterBlock > 0f) _reenterBlock -= dt;
@@ -145,12 +143,19 @@ public class GekkoSwimming
     // ¿Tiene que empezar a nadar? Gekko en agua plana y profunda, con el cuerpo ya tocando la superficie y sin subir.
     public bool TryEnter()
     {
-        if(_swimming || _reenterBlock > 0f) return false;
+        if(_swimming) return false;
+
+        Vector3 center = Center;
+
+        // Ya está ADENTRO del agua, bajo la superficie (dejó de nadar buceando: una cinemática, un diálogo, la corriente lo
+        // llevó a un rápido...). Nunca se queda ahí: la superficie sólida del agua le quedaría de techo y no podría salir.
+        if(CheckUnderwater(center)) return true;
+
+        if(_reenterBlock > 0f) return false;
 
         // Subiendo rápido (recién saltó del agua): todavía no.
         if(_rb.linearVelocity.y > 0.5f) return false;
 
-        Vector3 center = Center;
         if(!GekkoWater.TryGetSurface(center, 2f * Scale, 3f * Scale, out GekkoWater.WaterInfo water)) return false;
         if(water.NoSwim || !water.IsFlat(_s.maxSlope)) return false;
 
@@ -162,6 +167,73 @@ public class GekkoSwimming
         Enter(water);
         return true;
     }
+
+    // Todo el cuerpo bajo la superficie de un agua en la que se bucea (ríos con volumen, DeepWaterZone):
+    //  - Agua plana: vuelve a nadar (devuelve true).
+    //  - Rápido (agua en pendiente, donde no se nada sino que se resbala por arriba): lo pone encima de la superficie y sigue
+    //    resbalando como en cualquier rápido (devuelve false: no nada).
+    // No toca agua que no se nada (ríos de decoración), ni toboganes de agua sueltos (no se bucea: abajo hay aire), ni cascadas
+    // casi verticales (puede estar detrás, al aire), ni lugares con piso entre Gekko y la superficie (una cueva bajo el río).
+    private bool CheckUnderwater(Vector3 center)
+    {
+        // Filtro barato: dentro de un DeepWaterZone (lagos sin superficie sólida), o un rayo que encuentra agua sólida encima.
+        // Si no, no puede estar bajo el agua (y no se muestrean los ríos).
+        float reach = DiveReach;
+        if(!DeepWaterZone.TryFind(center, 0f, out _) &&
+           !Physics.Raycast(center + Vector3.up * reach, Vector3.down, reach - Radius, 1 << GekkoWater.WaterLayer,
+                            QueryTriggerInteraction.Ignore))
+            return false;
+
+        if(!GekkoWater.TryGetSurface(center, 0f, reach, out GekkoWater.WaterInfo water)) return false;
+        // Un río que se nada solo en pozones (SwimZone) cuenta aunque Gekko esté fuera de la zona: ahí se lo saca por arriba.
+        if((water.NoSwim && !water.OutsideSwimZone) || !water.CanDive) return false;
+        if(center.y + Radius >= water.SurfaceY) return false;          // asoma: eso lo resuelve la entrada normal
+
+        // Más hondo que el fondo de buceo (hay ríos con el cauce más abajo que su agua): cuenta igual si entre Gekko y la
+        // superficie solo hay agua. Si hay piso en el medio está en otro lado, no en esta agua.
+        if(center.y < water.BottomY - 2f * Radius &&
+           Physics.Raycast(center, Vector3.up, water.SurfaceY - center.y, _groundMask, QueryTriggerInteraction.Ignore))
+            return false;
+
+        // Bajo el agua, fuera de un pozón: ahí no se nada, se resbala por arriba. Se lo pone encima y el río lo lleva.
+        if(water.OutsideSwimZone)
+        {
+            PopOnto(water.SurfaceY, center);
+            return false;
+        }
+
+        if(water.IsFlat(_s.maxSlope))
+        {
+            if(_reenterBlock > 0f) return false;
+            Enter(water);
+            IsUnderwater = true;
+            return true;
+        }
+
+        if(Vector3.Angle(water.Normal, Vector3.up) <= MaxPopSlope) PopOnto(water.SurfaceY, center);
+        return false;
+    }
+
+    // Pendiente máxima de un rápido del que se saca a Gekko por arriba. Más empinado es una cascada: puede estar detrás, al aire.
+    private const float MaxPopSlope = 55f;
+
+    // Lo sube hasta apoyarlo arriba de la superficie, sin velocidad hacia abajo (la corriente del rápido lo sigue llevando).
+    private void PopOnto(float surfaceY, Vector3 center)
+    {
+        float lift = surfaceY + Radius + 0.05f * Scale - center.y;
+        Vector3 p = _rb.position + Vector3.up * lift;
+        _rb.position = p;
+        _pj.position = p;
+        Vector3 v = _rb.linearVelocity;
+        if(v.y < 0f) v.y = 0f;
+        _rb.linearVelocity = v;
+    }
+
+    // Hasta qué profundidad se busca la superficie estando bajo el agua (el mismo alcance que usa Step al bucear).
+    private float DiveReach => 40f * Scale;
+
+    // Volvió a nadar estando ya bajo el agua (CheckUnderwater): no hubo chapuzón, no va splash.
+    public bool EnteredFromBelow => _swimming && IsUnderwater;
 
     private void Enter(GekkoWater.WaterInfo water)
     {
@@ -198,8 +270,20 @@ public class GekkoSwimming
     {
         Vector3 center = Center;
 
-        if(!GekkoWater.TryGetSurface(center, 2f * Scale, (_water.CanDive ? 20f : 3f) * Scale, out GekkoWater.WaterInfo water)
-           || water.NoSwim || !water.IsFlat(_s.maxSlope) || !IsDeep(center, water, 0.7f))
+        if(!GekkoWater.TryGetSurface(center, 2f * Scale, _water.CanDive ? DiveReach : 3f * Scale, out GekkoWater.WaterInfo water)
+           || water.NoSwim || !water.IsFlat(_s.maxSlope))
+        {
+            // Salió del pozón (SwimZone) nadando o buceando: queda apoyado arriba del agua, que es donde el río lo arrastra. Si no,
+            // quedaría metido en la superficie sólida del río (o debajo).
+            if(water.OutsideSwimZone) PopOnto(water.SurfaceY, center);
+            Exit();
+            return StepResult.Exited;
+        }
+
+        // "Hacer pie" (agua poco profunda) solo se mira cerca de la superficie. Buceando, algo cerca de la superficie (un
+        // tronco, una roca, la orilla) haría creer que hizo pie y lo sacaría del nado con 2 m de agua encima.
+        bool deepUnderwater = center.y + Radius < water.SurfaceY - 0.3f * Scale;
+        if(!deepUnderwater && !IsDeep(center, water, 0.7f))
         {
             Exit();
             return StepResult.Exited;
@@ -244,7 +328,12 @@ public class GekkoSwimming
         float targetVy;
         bool canDive = water.CanDive;
 
-        if(canDive && diveHeld)
+        if(canDive && OutOfAir && !atSurface)
+        {
+            // Se quedó sin aire: sube solo a la superficie, aunque apriete Bucear.
+            targetVy = _s.ascendSpeed;
+        }
+        else if(canDive && diveHeld && !OutOfAir)
         {
             targetVy = -_s.diveSpeed;
         }

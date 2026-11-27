@@ -24,6 +24,9 @@ public class ChallengeTurret : MonoBehaviour, IShieldBreaker
     public TurretShootBehaviour shoot;
     #endregion
 
+    // Where its bullets come out (MirrorTutorial fires its demo shot from here).
+    public Transform Muzzle => _muzzle;
+
     #region Purification
     public bool IsPurified { get; private set; }
 

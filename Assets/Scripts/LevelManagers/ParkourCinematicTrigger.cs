@@ -19,9 +19,9 @@ public class ParkourCinematicTrigger : MonoBehaviour
     [SerializeField] private SkipCinematicPrompt _skipPrompt;
 
     [Header("Cambio de escena (opcional)")]
-    [Tooltip("Si está prendido, al entrar no se reproduce la cinemática: se carga directo _sceneToLoad (pasa por SceneLoader). Lo usa el trigger del boss de LvlOne para ir a BossLvlOne.")]
+    [Tooltip("Si está prendido, al entrar no se reproduce la cinemática: se carga directo _sceneToLoad (pasa por SceneLoader).")]
     [SerializeField] private bool _loadSceneInstead;
-    [SerializeField] private ScenesNames _sceneToLoad = ScenesNames.BossLvlOne;
+    [SerializeField] private ScenesNames _sceneToLoad = ScenesNames.None;
 
     private bool _played;
     private CinematicSkipHandler _skipHandler;

@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 // Enredaderas decorativas que se disuelven con un desafío de la planta (PurificationChallenge, MirrorChallenge...): cuando
-// cae el escudo (ej. "Enredaderas" en BossLvlOne) o cuando se purifica la planta (ej. las del árbol de la Second Zone en
+// cae el escudo o cuando se purifica la planta (ej. las del árbol de la Second Zone en
 // LvlTwo). Va en el objeto padre: toma los renderers de todos sus hijos que tengan la propiedad de dissolve, sube el valor
 // de a poco y al terminar los oculta y avisa con Dissolved. Solo baja, nunca vuelve a aparecer.
 // En vez de un desafío puede escuchar un TurretGroupPurified (todas las torretas de una zona purificadas).

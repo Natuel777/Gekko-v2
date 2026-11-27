@@ -85,6 +85,7 @@ public class SaveManager : MonoBehaviour, ISaveLoad
 
         CollectiblesRegister.Clear();
         PlayerPrefs.DeleteKey(PlayerPrefsKeys.aldeaZonasPurificadasKey);
+        AldeaRescates.Borrar();
         PlayerPrefs.Save();
 
         Debug.Log("[SaveManager] Progreso del jugador borrado (la configuración se mantiene).");

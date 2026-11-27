@@ -3,7 +3,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using Unity.Cinemachine;
 
-// Diálogo del gekko amigo que aparece al purificar a la planta jefe (ver BossGekkoReveal): Celeste (azul) en BossLvlOne,
+// Diálogo del gekko amigo que aparece al purificar a la planta jefe (ver BossGekkoReveal): Celeste (azul) en LvlOne,
 // Moki (verde) en LvlTwo. Mismo componente en los dos: cambian el diálogo y los materiales del objeto.
 // Puesta en escena de la charla (si _stageConversation está prendido):
 //   1. Fundido corto a negro (solo el fundido de ScreenFader, sin tocar inputs: el diálogo ya bloquea a Gekko).
@@ -17,6 +17,11 @@ public class FriendGekkoDialogue : DialogueNPC
     [Header("Siguiente escena")]
     [Tooltip("Escena a la que se va después de hablar con el gekko (pasa por SceneLoader).")]
     [SerializeField] private ScenesNames _nextScene = ScenesNames.Aldea;
+    [Tooltip("Nombre con el que se registra el rescate (ver AldeaRescates): la Aldea muestra en su casa al AldeaHabitante " +
+             "con el mismo nombre. Vacío = usa el speakerName del diálogo (Celeste, Moki...).")]
+    [SerializeField] private string _rescateId;
+
+    private string RescateId => string.IsNullOrWhiteSpace(_rescateId) ? Dialogue.speakerName : _rescateId;
 
     [Header("Puesta en escena de la charla")]
     [Tooltip("Ubica a Gekko frente a Celeste y usa planos fijos (plano doble + primer plano del que habla).")]
@@ -106,6 +111,9 @@ public class FriendGekkoDialogue : DialogueNPC
 
         if(_leaving) return;
         _leaving = true;
+
+        // Terminó la charla de rescate: desde ahora este gekko vive en su casa de la Aldea.
+        AldeaRescates.Registrar(RescateId);
 
         if(ScreenFader.Instance == null)
         {

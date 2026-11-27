@@ -7,6 +7,14 @@ public class PlayerViewer : MonoBehaviour
     [SerializeField] private Animator _tongueAnim;
     [Header("Particles")]
     [SerializeField] private ParticleSystem _trail;
+    [Header("Splash (agua)")]
+    [Tooltip("Efecto al entrar o salir del agua (WaterSplash). Vacío = solo suena.")]
+    [SerializeField] private GameObject _waterSplashPrefab;
+    [Tooltip("Tamaño del splash respecto del tamaño de Gekko (el prefab está hecho para un objeto de escala 1).")]
+    [Min(0.01f)]
+    [SerializeField] private float _splashScale = 1.75f;
+    [Tooltip("Multiplicador del tamaño según la fuerza: x = entrando despacio (caminando), y = cayendo desde alto.")]
+    [SerializeField] private Vector2 _splashIntensityRange = new Vector2(0.7f, 1.3f);
     [Header("Sounds")]
     [SerializeField] private AudioSource _walkSound; 
     [SerializeField] private AudioSource _waterSound;
@@ -99,6 +107,30 @@ public class PlayerViewer : MonoBehaviour
     public void SplashSound()
     {
         if (AudioManager.instance) AudioManager.instance.Play(SoundNames.PlayerSplash);
+    }
+
+    // Sonido + efecto de splash en position (la superficie del agua). gekkoScale: escala de Gekko (cambia por nivel), para
+    // que el splash quede proporcionado. intensity: 0 = entra despacio, 1 = cae desde alto.
+    public void Splash(Vector3 position, float gekkoScale, float intensity)
+    {
+        SplashSound();
+        if (_waterSplashPrefab == null) return;
+
+        GameObject splash = Instantiate(_waterSplashPrefab, position, Quaternion.identity);
+        float size = gekkoScale * _splashScale * Mathf.Lerp(_splashIntensityRange.x, _splashIntensityRange.y, Mathf.Clamp01(intensity));
+        splash.transform.localScale = Vector3.one * size;
+
+        // El prefab viene en loop (para verlo en el editor): acá es una sola ráfaga. En Hierarchy para que tome la escala de
+        // arriba. Se borra solo cuando terminó la última partícula.
+        float lifetime = 0f;
+        foreach (ParticleSystem ps in splash.GetComponentsInChildren<ParticleSystem>(true))
+        {
+            ParticleSystem.MainModule main = ps.main;
+            main.loop = false;
+            main.scalingMode = ParticleSystemScalingMode.Hierarchy;
+            lifetime = Mathf.Max(lifetime, main.duration + main.startLifetime.constantMax);
+        }
+        Destroy(splash, lifetime + 0.5f);
     }
     #endregion
 

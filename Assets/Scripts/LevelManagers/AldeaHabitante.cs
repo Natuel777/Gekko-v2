@@ -7,6 +7,9 @@ using UnityEngine;
 //  - Aparecer(): la aparición de esta visita (crece con un rebote y festeja).
 public class AldeaHabitante : MonoBehaviour
 {
+    [Tooltip("Gekko rescatado que vive acá (mismo nombre que registra FriendGekkoDialogue, ej. Celeste, Moki). " +
+             "Con nombre: aparece solo si ese gekko fue rescatado. Vacío = aparece según el nivel ganado (orden de Casas).")]
+    [SerializeField] private string _rescateId;
     [Tooltip("Lo que se prende/apaga. Vacío = este mismo GameObject.")]
     [SerializeField] private GameObject _visual;
     [Tooltip("Partículas opcionales al aparecer (ej. destello, hojas).")]
@@ -22,6 +25,9 @@ public class AldeaHabitante : MonoBehaviour
     private bool _inicializado;
 
     public bool Visible { get; private set; }
+
+    public string RescateId => _rescateId;
+    public bool DependeDeRescate => !string.IsNullOrWhiteSpace(_rescateId);
 
     private GameObject Visual => _visual != null ? _visual : gameObject;
 

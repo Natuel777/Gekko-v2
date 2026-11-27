@@ -13,7 +13,18 @@ public class LoadingTips : MonoBehaviour
     [SerializeField] private TMP_Text _tipText;
     [SerializeField] private CanvasGroup _group;
 
+    [Tooltip("Consejos en español.")]
     [SerializeField, TextArea(2, 4)] private string[] _tips;
+    [Tooltip("Los mismos consejos en inglés, en el mismo orden. Vacío = se usan los de español.")]
+    [SerializeField, TextArea(2, 4)] private string[] _tipsEnglish;
+
+    // Consejo i en el idioma elegido (si falta la traducción, en español).
+    private string Tip(int i)
+    {
+        bool english = Localizer.Current == GameLanguage.English;
+        if(english && _tipsEnglish != null && i < _tipsEnglish.Length && !string.IsNullOrWhiteSpace(_tipsEnglish[i])) return _tipsEnglish[i];
+        return _tips[i];
+    }
 
     [Header("Tiempos")]
     [Tooltip("Segundos que se ve cada consejo (sin contar el fade).")]
@@ -35,7 +46,7 @@ public class LoadingTips : MonoBehaviour
     {
         while (true)
         {
-            _tipText.text = _tips[NextIndex()];
+            _tipText.text = Tip(NextIndex());
 
             yield return Fade(0f, 1f);
             yield return new WaitForSecondsRealtime(_interval);

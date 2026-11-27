@@ -31,6 +31,13 @@ public class MirrorRevealCinematic : MonoBehaviour
     [Min(0f)]
     [SerializeField] private float _holdSeconds = 2f;
 
+    // Opcional: corre con la cámara todavía en el espejo y Gekko congelado, justo antes de volver a la cámara de juego (ej.
+    // MirrorTutorial muestra cómo rebota la bala). Recibe la placa que se pisó.
+    public System.Func<PressurePlateRuna, IEnumerator> AfterReveal;
+
+    // El plano está corriendo (Gekko congelado, cámara en el espejo).
+    public bool IsPlaying => _routine != null;
+
     private bool _played, _frozen;
     private CinemachineCamera _activeCam;
     private int _camBasePriority;
@@ -66,7 +73,7 @@ public class MirrorRevealCinematic : MonoBehaviour
         if(cam == null) return 0f;
 
         _played = true;
-        _routine = StartCoroutine(ShotRoutine(cam));
+        _routine = StartCoroutine(ShotRoutine(cam, plate));
         return _blendSeconds;
     }
 
@@ -77,7 +84,7 @@ public class MirrorRevealCinematic : MonoBehaviour
         return null;
     }
 
-    private IEnumerator ShotRoutine(CinemachineCamera cam)
+    private IEnumerator ShotRoutine(CinemachineCamera cam, PressurePlateRuna plate)
     {
         Freeze(true);
         SetBlend();
@@ -85,6 +92,15 @@ public class MirrorRevealCinematic : MonoBehaviour
 
         // Viaje hasta el espejo + el espejo levantándose.
         yield return new WaitForSeconds(_blendSeconds + _holdSeconds);
+
+        // Extra opcional con la cámara todavía en el espejo (ej. MirrorTutorial muestra el rebote de la bala).
+        if(AfterReveal != null)
+        {
+            IEnumerator extra = null;
+            try { extra = AfterReveal(plate); }
+            catch(System.Exception e) { Debug.LogException(e, this); }
+            if(extra != null) yield return extra;
+        }
 
         StopShot();
 

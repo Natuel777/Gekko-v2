@@ -10,7 +10,6 @@ public static class ScenesDictionary
         {ScenesNames.Level1, "LvlOne" },
         {ScenesNames.Level2, "LvlTwo" },
         {ScenesNames.Intentocin, "intentocin" },
-        {ScenesNames.BossLvlOne, "BossLvlOne" },
         {ScenesNames.Aldea, "Aldea" },
     };
     public static Dictionary<int, ScenesNames> LevelIndex = new Dictionary<int, ScenesNames>
@@ -20,7 +19,7 @@ public static class ScenesDictionary
     };
 
     // Escenas que no están en LevelIndex pero cierran un nivel: su "siguiente nivel" va directo acá.
-    // El nivel 1 sigue LvlOne -> BossLvlOne -> Aldea, y el Level Finish de la Aldea manda a LvlTwo.
+    // El nivel 1 sigue LvlOne -> Aldea, y el Level Finish de la Aldea manda a LvlTwo.
     public static Dictionary<ScenesNames, ScenesNames> NextSceneOverride = new Dictionary<ScenesNames, ScenesNames>
     {
         {ScenesNames.Aldea, ScenesNames.Level2},

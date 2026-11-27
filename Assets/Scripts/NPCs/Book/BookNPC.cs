@@ -204,7 +204,7 @@ public class BookNPC : NPCBase, IDialogueView
         return true;
     }
 
-    private int SentenceCount => Dialogue.sentences != null ? Dialogue.sentences.Length : 0;
+    private int SentenceCount => Dialogue.LocalizedSentences.Length;
 
     private void RestoreGame()
     {
@@ -307,7 +307,7 @@ public class BookNPC : NPCBase, IDialogueView
 
     private void FillSpread()
     {
-        string[] sentences = Dialogue.sentences ?? new string[0];
+        string[] sentences = Dialogue.LocalizedSentences;
         int left = _spread * 2;
         int right = left + 1;
 

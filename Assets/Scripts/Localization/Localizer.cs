@@ -41,10 +41,46 @@ public static class Localizer
         return key;
     }
 
+    // Nombre de hablante para mostrar en el panel de diálogo. Los nombres propios (Gekko, Moki, María...) quedan igual; los
+    // que se traducen tienen una entrada "speaker_<nombre interno>" en la tabla.
+    public static string GetSpeakerName(string speaker)
+    {
+        if (string.IsNullOrEmpty(speaker)) return speaker;
+        return Table.TryGetValue("speaker_" + speaker, out var entry)
+            ? (Current == GameLanguage.Spanish ? entry.es : entry.en)
+            : speaker;
+    }
+
     // Para agregar textos nuevos: sumar una linea (clave, español, ingles) y usar la clave en un LocalizedText.
     private static readonly Dictionary<string, (string es, string en)> Table = new Dictionary<string, (string es, string en)>
     {
         { "loading_label", ("CARGANDO", "LOADING") },
+
+        // Menú principal
+        { "play", ("Jugar", "Play") },
+        { "credits", ("Créditos", "Credits") },
+        { "press_any_key", ("presioná cualquier tecla para continuar", "press any key to continue") },
+        { "credits_programmers", ("Programadores", "Programmers") },
+        { "credits_animator", ("Animadora y Game/Level Designer", "Animator and Game/Level Designer") },
+        { "credits_3d_artist", ("Artista 3D", "3D Artist") },
+
+        // Pantalla de carga (SceneLoader)
+        { "tip_title", ("CONSEJO", "TIP") },
+        { "zone_1_label", ("ZONA 1", "ZONE 1") },
+        { "zone_1_name", ("Bosque", "Forest") },
+        { "zone_2_label", ("ZONA 2", "ZONE 2") },
+        { "zone_2_name", ("Bosque Otoñal", "Autumn Forest") },
+        { "zone_village_label", ("DE VUELTA EN", "BACK IN") },
+        { "zone_village_name", ("La Aldea", "The Village") },
+
+        // Textos fijos en el juego
+        { "skip_cinematic", ("Mantené E para saltear", "Hold E to skip") },
+        { "corrupted_plant_title", ("La Planta Corrupta", "The Corrupted Plant") },
+
+        // Nombres de hablante que se traducen (Localizer.GetSpeakerName). Los nombres propios no van acá.
+        { "speaker_Ladybug", ("Vaquita de San Antonio", "Ladybug") },
+        { "speaker_Log", ("Bitácora", "Log") },
+        { "speaker_Planta", ("Planta", "Plant") },
 
         { "tab_game", ("Idioma", "Language") },
         { "tab_graphics", ("Gráficos", "Graphics") },
@@ -139,6 +175,10 @@ public static class Localizer
         { "desc_ctrl_reset", ("Vuelve la sensibilidad del mouse y todas las teclas a su configuración original (las teclas se guardan al apretar Aplicar).", "Restore mouse sensitivity and all key bindings to their defaults (key bindings are saved when you press Apply).") },
         { "desc_graphics_reset", ("Vuelve la resolución, la calidad, la pantalla completa y la iluminación a sus valores originales.", "Restore resolution, quality, fullscreen and lighting to their default values.") },
         { "desc_sound_reset", ("Vuelve todos los volúmenes y la música a sus valores originales.", "Restore all volumes and music to their default values.") },
+
+        // Pistas del desafío de espejos de LvlTwo (MirrorTutorial / HintBanner)
+        { "mirror_hint_stand", ("Parate detrás del espejo: la torreta te va a disparar y el espejo le devuelve la bala.", "Stand behind the mirror: the turret will shoot at you and the mirror will send the shot back.") },
+        { "mirror_hint_done", ("¡Torreta purificada! Usá las placas para mover los espejos y purificá las demás.", "Turret purified! Use the plates to move the mirrors and purify the rest.") },
 
         // Cartel de presentación del boss (BossTitleCard)
         { "boss1_name", ("Planta Corrupta", "Corrupted Plant") },
