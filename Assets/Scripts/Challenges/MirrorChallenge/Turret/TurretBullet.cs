@@ -50,14 +50,43 @@ public class TurretBullet : ShooteableObject, IReflectable
         if(_trail != null) _trailOriginal = _trail.sharedMaterial;
     }
 
+    // While a cinematic is running (OnCinematicStart/End, e.g. ShieldBreakCinematic when a turret is purified) Gekko is frozen and
+    // the turrets stop shooting, but the bullets that were already flying used to keep going and hit him: he couldn't dodge them.
+    private bool _frozenForCinematic;
+
     private void OnEnable()
     {
         _currentLifetime = _lifetime;
         _reflected = false;
         _returned = false;
         _owner = null;
+        _frozenForCinematic = false;
         AplicarLook(false);
+
+        EventManager.Subscribe("OnCinematicStart", FreezeForCinematic);
+        EventManager.Subscribe("OnCinematicEnd", UnfreezeForCinematic);
     }
+
+    private void OnDisable()
+    {
+        EventManager.Unsubscribe("OnCinematicStart", FreezeForCinematic);
+        EventManager.Unsubscribe("OnCinematicEnd", UnfreezeForCinematic);
+    }
+
+    // A corrupted bullet dissipates: if it only paused, it would hit Gekko right as he gets the controls back. A bullet already
+    // sent back by a mirror only pauses and goes on afterwards, so the turret it is heading to still gets purified.
+    private void FreezeForCinematic()
+    {
+        if(!_reflected)
+        {
+            ReturnToPool();
+            return;
+        }
+
+        _frozenForCinematic = true;
+    }
+
+    private void UnfreezeForCinematic() => _frozenForCinematic = false;
 
     public void Shoot(Vector3 direction) => Shoot(direction, null);
 
@@ -125,6 +154,8 @@ public class TurretBullet : ShooteableObject, IReflectable
 
     private void Update()
     {
+        if(_frozenForCinematic) return;
+
         transform.position += _direction * CurrentSpeed * Time.deltaTime;
         _currentLifetime -= Time.deltaTime;
 
