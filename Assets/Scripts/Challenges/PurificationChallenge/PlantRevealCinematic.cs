@@ -3,14 +3,15 @@ using Unity.Cinemachine;
 using UnityEngine;
 using UnityEngine.Playables;
 
-// Mini cinemática de LvlTwo que presenta a la planta corrupta (el jefe del campamento) la primera vez que Gekko llega a la
-// arena, como las de LvlOne: un ParkourCinematicTrigger en la entrada reproduce el Timeline, congela a Gekko y a las
-// torretas ("OnCinematicStart") y se saltea manteniendo E. El recorrido de cámara (animación del Rig en el Timeline) pasa
-// por las placas, los espejos y las torretas antes de llegar a la planta, así el jugador ve el puzzle que tiene que resolver.
-// Este componente recibe las señales del Timeline (SignalReceiver en este mismo objeto):
-//   - PlantRoar: la planta muerde dos veces, ruge (PlantGrowl) y la cámara se sacude.
-//   - ShowTitle / HideBars: cartel con el nombre y salida de las barras de cine (CinematicLetterbox).
-// Al terminar (o al saltearla) Gekko dice una línea con la pista del puzzle, usando el panel de diálogo de siempre.
+// Mini cinematic of LvlTwo that introduces the corrupted plant (the camp's boss) the first time Gekko reaches the
+// arena, like the ones in LvlOne: a ParkourCinematicTrigger at the entrance plays the Timeline, freezes Gekko and the
+// turrets ("OnCinematicStart") and can be skipped by holding E. The camera path (the Rig's animation in the Timeline) goes
+// through the plates, the mirrors and the turrets before reaching the plant, so the player sees the puzzle they have to solve.
+// This component receives the Timeline's signals (SignalReceiver on this same object):
+//   - PlantRoar: the plant bites twice, roars (PlantGrowl) and the camera shakes.
+//   - ShowTitle / HideBars: title card with the name, and exit of the cinema bars (CinematicLetterbox).
+// When it ends (or is skipped) Gekko says a hint about the puzzle, using the usual dialogue panel, with a Gekko voice sound on
+// each line (see Hint voice).
 public class PlantRevealCinematic : MonoBehaviour, IDialogueable
 {
     [SerializeField] private PlayableDirector _director;
@@ -18,7 +19,7 @@ public class PlantRevealCinematic : MonoBehaviour, IDialogueable
     [SerializeField] private Animator _plantAnimator;
     [SerializeField] private CinematicLetterbox _letterbox;
 
-    [Header("Rugido")]
+    [Header("Roar")]
     [Tooltip("Ruido de la cámara de la cinemática: se sube un momento para la sacudida.")]
     [SerializeField] private CinemachineBasicMultiChannelPerlin _shake;
     [SerializeField] private float _shakeAmplitude = 1.2f;
@@ -28,24 +29,44 @@ public class PlantRevealCinematic : MonoBehaviour, IDialogueable
     [Min(0f)]
     [SerializeField] private float _secondBiteDelay = 0.55f;
 
-    [Header("Pista al terminar")]
+    [Header("Hint at the end")]
     [SerializeField] private Dialogue _hint;
     [SerializeField] private Sprite _hintImage;
     [Tooltip("Espera después de la cinemática antes de abrir el diálogo (deja que el trigger suelte a Gekko primero).")]
     [Min(0f)]
     [SerializeField] private float _hintDelay = 0.35f;
 
+    [Header("Hint voice")]
+    [Tooltip("Sonido de Gekko (SoundNames) que suena cuando dice la pista. None = sin sonido.")]
+    [SerializeField] private SoundNames _hintSound = SoundNames.PlayerHmmh;
+    [Tooltip("Prendido: el sonido suena en cada línea de la pista. Apagado: suena una sola vez, al empezar (con la primera línea).")]
+    [SerializeField] private bool _soundOnEveryLine = true;
+
     private bool _hintShown;
+    private int _hintLines;
     private Coroutine _shakeRoutine;
 
     #region IDialogueable
     public Dialogue Dialogue => _hint;
-    // La línea la dice Gekko: con su propio transform, UIManager nunca la corta por distancia.
+    // The line is said by Gekko: with Gekko's own transform, UIManager never cuts it by distance.
     public Transform Transform => GameManager.Instance != null && GameManager.Instance.Pj != null ? GameManager.Instance.Pj.transform : transform;
     public Sprite Image => _hintImage;
     public AudioClip AudioClip => null;
-    public void OnDialogueStart() { }
-    public void OnDialogueEnd() { }
+    // UIManager raises OnDialogueLine when it starts each line, the first one included (this hook runs right before it), so the
+    // voice follows the lines. The -= avoids a double subscription.
+    public void OnDialogueStart()
+    {
+        _hintLines = 0;
+        if(UIManager.Instance == null) return;
+
+        UIManager.Instance.OnDialogueLine -= OnHintLine;
+        UIManager.Instance.OnDialogueLine += OnHintLine;
+    }
+
+    public void OnDialogueEnd()
+    {
+        if(UIManager.Instance != null) UIManager.Instance.OnDialogueLine -= OnHintLine;
+    }
     #endregion
 
     private void OnEnable()
@@ -56,10 +77,11 @@ public class PlantRevealCinematic : MonoBehaviour, IDialogueable
     private void OnDisable()
     {
         if(_director != null) _director.stopped -= OnDirectorStopped;
+        if(UIManager.Instance != null) UIManager.Instance.OnDialogueLine -= OnHintLine;
         SetShake(0f);
     }
 
-    // ------------------------------------------------------------------ Señales del Timeline
+    // ------------------------------------------------------------------ Timeline signals
 
     public void PlantRoar()
     {
@@ -91,7 +113,7 @@ public class PlantRevealCinematic : MonoBehaviour, IDialogueable
         if(_plantAnimator != null) _plantAnimator.SetTrigger("nibble");
     }
 
-    // Golpe fuerte al principio y se va apagando.
+    // Strong hit at the start that fades out.
     private IEnumerator ShakeRoutine()
     {
         for(float t = 0f; t < 1f; t += Time.deltaTime / _shakeSeconds)
@@ -109,7 +131,7 @@ public class PlantRevealCinematic : MonoBehaviour, IDialogueable
         if(_shake != null) _shake.AmplitudeGain = amplitude;
     }
 
-    // Terminó o se salteó: Gekko dice la pista (una sola vez).
+    // It ended or was skipped: Gekko says the hint (only once).
     private void OnDirectorStopped(PlayableDirector director)
     {
         SetShake(0f);
@@ -118,8 +140,8 @@ public class PlantRevealCinematic : MonoBehaviour, IDialogueable
         StartCoroutine(HintRoutine());
     }
 
-    // ParkourCinematicTrigger suelta a Gekko en el mismo evento 'stopped': si el diálogo se abriera antes, al soltarlo le
-    // devolvería el control con el diálogo abierto. Por eso se espera un poco.
+    // ParkourCinematicTrigger releases Gekko on the same 'stopped' event: if the dialogue opened earlier, releasing Gekko would
+    // give the control back with the dialogue open. That is why it waits a little.
     private IEnumerator HintRoutine()
     {
         if(_hintDelay > 0f) yield return new WaitForSeconds(_hintDelay);
@@ -128,5 +150,15 @@ public class PlantRevealCinematic : MonoBehaviour, IDialogueable
         if(UIManager.Instance == null || UIManager.Instance.HasActiveDialogue()) yield break;
 
         UIManager.Instance.StartDialogue(this);
+    }
+
+    // One Gekko voice sound for the line that is starting: on every line, or only on the first one (see Sound On Every Line).
+    private void OnHintLine(string speaker)
+    {
+        _hintLines++;
+        if(!_soundOnEveryLine && _hintLines > 1) return;
+        if(_hintSound == SoundNames.None || !AudioManager.instance) return;
+
+        AudioManager.instance.Play(_hintSound);
     }
 }

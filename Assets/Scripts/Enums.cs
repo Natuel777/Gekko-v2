@@ -57,7 +57,10 @@ public enum SoundNames
     BookSound3 = 33,
     BookSound4 = 34,
     PlantPreparingAttack = 35,
-    VenomBulletHitsGround = 36
+    VenomBulletHitsGround = 36,
+    PlayerHmmh = 37,
+    PlayerWaah = 38,
+    PlayerOwowo = 39,
 }
 
 public enum LevelFlags

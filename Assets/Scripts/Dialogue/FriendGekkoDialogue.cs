@@ -3,18 +3,19 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using Unity.Cinemachine;
 
-// Diálogo del gekko amigo que aparece al purificar a la planta jefe (ver BossGekkoReveal): Celeste (azul) en LvlOne,
-// Moki (verde) en LvlTwo. Mismo componente en los dos: cambian el diálogo y los materiales del objeto.
-// Puesta en escena de la charla (si _stageConversation está prendido):
-//   1. Fundido corto a negro (solo el fundido de ScreenFader, sin tocar inputs: el diálogo ya bloquea a Gekko).
-//   2. En negro: Gekko se ubica frente a Celeste a una distancia fija y los dos se miran.
-//   3. Cámara de diálogo propia (prioridad alta, corte directo): la primera línea es un plano de los dos y desde la
-//      segunda corta a un primer plano del que habla, por encima del hombro del otro (según UIManager.OnDialogueLine).
-// Los tamaños de los planos se calculan con la altura real de los personajes, así funciona con cualquier escala.
-// Al cerrar la conversación dispara la salida del nivel: fade a negro (ScreenFader) y pantalla de carga.
+// Dialogue of the friendly gekko that appears when the boss plant is purified (see BossGekkoReveal): Celeste (blue) in LvlOne,
+// Moki (green) in LvlTwo. Same component in both: the dialogue and the object's materials change.
+// Staging of the conversation (if _stageConversation is on):
+//   1. Short fade to black (only ScreenFader's fade, without touching inputs: the dialogue already blocks Gekko).
+//   2. In the dark: Gekko is placed in front of Celeste at a fixed distance and the two face each other.
+//   3. Own dialogue camera (high priority, direct cut): the first line is a shot of both and from the
+//      second one it cuts to a close-up of whoever is speaking, over the shoulder of the other (according to UIManager.OnDialogueLine).
+// The shot sizes are computed from the characters' real height, so it works at any scale.
+// When the conversation closes it triggers the level exit: fade to black (ScreenFader) and loading screen.
+// Every line that is shown also plays one Gekko voice sound (see Talk sounds), never the same one twice in a row.
 public class FriendGekkoDialogue : DialogueNPC
 {
-    [Header("Siguiente escena")]
+    [Header("Next scene")]
     [Tooltip("Escena a la que se va después de hablar con el gekko (pasa por SceneLoader).")]
     [SerializeField] private ScenesNames _nextScene = ScenesNames.Aldea;
     [Tooltip("Nombre con el que se registra el rescate (ver AldeaRescates): la Aldea muestra en su casa al AldeaHabitante " +
@@ -23,7 +24,16 @@ public class FriendGekkoDialogue : DialogueNPC
 
     private string RescateId => string.IsNullOrWhiteSpace(_rescateId) ? Dialogue.speakerName : _rescateId;
 
-    [Header("Puesta en escena de la charla")]
+    [Header("Talk sounds")]
+    [Tooltip("Sonidos de Gekko (SoundNames) entre los que se sortea uno por cada línea del diálogo, la diga quien la diga (Gekko o el gekko rescatado). Un sonido no puede sonar en dos líneas seguidas: tiene que esperar un turno para poder sonar de nuevo. Vacío = sin sonido.")]
+    [SerializeField] private SoundNames[] _talkSounds =
+    {
+        SoundNames.PlayerHmmh,
+        SoundNames.PlayerWaah,
+        SoundNames.PlayerOwowo
+    };
+
+    [Header("Conversation staging")]
     [Tooltip("Ubica a Gekko frente a Celeste y usa planos fijos (plano doble + primer plano del que habla).")]
     [SerializeField] private bool _stageConversation = true;
     [Tooltip("Fundido corto a negro para que no se note el acomodo de los personajes.")]
@@ -37,7 +47,7 @@ public class FriendGekkoDialogue : DialogueNPC
     [Min(0)]
     [SerializeField] private int _twoShotLines = 1;
 
-    [Header("Primer plano (por encima del hombro)")]
+    [Header("Close-up (over the shoulder)")]
     [Tooltip("Qué tan atrás del que escucha va la cámara, en alturas de personaje.")]
     [SerializeField] private float _closeUpBack = 1.1f;
     [Tooltip("Corrimiento al costado (hombro), en alturas de personaje.")]
@@ -51,7 +61,7 @@ public class FriendGekkoDialogue : DialogueNPC
     [Range(15f, 80f)]
     [SerializeField] private float _twoShotFov = 45f;
 
-    [Header("Cámara de diálogo (sin puesta en escena)")]
+    [Header("Dialogue camera (without staging)")]
     [Tooltip("Cámara de plano doble, registrada en CameraStateManager, que se usa si _stageConversation está apagado. Vacío = no cambia de cámara.")]
     [SerializeField] private CinemachineCamera _twoShotCamera;
     [Tooltip("Tag con el que CameraStateManager registró esta cámara.")]
@@ -72,21 +82,30 @@ public class FriendGekkoDialogue : DialogueNPC
     private const int DialogueCameraPriority = 100;
 
     private bool _leaving;
-    private bool _staged;          // ya están ubicados y la cámara de diálogo está activa
+    private bool _staged;          // they are already placed and the dialogue camera is active
     private int _lineIndex = -1;
     private string _currentSpeaker;
     private CinemachineCamera _dialogueCam;
     private CinemachineBrain _brain;
     private CinemachineBlendDefinition _savedBlend;
     private bool _blendSaved;
+    private NoRepeatSoundPicker _talkPicker; // lives as long as this gekko, so the "no repeat" rule holds across all its lines
 
-    // Arranca solo al aparecer (ver BossGekkoReveal), con el player donde haya quedado tras la pelea: si se
-    // cerrara por distancia, terminaría en el primer frame y saltaría directo a la escena siguiente.
+    // It starts by itself when it appears (see BossGekkoReveal), with the player wherever the fight left them: if it
+    // closed by distance, it would end on the first frame and jump straight to the next scene.
     public override bool CloseByDistance => false;
 
     public override void OnDialogueStart()
     {
         base.OnDialogueStart();
+
+        // One Gekko voice sound per line, whoever says it. UIManager raises OnDialogueLine when it starts each line, the first one
+        // included (this hook runs right before it), and the voice does not wait for the staging fade. The -= avoids a double subscription.
+        if(UIManager.Instance != null)
+        {
+            UIManager.Instance.OnDialogueLine -= PlayTalkSound;
+            UIManager.Instance.OnDialogueLine += PlayTalkSound;
+        }
 
         if(!_stageConversation)
         {
@@ -105,6 +124,7 @@ public class FriendGekkoDialogue : DialogueNPC
         base.OnDialogueEnd();
 
         if(UIManager.Instance != null) UIManager.Instance.OnDialogueLine -= OnDialogueLine;
+        if(UIManager.Instance != null) UIManager.Instance.OnDialogueLine -= PlayTalkSound;
 
         if(!_stageConversation && _twoShotCamera != null && CameraStateManager.Instance != null)
             EventManager.Trigger(CameraStateManager.Instance.primaryCameraTag);
@@ -112,7 +132,7 @@ public class FriendGekkoDialogue : DialogueNPC
         if(_leaving) return;
         _leaving = true;
 
-        // Terminó la charla de rescate: desde ahora este gekko vive en su casa de la Aldea.
+        // The rescue conversation is over: from now on this gekko lives in its house in the Village (Aldea).
         AldeaRescates.Registrar(RescateId);
 
         if(ScreenFader.Instance == null)
@@ -128,10 +148,11 @@ public class FriendGekkoDialogue : DialogueNPC
     private void OnDestroy()
     {
         if(UIManager.Instance != null) UIManager.Instance.OnDialogueLine -= OnDialogueLine;
+        if(UIManager.Instance != null) UIManager.Instance.OnDialogueLine -= PlayTalkSound;
         RestoreBlend();
     }
 
-    // ------------------------------------------------------------------ Puesta en escena
+    // ------------------------------------------------------------------ Staging
 
     private IEnumerator StageRoutine()
     {
@@ -141,7 +162,7 @@ public class FriendGekkoDialogue : DialogueNPC
         PlaceCharacters();
         ActivateDialogueCamera();
         _staged = true;
-        ApplyShot(); // plano de la línea que ya se esté mostrando
+        ApplyShot(); // shot of the line that is already being shown
 
         if(fade) yield return ScreenFader.Instance.FadeFromBlack();
     }
@@ -153,8 +174,18 @@ public class FriendGekkoDialogue : DialogueNPC
         if(_staged) ApplyShot();
     }
 
-    // Gekko a una distancia fija frente a Celeste, del mismo lado en que estaba (así no queda dentro de la planta
-    // ni de una pared), apoyado en el piso, y los dos mirándose.
+    // Plays one Gekko voice sound for the line that is starting (both speakers are gekkos, so every line gets one). The picker never
+    // repeats a sound right after itself: the one that sounded has to wait one line before it can sound again.
+    private void PlayTalkSound(string speaker)
+    {
+        if(AudioManager.instance == null) return;
+
+        _talkPicker ??= new NoRepeatSoundPicker(_talkSounds);
+        if(_talkPicker.TryPick(out SoundNames sound)) AudioManager.instance.Play(sound);
+    }
+
+    // Gekko at a fixed distance in front of Celeste, on the same side it was on (so it doesn't end up inside the plant
+    // or a wall), standing on the ground, and the two facing each other.
     private void PlaceCharacters()
     {
         var pj = GameManager.Instance != null ? GameManager.Instance.Pj : null;
@@ -169,7 +200,7 @@ public class FriendGekkoDialogue : DialogueNPC
         float distance = _conversationDistance * CharacterHeight(player);
         Vector3 target = transform.position + dir * distance;
 
-        // Asentarlo en el piso (mismo LayerMask de superficies que usa la cámara).
+        // Settle it on the ground (same surfaces LayerMask the camera uses).
         LayerMask ground = GameManager.Instance.Surfaces;
         if(Physics.Raycast(target + Vector3.up * 3f, Vector3.down, out RaycastHit hit, 10f, ground, QueryTriggerInteraction.Ignore))
             target.y = hit.point.y;
@@ -196,7 +227,7 @@ public class FriendGekkoDialogue : DialogueNPC
             _dialogueCam = go.AddComponent<CinemachineCamera>();
         }
 
-        // Corte directo hacia la cámara de diálogo (la pantalla está en negro igual, pero sin blend no queda a medio camino).
+        // Direct cut to the dialogue camera (the screen is black anyway, but without a blend it doesn't end up halfway).
         var main = Camera.main;
         _brain = main != null ? main.GetComponent<CinemachineBrain>() : null;
         if(_brain != null && !_blendSaved)
@@ -233,7 +264,7 @@ public class FriendGekkoDialogue : DialogueNPC
         else SetCloseUp(celeste, gekko);
     }
 
-    // Plano de los dos, de perfil (misma idea que FrameTwoShot).
+    // Shot of both, in profile (same idea as FrameTwoShot).
     private void SetTwoShot(Transform a, Transform b)
     {
         var lens = _dialogueCam.Lens; lens.FieldOfView = _twoShotFov; _dialogueCam.Lens = lens;
@@ -255,7 +286,7 @@ public class FriendGekkoDialogue : DialogueNPC
         PlaceCam(camPos, lookPoint);
     }
 
-    // Primer plano del que habla, con la cámara por encima del hombro del que escucha.
+    // Close-up of the speaker, with the camera over the listener's shoulder.
     private void SetCloseUp(Transform speaker, Transform listener)
     {
         var lens = _dialogueCam.Lens; lens.FieldOfView = _closeUpFov; _dialogueCam.Lens = lens;
@@ -280,7 +311,7 @@ public class FriendGekkoDialogue : DialogueNPC
         t.rotation = Quaternion.LookRotation(lookAt - position, Vector3.up);
     }
 
-    // Altura real del personaje (de sus renderers), para que los planos sirvan a cualquier escala.
+    // The character's real height (from its renderers), so the shots work at any scale.
     private static float CharacterHeight(Transform character)
     {
         var renderers = character.GetComponentsInChildren<Renderer>();
@@ -296,10 +327,10 @@ public class FriendGekkoDialogue : DialogueNPC
         return Mathf.Clamp(h, 0.2f, 5f);
     }
 
-    // ------------------------------------------------------------------ Sin puesta en escena (comportamiento anterior)
+    // ------------------------------------------------------------------ Without staging (previous behavior)
 
-    // Pone la cámara de diálogo de perfil, encuadrando a los dos (plano de conversación clásico), y la activa vía
-    // CameraStateManager: no la posicionamos en el Inspector porque el player puede acercarse desde cualquier lado.
+    // Puts the dialogue camera in profile, framing both (classic conversation shot), and activates it through
+    // CameraStateManager: we don't position it in the Inspector because the player can approach from any side.
     private void FrameTwoShot()
     {
         if(_twoShotCamera == null || GameManager.Instance == null || GameManager.Instance.Pj == null) return;
@@ -325,8 +356,8 @@ public class FriendGekkoDialogue : DialogueNPC
         EventManager.Trigger(_twoShotCameraTag);
     }
 
-    // Distancia a la que tiene que estar la cámara para que entren los dos gekkos (más _framingPadding a cada lado)
-    // con el FOV horizontal de la cámara de diálogo. Nunca más cerca que _sideDistance.
+    // Distance the camera has to be at for both gekkos to fit (plus _framingPadding on each side)
+    // with the dialogue camera's horizontal FOV. Never closer than _sideDistance.
     private float GetFramingDistance(float separation)
     {
         Camera main = Camera.main;
@@ -340,7 +371,7 @@ public class FriendGekkoDialogue : DialogueNPC
         return Mathf.Max(_sideDistance, needed);
     }
 
-    // Se llama con la pantalla ya en negro: ahí no se nota el corte de escena.
+    // Called with the screen already black: the scene cut isn't noticeable there.
     private void OnScreenBlack()
     {
         if(ScreenFader.Instance != null) ScreenFader.Instance.OnFadeMiddle -= OnScreenBlack;
